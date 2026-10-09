@@ -1,7 +1,5 @@
-"use client";
-
-import CompressionAnalyticsTab from "../CompressionAnalyticsTab";
+import { redirect } from "next/navigation";
 
 export default function AnalyticsCompressionPage() {
-  return <CompressionAnalyticsTab />;
+  redirect("/dashboard/usage");
 }

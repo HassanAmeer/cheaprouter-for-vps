@@ -118,3 +118,26 @@ declare module "yazl" {
     outputStream: NodeJS.ReadableStream;
   }
 }
+
+interface Window {
+  electronAPI?: {
+    isElectron?: boolean;
+    platform?: string;
+    getDataDir?: () => Promise<string>;
+    checkForUpdates?: () => Promise<any>;
+    onUpdateStatus?: (callback: (data: any) => void) => () => void;
+    downloadUpdate?: () => Promise<any>;
+    installUpdate?: () => Promise<any>;
+    getAutostartStatus?: () => Promise<boolean>;
+    enableAutostart?: () => Promise<boolean>;
+    disableAutostart?: () => Promise<boolean>;
+    minimizeWindow?: () => void;
+    maximizeWindow?: () => void;
+    closeWindow?: () => void;
+    openExternal?: (url: string) => Promise<void>;
+    restartServer?: () => Promise<any>;
+    onServerStatus?: (callback: (status: any) => void) => () => void;
+    onPortChanged?: (callback: (port: number) => void) => () => void;
+    [key: string]: any;
+  };
+}

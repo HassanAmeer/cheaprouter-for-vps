@@ -1,7 +1,5 @@
-"use client";
-
-import ComboHealthTab from "../ComboHealthTab";
+import { redirect } from "next/navigation";
 
 export default function AnalyticsComboHealthPage() {
-  return <ComboHealthTab />;
+  redirect("/dashboard/usage");
 }

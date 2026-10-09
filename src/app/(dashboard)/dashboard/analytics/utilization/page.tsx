@@ -1,7 +1,5 @@
-"use client";
-
-import ProviderUtilizationTab from "../ProviderUtilizationTab";
+import { redirect } from "next/navigation";
 
 export default function AnalyticsUtilizationPage() {
-  return <ProviderUtilizationTab />;
+  redirect("/dashboard/usage");
 }

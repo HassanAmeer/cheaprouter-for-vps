@@ -1,7 +1,5 @@
-"use client";
-
-import EvalsTab from "../../usage/components/EvalsTab";
+import { redirect } from "next/navigation";
 
 export default function AnalyticsEvalsPage() {
-  return <EvalsTab />;
+  redirect("/dashboard/usage");
 }

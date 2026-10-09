@@ -1,7 +1,5 @@
-import ActivityFeedClient from "./ActivityFeedClient";
-
-export const dynamic = "force-dynamic";
+import { redirect } from "next/navigation";
 
 export default function ActivityPage() {
-  return <ActivityFeedClient />;
+  redirect("/dashboard/logs");
 }

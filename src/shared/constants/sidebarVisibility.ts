@@ -16,6 +16,7 @@ import type {
 
 export const SIDEBAR_ICON_ACCENTS: Partial<Record<SidebarItemId, string>> = {
   home: "#60A5FA",
+  usage: "#10B981",
   "api-manager": "#F59E0B",
   endpoints: "#38BDF8",
   providers: "#818CF8",
@@ -43,7 +44,6 @@ export const SIDEBAR_ICON_ACCENTS: Partial<Record<SidebarItemId, string>> = {
   logs: "#CBD5E1",
   "logs-proxy": "#A3E635",
   "logs-console": "#FACC15",
-  "logs-timeline": "#F472B6",
   "logs-activity": "#60A5FA",
   health: "#EF4444",
   runtime: "#F59E0B",

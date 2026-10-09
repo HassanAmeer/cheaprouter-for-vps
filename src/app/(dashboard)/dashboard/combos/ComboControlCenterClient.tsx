@@ -554,7 +554,7 @@ export default function ComboControlCenterClient({ comboId }: { comboId: string 
         <h2 className="text-lg font-semibold text-text-main">{t("quickLinks")}</h2>
         <div className="mt-4 flex flex-wrap gap-2">
           {[
-            [t("comboHealth"), "/dashboard/analytics/combo-health"],
+            [t("comboHealth"), "/dashboard/usage"],
             [t("callLogs"), "/dashboard/logs"],
             [t("costs"), "/dashboard/costs"],
             [t("quota"), "/dashboard/quota"],

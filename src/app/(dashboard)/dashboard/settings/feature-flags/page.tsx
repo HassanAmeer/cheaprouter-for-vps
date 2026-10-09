@@ -1,7 +1,5 @@
-"use client";
-
-import FeatureFlagsGrid from "../components/FeatureFlagsGrid";
+import { redirect } from "next/navigation";
 
 export default function FeatureFlagsPage() {
-  return <FeatureFlagsGrid />;
+  redirect("/dashboard/settings/appearance");
 }

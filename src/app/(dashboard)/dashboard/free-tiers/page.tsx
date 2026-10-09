@@ -1,11 +1,5 @@
-"use client";
-
-import FreeBudgetCard from "@/app/(dashboard)/dashboard/usage/components/FreeBudgetCard";
+import { redirect } from "next/navigation";
 
 export default function FreeTiersPage() {
-  return (
-    <div className="flex flex-col gap-4">
-      <FreeBudgetCard />
-    </div>
-  );
+  redirect("/dashboard/costs/pricing");
 }

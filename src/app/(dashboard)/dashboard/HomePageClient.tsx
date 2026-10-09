@@ -6,7 +6,6 @@ import { useState, useEffect, useMemo, useCallback, useRef, useSyncExternalStore
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Card, CardSkeleton, Button, Modal } from "@/shared/components";
-import ProviderIcon from "@/shared/components/ProviderIcon";
 import { AI_PROVIDERS, NOAUTH_PROVIDERS, OAUTH_PROVIDERS } from "@/shared/constants/providers";
 import {
   isProviderConnectionConnected,
@@ -112,7 +111,7 @@ function emptySubscribe() {
   return () => {};
 }
 
-export default function HomePageClient({ machineId }: HomePageClientProps) {
+export default function HomePageClient({ machineId: _machineId }: HomePageClientProps) {
   const router = useRouter();
   const isElectron = useIsElectron();
   const { openExternal } = useOpenExternal();
@@ -146,7 +145,7 @@ export default function HomePageClient({ machineId }: HomePageClientProps) {
 
   // Platform detection and download links for Electron
   const platform =
-    typeof globalThis.window === "undefined" ? undefined : globalThis.window.electronAPI?.platform;
+    typeof window === "undefined" ? undefined : (window as any).electronAPI?.platform;
   // Destructured to locals: `versionInfo?.current` in a dependency array trips
   // the lint heuristic that treats any `.current` access as a mutable ref read.
   const installedVersion = versionInfo?.current || "";
@@ -191,15 +190,15 @@ export default function HomePageClient({ machineId }: HomePageClientProps) {
   }>({ status: "idle" });
 
   useEffect(() => {
-    if (!isElectron || typeof globalThis.window === "undefined" || !globalThis.window.electronAPI)
-      return;
+    const electronAPI = typeof window !== "undefined" ? (window as any).electronAPI : undefined;
+    if (!isElectron || !electronAPI) return;
 
     // Trigger initial check silently on mount
-    globalThis.window.electronAPI.checkForUpdates().catch((err: any) => {
+    electronAPI.checkForUpdates().catch((err: any) => {
       console.error("[Electron] Check for updates failed:", err);
     });
 
-    const dispose = globalThis.window.electronAPI.onUpdateStatus((data: any) => {
+    const dispose = electronAPI.onUpdateStatus((data: any) => {
       setElectronUpdateStatus({
         status: data.status,
         version: data.version,
@@ -224,8 +223,8 @@ export default function HomePageClient({ machineId }: HomePageClientProps) {
   useEffect(() => {
     // Fetch the pin settings (lightweight)
     fetch("/api/settings")
-      .then((r) => (r.ok ? r.json() : {}))
-      .then((data) => {
+      .then((r) => (r.ok ? (r.json() as Promise<Record<string, any>>) : ({} as Record<string, any>)))
+      .then((data: Record<string, any>) => {
         if (data) {
           if (typeof data.showQuickStartOnHome === "boolean") {
             setShowQuickStartOnHome(data.showQuickStartOnHome);
@@ -955,7 +954,7 @@ export default function HomePageClient({ machineId }: HomePageClientProps) {
                   {electronUpdateStatus.status === "available" && (
                     <Button
                       size="sm"
-                      onClick={() => globalThis.window.electronAPI?.downloadUpdate()}
+                      onClick={() => (window as any).electronAPI?.downloadUpdate()}
                       className="font-semibold"
                     >
                       {t("downloadUpdate")}
@@ -974,7 +973,7 @@ export default function HomePageClient({ machineId }: HomePageClientProps) {
                   {electronUpdateStatus.status === "downloaded" && (
                     <Button
                       size="sm"
-                      onClick={() => globalThis.window.electronAPI?.installUpdate()}
+                      onClick={() => (window as any).electronAPI?.installUpdate()}
                       className="font-semibold animate-pulse"
                     >
                       {t("restartAndInstall")}
@@ -987,7 +986,7 @@ export default function HomePageClient({ machineId }: HomePageClientProps) {
                       size="sm"
                       onClick={() => {
                         setElectronUpdateStatus({ status: "checking" });
-                        globalThis.window.electronAPI?.checkForUpdates().catch((err: any) => {
+                        (window as any).electronAPI?.checkForUpdates().catch((err: any) => {
                           setElectronUpdateStatus({ status: "error", message: err.message });
                         });
                       }}
@@ -1124,7 +1123,7 @@ export default function HomePageClient({ machineId }: HomePageClientProps) {
                         </Link>
                       ),
                       analytics: (chunks) => (
-                        <Link href="/dashboard/analytics" prefetch={false} className={INLINE_LINK}>
+                        <Link href="/dashboard/usage" prefetch={false} className={INLINE_LINK}>
                           {chunks}
                         </Link>
                       ),
@@ -1158,76 +1157,6 @@ export default function HomePageClient({ machineId }: HomePageClientProps) {
         />
       )}
     </div>
-  );
-}
-
-function ProviderOverviewCard({
-  item,
-  metrics,
-  onClick,
-}: {
-  item: ProviderSummaryItem;
-  metrics?: ProviderMetricSummary;
-  onClick: () => void;
-}) {
-  const t = useTranslations("home");
-  const tc = useTranslations("common");
-
-  const statusVariant =
-    item.errors > 0 ? "text-red-500" : item.connected > 0 ? "text-green-500" : "text-text-muted";
-
-  const authTypeConfig = {
-    "no-auth": { color: "bg-stone-500", label: t("noAuthLabel") },
-    free: { color: "bg-green-500", label: tc("free") },
-    oauth: { color: "bg-blue-500", label: t("oauthLabel") },
-    apikey: { color: "bg-amber-500", label: t("apiKeyLabel") },
-  };
-  const authInfo = authTypeConfig[item.authType] || authTypeConfig.apikey;
-
-  return (
-    <button
-      onClick={onClick}
-      className="border border-border rounded-lg p-3 hover:bg-surface/40 transition-colors text-left cursor-pointer w-full"
-    >
-      <div className="flex items-center gap-2.5">
-        <div
-          className="size-8 rounded-lg flex items-center justify-center shrink-0"
-          style={{ backgroundColor: `${item.provider.color || "#888"}15` }}
-        >
-          <ProviderIcon providerId={item.provider.id} size={26} type="color" />
-        </div>
-
-        <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-1.5">
-            <p className="text-sm font-semibold truncate">{item.provider.name}</p>
-            <span
-              className={`size-2 rounded-full ${authInfo.color} shrink-0`}
-              title={authInfo.label}
-            />
-          </div>
-          <p className={`text-xs ${statusVariant}`}>
-            {item.total === 0
-              ? tc("notConfigured")
-              : t("activeError", { active: item.connected, errors: item.errors })}
-          </p>
-          {metrics && metrics.totalRequests > 0 && (
-            <div className="flex items-center gap-2 mt-0.5">
-              <span className="text-[10px] text-text-muted">
-                <span className="text-emerald-500">{metrics.totalSuccesses}</span>/
-                {t("requestsShort", { count: metrics.totalRequests })}
-              </span>
-              <span className="text-[10px] text-text-muted">{metrics.successRate}%</span>
-              <span className="text-[10px] text-text-muted">~{metrics.avgLatencyMs}ms</span>
-            </div>
-          )}
-        </div>
-
-        <div className="text-right shrink-0">
-          <p className="text-xs font-medium text-text-main">{item.modelCount}</p>
-          <p className="text-[10px] text-text-muted">{tc("models")}</p>
-        </div>
-      </div>
-    </button>
   );
 }
 

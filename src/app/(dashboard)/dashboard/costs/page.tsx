@@ -1,7 +1,5 @@
-"use client";
-
-import CostOverviewTab from "./CostOverviewTab";
+import { redirect } from "next/navigation";
 
 export default function CostsPage() {
-  return <CostOverviewTab />;
+  redirect("/dashboard/costs/pricing");
 }

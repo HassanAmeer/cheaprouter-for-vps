@@ -1,5 +1,5 @@
-import SearchToolsClient from "./SearchToolsClient";
+import { redirect } from "next/navigation";
 
 export default function SearchToolsPage() {
-  return <SearchToolsClient />;
+  redirect("/dashboard/playground");
 }

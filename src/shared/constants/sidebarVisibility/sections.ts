@@ -1,7 +1,6 @@
 import type {
   SidebarItemDefinition,
   SidebarItemGroup,
-  SidebarSectionChild,
   SidebarSectionDefinition,
 } from "./types";
 
@@ -15,6 +14,22 @@ const HOME_ITEMS: readonly SidebarItemDefinition[] = [
     subtitleKey: "homeSubtitle",
     icon: "home",
     exact: true,
+  },
+  {
+    id: "usage",
+    href: "/dashboard/usage",
+    i18nKey: "usage",
+    labelFallback: "Usage",
+    subtitleKey: "usageSubtitle",
+    subtitleFallback: "Token & provider consumption",
+    icon: "data_usage",
+  },
+  {
+    id: "settings-appearance",
+    href: "/dashboard/settings/appearance",
+    i18nKey: "settingsAppearance",
+    subtitleKey: "settingsAppearanceSubtitle",
+    icon: "palette",
   },
 ];
 
@@ -323,184 +338,37 @@ const PROXY_ITEM: SidebarItemDefinition = {
   icon: "dns",
 };
 
-const ANALYTICS_ITEMS: readonly SidebarItemDefinition[] = [
+const LOGS_ITEMS: readonly SidebarItemDefinition[] = [
   {
-    id: "analytics",
-    href: "/dashboard/analytics",
-    i18nKey: "usage",
-    subtitleKey: "usageSubtitle",
-    icon: "analytics",
+    id: "logs",
+    href: "/dashboard/logs",
+    i18nKey: "logs",
+    subtitleKey: "logsSubtitle",
+    icon: "description",
   },
   {
-    id: "analytics-combo-health",
-    href: "/dashboard/analytics/combo-health",
-    i18nKey: "analyticsComboHealth",
-    subtitleKey: "analyticsComboHealthSubtitle",
-    icon: "monitor_heart",
+    id: "logs-proxy",
+    href: "/dashboard/logs/proxy",
+    i18nKey: "logsProxy",
+    subtitleKey: "logsProxySubtitle",
+    icon: "lan",
   },
   {
-    id: "analytics-utilization",
-    href: "/dashboard/analytics/utilization",
-    i18nKey: "analyticsUtilization",
-    subtitleKey: "analyticsUtilizationSubtitle",
-    icon: "bar_chart",
-  },
-  {
-    id: "cache",
-    href: "/dashboard/cache",
-    i18nKey: "cache",
-    subtitleKey: "cacheSubtitle",
-    icon: "cached",
-  },
-  {
-    id: "analytics-compression",
-    href: "/dashboard/analytics/compression",
-    i18nKey: "analyticsCompression",
-    subtitleKey: "analyticsCompressionSubtitle",
-    icon: "compress",
-  },
-  {
-    id: "analytics-search",
-    href: "/dashboard/analytics/search",
-    i18nKey: "analyticsSearch",
-    subtitleKey: "analyticsSearchSubtitle",
-    icon: "manage_search",
-  },
-  {
-    id: "analytics-evals",
-    href: "/dashboard/analytics/evals",
-    i18nKey: "analyticsEvals",
-    subtitleKey: "analyticsEvalsSubtitle",
-    icon: "labs",
-  },
-  {
-    id: "provider-stats",
-    href: "/dashboard/provider-stats",
-    i18nKey: "providerStats",
-    subtitleKey: "providerStatsSubtitle",
-    icon: "speed",
+    id: "logs-console",
+    href: "/dashboard/logs/console",
+    i18nKey: "consoleLogs",
+    subtitleKey: "consoleLogsSubtitle",
+    icon: "terminal",
   },
 ];
-
-const MONITORING_ITEMS: readonly SidebarItemDefinition[] = [
-  {
-    id: "activity",
-    href: "/dashboard/activity",
-    i18nKey: "activity",
-    subtitleKey: "activitySubtitle",
-    icon: "timeline",
-  },
-];
-
-const LOGS_GROUP: SidebarItemGroup = {
-  type: "group",
-  id: "logs",
-  titleKey: "logsGroup",
-  titleFallback: "Logs",
-  items: [
-    {
-      id: "logs",
-      href: "/dashboard/logs",
-      i18nKey: "logs",
-      subtitleKey: "logsSubtitle",
-      icon: "description",
-    },
-    {
-      id: "logs-proxy",
-      href: "/dashboard/logs/proxy",
-      i18nKey: "logsProxy",
-      subtitleKey: "logsProxySubtitle",
-      icon: "lan",
-    },
-    {
-      id: "logs-console",
-      href: "/dashboard/logs/console",
-      i18nKey: "consoleLogs",
-      subtitleKey: "consoleLogsSubtitle",
-      icon: "terminal",
-    },
-    {
-      id: "logs-timeline",
-      href: "/dashboard/logs/timeline",
-      i18nKey: "logsTimeline",
-      subtitleKey: "logsTimelineSubtitle",
-      icon: "view_timeline",
-    },
-    {
-      id: "conversations",
-      href: "/dashboard/conversations",
-      i18nKey: "conversations",
-      subtitleKey: "conversationsSubtitle",
-      icon: "forum",
-    },
-  ],
-};
-
-const SYSTEM_GROUP: SidebarItemGroup = {
-  type: "group",
-  id: "system",
-  titleKey: "systemGroup",
-  titleFallback: "System",
-  items: [
-    {
-      id: "health",
-      href: "/dashboard/health",
-      i18nKey: "health",
-      subtitleKey: "healthSubtitle",
-      icon: "health_and_safety",
-    },
-    {
-      id: "runtime",
-      href: "/dashboard/runtime",
-      i18nKey: "runtime",
-      subtitleKey: "runtimeSubtitle",
-      icon: "bolt",
-    },
-    {
-      id: "resilience-connections",
-      href: "/dashboard/resilience/connections",
-      i18nKey: "resilienceConnections",
-      subtitleKey: "resilienceConnectionsSubtitle",
-      icon: "shield",
-    },
-    {
-      id: "resilience-cooldowns",
-      href: "/dashboard/resilience/cooldowns",
-      i18nKey: "resilienceCooldowns",
-      subtitleKey: "resilienceCooldownsSubtitle",
-      icon: "timer_off",
-    },
-  ],
-};
 
 const COSTS_ITEMS: readonly SidebarItemDefinition[] = [
-  {
-    id: "costs",
-    href: "/dashboard/costs",
-    i18nKey: "costsOverview",
-    subtitleKey: "costsOverviewSubtitle",
-    icon: "account_balance_wallet",
-  },
   {
     id: "costs-pricing",
     href: "/dashboard/costs/pricing",
     i18nKey: "costsPricing",
     subtitleKey: "costsPricingSubtitle",
     icon: "price_change",
-  },
-  {
-    id: "costs-budget",
-    href: "/dashboard/costs/budget",
-    i18nKey: "costsBudget",
-    subtitleKey: "costsBudgetSubtitle",
-    icon: "savings",
-  },
-  {
-    id: "costs-free-tiers",
-    href: "/dashboard/free-tiers",
-    i18nKey: "costsFreeTiers",
-    subtitleKey: "costsFreeTiersSubtitle",
-    icon: "request_quote",
   },
   {
     id: "free-provider-rankings",
@@ -519,145 +387,13 @@ const COSTS_ITEMS: readonly SidebarItemDefinition[] = [
   },
 ];
 
-const AUDIT_GROUP: SidebarItemGroup = {
-  type: "group",
-  id: "audit",
-  titleKey: "auditGroup",
-  titleFallback: "Audit",
-  items: [
-    {
-      id: "audit",
-      href: "/dashboard/audit",
-      i18nKey: "auditLog",
-      subtitleKey: "auditLogSubtitle",
-      icon: "policy",
-    },
-    {
-      id: "audit-mcp",
-      href: "/dashboard/audit/mcp",
-      i18nKey: "auditMcp",
-      subtitleKey: "auditMcpSubtitle",
-      icon: "security",
-    },
-    {
-      id: "audit-a2a",
-      href: "/dashboard/audit/a2a",
-      i18nKey: "auditA2a",
-      subtitleKey: "auditA2aSubtitle",
-      icon: "device_hub",
-    },
-  ],
-};
-
 const DEVTOOLS_ITEMS: readonly SidebarItemDefinition[] = [
-  {
-    id: "translator",
-    href: "/dashboard/translator",
-    i18nKey: "translator",
-    subtitleKey: "translatorSubtitle",
-    icon: "translate",
-  },
   {
     id: "playground",
     href: "/dashboard/playground",
     i18nKey: "playground",
     subtitleKey: "playgroundSubtitle",
     icon: "science",
-  },
-  {
-    id: "search-tools",
-    href: "/dashboard/search-tools",
-    i18nKey: "searchTools",
-    subtitleKey: "searchToolsSubtitle",
-    icon: "manage_search",
-  },
-];
-
-const CONFIGURATION_ITEMS: readonly SidebarItemDefinition[] = [
-  {
-    id: "settings-general",
-    href: "/dashboard/settings/general",
-    i18nKey: "settingsGeneral",
-    subtitleKey: "settingsGeneralSubtitle",
-    icon: "tune",
-  },
-  {
-    id: "settings-appearance",
-    href: "/dashboard/settings/appearance",
-    i18nKey: "settingsAppearance",
-    subtitleKey: "settingsAppearanceSubtitle",
-    icon: "palette",
-  },
-  {
-    id: "settings-ai",
-    href: "/dashboard/settings/ai",
-    i18nKey: "settingsAi",
-    subtitleKey: "settingsAiSubtitle",
-    icon: "auto_awesome",
-  },
-  {
-    id: "settings-modality-bridge",
-    href: "/dashboard/settings/modality-bridge",
-    i18nKey: "settingsModalityBridge",
-    subtitleKey: "settingsModalityBridgeSubtitle",
-    icon: "image_search",
-  },
-  {
-    id: "settings-routing",
-    href: "/dashboard/settings/routing",
-    i18nKey: "globalRouting",
-    subtitleKey: "globalRoutingSubtitle",
-    icon: "route",
-  },
-  {
-    id: "settings-resilience",
-    href: "/dashboard/settings/resilience",
-    i18nKey: "settingsResilience",
-    subtitleKey: "settingsResilienceSubtitle",
-    icon: "health_and_safety",
-  },
-  {
-    id: "settings-advanced",
-    href: "/dashboard/settings/advanced",
-    i18nKey: "settingsAdvanced",
-    subtitleKey: "settingsAdvancedSubtitle",
-    icon: "engineering",
-  },
-  {
-    id: "settings-security",
-    href: "/dashboard/settings/security",
-    i18nKey: "settingsSecurity",
-    subtitleKey: "settingsSecuritySubtitle",
-    icon: "shield",
-  },
-  {
-    id: "settings-access-tokens",
-    href: "/dashboard/settings/access-tokens",
-    i18nKey: "settingsAccessTokens",
-    labelFallback: "Access Tokens",
-    subtitleKey: "settingsAccessTokensSubtitle",
-    icon: "key",
-  },
-  {
-    id: "settings-feature-flags",
-    href: "/dashboard/settings/feature-flags",
-    i18nKey: "settingsFeatureFlags",
-    subtitleKey: "settingsFeatureFlagsSubtitle",
-    icon: "flag",
-  },
-  {
-    id: "settings-cache",
-    href: "/dashboard/settings/cache",
-    i18nKey: "settingsCache",
-    subtitleKey: "settingsCacheSubtitle",
-    icon: "memory",
-  },
-  {
-    id: "settings-sidebar",
-    href: "/dashboard/settings/sidebar",
-    i18nKey: "settingsSidebar",
-    subtitleKey: "settingsSidebarSubtitle",
-    icon: "view_sidebar",
   },
 ];
 
@@ -684,33 +420,21 @@ export const SIDEBAR_SECTIONS: readonly SidebarSectionDefinition[] = [
     ],
   },
   {
-    id: "analytics",
-    titleKey: "analyticsSection",
-    titleFallback: "Analytics",
-    children: ANALYTICS_ITEMS,
-  },
-  {
     id: "costs",
     titleKey: "costsSection",
-    titleFallback: "Costs",
+    titleFallback: "Info",
     children: COSTS_ITEMS,
   },
   {
     id: "monitoring",
-    titleKey: "monitoringSection",
-    titleFallback: "Monitoring",
-    children: [...MONITORING_ITEMS, LOGS_GROUP, AUDIT_GROUP, SYSTEM_GROUP],
+    titleKey: "logsGroup",
+    titleFallback: "Logs",
+    children: LOGS_ITEMS,
   },
   {
     id: "devtools",
     titleKey: "devtoolsSection",
     titleFallback: "Dev Tools",
     children: DEVTOOLS_ITEMS,
-  },
-  {
-    id: "configuration",
-    titleKey: "configurationSection",
-    titleFallback: "Configuration",
-    children: CONFIGURATION_ITEMS,
   },
 ] as const;

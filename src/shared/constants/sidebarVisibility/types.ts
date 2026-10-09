@@ -1,6 +1,7 @@
 export const HIDEABLE_SIDEBAR_ITEM_IDS = [
   // Home
   "home",
+  "usage",
   // OmniProxy — flat
   "api-manager",
   "endpoints",
@@ -57,8 +58,6 @@ export const HIDEABLE_SIDEBAR_ITEM_IDS = [
   "logs",
   "logs-proxy",
   "logs-console",
-  "logs-timeline",
-  "conversations",
   "logs-activity",
   "health",
   "runtime",
@@ -135,6 +134,7 @@ export type SidebarSectionId =
   | "agentic-features"
   | "other-features"
   | "configuration"
+  | "settings"
   | "help";
 
 export interface SidebarItemDefinition {
