@@ -63,7 +63,9 @@ const ENDPOINT_OPTIONS: Array<{ value: PlaygroundEndpoint; labelKey: string }> =
 export default function StudioConfigPane({ configState, setConfigState }: StudioConfigPaneProps) {
   const t = useTranslations("common");
   const tp = useTranslations("playground");
-  const [collapsed, setCollapsed] = useState(false);
+  const [collapsed, setCollapsed] = useState(
+    () => typeof window !== "undefined" && window.innerWidth < 768
+  );
   // #4086: search/filter query for the Model dropdown — flat provider catalogs (e.g.
   // 50+ OpenRouter models) made the plain <select> unusable without scrolling.
   const [modelQuery, setModelQuery] = useState("");
@@ -153,10 +155,16 @@ export default function StudioConfigPane({ configState, setConfigState }: Studio
   }
 
   return (
-    <aside
-      className="w-72 shrink-0 border-l border-border bg-bg-alt flex flex-col overflow-y-auto"
-      aria-label={tp("configPane")}
-    >
+    <>
+      {/* Mobile backdrop */}
+      <div
+        className="fixed inset-0 z-30 bg-black/40 md:hidden"
+        onClick={() => setCollapsed(true)}
+      />
+      <aside
+        className="fixed inset-y-0 right-0 z-40 w-80 max-w-[85vw] shadow-2xl md:shadow-none md:static md:w-72 shrink-0 border-l border-border bg-surface md:bg-bg-alt flex flex-col overflow-y-auto"
+        aria-label={tp("configPane")}
+      >
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-border">
         <span className="text-xs font-semibold text-text-muted uppercase tracking-wider">
@@ -291,5 +299,6 @@ export default function StudioConfigPane({ configState, setConfigState }: Studio
         />
       </div>
     </aside>
+    </>
   );
 }

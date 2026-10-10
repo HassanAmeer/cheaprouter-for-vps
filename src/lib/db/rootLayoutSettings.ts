@@ -21,7 +21,7 @@ const ROOT_LAYOUT_SETTING_KEYS = [
 const ROOT_LAYOUT_SETTING_KEY_SET = new Set<string>(ROOT_LAYOUT_SETTING_KEYS);
 
 const DEFAULT_ROOT_LAYOUT_SETTINGS: RootLayoutSettings = {
-  instanceName: "OmniRoute",
+  instanceName: process.env.NEXT_PUBLIC_APP_NAME || "CheapRoute",
   customFaviconUrl: "",
   customFaviconBase64: "",
 };

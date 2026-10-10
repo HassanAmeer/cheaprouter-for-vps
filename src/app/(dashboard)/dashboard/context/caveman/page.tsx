@@ -1,5 +1,5 @@
-import CavemanContextPageClient from "./CavemanContextPageClient";
+import { redirect } from "next/navigation";
 
-export default function CavemanContextPage() {
-  return <CavemanContextPageClient />;
+export default function Page() {
+  redirect("/dashboard/models");
 }

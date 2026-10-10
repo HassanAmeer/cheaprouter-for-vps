@@ -1,7 +1,5 @@
-"use client";
+import { redirect } from "next/navigation";
 
-import { EngineConfigPage } from "@/shared/components/compression/EngineConfigPage";
-
-export default function SessionDedupPage() {
-  return <EngineConfigPage engineId="session-dedup" />;
+export default function Page() {
+  redirect("/dashboard/models");
 }

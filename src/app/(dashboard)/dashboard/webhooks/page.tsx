@@ -1,5 +1,5 @@
-import { WebhooksPageClient } from "./WebhooksPageClient";
+import { redirect } from "next/navigation";
 
-export default function WebhooksPage() {
-  return <WebhooksPageClient />;
+export default function Page() {
+  redirect("/dashboard/endpoint");
 }

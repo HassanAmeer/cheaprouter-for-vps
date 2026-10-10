@@ -1,5 +1,5 @@
-import { LogExportPageClient } from "./LogExportPageClient";
+import { redirect } from "next/navigation";
 
-export default function LogExportPage() {
-  return <LogExportPageClient />;
+export default function Page() {
+  redirect("/dashboard/logs");
 }

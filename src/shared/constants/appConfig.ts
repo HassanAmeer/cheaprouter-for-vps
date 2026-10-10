@@ -1,7 +1,7 @@
 import pkg from "../../../package.json" with { type: "json" };
 
 export const APP_CONFIG = {
-  name: "OmniRoute",
+  name: process.env.NEXT_PUBLIC_APP_NAME || "CheapRoute",
   description: "AI Gateway for Multi-Provider LLMs",
   version: pkg.version,
 };

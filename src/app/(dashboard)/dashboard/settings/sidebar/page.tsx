@@ -1,7 +1,5 @@
-"use client";
-
-import SidebarTab from "../components/SidebarTab";
+import { redirect } from "next/navigation";
 
 export default function SettingsSidebarPage() {
-  return <SidebarTab />;
+  redirect("/dashboard/settings/appearance");
 }

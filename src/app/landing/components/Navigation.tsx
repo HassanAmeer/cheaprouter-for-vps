@@ -1,9 +1,9 @@
+/* eslint-disable @next/next/no-img-element */
 "use client";
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
-import OmniRouteLogo from "@/shared/components/OmniRouteLogo";
 
 export default function Navigation() {
   const t = useTranslations("landing");
@@ -20,11 +20,15 @@ export default function Navigation() {
           onClick={() => router.push("/")}
           aria-label={t("navigateHome")}
         >
-          <div className="size-8 rounded bg-linear-to-br from-[#E54D5E] to-[#C93D4E] flex items-center justify-center text-white">
-            <OmniRouteLogo size={20} className="text-white" />
+          <div className="size-8 rounded-lg overflow-hidden border border-white/10 flex items-center justify-center shrink-0">
+            <img
+              src="/cheaprouter-logo.jpg"
+              alt={process.env.NEXT_PUBLIC_APP_NAME || "CheapRoute"}
+              className="size-full object-cover"
+            />
           </div>
           <h2 className="text-white text-lg sm:text-xl font-bold tracking-tight truncate sm:max-w-none max-w-[160px]">
-            {t("brandName")}
+            {process.env.NEXT_PUBLIC_APP_NAME || t("brandName")}
           </h2>
         </button>
 

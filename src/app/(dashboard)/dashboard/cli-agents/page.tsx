@@ -1,7 +1,5 @@
-import { getMachineId } from "@/shared/utils/machine";
-import CliAgentsPageClient from "./CliAgentsPageClient";
+import { redirect } from "next/navigation";
 
-export default async function CliAgentsPage() {
-  const machineId = await getMachineId();
-  return <CliAgentsPageClient machineId={machineId} />;
+export default function Page() {
+  redirect("/dashboard/playground");
 }

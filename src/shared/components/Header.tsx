@@ -28,7 +28,6 @@ import {
   SIDEBAR_SECTIONS,
   getSectionItems,
   type SidebarItemDefinition,
-  type HideableSidebarItemId,
 } from "@/shared/constants/sidebarVisibility";
 import { useIsElectron } from "@/shared/hooks/useElectron";
 
@@ -36,7 +35,7 @@ const isE2EMode = process.env.NEXT_PUBLIC_OMNIROUTE_E2E_MODE === "1";
 
 // Map sidebar item id → header description i18n key
 // "omni-skills" is an extended key for the /dashboard/omni-skills route (graceful fallback during deploy)
-const HEADER_DESCRIPTIONS: Partial<Record<HideableSidebarItemId | "omni-skills", string>> = {
+const HEADER_DESCRIPTIONS: Partial<Record<string, string>> = {
   home: "homeDescription",
   endpoints: "endpointDescription",
   "api-manager": "apiManagerDescription",
@@ -205,22 +204,26 @@ export default function Header({
 
   return (
     <header
-      className="sticky top-0 z-10 flex items-center justify-between border-b border-black/5 bg-bg px-8 py-4 dark:border-white/5"
+      className="sticky top-0 z-10 flex items-center justify-between border-b border-black/5 bg-bg px-4 sm:px-8 py-3 sm:py-4 dark:border-white/5"
       style={{
         paddingTop: isMacElectron
           ? "calc(1rem + var(--desktop-safe-top))"
-          : "calc(1rem + var(--ios-safe-top, 0px))",
+          : "calc(0.75rem + var(--ios-safe-top, 0px))",
       }}
     >
-      {/* Mobile menu button */}
-      <div className="flex items-center gap-3 lg:hidden">
+      {/* Mobile menu button and title */}
+      <div className="flex items-center gap-2.5 lg:hidden min-w-0">
         {showMenuButton && (
           <button
             onClick={onMenuClick}
-            className="text-text-main hover:text-primary transition-colors"
+            className="text-text-main hover:text-primary transition-colors p-1 -ms-1 shrink-0 flex items-center justify-center rounded-md hover:bg-black/5 dark:hover:bg-white/5"
+            aria-label="Open menu"
           >
-            <span className="material-symbols-outlined">menu</span>
+            <span className="material-symbols-outlined text-[24px]">menu</span>
           </button>
+        )}
+        {title && (
+          <h1 className="text-base font-semibold text-text-main truncate">{title}</h1>
         )}
       </div>
 

@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-img-element */
 "use client";
 
 import { useState, useEffect } from "react";
@@ -7,12 +8,6 @@ import useThemeStore, { COLOR_THEMES } from "@/store/themeStore";
 import { cn } from "@/shared/utils/cn";
 import { useTranslations } from "next-intl";
 import { useIsElectron } from "@/shared/hooks/useElectron";
-import {
-  COMBO_CONFIG_MODE_SETTING_KEY,
-  normalizeComboConfigMode,
-  type ComboConfigMode,
-} from "@/shared/constants/comboConfigMode";
-import AccountEmailVisibilitySetting from "./AccountEmailVisibilitySetting";
 
 export default function AppearanceTab() {
   const { theme, setTheme, isDark } = useTheme();
@@ -28,7 +23,7 @@ export default function AppearanceTab() {
     }
   }, [isElectron]);
   const [settings, setSettings] = useState<Record<string, any>>({});
-  const [loading, setLoading] = useState(true);
+  const [, setLoading] = useState(true);
   const [uploadError, setUploadError] = useState<{
     target: "logo" | "favicon";
     message: string;
@@ -37,21 +32,6 @@ export default function AppearanceTab() {
   const isValidHex = /^#([0-9a-fA-F]{6})$/.test(
     customThemeColor.startsWith("#") ? customThemeColor : `#${customThemeColor}`
   );
-  const showQuickStartOnHome = settings.showQuickStartOnHome !== false;
-  const showProviderTopologyOnHome = settings.showProviderTopologyOnHome !== false;
-  const autoRefreshProviderQuota = settings.autoRefreshProviderQuota === true;
-  const autoRefreshProviderQuotaInterval = Number.isFinite(
-    settings.autoRefreshProviderQuotaInterval
-  )
-    ? Number(settings.autoRefreshProviderQuotaInterval)
-    : 180;
-  const comboConfigMode = normalizeComboConfigMode(settings[COMBO_CONFIG_MODE_SETTING_KEY]);
-  const showCloudflaredTunnel = settings.hideEndpointCloudflaredTunnel !== true;
-  const showTailscaleFunnel = settings.hideEndpointTailscaleFunnel !== true;
-  const showNgrokTunnel = settings.hideEndpointNgrokTunnel !== true;
-
-  const getSettingsLabel = (key: string, fallback: string) =>
-    typeof t.has === "function" && t.has(key) ? t(key) : fallback;
 
   useEffect(() => {
     const unsubscribe = useThemeStore.subscribe((state) => {
@@ -99,6 +79,7 @@ export default function AppearanceTab() {
   };
 
   const presetThemes = [
+    { id: "opencode", color: COLOR_THEMES.opencode, label: "OpenCode (Silver/B&W)" },
     { id: "coral", color: COLOR_THEMES.coral, label: t("themeCoral") },
     { id: "blue", color: COLOR_THEMES.blue, label: t("themeBlue") },
     { id: "red", color: COLOR_THEMES.red, label: t("themeRed") },
@@ -107,36 +88,6 @@ export default function AppearanceTab() {
     { id: "orange", color: COLOR_THEMES.orange, label: t("themeOrange") },
     { id: "cyan", color: COLOR_THEMES.cyan, label: t("themeCyan") },
   ];
-
-  const comboConfigModeOptions: Array<{
-    id: ComboConfigMode;
-    icon: string;
-    title: string;
-    description: string;
-  }> = [
-    {
-      id: "guided",
-      icon: "route",
-      title: getSettingsLabel("comboConfigModeGuided", "Guided"),
-      description: getSettingsLabel(
-        "comboConfigModeGuidedDesc",
-        "Use the current step-by-step combo builder."
-      ),
-    },
-    {
-      id: "expert",
-      icon: "tune",
-      title: getSettingsLabel("comboConfigModeExpert", "Expert"),
-      description: getSettingsLabel(
-        "comboConfigModeExpertDesc",
-        "Show every combo option on one page and enable direct model entry."
-      ),
-    },
-  ];
-
-  const quotaRefreshInterval = Number.isFinite(autoRefreshProviderQuotaInterval)
-    ? Math.min(3600, Math.max(10, Math.floor(autoRefreshProviderQuotaInterval)))
-    : 180;
 
   return (
     <Card>
@@ -161,7 +112,7 @@ export default function AppearanceTab() {
           <div
             role="tablist"
             aria-label={t("themeSelectionAria")}
-            className="inline-flex p-1 rounded-lg bg-black/5 dark:bg-white/5"
+            className="inline-flex p-1 rounded-lg bg-black/5 dark:bg-white/5 max-w-full overflow-x-auto"
           >
             {["light", "dark", "system"].map((option) => (
               <button
@@ -170,283 +121,18 @@ export default function AppearanceTab() {
                 aria-selected={theme === option}
                 onClick={() => setTheme(option)}
                 className={cn(
-                  "flex items-center gap-2 px-4 py-2 rounded-md font-medium transition-all",
+                  "flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 rounded-md font-medium text-xs sm:text-sm transition-all shrink-0 whitespace-nowrap",
                   theme === option
                     ? "bg-white dark:bg-white/10 text-text-main shadow-sm"
                     : "text-text-muted hover:text-text-main"
                 )}
               >
-                <span className="material-symbols-outlined text-[20px]" aria-hidden="true">
+                <span className="material-symbols-outlined text-[18px] sm:text-[20px]" aria-hidden="true">
                   {option === "light" ? "light_mode" : option === "dark" ? "dark_mode" : "contrast"}
                 </span>
                 <span>{themeOptionLabels[option] || option}</span>
               </button>
             ))}
-          </div>
-        </div>
-
-        <div className="pt-4 border-t border-border">
-          <div className="mb-3">
-            <p className="font-medium">
-              {getSettingsLabel("homePinProviderQuotaToHome", "Pin Information to Home Page")}
-            </p>
-            <p className="text-sm text-text-muted">{t("homePinnedSectionsDesc")}</p>
-          </div>
-
-          <div className="rounded-lg border border-border bg-surface/40 overflow-hidden">
-            <div className="divide-y divide-border/70">
-              <div className="flex items-start justify-between gap-4 px-4 py-3">
-                <div>
-                  <p className="font-medium">{getSettingsLabel("homeQuickStart", "Quick Start")}</p>
-                  <p className="text-sm text-text-muted">
-                    {getSettingsLabel(
-                      "homeQuickStartDesc",
-                      "Show the Quick Start panel on the Home page."
-                    )}
-                  </p>
-                </div>
-                <Toggle
-                  checked={showQuickStartOnHome}
-                  onChange={async (checked) => {
-                    await updateSetting("showQuickStartOnHome", checked);
-                  }}
-                  disabled={loading}
-                />
-              </div>
-
-              <div className="flex items-start justify-between gap-4 px-4 py-3">
-                <div>
-                  <p className="font-medium">
-                    {getSettingsLabel("homeProviderTopology", "Provider Topology")}
-                  </p>
-                  <p className="text-sm text-text-muted">
-                    {getSettingsLabel(
-                      "homeProviderTopologyDesc",
-                      "Show the Provider Topology on the Home page."
-                    )}
-                  </p>
-                </div>
-                <Toggle
-                  checked={showProviderTopologyOnHome}
-                  onChange={async (checked) => {
-                    await updateSetting("showProviderTopologyOnHome", checked);
-                  }}
-                  disabled={loading}
-                />
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="pt-4 border-t border-border">
-          <div className="mb-3">
-            <p className="font-medium">
-              {getSettingsLabel("endpointTunnelVisibility", "Endpoint tunnel visibility")}
-            </p>
-            <p className="text-sm text-text-muted">
-              {getSettingsLabel(
-                "endpointTunnelVisibilityDesc",
-                "Hide tunnel controls from the Endpoint page without changing tunnel state."
-              )}
-            </p>
-          </div>
-
-          <div className="rounded-lg border border-border bg-surface/40 divide-y divide-border/70">
-            <div className="flex items-center justify-between gap-4 px-4 py-3">
-              <div>
-                <p className="font-medium">
-                  {getSettingsLabel("showCloudflareTunnel", "Cloudflare Quick Tunnel")}
-                </p>
-                <p className="text-sm text-text-muted">
-                  {getSettingsLabel(
-                    "showCloudflareTunnelDesc",
-                    "Show Cloudflare Quick Tunnel controls on the Endpoint page."
-                  )}
-                </p>
-              </div>
-              <Toggle
-                checked={showCloudflaredTunnel}
-                onChange={(checked) => updateSetting("hideEndpointCloudflaredTunnel", !checked)}
-                disabled={loading}
-              />
-            </div>
-
-            <div className="flex items-center justify-between gap-4 px-4 py-3">
-              <div>
-                <p className="font-medium">
-                  {getSettingsLabel("showTailscaleFunnel", "Tailscale Funnel")}
-                </p>
-                <p className="text-sm text-text-muted">
-                  {getSettingsLabel(
-                    "showTailscaleFunnelDesc",
-                    "Show Tailscale Funnel controls on the Endpoint page."
-                  )}
-                </p>
-              </div>
-              <Toggle
-                checked={showTailscaleFunnel}
-                onChange={(checked) => updateSetting("hideEndpointTailscaleFunnel", !checked)}
-                disabled={loading}
-              />
-            </div>
-
-            <div className="flex items-center justify-between gap-4 px-4 py-3">
-              <div>
-                <p className="font-medium">{getSettingsLabel("showNgrokTunnel", "ngrok Tunnel")}</p>
-                <p className="text-sm text-text-muted">
-                  {getSettingsLabel(
-                    "showNgrokTunnelDesc",
-                    "Show ngrok Tunnel controls on the Endpoint page."
-                  )}
-                </p>
-              </div>
-              <Toggle
-                checked={showNgrokTunnel}
-                onChange={(checked) => updateSetting("hideEndpointNgrokTunnel", !checked)}
-                disabled={loading}
-              />
-            </div>
-          </div>
-        </div>
-
-        <div className="pt-4 border-t border-border">
-          <div className="mb-3">
-            <p className="font-medium">
-              {getSettingsLabel("comboConfigMode", "Combo configuration mode")}
-            </p>
-            <p className="text-sm text-text-muted">
-              {getSettingsLabel(
-                "comboConfigModeDesc",
-                "Choose how the combo create and edit dialog is organized."
-              )}
-            </p>
-          </div>
-
-          <div
-            role="radiogroup"
-            aria-label={getSettingsLabel("comboConfigMode", "Combo configuration mode")}
-            className="grid grid-cols-1 sm:grid-cols-2 gap-2"
-          >
-            {comboConfigModeOptions.map((option) => {
-              const active = comboConfigMode === option.id;
-              return (
-                <button
-                  key={option.id}
-                  type="button"
-                  role="radio"
-                  aria-checked={active}
-                  disabled={loading}
-                  onClick={() => updateSetting(COMBO_CONFIG_MODE_SETTING_KEY, option.id)}
-                  className={cn(
-                    "flex items-start gap-3 rounded-lg border p-3 text-left transition-colors disabled:opacity-60",
-                    active
-                      ? "border-primary bg-primary/10 text-primary"
-                      : "border-border bg-surface/40 text-text-main hover:border-primary/40"
-                  )}
-                >
-                  <span className="material-symbols-outlined mt-0.5 text-[20px]" aria-hidden="true">
-                    {option.icon}
-                  </span>
-                  <span className="min-w-0">
-                    <span className="block text-sm font-semibold">{option.title}</span>
-                    <span
-                      className={cn(
-                        "mt-0.5 block text-xs",
-                        active ? "text-primary/80" : "text-text-muted"
-                      )}
-                    >
-                      {option.description}
-                    </span>
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-
-        <div className="pt-4 border-t border-border">
-          <div className="mb-3">
-            <p className="font-medium">
-              {getSettingsLabel("providerQuotaAutoRefresh", "Provider Quota auto refresh")}
-            </p>
-            <p className="text-sm text-text-muted">
-              {getSettingsLabel(
-                "providerQuotaAutoRefreshDesc",
-                "Refresh the Provider Limits view automatically while it stays open."
-              )}
-            </p>
-          </div>
-
-          <div className="rounded-lg border border-border bg-surface/40 divide-y divide-border/70">
-            <div className="flex items-center justify-between gap-4 px-4 py-3">
-              <div>
-                <p className="font-medium">
-                  {getSettingsLabel("providerQuotaAutoRefreshToggle", "Automatic refresh")}
-                </p>
-                <p className="text-sm text-text-muted">
-                  {getSettingsLabel(
-                    "providerQuotaAutoRefreshToggleDesc",
-                    "Refresh the quota view every few minutes while the page is visible."
-                  )}
-                </p>
-              </div>
-              <Toggle
-                checked={autoRefreshProviderQuota}
-                onChange={async (checked) => {
-                  if (checked && !settings.autoRefreshProviderQuotaInterval) {
-                    await updateSetting("autoRefreshProviderQuotaInterval", 180);
-                  }
-                  await updateSetting("autoRefreshProviderQuota", checked);
-                }}
-                disabled={loading}
-              />
-            </div>
-
-            <div className="flex items-center justify-between gap-4 px-4 py-3">
-              <div>
-                <p className="font-medium">
-                  {getSettingsLabel("providerQuotaAutoRefreshInterval", "Refresh interval")}
-                </p>
-                <p className="text-sm text-text-muted">
-                  {getSettingsLabel(
-                    "providerQuotaAutoRefreshIntervalDesc",
-                    "How often the quota view should refresh, in seconds."
-                  )}
-                </p>
-              </div>
-              <div className="flex items-center gap-2">
-                <input
-                  type="number"
-                  min={10}
-                  max={3600}
-                  step={10}
-                  value={quotaRefreshInterval}
-                  onChange={async (e) => {
-                    const next = Math.min(3600, Math.max(10, Number(e.target.value) || 180));
-                    await updateSetting("autoRefreshProviderQuotaInterval", next);
-                  }}
-                  disabled={loading || !autoRefreshProviderQuota}
-                  className="h-10 w-28 px-3 rounded-lg bg-surface border border-border text-sm text-text-main focus:outline-none focus:border-primary disabled:opacity-50"
-                />
-                <span className="text-xs text-text-muted">{t("seconds")}</span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <AccountEmailVisibilitySetting />
-
-        <div className="pt-4 border-t border-border">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="font-medium">{t("hideHealthLogs")}</p>
-              <p className="text-sm text-text-muted">{t("hideHealthLogsDesc")}</p>
-            </div>
-            <Toggle
-              checked={settings.hideHealthCheckLogs === true}
-              onChange={() => updateSetting("hideHealthCheckLogs", !settings.hideHealthCheckLogs)}
-              disabled={loading}
-            />
           </div>
         </div>
 
@@ -485,7 +171,7 @@ export default function AppearanceTab() {
               type="color"
               value={customThemeColor}
               onChange={(e) => setCustomThemeColor(e.target.value)}
-              className="h-10 w-12 rounded border border-border bg-surface cursor-pointer"
+              className="h-10 w-12 rounded border border-border bg-surface cursor-pointer shrink-0"
               aria-label={t("themeCustom")}
             />
             <input
@@ -494,9 +180,9 @@ export default function AppearanceTab() {
               onChange={(e) => setCustomThemeColor(e.target.value)}
               placeholder="#3b82f6"
               maxLength={7}
-              className={`flex-1 h-10 px-3 rounded-lg bg-surface border text-sm text-text-main focus:outline-none ${isValidHex ? "border-border focus:border-primary" : "border-red-400 focus:border-red-500"}`}
+              className={`flex-1 min-w-0 h-10 px-3 rounded-lg bg-surface border text-sm text-text-main focus:outline-none ${isValidHex ? "border-border focus:border-primary" : "border-red-400 focus:border-red-500"}`}
             />
-            <Button onClick={() => setCustomColorTheme(customThemeColor)} disabled={!isValidHex}>
+            <Button onClick={() => setCustomColorTheme(customThemeColor)} disabled={!isValidHex} className="shrink-0">
               {t("themeCreate")}
             </Button>
           </div>
@@ -516,18 +202,18 @@ export default function AppearanceTab() {
           </div>
 
           <div className="flex flex-col gap-4">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
               <div>
                 <p className="font-medium">{t("appName")}</p>
                 <p className="text-sm text-text-muted">{t("appNameDesc")}</p>
               </div>
               <input
                 type="text"
-                value={settings.instanceName || "OmniRoute"}
+                value={settings.instanceName ?? (process.env.NEXT_PUBLIC_APP_NAME || "CheapRoute")}
                 onChange={(e) => updateSetting("instanceName", e.target.value)}
-                placeholder="OmniRoute"
+                placeholder={process.env.NEXT_PUBLIC_APP_NAME || "CheapRoute"}
                 maxLength={100}
-                className="h-10 px-3 rounded-lg bg-surface border border-border text-sm text-text-main focus:outline-none focus:border-primary w-48"
+                className="h-10 px-3 rounded-lg bg-surface border border-border text-sm text-text-main focus:outline-none focus:border-primary w-full sm:w-48"
               />
             </div>
 
@@ -613,16 +299,26 @@ export default function AppearanceTab() {
               {uploadError?.target === "logo" && (
                 <p className="text-sm text-red-500">{uploadError.message}</p>
               )}
-              {(settings.customLogoBase64 || settings.customLogoUrl) && (
-                <div className="mt-2 p-3 bg-black/5 dark:bg-white/5 rounded-lg">
-                  <p className="text-xs text-text-muted mb-2">{t("logoPreview")}</p>
-                  <img
-                    src={settings.customLogoBase64 || settings.customLogoUrl}
-                    alt={t("appearanceLogoPreviewAlt")}
-                    className="h-12 w-auto max-w-full rounded"
-                  />
+              <div className="mt-2 p-3 bg-black/5 dark:bg-white/5 rounded-lg border border-border/50">
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-xs text-text-muted font-medium">{t("logoPreview")}</p>
+                  <span className="text-[11px] px-2 py-0.5 rounded font-medium bg-primary/10 text-primary">
+                    {settings.customLogoBase64 || settings.customLogoUrl ? "Custom" : "Default"}
+                  </span>
                 </div>
-              )}
+                <div className="flex items-center gap-3">
+                  <img
+                    src={settings.customLogoBase64 || settings.customLogoUrl || "/cheaprouter-logo.jpg"}
+                    alt={t("appearanceLogoPreviewAlt")}
+                    className="h-12 w-12 object-cover rounded-lg border border-border bg-surface shadow-xs"
+                  />
+                  <span className="text-xs text-text-muted">
+                    {settings.customLogoBase64 || settings.customLogoUrl
+                      ? "Custom logo active"
+                      : "Default CheapRoute crown logo active"}
+                  </span>
+                </div>
+              </div>
             </div>
 
             <div className="flex flex-col gap-2 pt-4 border-t border-border">
@@ -639,16 +335,6 @@ export default function AppearanceTab() {
                   placeholder="https://example.com/favicon.ico"
                   maxLength={2000}
                 />
-                {(settings.customFaviconUrl || settings.customFaviconBase64) && (
-                  <img
-                    src={settings.customFaviconBase64 || settings.customFaviconUrl}
-                    alt={t("appearanceFaviconPreviewAlt")}
-                    className="h-10 w-10 rounded border border-border object-contain bg-surface"
-                    onError={(e) => {
-                      e.currentTarget.style.display = "none";
-                    }}
-                  />
-                )}
               </div>
             </div>
 
@@ -713,16 +399,26 @@ export default function AppearanceTab() {
               {uploadError?.target === "favicon" && (
                 <p className="text-sm text-red-500">{uploadError.message}</p>
               )}
-              {(settings.customFaviconBase64 || settings.customFaviconUrl) && (
-                <div className="mt-2 p-3 bg-black/5 dark:bg-white/5 rounded-lg">
-                  <p className="text-xs text-text-muted mb-2">{t("faviconPreview")}</p>
-                  <img
-                    src={settings.customFaviconBase64 || settings.customFaviconUrl}
-                    alt={t("appearanceFaviconPreviewAlt")}
-                    className="h-8 w-8 rounded"
-                  />
+              <div className="mt-2 p-3 bg-black/5 dark:bg-white/5 rounded-lg border border-border/50">
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-xs text-text-muted font-medium">{t("faviconPreview")}</p>
+                  <span className="text-[11px] px-2 py-0.5 rounded font-medium bg-primary/10 text-primary">
+                    {settings.customFaviconBase64 || settings.customFaviconUrl ? "Custom" : "Default"}
+                  </span>
                 </div>
-              )}
+                <div className="flex items-center gap-3">
+                  <img
+                    src={settings.customFaviconBase64 || settings.customFaviconUrl || "/cheaprouter-logo.jpg"}
+                    alt={t("appearanceFaviconPreviewAlt")}
+                    className="h-8 w-8 object-cover rounded-md border border-border bg-surface shadow-xs"
+                  />
+                  <span className="text-xs text-text-muted">
+                    {settings.customFaviconBase64 || settings.customFaviconUrl
+                      ? "Custom favicon active"
+                      : "Default CheapRoute favicon active"}
+                  </span>
+                </div>
+              </div>
             </div>
 
             {isElectron && (

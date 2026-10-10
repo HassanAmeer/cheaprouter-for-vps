@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useMemo, Suspense } from "react";
-import { Card, CardSkeleton, Badge, Button, CollapsibleSection } from "@/shared/components";
+import { Card, CardSkeleton, Button } from "@/shared/components";
 import {
   AGGREGATOR_PROVIDER_IDS,
   EMBEDDING_RERANK_PROVIDER_IDS,
@@ -224,10 +224,11 @@ function ProvidersPageContent() {
   const [codexGlobalServiceMode, setCodexGlobalServiceMode] =
     useState<CodexGlobalServiceMode>("none");
   const [loading, setLoading] = useState(true);
-  const [showAllProviders, setShowAllProviders] = useState(false);
+  const [showAllProviders, _setShowAllProviders] = useState(false);
   const [showAddCompatibleModal, setShowAddCompatibleModal] = useState(false);
   const [showAddAnthropicCompatibleModal, setShowAddAnthropicCompatibleModal] = useState(false);
   const [showAddCcCompatibleModal, setShowAddCcCompatibleModal] = useState(false);
+  const [isCompatibleCollapsed, setIsCompatibleCollapsed] = useState(false);
   const [showImportFromFileModal, setShowImportFromFileModal] = useState(false);
   const [testingMode, setTestingMode] = useState<string | null>(null);
   const [testResults, setTestResults] = useState<any>(null);
@@ -261,7 +262,7 @@ function ProvidersPageContent() {
   };
   const t = useTranslations("providers");
   const tc = useTranslations("common");
-  const webCookieProvidersDesc = providerText(
+  const _webCookieProvidersDesc = providerText(
     t,
     "webCookieProvidersDesc",
     "These providers use browser web sessions, cookies, or web tokens instead of API keys. Open a provider to add the required session credential."
@@ -1014,11 +1015,21 @@ function ProvidersPageContent() {
               <div className="flex flex-col gap-4">
                 <div className="flex flex-wrap items-center gap-2">
                   <h2 className="text-xl font-semibold flex items-center gap-2 flex-1 min-w-0">
-                    {t("compatibleProviders")}{" "}
-                    <span
-                      className="size-2.5 rounded-full bg-orange-500"
-                      title={t("compatibleLabel")}
-                    />
+                    <button
+                      type="button"
+                      onClick={() => setIsCompatibleCollapsed((prev) => !prev)}
+                      className="flex items-center gap-2 hover:text-primary transition-colors cursor-pointer text-left focus:outline-none"
+                      title={isCompatibleCollapsed ? "Expand Custom Providers" : "Collapse Custom Providers"}
+                    >
+                      <span>Custom & Compatible Providers</span>
+                      <span
+                        className="size-2.5 rounded-full bg-orange-500"
+                        title={t("compatibleLabel")}
+                      />
+                      <span className="material-symbols-outlined text-[20px] text-text-muted transition-transform duration-200">
+                        {isCompatibleCollapsed ? "expand_more" : "expand_less"}
+                      </span>
+                    </button>
                     <ProviderCountBadge {...countConfigured(compatibleProviderEntriesAll)} />
                   </h2>
                   <div className="flex flex-wrap gap-2">
@@ -1064,31 +1075,35 @@ function ProvidersPageContent() {
                     </Button>
                   </div>
                 </div>
-                <p className="text-sm text-text-muted -mt-2">{t("compatibleProvidersDesc")}</p>
-                {compatibleProviders.length === 0 &&
-                anthropicCompatibleProviders.length === 0 &&
-                ccCompatibleProviders.length === 0 ? (
-                  <div className="flex items-center justify-center gap-2 py-2 border border-dashed border-border rounded-xl text-text-muted text-sm">
-                    <span className="material-symbols-outlined text-[18px]">extension</span>
-                    <span>{t("noCompatibleYet")}</span>
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 gap-3">
-                    {compatibleProviderEntries.map(
-                      ({ providerId, provider, stats, displayAuthType, toggleAuthType }) => (
-                        <HighlightableProviderCard
-                          key={providerId}
-                          providerId={providerId}
-                          provider={provider}
-                          stats={stats}
-                          authType={displayAuthType}
-                          onToggle={(active) =>
-                            handleToggleProvider(providerId, toggleAuthType, active)
-                          }
-                        />
-                      )
+                {!isCompatibleCollapsed && (
+                  <>
+                    <p className="text-sm text-text-muted -mt-2">{t("compatibleProvidersDesc")}</p>
+                    {compatibleProviders.length === 0 &&
+                    anthropicCompatibleProviders.length === 0 &&
+                    ccCompatibleProviders.length === 0 ? (
+                      <div className="flex items-center justify-center gap-2 py-2 border border-dashed border-border rounded-xl text-text-muted text-sm">
+                        <span className="material-symbols-outlined text-[18px]">extension</span>
+                        <span>{t("noCompatibleYet")}</span>
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 gap-3">
+                        {compatibleProviderEntries.map(
+                          ({ providerId, provider, stats, displayAuthType, toggleAuthType }) => (
+                            <HighlightableProviderCard
+                              key={providerId}
+                              providerId={providerId}
+                              provider={provider}
+                              stats={stats}
+                              authType={displayAuthType}
+                              onToggle={(active) =>
+                                handleToggleProvider(providerId, toggleAuthType, active)
+                              }
+                            />
+                          )
+                        )}
+                      </div>
                     )}
-                  </div>
+                  </>
                 )}
               </div>
             )}

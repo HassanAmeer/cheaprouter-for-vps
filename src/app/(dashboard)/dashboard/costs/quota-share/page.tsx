@@ -1,7 +1,5 @@
-import QuotaSharePageClient from "./QuotaSharePageClient";
+import { redirect } from "next/navigation";
 
-export const dynamic = "force-dynamic";
-
-export default function QuotaSharePage() {
-  return <QuotaSharePageClient />;
+export default function Page() {
+  redirect("/dashboard/costs/pricing");
 }

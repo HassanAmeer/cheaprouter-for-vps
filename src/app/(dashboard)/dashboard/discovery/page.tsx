@@ -1,5 +1,5 @@
-import { DiscoveryPageClient } from "./DiscoveryPageClient";
+import { redirect } from "next/navigation";
 
-export default function DiscoveryPage() {
-  return <DiscoveryPageClient />;
+export default function Page() {
+  redirect("/dashboard/providers");
 }

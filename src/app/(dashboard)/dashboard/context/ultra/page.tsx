@@ -1,7 +1,5 @@
-"use client";
+import { redirect } from "next/navigation";
 
-import { EngineConfigPage } from "@/shared/components/compression/EngineConfigPage";
-
-export default function UltraPage() {
-  return <EngineConfigPage engineId="ultra" />;
+export default function Page() {
+  redirect("/dashboard/models");
 }

@@ -19,13 +19,12 @@ export const viewport: Viewport = {
 
 export async function generateMetadata() {
   const settings = await getRootLayoutSettings();
-  const instanceName = settings.instanceName;
+  const instanceName = settings.instanceName || process.env.NEXT_PUBLIC_APP_NAME || "CheapRoute";
   const customFaviconUrl = settings.customFaviconUrl || settings.customFaviconBase64;
 
   return {
     title: `${instanceName} — AI Gateway for Multi-Provider LLMs`,
-    description:
-      "OmniRoute is an AI gateway for multi-provider LLMs. One endpoint for all your AI providers.",
+    description: `${instanceName} is an AI gateway for multi-provider LLMs. One endpoint for all your AI providers.`,
     manifest: "/manifest.webmanifest",
     applicationName: instanceName,
     appleWebApp: {
@@ -40,11 +39,12 @@ export async function generateMetadata() {
       icon: customFaviconUrl
         ? "/api/settings/favicon"
         : [
+            { url: "/cheaprouter-logo.jpg", sizes: "any" },
             { url: "/favicon.ico", sizes: "any" },
             { url: "/favicon.svg", type: "image/svg+xml" },
             { url: "/icon-512.png", type: "image/png", sizes: "512x512" },
           ],
-      apple: [{ url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" }],
+      apple: [{ url: "/cheaprouter-logo.jpg", sizes: "180x180", type: "image/jpeg" }],
     },
   };
 }

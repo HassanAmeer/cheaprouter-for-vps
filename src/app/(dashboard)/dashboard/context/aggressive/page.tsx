@@ -1,7 +1,5 @@
-"use client";
+import { redirect } from "next/navigation";
 
-import { EngineConfigPage } from "@/shared/components/compression/EngineConfigPage";
-
-export default function AggressivePage() {
-  return <EngineConfigPage engineId="aggressive" />;
+export default function Page() {
+  redirect("/dashboard/models");
 }

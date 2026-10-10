@@ -42,16 +42,16 @@ export default function StudioTopBar({ activeTab, onTabChange, metrics, exportSt
 
   return (
     <>
-      <div className="flex items-center justify-between px-4 py-2 border-b border-border bg-bg-alt shrink-0">
+      <div className="flex items-center justify-between gap-2 px-3 sm:px-4 py-2 border-b border-border bg-bg-alt shrink-0">
         {/* Tabs */}
-        <div className="flex items-center gap-1" role="tablist">
+        <div className="flex items-center gap-1 overflow-x-auto" role="tablist">
           {TABS.map((tab) => (
             <button
               key={tab.id}
               role="tab"
               aria-selected={activeTab === tab.id}
               onClick={() => onTabChange(tab.id)}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+              className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-md text-xs sm:text-sm font-medium transition-colors shrink-0 whitespace-nowrap ${
                 activeTab === tab.id
                   ? "bg-primary/10 text-primary"
                   : "text-text-muted hover:text-text-main hover:bg-black/5 dark:hover:bg-white/5"

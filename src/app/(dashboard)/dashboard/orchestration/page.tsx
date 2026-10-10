@@ -1,16 +1,5 @@
-import { Suspense } from "react";
-import { getTranslations } from "next-intl/server";
-import OrchestrationPageClient from "./OrchestrationPageClient";
+import { redirect } from "next/navigation";
 
-export async function generateMetadata() {
-  const t = await getTranslations("orchestration");
-  return { title: t("title"), description: t("description") };
-}
-
-export default function OrchestrationPage() {
-  return (
-    <Suspense fallback={null}>
-      <OrchestrationPageClient />
-    </Suspense>
-  );
+export default function Page() {
+  redirect("/dashboard/playground");
 }

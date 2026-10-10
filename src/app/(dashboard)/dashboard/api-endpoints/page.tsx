@@ -1,7 +1,5 @@
-"use client";
+import { redirect } from "next/navigation";
 
-import ApiEndpointsTab from "../endpoint/ApiEndpointsTab";
-
-export default function ApiEndpointsPage() {
-  return <ApiEndpointsTab />;
+export default function Page() {
+  redirect("/dashboard/endpoint");
 }

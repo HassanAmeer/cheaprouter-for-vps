@@ -1,7 +1,5 @@
-"use client";
+import { redirect } from "next/navigation";
 
-import { EngineConfigPage } from "@/shared/components/compression/EngineConfigPage";
-
-export default function HeadroomPage() {
-  return <EngineConfigPage engineId="headroom" />;
+export default function Page() {
+  redirect("/dashboard/models");
 }

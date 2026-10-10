@@ -1,8 +1,5 @@
-import { getMachineId } from "@/shared/utils/machine";
-import CliCodePageClient from "./CliCodePageClient";
-import { getCompanionTargets } from "@/lib/cli-helper/companionTargets";
+import { redirect } from "next/navigation";
 
-export default async function CliCodePage() {
-  const machineId = await getMachineId();
-  return <CliCodePageClient machineId={machineId} companionTargets={getCompanionTargets()} />;
+export default function Page() {
+  redirect("/dashboard/playground");
 }

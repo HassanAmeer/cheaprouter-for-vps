@@ -58,6 +58,7 @@ const useThemeStore = create<ThemeState>()(
 );
 
 export const COLOR_THEMES: Record<string, string> = {
+  opencode: "#cbd5e1",
   coral: "#e54d5e",
   blue: "#3b82f6",
   red: "#ef4444",

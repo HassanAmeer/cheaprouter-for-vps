@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-img-element */
 "use client";
 
 import {
@@ -19,7 +20,6 @@ import {
   toggleExpandedSection,
 } from "@/shared/utils/sidebarExpansionState";
 import { APP_CONFIG } from "@/shared/constants/appConfig";
-import OmniRouteLogo from "./OmniRouteLogo";
 import Button from "./Button";
 import Input from "./Input";
 import { ConfirmModal } from "./Modal";
@@ -478,7 +478,7 @@ export default function Sidebar({
     setIsShuttingDown(true);
     try {
       await fetch("/api/shutdown", { method: "POST" });
-    } catch (e) {
+    } catch {
       // Expected to fail as server shuts down
     }
     setIsShuttingDown(false);
@@ -490,7 +490,7 @@ export default function Sidebar({
     setIsRestarting(true);
     try {
       await fetch("/api/restart", { method: "POST" });
-    } catch (e) {
+    } catch {
       // Expected to fail as server restarts
     }
     setIsRestarting(false);
@@ -717,15 +717,19 @@ export default function Sidebar({
             prefetch={false}
             className={cn("flex items-center", collapsed ? "justify-center" : "gap-2.5")}
           >
-            <div className="flex items-center justify-center size-8 rounded bg-linear-to-br from-[#E54D5E] to-[#C93D4E] shrink-0">
+            <div className="flex items-center justify-center size-8 rounded-lg overflow-hidden bg-surface-hover/50 shrink-0 border border-border">
               {customLogo ? (
                 <img
                   src={customLogo}
                   alt={customAppName || APP_CONFIG.name}
-                  className="size-5 object-contain"
+                  className="size-full object-contain"
                 />
               ) : (
-                <OmniRouteLogo size={18} className="text-white" />
+                <img
+                  src="/cheaprouter-logo.jpg"
+                  alt={customAppName || APP_CONFIG.name}
+                  className="size-full object-cover"
+                />
               )}
             </div>
             {!collapsed && (

@@ -1,6 +1,5 @@
-"use client";
-import ProxyTab from "@/app/(dashboard)/dashboard/settings/components/ProxyTab";
+import { redirect } from "next/navigation";
 
-export default function ProxyPage() {
-  return <ProxyTab />;
+export default function Page() {
+  redirect("/dashboard/endpoint");
 }

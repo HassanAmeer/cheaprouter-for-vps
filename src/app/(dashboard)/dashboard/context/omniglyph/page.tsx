@@ -1,5 +1,5 @@
-import OmniglyphContextPageClient from "./OmniglyphContextPageClient";
+import { redirect } from "next/navigation";
 
-export default function OmniglyphContextPage() {
-  return <OmniglyphContextPageClient />;
+export default function Page() {
+  redirect("/dashboard/models");
 }

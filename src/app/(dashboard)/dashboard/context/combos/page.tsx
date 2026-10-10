@@ -1,5 +1,5 @@
-import CompressionCombosPageClient from "./CompressionCombosPageClient";
+import { redirect } from "next/navigation";
 
-export default function CompressionCombosPage() {
-  return <CompressionCombosPageClient />;
+export default function Page() {
+  redirect("/dashboard/models");
 }

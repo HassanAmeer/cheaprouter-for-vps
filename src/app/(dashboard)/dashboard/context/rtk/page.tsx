@@ -1,5 +1,5 @@
-import RtkContextPageClient from "./RtkContextPageClient";
+import { redirect } from "next/navigation";
 
-export default function RtkContextPage() {
-  return <RtkContextPageClient />;
+export default function Page() {
+  redirect("/dashboard/models");
 }

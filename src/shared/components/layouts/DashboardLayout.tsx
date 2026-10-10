@@ -86,7 +86,7 @@ export default function DashboardLayout({ children }) {
       {/* Mobile sidebar overlay */}
       {sidebarOpen && (
         <div
-          className="fixed inset-0 z-40 bg-black/20 lg:hidden"
+          className="fixed inset-0 z-40 bg-black/50 backdrop-blur-[2px] lg:hidden animate-in fade-in duration-200"
           onClick={() => setSidebarOpen(false)}
         />
       )}
@@ -123,7 +123,7 @@ export default function DashboardLayout({ children }) {
           onOpenCommandPalette={() => setCommandPaletteOpen(true)}
         />
         {!isE2EMode && <MaintenanceBanner />}
-        <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar p-4 sm:p-6 lg:p-10">
+        <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar p-3 sm:p-6 lg:p-8">
           {/* Fluid up to a 4K cap (3840px): content follows the viewport on large
               monitors and only centers (side gutters) beyond ~4K, instead of the prior
               1280px cap that left big empty margins on wide screens. */}

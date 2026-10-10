@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
+/* eslint-disable @next/next/no-img-element */
 import { useTranslations } from "next-intl";
-import OmniRouteLogo from "@/shared/components/OmniRouteLogo";
 
 export default function Footer() {
   const t = useTranslations("landing");
@@ -14,10 +14,14 @@ export default function Footer() {
           {/* Brand */}
           <div className="col-span-2 lg:col-span-2">
             <div className="flex items-center gap-3 mb-6">
-              <div className="size-6 rounded bg-[#E54D5E] flex items-center justify-center text-white">
-                <OmniRouteLogo size={16} className="text-white" />
+              <div className="size-7 rounded-lg overflow-hidden border border-white/10 flex items-center justify-center shrink-0">
+                <img
+                  src="/cheaprouter-logo.jpg"
+                  alt={process.env.NEXT_PUBLIC_APP_NAME || "CheapRoute"}
+                  className="size-full object-cover"
+                />
               </div>
-              <h3 className="text-white text-lg font-bold">{t("brandName")}</h3>
+              <h3 className="text-white text-lg font-bold">{process.env.NEXT_PUBLIC_APP_NAME || t("brandName")}</h3>
             </div>
             <p className="text-gray-500 text-sm max-w-xs mb-6 break-words">{t("footerTagline")}</p>
             <div className="flex gap-4">
