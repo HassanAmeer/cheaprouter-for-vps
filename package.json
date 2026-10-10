@@ -92,7 +92,7 @@
   },
   "homepage": "https://omniroute.online",
   "scripts": {
-    "dev": "node --max-old-space-size=8192 scripts/dev/run-next.mjs dev",
+    "dev": "node --max-old-space-size=3072 scripts/dev/run-next.mjs dev",
     "dev:bun": "bun scripts/dev/run-next.mjs dev",
     "start": "node scripts/dev/run-next.mjs start",
     "build": "node scripts/build/build-next-isolated.mjs",
