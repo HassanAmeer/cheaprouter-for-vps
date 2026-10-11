@@ -90,7 +90,7 @@ export function buildDroidCustomModels(
 
   const entries: DroidCustomModelEntry[] = models.map((m, i) => ({
     model: m,
-    id: `custom:OmniRoute-${i}`,
+    id: `custom:CheapRouter-${i}`,
     index: i,
     baseUrl: opts.baseUrl,
     apiKey: opts.apiKey,
@@ -105,7 +105,7 @@ export function buildDroidCustomModels(
     entries.unshift({ ...defaultEntry, index: 0 });
     entries.forEach((e, i) => {
       e.index = i;
-      e.id = `custom:OmniRoute-${i}`;
+      e.id = `custom:CheapRouter-${i}`;
     });
   }
 

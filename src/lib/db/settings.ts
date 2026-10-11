@@ -273,6 +273,7 @@ export async function getSettings() {
     // arrays preserve prior behaviour; opt-in only.
     modelVisibilityAllowlist: [],
     modelVisibilityDenylist: [],
+    publishedProviders: [],
     // #6977: Opt-in per-connection auto-ping that warms a Codex OAuth connection's
     // quota window right after it resets, so the first real request doesn't land in
     // a cold window. `connections` maps connection id -> enabled. Default empty map

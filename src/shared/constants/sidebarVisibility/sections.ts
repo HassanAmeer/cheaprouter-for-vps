@@ -21,7 +21,9 @@ const OMNI_PROXY_ITEMS: readonly SidebarItemDefinition[] = [
     id: "endpoints",
     href: "/dashboard/endpoint",
     i18nKey: "endpoints",
+    labelFallback: "APIs & Documentation",
     subtitleKey: "endpointsSubtitle",
+    subtitleFallback: "API endpoints, documentation & integration guides",
     icon: "api",
   },
   {
@@ -103,13 +105,6 @@ const DEVTOOLS_ITEMS: readonly SidebarItemDefinition[] = [
     i18nKey: "consoleLogs",
     subtitleKey: "consoleLogsSubtitle",
     icon: "terminal",
-  },
-  {
-    id: "playground",
-    href: "/dashboard/playground",
-    i18nKey: "playground",
-    subtitleKey: "playgroundSubtitle",
-    icon: "science",
   },
 ];
 

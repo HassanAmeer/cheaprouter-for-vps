@@ -265,7 +265,7 @@ export function applyGrokBuildConfig(toml: string, options: GrokBuildApplyOption
     baseUrl: options.baseUrl,
     apiKey: options.apiKey,
     contextWindow: options.contextWindow,
-    name: "OmniRoute",
+    name: "CheapRouter",
   });
   next = setSectionString(next, MODELS_SECTION, "default", GROK_MAIN_MODEL_SLOT);
 
@@ -281,7 +281,7 @@ export function applyGrokBuildConfig(toml: string, options: GrokBuildApplyOption
           baseUrl: options.baseUrl,
           apiKey: options.apiKey,
           contextWindow: selected.contextWindow,
-          name: `OmniRoute ${type}`,
+          name: `CheapRouter ${type}`,
         });
         next = setSectionString(next, SUBAGENT_MODELS_SECTION, type, slot);
       } else {

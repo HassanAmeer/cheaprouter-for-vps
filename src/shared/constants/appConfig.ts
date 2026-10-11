@@ -1,7 +1,7 @@
 import pkg from "../../../package.json" with { type: "json" };
 
 export const APP_CONFIG = {
-  name: process.env.NEXT_PUBLIC_APP_NAME || "CheapRoute",
+  name: process.env.NEXT_PUBLIC_APP_NAME || "CheapRouter",
   description: "AI Gateway for Multi-Provider LLMs",
   version: pkg.version,
 };

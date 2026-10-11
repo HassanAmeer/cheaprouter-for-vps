@@ -19,7 +19,7 @@ export const viewport: Viewport = {
 
 export async function generateMetadata() {
   const settings = await getRootLayoutSettings();
-  const instanceName = settings.instanceName || process.env.NEXT_PUBLIC_APP_NAME || "CheapRoute";
+  const instanceName = settings.instanceName || process.env.NEXT_PUBLIC_APP_NAME || "CheapRouter";
   const customFaviconUrl = settings.customFaviconUrl || settings.customFaviconBase64;
 
   return {
@@ -99,9 +99,13 @@ export default async function RootLayout({ children }) {
             `,
           }}
         />
-        {/* Material Symbols icon font is self-hosted via globals.css
-            (@import "material-symbols/outlined.css") so icons render even when
-            the Google Fonts CDN is unreachable (#3695). */}
+        {/* Material Symbols icon font is loaded from Google Fonts CDN with self-hosted fallback via globals.css (#3695). */}
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link
+          rel="stylesheet"
+          href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=block"
+        />
         <script
           dangerouslySetInnerHTML={{
             __html: `

@@ -808,7 +808,7 @@ export default function UsageDashboardClient() {
             <p className="text-xs text-text-muted mt-1 max-w-sm mx-auto">
               {searchQuery
                 ? "No providers or models matched your search query."
-                : "No provider has consumed tokens yet in the selected time range. Send requests through the OmniRoute endpoint to see live metrics."}
+                : "No provider has consumed tokens yet in the selected time range. Send requests through the CheapRouter endpoint to see live metrics."}
             </p>
           </Card>
         ) : (

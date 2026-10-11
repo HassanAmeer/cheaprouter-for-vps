@@ -90,7 +90,7 @@ export const buildQwenCodeModel = ({
 
   return {
     id: normalizedModel,
-    name: `${String(modelName || normalizedModel).trim()} (OmniRoute)`,
+    name: `${String(modelName || normalizedModel).trim()} (CheapRouter)`,
     envKey: QWEN_CODE_ENV_KEY,
     baseUrl: normalizedBaseUrl,
   };

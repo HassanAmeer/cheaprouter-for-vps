@@ -1,7 +1,7 @@
 import type { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
-  const appName = process.env.NEXT_PUBLIC_APP_NAME || "CheapRoute";
+  const appName = process.env.NEXT_PUBLIC_APP_NAME || "CheapRouter";
   return {
     name: `${appName} AI Gateway`,
     short_name: appName,
@@ -47,7 +47,7 @@ export default function manifest(): MetadataRoute.Manifest {
         sizes: "1280x720",
         type: "image/png",
         form_factor: "wide",
-        label: "OmniRoute Dashboard",
+        label: "CheapRouter Dashboard",
       },
     ],
   };

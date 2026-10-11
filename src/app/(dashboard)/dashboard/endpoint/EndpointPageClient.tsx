@@ -12,6 +12,8 @@ import McpDashboardPage from "./components/MCPDashboard";
 import NotionSourceCard from "./components/NotionSourceCard";
 import ObsidianSourceCard from "./components/ObsidianSourceCard";
 import VscodeTokenAliasCard from "./VscodeTokenAliasCard";
+import ShowcaseProvidersCard from "./components/ShowcaseProvidersCard";
+import ApiDocsIntegrationHub from "./components/ApiDocsIntegrationHub";
 
 const BUILD_TIME_CLOUD_URL = process.env.NEXT_PUBLIC_CLOUD_URL || null;
 const CLOUD_ACTION_TIMEOUT_MS = 15000;
@@ -155,6 +157,7 @@ export default function APIPageClient({ machineId }: Readonly<APIPageClientProps
   const [cloudflaredStatus, setCloudflaredStatus] = useState<CloudflaredTunnelStatus | null>(null);
   const [cloudflaredBusy, setCloudflaredBusy] = useState(false);
   const [cloudflaredNotice, setCloudflaredNotice] = useState<TunnelNotice | null>(null);
+  const [showCloudflaredInfoModal, setShowCloudflaredInfoModal] = useState(false);
   const [tailscaleStatus, setTailscaleStatus] = useState<TailscaleTunnelStatus | null>(null);
   const [tailscaleBusy, setTailscaleBusy] = useState(false);
   const [tailscaleNotice, setTailscaleNotice] = useState<TunnelNotice | null>(null);
@@ -843,7 +846,7 @@ export default function APIPageClient({ machineId }: Readonly<APIPageClientProps
           type: "info",
           message: translateOrFallback(
             "tailscaleWaitingForLogin",
-            "Complete the Tailscale login in the opened browser tab. OmniRoute will retry automatically."
+            "Complete the Tailscale login in the opened browser tab. CheapRouter will retry automatically."
           ),
         });
 
@@ -871,7 +874,7 @@ export default function APIPageClient({ machineId }: Readonly<APIPageClientProps
           type: "info",
           message: translateOrFallback(
             "tailscaleWaitingForFunnel",
-            "Enable Funnel for this device in the opened browser tab. OmniRoute will keep polling."
+            "Enable Funnel for this device in the opened browser tab. CheapRouter will keep polling."
           ),
         });
 
@@ -1282,6 +1285,12 @@ export default function APIPageClient({ machineId }: Readonly<APIPageClientProps
         </div>
       ) : null}
 
+      {/* Public Showcase Providers Card */}
+      {activeEndpointTab === "apis" ? <ShowcaseProvidersCard /> : null}
+
+      {/* Website Integration API Documentation Hub */}
+      {activeEndpointTab === "apis" ? <ApiDocsIntegrationHub /> : null}
+
       {/* Endpoint Card */}
       <Card>
         <h2 className="text-lg font-semibold mb-4">{t("title")}</h2>
@@ -1465,10 +1474,36 @@ export default function APIPageClient({ machineId }: Readonly<APIPageClientProps
                 <span className="material-symbols-outlined text-[18px] text-orange-400 shrink-0">
                   cloud_queue
                 </span>
-                <div className="flex-1 min-w-0">
+                <div className="flex-1 min-w-0 flex items-center gap-1.5 flex-wrap">
                   <span className="text-sm font-medium">
                     {translateOrFallback("cloudflaredTitle", "Cloudflare Quick Tunnel")}
                   </span>
+                  <button
+                    type="button"
+                    onClick={() => setShowCloudflaredInfoModal(true)}
+                    className="inline-flex items-center justify-center text-text-muted hover:text-orange-400 transition-colors p-0.5 rounded hover:bg-surface/80"
+                    title={translateOrFallback(
+                      "cloudflaredGuideTooltip",
+                      "View Cloudflare Tunnel Guide & IP Masking Details"
+                    )}
+                    aria-label="Cloudflare Tunnel Information"
+                  >
+                    <span className="material-symbols-outlined text-[16px]">info</span>
+                  </button>
+                  {cloudflaredStatus?.running && cloudflaredStatus.apiUrl && (
+                    <button
+                      onClick={() => void copy(cloudflaredStatus.apiUrl!, "cf_tunnel_inline")}
+                      title={`Copy ${cloudflaredStatus.apiUrl}`}
+                      className="inline-flex items-center gap-0.5 text-[10px] text-text-muted hover:text-text transition-colors"
+                    >
+                      <code className="font-mono">
+                        {cloudflaredStatus.apiUrl.replace(/^https?:\/\//, "")}
+                      </code>
+                      <span className="material-symbols-outlined text-[10px] opacity-60">
+                        {copied === "cf_tunnel_inline" ? "check" : "content_copy"}
+                      </span>
+                    </button>
+                  )}
                 </div>
                 <span
                   className={`inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-medium shrink-0 ${cloudflaredPhaseMeta[cloudflaredPhase].className}`}
@@ -2137,7 +2172,7 @@ export default function APIPageClient({ machineId }: Readonly<APIPageClientProps
             <p className="text-sm mt-2">
               {translateOrFallback(
                 "cloudUploadWarning",
-                "Cloud sync is disabled by default on new installations. Enabling it uploads provider API keys, OAuth access/refresh tokens, OmniRoute API keys, and configuration to the destination above, now and during future syncs. This is separate from local Storage backups. Only enable it if you trust that server."
+                "Cloud sync is disabled by default on new installations. Enabling it uploads provider API keys, OAuth access/refresh tokens, CheapRouter API keys, and configuration to the destination above, now and during future syncs. This is separate from local Storage backups. Only enable it if you trust that server."
               )}
             </p>
             <label className="flex items-start gap-2 mt-3 text-sm">
@@ -2297,7 +2332,7 @@ export default function APIPageClient({ machineId }: Readonly<APIPageClientProps
             <p className="text-sm font-medium text-blue-300">
               {translateOrFallback(
                 "tailscaleInstallIntro",
-                "Installs Tailscale on this machine and prepares OmniRoute to enable Funnel."
+                "Installs Tailscale on this machine and prepares CheapRouter to enable Funnel."
               )}
             </p>
             <p className="mt-2 text-sm text-blue-200/80">
@@ -2348,6 +2383,146 @@ export default function APIPageClient({ machineId }: Readonly<APIPageClientProps
               disabled={tailscaleInstallBusy}
             >
               {tc("cancel")}
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Cloudflare Tunnel Information & Guide Modal */}
+      <Modal
+        isOpen={showCloudflaredInfoModal}
+        title={
+          <div className="flex items-center gap-2">
+            <span className="material-symbols-outlined text-orange-400 text-[20px]">
+              cloud_queue
+            </span>
+            <span className="font-semibold text-text">
+              Cloudflare Quick Tunnel Guide & IP Masking
+            </span>
+          </div>
+        }
+        size="lg"
+        onClose={() => setShowCloudflaredInfoModal(false)}
+      >
+        <div className="flex flex-col gap-4 text-sm text-text">
+          {/* Section 1: Overview & IP Protection */}
+          <div className="rounded-xl border border-orange-500/20 bg-orange-500/5 p-4 flex flex-col gap-2">
+            <div className="flex items-center gap-2 text-orange-400 font-medium">
+              <span className="material-symbols-outlined text-[18px]">shield</span>
+              <span>Why Use Cloudflare Quick Tunnel?</span>
+            </div>
+            <p className="text-xs text-text-muted leading-relaxed">
+              Cloudflare Quick Tunnel creates an instant, encrypted reverse proxy from Cloudflare’s
+              global edge network directly to this CheapRouter instance.
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-1">
+              <div className="rounded-lg border border-border/70 bg-surface/80 p-2.5">
+                <div className="font-semibold text-xs text-orange-300 flex items-center gap-1.5 mb-1">
+                  <span className="material-symbols-outlined text-[14px]">visibility_off</span>
+                  <span>IP Masking & Privacy</span>
+                </div>
+                <p className="text-[11px] text-text-muted leading-normal">
+                  Hides your host server’s real public IP address. Anyone accessing your AI
+                  endpoints only sees Cloudflare edge IPs, shielding your server from direct scans
+                  and DDoS attacks.
+                </p>
+              </div>
+              <div className="rounded-lg border border-border/70 bg-surface/80 p-2.5">
+                <div className="font-semibold text-xs text-orange-300 flex items-center gap-1.5 mb-1">
+                  <span className="material-symbols-outlined text-[14px]">public</span>
+                  <span>No Custom Domain Needed</span>
+                </div>
+                <p className="text-[11px] text-text-muted leading-normal">
+                  If you do not own a domain or have not set up DNS records yet, Cloudflare
+                  automatically provisions a free, SSL-secured{" "}
+                  <code className="font-mono text-[10px]">*.trycloudflare.com</code> address.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Section 2: How It Works & How to Connect */}
+          <div className="rounded-xl border border-border/70 bg-surface/50 p-4 flex flex-col gap-3">
+            <div className="flex items-center gap-2 text-text font-medium">
+              <span className="material-symbols-outlined text-[18px] text-primary">
+                play_circle
+              </span>
+              <span>How to Connect & Share</span>
+            </div>
+
+            <ol className="list-decimal list-inside space-y-2 text-xs text-text-muted leading-relaxed">
+              <li>
+                <strong className="text-text">One-Click in Dashboard:</strong> Click the{" "}
+                <strong className="text-text">&ldquo;Enable Tunnel&rdquo;</strong> button above.
+                CheapRouter automatically starts the tunnel and extracts your unique public HTTPS URL.
+              </li>
+              <li>
+                <strong className="text-text">Or Run via CLI in Terminal:</strong> If you prefer to
+                launch or test it manually from your terminal / VPS:
+                <div className="mt-1 flex items-center justify-between rounded-lg border border-border bg-background px-3 py-1.5 font-mono text-[11px] text-text">
+                  <code>cloudflared tunnel --url http://localhost:20128</code>
+                  <button
+                    onClick={() =>
+                      void copy("cloudflared tunnel --url http://localhost:20128", "cf_cmd")
+                    }
+                    className="ml-2 text-text-muted hover:text-text p-1 transition-colors flex items-center gap-1"
+                    title="Copy command"
+                  >
+                    <span className="material-symbols-outlined text-[14px]">
+                      {copied === "cf_cmd" ? "check" : "content_copy"}
+                    </span>
+                  </button>
+                </div>
+              </li>
+              <li>
+                <strong className="text-text">Configure AI Clients:</strong> Set the generated
+                tunnel URL in OpenCode, Cursor, Claude Code, or any OpenAI-compatible app:
+                <div className="mt-1 flex items-center justify-between rounded-lg border border-border bg-background px-3 py-1.5 font-mono text-[11px] text-text">
+                  <code>
+                    export OPENAI_BASE_URL=&quot;
+                    {cloudflaredStatus?.apiUrl || "https://<your-subdomain>.trycloudflare.com/v1"}
+                    &quot;
+                  </code>
+                  <button
+                    onClick={() =>
+                      void copy(
+                        `export OPENAI_BASE_URL="${cloudflaredStatus?.apiUrl || "https://<your-subdomain>.trycloudflare.com/v1"}"`,
+                        "cf_env"
+                      )
+                    }
+                    className="ml-2 text-text-muted hover:text-text p-1 transition-colors flex items-center gap-1"
+                    title="Copy env var"
+                  >
+                    <span className="material-symbols-outlined text-[14px]">
+                      {copied === "cf_env" ? "check" : "content_copy"}
+                    </span>
+                  </button>
+                </div>
+              </li>
+            </ol>
+          </div>
+
+          {/* Section 3: Ephemeral vs Permanent Notice */}
+          <div className="rounded-lg border border-border/50 bg-surface/30 p-3 text-xs flex items-start gap-2.5">
+            <span className="material-symbols-outlined text-blue-400 text-[18px] shrink-0 mt-0.5">
+              info
+            </span>
+            <div className="flex-1 text-text-muted leading-relaxed">
+              <strong className="text-text">Temporary vs Permanent Domains:</strong> Quick Tunnel
+              URLs are temporary and regenerate when restarted. When you are ready for a permanent
+              branded address, you can map an A-Record (e.g.{" "}
+              <code className="font-mono text-text">router.tokendeal.cloud</code>) directly to your
+              VPS with Nginx and SSL.
+            </div>
+          </div>
+
+          <div className="flex justify-end pt-2">
+            <Button
+              onClick={() => setShowCloudflaredInfoModal(false)}
+              variant="secondary"
+              className="px-6"
+            >
+              {tc("close")}
             </Button>
           </div>
         </div>
