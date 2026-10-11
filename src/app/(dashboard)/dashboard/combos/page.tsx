@@ -41,6 +41,7 @@ import { ROUTING_STRATEGIES } from "@/shared/constants/routingStrategies";
 import {
   COMBO_BUILDER_AUTO_CONNECTION,
   COMBO_BUILDER_STAGES,
+  type ComboBuilderStage,
   addAllGlobalSearchMatches,
   addGlobalModelStep,
   buildGlobalModelList,
@@ -108,12 +109,12 @@ const STRATEGY_OPTIONS = ROUTING_STRATEGIES.map((strategy) => ({
   icon: strategy.icon,
 }));
 
-const STRATEGY_LABEL_FALLBACK = {
+const STRATEGY_LABEL_FALLBACK: Record<string, string> = {
   "context-relay": "Context Relay",
   "reset-aware": "Reset-Aware RR",
 };
 
-const STRATEGY_DESC_FALLBACK = {
+const STRATEGY_DESC_FALLBACK: Record<string, string> = {
   "context-relay":
     "Priority-style routing with automatic context handoffs when account rotation happens.",
   "reset-aware":
@@ -232,7 +233,7 @@ const NON_PERSISTED_COMBO_CONFIG_KEYS = new Set([
   "healthCheckTimeoutMs",
 ]);
 
-function sanitizeComboRuntimeConfig(config) {
+function sanitizeComboRuntimeConfig(config: any): Record<string, any> {
   if (!config || typeof config !== "object") return {};
   return Object.fromEntries(
     Object.entries(config).filter(
@@ -440,7 +441,12 @@ function isStaleIntelligentSelection(
   if (intelligentCombos.length === 0) return true;
   return !intelligentCombos.some((combo) => combo.id === selectedId);
 }
-const COMBO_FORM_STAGE_META = [
+const COMBO_FORM_STAGE_META: Array<{
+  id: ComboBuilderStage;
+  fallbackLabel: string;
+  fallbackDescription: string;
+  icon: string;
+}> = [
   {
     id: "basics",
     fallbackLabel: "Basics",
@@ -2172,9 +2178,11 @@ function ComboFormModal({
   const [manualModelError, setManualModelError] = useState("");
   const [builderComboRefName, setBuilderComboRefName] = useState("");
   const [builderError, setBuilderError] = useState("");
-  const [builderStage, setBuilderStage] = useState<string>(COMBO_BUILDER_STAGES[0]);
+  const [builderStage, setBuilderStage] = useState<ComboBuilderStage>(COMBO_BUILDER_STAGES[0]);
   const [showAdvanced, setShowAdvanced] = useState(false);
-  const [config, setConfig] = useState(sanitizeComboRuntimeConfig(combo?.config));
+  const [config, setConfig] = useState<Record<string, any>>(
+    sanitizeComboRuntimeConfig(combo?.config)
+  );
   // Validate persisted enum; ensure reset on combo change not just first mount.
   const initialSortMethod = normalizeSortMethod(
     (config.modelSort as { method?: unknown } | undefined)?.method
@@ -3471,7 +3479,7 @@ function ComboFormModal({
               config={config}
               activeProviders={builderProviders}
               onChange={(nextIntelligentConfig: any) =>
-                setConfig((previousConfig) => ({
+                setConfig((previousConfig: any) => ({
                   ...previousConfig,
                   ...nextIntelligentConfig,
                   weights: {

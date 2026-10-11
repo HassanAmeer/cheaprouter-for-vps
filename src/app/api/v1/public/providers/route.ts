@@ -62,16 +62,19 @@ export async function GET(request: Request) {
 
     // 1. Process all existing connections
     for (const conn of connections) {
-      const pid = conn.provider;
+      const pid = typeof conn.provider === "string" ? conn.provider : "";
       if (!pid) continue;
 
       if (!providerMap.has(pid)) {
-        const name = formatProviderName(pid, conn.name);
+        const name = formatProviderName(pid, typeof conn.name === "string" ? conn.name : undefined);
         providerMap.set(pid, {
           id: pid,
           name,
           icon: `/providers/${pid}.svg`,
-          status: conn.testStatus === "active" || !conn.testStatus ? "connected" : conn.testStatus,
+          status:
+            conn.testStatus === "active" || !conn.testStatus
+              ? "connected"
+              : String(conn.testStatus),
           hasConnection: true,
           connectionCount: 0,
           models: new Set<string>(),
@@ -92,10 +95,12 @@ export async function GET(request: Request) {
 
       // Add synced models if available
       try {
-        const synced = await getSyncedAvailableModelsByConnection(conn.id);
-        if (Array.isArray(synced)) {
-          for (const sm of synced) {
-            if (sm?.modelId) entry.models.add(sm.modelId);
+        if (typeof conn.id === "string") {
+          const synced = await getSyncedAvailableModelsByConnection(conn.id);
+          if (Array.isArray(synced)) {
+            for (const sm of synced) {
+              if (sm?.modelId) entry.models.add(sm.modelId);
+            }
           }
         }
       } catch {

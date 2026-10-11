@@ -100,7 +100,7 @@ type EndpointModelSummary = {
   root?: string;
 };
 
-type CopyHandler = (text: string, key?: string) => void | Promise<void>;
+type CopyHandler = (text: string, key?: string) => Promise<boolean | void> | void;
 
 type EndpointTunnelVisibility = {
   showCloudflaredTunnel: boolean;
@@ -2454,7 +2454,8 @@ export default function APIPageClient({ machineId }: Readonly<APIPageClientProps
               <li>
                 <strong className="text-text">One-Click in Dashboard:</strong> Click the{" "}
                 <strong className="text-text">&ldquo;Enable Tunnel&rdquo;</strong> button above.
-                CheapRouter automatically starts the tunnel and extracts your unique public HTTPS URL.
+                CheapRouter automatically starts the tunnel and extracts your unique public HTTPS
+                URL.
               </li>
               <li>
                 <strong className="text-text">Or Run via CLI in Terminal:</strong> If you prefer to
