@@ -17,7 +17,7 @@ import {
   createSystemPreambleStripper,
 } from "../../utils/directivePreambleStripper.ts";
 
-function normalizeToolName(name: string): string {
+function _normalizeToolName(name: string): string {
   return REVERSE_MAP[name] ?? name;
 }
 

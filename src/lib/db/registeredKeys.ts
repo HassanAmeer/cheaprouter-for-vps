@@ -127,8 +127,8 @@ function maybeResetWindow(
  */
 export function checkQuota(provider = "", accountId = ""): QuotaCheckResult {
   const db = getDbInstance();
-  const today = nowDay();
-  const hour = nowHour();
+  const _today = nowDay();
+  const _hour = nowHour();
 
   // ── provider-level check ──
   if (provider) {

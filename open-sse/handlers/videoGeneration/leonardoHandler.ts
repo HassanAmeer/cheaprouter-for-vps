@@ -18,7 +18,7 @@ export async function handleLeonardoVideoGeneration({
   providerConfig,
   body,
   credentials,
-  log,
+  log: _log,
 }) {
   const startTime = Date.now();
   const token = credentials?.apiKey || "";

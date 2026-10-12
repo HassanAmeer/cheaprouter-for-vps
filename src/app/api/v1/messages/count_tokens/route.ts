@@ -8,7 +8,7 @@ import { buildErrorBody } from "@omniroute/open-sse/utils/error.ts";
 import { runWithProxyContext } from "@omniroute/open-sse/utils/proxyFetch.ts";
 import { isCommonChatGptWebRetirementError } from "@/shared/constants/chatgptWebRetirement";
 import { getModelInfo } from "@/sse/services/model";
-import { extractApiKey, getProviderCredentials, isValidApiKey } from "@/sse/services/auth";
+import { getProviderCredentials } from "@/sse/services/auth";
 import { isCredentialDiagnosticSentinel } from "@/sse/services/credentialSentinel";
 import { safeResolveProxy } from "@/sse/handlers/chatHelpers";
 import * as log from "@/sse/utils/logger";

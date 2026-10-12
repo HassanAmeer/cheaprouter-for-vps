@@ -39,11 +39,8 @@ import {
   extractClientThoughtSignature,
   deepCleanUndefined,
   applyAntigravityGenerationDefaults,
-  stringifyHistoricalToolArguments,
   buildInertHistoricalToolCallText,
   buildInertHistoricalToolResponseText,
-  escapeHistoricalContextAttribute,
-  escapeHistoricalContextContent,
   buildHistoricalToolResultContext,
   type GeminiPart,
   type GeminiContent,
@@ -200,7 +197,7 @@ function extractExplicitThinkingLevel(body: Record<string, unknown>): string | n
 function openaiToGeminiBase(
   model: string,
   body: Record<string, unknown>,
-  stream: boolean,
+  _stream: boolean,
   toolNameOptions: GeminiToolNameOptions = {}
 ) {
   const result: GeminiRequest = {
@@ -685,7 +682,7 @@ function openaiToGeminiBase(
     return t.type === "function" && (fn?.name === "google_search" || fn?.name === "googleSearch");
   });
 
-  type ToolEntry = NonNullable<GeminiRequest["tools"]>[number];
+  type _ToolEntry = NonNullable<GeminiRequest["tools"]>[number];
 
   if (geminiTools && geminiTools.length > 0) {
     result.tools = geminiTools;

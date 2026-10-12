@@ -39,7 +39,7 @@ export async function handleValidatedEmbeddingRequestBody(
   return createEmbeddingResponse(body, options);
 }
 
-async function postHandler(request, context) {
+async function postHandler(request, _context) {
   let rawBody;
   try {
     rawBody = await request.json();

@@ -49,11 +49,7 @@ import {
   getHiddenModelsByProvider,
 } from "@/lib/db/models";
 import { getAllActiveSyncedModels } from "@/lib/db/models/activeSyncedCatalog";
-import {
-  getModelCatalogCacheVersion,
-  getCachedRawProviderConnections,
-  getCachedProviderNodes,
-} from "@/lib/db/readCache";
+import { getCachedRawProviderConnections, getCachedProviderNodes } from "@/lib/db/readCache";
 import { getCompatibleFallbackModels } from "@/lib/providers/managedAvailableModels";
 import {
   providerUsesCuratedModelsOnly,
@@ -93,7 +89,7 @@ import {
 } from "@/shared/utils/noAuthProviders";
 import { getSourcedTokenLimit, getTokenLimit } from "@omniroute/open-sse/services/contextManager";
 import { extractApiKey } from "@/sse/services/auth";
-import type { ComboModelStep } from "@/lib/combos/steps";
+
 import {
   type CustomModelEntry,
   type ComboCatalogTarget,
@@ -102,7 +98,6 @@ import {
   parseJsonStringArray,
   intersectKnownStringArrays,
   minKnownNumber,
-  maybeOmitCatalogModelName,
   getThinkingCapabilityFields,
   mergeComboCapabilities,
   visionDerivedModalities,
@@ -127,11 +122,7 @@ import {
   getComboTargetModelId as getComboTargetModelIdFromMaps,
 } from "./catalogProviderMaps";
 import { indexNodeApiTypes, nodeModelEndpoints, overlayEndpoints } from "./catalogNodeModality";
-import {
-  getModelCatalogAuthRejection,
-  isCodexModelCatalogClient,
-  isCcDiscoveryModelCatalogClient,
-} from "./catalogRequest";
+import { getModelCatalogAuthRejection, isCcDiscoveryModelCatalogClient } from "./catalogRequest";
 import { incrementCcDiscoveryHitCount } from "@/lib/db/ccDiscoveryMetrics";
 import { isUnifiedChatSourceModelSelectable } from "./catalogModelPolicy";
 import { decideHidePaid } from "./catalogPaidFilter";
@@ -375,10 +366,8 @@ async function buildUnifiedModelsResponseCore(
 
     // Get active provider connections
     let connections = [];
-    let totalConnectionCount = 0; // Track if DB has ANY connections (even disabled)
     try {
       connections = (await getCachedRawProviderConnections()).map(createLazyConnectionView);
-      totalConnectionCount = connections.length;
       // Filter to only active connections
       connections = connections.filter((c) => c.isActive !== false);
     } catch (e) {
@@ -390,7 +379,7 @@ async function buildUnifiedModelsResponseCore(
     let providerNodes = [];
     try {
       providerNodes = await getCachedProviderNodes();
-    } catch (e) {
+    } catch {
       console.log("Could not fetch provider nodes");
     }
 
@@ -468,7 +457,7 @@ async function buildUnifiedModelsResponseCore(
     await yieldCatalogBuildTurn();
     try {
       combos = await getCombos();
-    } catch (e) {
+    } catch {
       console.log("Could not fetch combos");
     }
 
@@ -560,7 +549,7 @@ async function buildUnifiedModelsResponseCore(
     // prefixRoutesToProvider is imported directly from catalogProviderMaps.ts (no
     // map dependency — pure parseModel() probe), used both here and at the two
     // includeCanonical prefix-collision checks below.
-    const getProviderPrefixes = (providerId: string, rawProvider: string) =>
+    const _getProviderPrefixes = (providerId: string, rawProvider: string) =>
       getProviderPrefixesFromMaps(aliasMaps, providerId, rawProvider);
 
     const getComboTargetModelId = (target: ComboCatalogTarget) => {
@@ -1843,7 +1832,7 @@ async function buildUnifiedModelsResponseCore(
           await maybeYieldCatalogBuild();
         }
       }
-    } catch (e) {
+    } catch {
       console.log("Could not fetch custom models");
     }
 
@@ -1943,7 +1932,7 @@ async function buildUnifiedModelsResponseCore(
           });
         }
       }
-    } catch (e) {
+    } catch {
       console.log("Could not fetch model aliases");
     }
 

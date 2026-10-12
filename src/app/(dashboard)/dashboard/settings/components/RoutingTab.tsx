@@ -295,7 +295,7 @@ function StringListEditor({
   disabled?: boolean;
 }) {
   const t = useTranslations("settings");
-  const tCommon = useTranslations("common");
+  const _tCommon = useTranslations("common");
   return (
     <div className="flex flex-col gap-1.5">
       <span className="text-xs font-medium text-text-main">{label}</span>

@@ -47,11 +47,7 @@ import {
 import { saveCallLog } from "@/lib/usageDb";
 import { getAllCustomModels } from "@/lib/db/models";
 import { sanitizeErrorMessage } from "../utils/error.ts";
-import {
-  FetchTimeoutError,
-  fetchWithTimeout,
-  getConfiguredTimeout,
-} from "@/shared/utils/fetchTimeout";
+import "@/shared/utils/fetchTimeout";
 import { handleFalVideoGeneration } from "./mediaGeneration/fal.ts";
 
 /**
@@ -1037,7 +1033,7 @@ async function handleHaiperVideoGeneration({
   providerConfig,
   body,
   credentials,
-  log,
+  log: _log,
 }) {
   const startTime = Date.now();
   const token = credentials?.apiKey || "";

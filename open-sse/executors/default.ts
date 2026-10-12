@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 import { BaseExecutor, type ExecuteInput } from "./base.ts";
 import { mapNvidiaGlm52ReasoningParams } from "./base/reasoningEffort.ts";
-import { PROVIDERS, OAUTH_ENDPOINTS } from "../config/constants.ts";
+import { PROVIDERS } from "../config/constants.ts";
 import { getAccessToken } from "../services/tokenRefresh.ts";
 
 import {

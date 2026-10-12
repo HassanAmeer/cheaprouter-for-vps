@@ -36,7 +36,7 @@ export async function OPTIONS() {
  * POST /v1/audio/speech — text-to-speech
  * OpenAI TTS API compatible. Returns audio stream.
  */
-async function postHandler(request, context) {
+async function postHandler(request, _context) {
   let rawBody;
   try {
     rawBody = await request.json();

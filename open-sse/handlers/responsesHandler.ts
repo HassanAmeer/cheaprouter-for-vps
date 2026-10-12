@@ -1,4 +1,4 @@
-import { CORS_HEADERS } from "../utils/cors.ts";
+import "../utils/cors.ts";
 /**
  * Responses API Handler for Workers
  * Converts Chat Completions to Codex Responses API format

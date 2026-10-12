@@ -526,7 +526,7 @@ function validateKeyStatus(context: PolicyContext): Response | null {
 }
 
 async function validateKeyScheduleAndUsage(context: PolicyContext): Promise<Response | null> {
-  const { request, apiKey, apiKeyInfo } = context;
+  const { request, apiKey: _apiKey, apiKeyInfo } = context;
   if (apiKeyInfo.accessSchedule?.enabled && !isWithinSchedule(apiKeyInfo.accessSchedule)) {
     const { from, until, tz } = apiKeyInfo.accessSchedule;
     return errorResponse(
@@ -575,7 +575,7 @@ function validateEndpointAccess(context: PolicyContext): Response | null {
 }
 
 async function validateQuotaAccess(context: PolicyContext): Promise<Response | null> {
-  const { apiKey, apiKeyInfo, modelStr } = context;
+  const { apiKey: _apiKey, apiKeyInfo, modelStr } = context;
   if (!modelStr) return null;
   const allowedQuotas = Array.isArray(apiKeyInfo.allowedQuotas) ? apiKeyInfo.allowedQuotas : [];
   if (isQuotaModelName(modelStr) && allowedQuotas.length === 0) {

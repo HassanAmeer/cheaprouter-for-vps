@@ -16,7 +16,7 @@ import { resolveActiveCertPath } from "./cert/activeCert.ts";
 import { ALL_TARGETS } from "./targets/index.ts";
 import { detectAgent } from "./detection/index.ts";
 import type { AgentId, DetectionResult, MitmTarget } from "./types.ts";
-import { getAllAgentBridgeStates } from "@/lib/db/agentBridgeState.ts";
+import "@/lib/db/agentBridgeState.ts";
 import { getUserBypassPatterns } from "@/lib/db/agentBridgeBypass.ts";
 import { getGheCopilotHosts } from "@/lib/db/providers.ts";
 import { configureUpstreamCa } from "./upstreamTrust.ts";
@@ -667,7 +667,7 @@ async function startMitmInternal(
     // Remove PID file
     try {
       fs.unlinkSync(PID_FILE);
-    } catch (error) {
+    } catch {
       // Ignore
     }
   });
@@ -813,7 +813,7 @@ export async function stopMitm(
   clearCachedPassword(); // Clear password from memory when proxy stops
   try {
     fs.unlinkSync(PID_FILE);
-  } catch (error) {
+  } catch {
     // Ignore
   }
 

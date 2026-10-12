@@ -185,7 +185,7 @@ export function parseRerankModel(modelStr) {
   }
 
   // Try each provider prefix
-  for (const [providerId, config] of Object.entries(RERANK_PROVIDERS)) {
+  for (const [providerId, _config] of Object.entries(RERANK_PROVIDERS)) {
     if (modelStr.startsWith(providerId + "/")) {
       return {
         provider: providerId,

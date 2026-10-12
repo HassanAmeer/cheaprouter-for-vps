@@ -352,7 +352,7 @@ async function buildTailscaleArgs(...args: string[]) {
 }
 
 /** Synchronous variant for places that cannot await */
-function buildTailscaleArgsSync(...args: string[]) {
+function _buildTailscaleArgsSync(...args: string[]) {
   if (getCurrentPlatform() === "win32") return args;
   // Use cached socket or default to system socket if available
   const platform = getCurrentPlatform();

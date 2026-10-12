@@ -28,7 +28,7 @@ import {
   coerceProxyPayload,
   redactProxySecrets,
 } from "./proxies/mappers";
-import { isGlobalProxyEnabled, PROXY_ALIVE_PREDICATE } from "./proxies/guards";
+import { isGlobalProxyEnabled } from "./proxies/guards";
 import { bumpProxyRegistryGeneration } from "./proxies/registryGeneration";
 import { isProxyRegistryStatus } from "@/shared/constants/proxyRegistryStatus";
 export {

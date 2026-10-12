@@ -10,7 +10,6 @@ import {
   getSqlJsAdapter,
   preInitSqlJs,
   getSqlJsPreInitError,
-  openDatabaseAsync,
 } from "./adapters/driverFactory";
 import path from "path";
 import { retryProbeIfTransient } from "./probeUtils";
@@ -115,7 +114,7 @@ export const isBuildPhase = isNextBuildPhase();
 // ──────────────── Paths ────────────────
 
 export const DATA_DIR = resolveWritableDataDir({ isCloud });
-const LEGACY_DATA_DIR = isCloud ? null : getLegacyDotDataDir();
+const _LEGACY_DATA_DIR = isCloud ? null : getLegacyDotDataDir();
 export const SQLITE_FILE = isCloud ? null : path.join(DATA_DIR, "storage.sqlite");
 const JSON_DB_FILE = isCloud ? null : path.join(DATA_DIR, "db.json");
 export const DB_BACKUPS_DIR = isCloud ? null : path.join(DATA_DIR, "db_backups");
@@ -1508,7 +1507,7 @@ export function resetDbInstance() {
 type DbDriverInfo = { source: string; kind: string };
 let driverInfoCached: DbDriverInfo | null = null;
 
-function setDriverInfo(info: DbDriverInfo) {
+function _setDriverInfo(info: DbDriverInfo) {
   driverInfoCached = info;
 }
 

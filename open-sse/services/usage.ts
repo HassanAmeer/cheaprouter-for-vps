@@ -45,7 +45,7 @@ import { getKimiUsage } from "./usage/kimi.ts";
 import { getCodexUsage } from "./usage/codex.ts";
 import { throttleQuotaFetch } from "./quotaFetchThrottle.ts";
 import { getClaudeUsage, getClaudePlanLabel } from "./usage/claude.ts";
-import { getKiroUsage, buildKiroUsageResult, discoverKiroProfileArn } from "./usage/kiro.ts";
+import { getKiroUsage } from "./usage/kiro.ts";
 // Re-exported para os testes kiro-* (importam de services/usage).
 export { buildKiroUsageResult, discoverKiroProfileArn } from "./usage/kiro.ts";
 import { getAdobeFireflyUsage } from "./usage/adobeFirefly.ts";
@@ -125,7 +125,15 @@ export async function getUsageForProvider(
   connection: UsageProviderConnection,
   options: { forceRefresh?: boolean } = {}
 ) {
-  const { id, provider, accessToken, apiKey, providerSpecificData, projectId, email } = connection;
+  const {
+    id,
+    provider,
+    accessToken,
+    apiKey,
+    providerSpecificData,
+    projectId,
+    email: _email,
+  } = connection;
 
   if (isKimiCodingConnection(connection)) {
     return await getKimiUsage(accessToken, apiKey, providerSpecificData);

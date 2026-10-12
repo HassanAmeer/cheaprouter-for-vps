@@ -44,7 +44,7 @@ export function buildCurl({ endpoint, method = "POST", headers, body }: CurlOpti
     lines.push(`  -H '${escSq(name)}: ${escSq(value)}' \\`);
   }
 
-  const bodyJson = JSON.stringify(body, null, 2);
+  const _bodyJson = JSON.stringify(body, null, 2);
   // Each line of the JSON body needs to be embedded in a single-quoted string.
   // We serialise the whole JSON as a compact single-line string to keep the
   // cURL command readable without requiring complex multi-line quoting.

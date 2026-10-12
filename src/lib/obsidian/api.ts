@@ -33,7 +33,7 @@ export class ObsidianTimeoutError extends Error {
   }
 }
 
-type ObsidianResult = {
+type _ObsidianResult = {
   content: Array<{ type: "text"; text: string }>;
   isError?: boolean;
 };
@@ -64,7 +64,7 @@ function obsidianFetch(
     ? combineSignals(options.signal, controller.signal)
     : controller.signal;
 
-  let lastError: Error | null = null;
+  let _lastError: Error | null = null;
 
   const attempt = async (retryCount: number): Promise<unknown> => {
     try {
@@ -94,7 +94,7 @@ function obsidianFetch(
         const error = classifyObsidianError(response.status, msg);
 
         if (error instanceof ObsidianServerError && retryCount < MAX_RETRIES - 1) {
-          lastError = error;
+          _lastError = error;
           await sleep(Math.pow(2, retryCount) * 200);
           return attempt(retryCount + 1);
         }
@@ -126,7 +126,7 @@ function obsidianFetch(
         );
       }
       if (retryCount < MAX_RETRIES - 1) {
-        lastError = err instanceof Error ? err : new ObsidianServerError(String(err));
+        _lastError = err instanceof Error ? err : new ObsidianServerError(String(err));
         await sleep(Math.pow(2, retryCount) * 200);
         return attempt(retryCount + 1);
       }

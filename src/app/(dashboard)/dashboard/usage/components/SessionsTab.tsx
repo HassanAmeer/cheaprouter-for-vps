@@ -29,7 +29,7 @@ export default function SessionsTab() {
   const t = useTranslations("usage");
   const tCommon = useTranslations("common");
   const [data, setData] = useState<SessionsResponse>(EMPTY_DATA);
-  const [loading, setLoading] = useState(true);
+  const [_loading, setLoading] = useState(true);
 
   const loadSessions = useCallback(async () => {
     try {

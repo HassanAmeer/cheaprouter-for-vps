@@ -4,7 +4,7 @@
 import { SAFE_OUTBOUND_FETCH_PRESETS, safeOutboundFetch } from "@/shared/network/safeOutboundFetch";
 import { getProviderOutboundGuard } from "@/shared/network/outboundUrlGuardPolicy";
 import { withCustomUserAgent } from "./headers";
-import { toValidationErrorResult, validationWrite } from "./transport";
+import { toValidationErrorResult } from "./transport";
 import {
   NIMBLE_CLIENT_SOURCE,
   NIMBLE_CLIENT_SOURCE_HEADER,

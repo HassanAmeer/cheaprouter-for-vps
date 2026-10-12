@@ -1,7 +1,7 @@
 import path from "node:path";
 import os from "node:os";
 
-const CONFIG_PATH = path.join(os.homedir(), ".config", "kilocode", "settings.json");
+const _CONFIG_PATH_ = path.join(os.homedir(), ".config", "kilocode", "settings.json");
 
 export function generateKilocodeConfig(options: {
   baseUrl: string;

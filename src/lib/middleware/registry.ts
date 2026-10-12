@@ -19,9 +19,7 @@ import {
   type HookConfig,
   type PreRequestHookContext,
   type HookResult,
-  type HookScope,
   type HookLogEntry,
-  HookPriority,
 } from "./types";
 
 // ── State (globalThis singleton) ──────────────────────────────────────────

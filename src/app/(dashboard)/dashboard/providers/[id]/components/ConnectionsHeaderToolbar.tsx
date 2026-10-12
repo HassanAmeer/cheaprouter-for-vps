@@ -59,7 +59,7 @@ export default function ConnectionsHeaderToolbar({
   providerInfo,
   isCompatible,
   isCommandCode,
-  isOAuth,
+  isOAuth: _isOAuth,
   supportsDualAuth,
   providerSupportsPat,
   connections,
@@ -97,7 +97,7 @@ export default function ConnectionsHeaderToolbar({
   onOpenCodexCliGuide,
   onOpenImportCodex,
   onOpenImportClaude,
-  onOpenImportGemini,
+  onOpenImportGemini: _onOpenImportGemini,
   onOpenImportGrokCli,
   t,
 }: ConnectionsHeaderToolbarProps) {

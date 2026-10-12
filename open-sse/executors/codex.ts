@@ -1103,7 +1103,7 @@ export class CodexExecutor extends BaseExecutor {
    */
   buildHeaders(
     credentials: ProviderCredentials,
-    stream = true,
+    _stream = true,
     clientHeaders?: Record<string, string> | null,
     model?: string,
     health?: Record<string, KeyHealth>

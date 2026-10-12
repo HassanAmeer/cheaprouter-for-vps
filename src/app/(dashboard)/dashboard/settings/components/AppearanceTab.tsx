@@ -79,6 +79,7 @@ export default function AppearanceTab() {
   };
 
   const presetThemes = [
+    { id: "jest", color: COLOR_THEMES.jest, label: "Jest Open Code (White/Silver)" },
     { id: "opencode", color: COLOR_THEMES.opencode, label: "OpenCode (Silver/B&W)" },
     { id: "coral", color: COLOR_THEMES.coral, label: t("themeCoral") },
     { id: "blue", color: COLOR_THEMES.blue, label: t("themeBlue") },

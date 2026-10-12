@@ -12,7 +12,6 @@ import {
   parseQuotedString,
   splitRespectingQuotes,
   splitFieldDecl,
-  isBareKey,
   MISSING,
   ATTACHMENT,
 } from "./scalar.ts";

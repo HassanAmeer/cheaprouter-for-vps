@@ -302,16 +302,16 @@ data.providers.forEach(p => {
                 <div className="p-3 rounded-lg bg-surface-raised border border-border text-xs text-text-muted space-y-2">
                   <div>
                     <strong className="text-text-primary">ChatGPT:</strong> Set{" "}
-                    <code>scopeValue: "gpt-4o"</code>, <code>tokenLimit: 20000000</code> (20M)
+                    <code>scopeValue: &quot;gpt-4o&quot;</code>, <code>tokenLimit: 20000000</code> (20M)
                   </div>
                   <div>
                     <strong className="text-text-primary">Claude:</strong> Set{" "}
-                    <code>scopeValue: "claude-3-5-sonnet"</code>, <code>tokenLimit: 10000000</code>{" "}
+                    <code>scopeValue: &quot;claude-3-5-sonnet&quot;</code>, <code>tokenLimit: 10000000</code>{" "}
                     (10M)
                   </div>
                   <div>
                     <strong className="text-text-primary">DeepSeek:</strong> Set{" "}
-                    <code>scopeValue: "deepseek-chat"</code>, <code>tokenLimit: 50000000</code> (50M)
+                    <code>scopeValue: &quot;deepseek-chat&quot;</code>, <code>tokenLimit: 50000000</code> (50M)
                   </div>
                   <p className="text-[11px] text-emerald-500 mt-2">
                     ✓ Jab limit khatam hogi, router automatic user ko 429 Quota Exceeded bhej dega.

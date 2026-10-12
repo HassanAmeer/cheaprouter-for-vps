@@ -319,7 +319,7 @@ export async function GET(
  */
 async function handleStartCallbackServer(
   provider: string,
-  searchParams: URLSearchParams,
+  _searchParams: URLSearchParams,
   request?: Request
 ) {
   if (!PKCE_CALLBACK_PROVIDERS.has(provider)) {
@@ -335,7 +335,7 @@ async function handleStartCallbackServer(
   if (callbackStates[provider]?.close) {
     try {
       callbackStates[provider].close();
-    } catch (e) {
+    } catch {
       /* ignore */
     }
   }
@@ -371,7 +371,7 @@ async function handleStartCallbackServer(
       if (callbackStates[provider]?.startedAt === startedAt) {
         try {
           close();
-        } catch (e) {
+        } catch {
           /* ignore */
         }
         delete callbackStates[provider];
@@ -728,7 +728,7 @@ export async function POST(
       // Clean up server
       try {
         close();
-      } catch (e) {
+      } catch {
         /* ignore */
       }
       delete callbackStates[provider];

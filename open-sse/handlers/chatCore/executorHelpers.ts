@@ -75,7 +75,7 @@ export function resolveModelSemaphoreMaxConcurrency(
 
 export function resolveAccountSemaphoreKey({
   provider,
-  model,
+  model: _model,
   connectionId,
   credentials,
 }: {

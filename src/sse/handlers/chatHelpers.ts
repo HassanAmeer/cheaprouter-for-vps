@@ -353,7 +353,7 @@ export function comboTargetCredentialProviderId(
 
 export async function checkPipelineGates(
   provider: string,
-  model: string,
+  _model: string,
   options: {
     ignoreCircuitBreaker?: boolean;
     ignoreModelCooldown?: boolean;
@@ -457,7 +457,7 @@ export async function executeChatWithBreaker({
   // forwarded to handleChatCore, which notes it under the attempt store.
   previousResponseResumed = undefined,
 }: ExecuteChatWithBreakerOptions): Promise<ExecuteChatWithBreakerResult> {
-  let tlsFingerprintUsed = false;
+  let _tlsFingerprintUsed = false;
   const normalizedTrafficType: TrafficType =
     typeof trafficType === "string" && trafficType.trim().toLowerCase() === "shadow"
       ? "shadow"

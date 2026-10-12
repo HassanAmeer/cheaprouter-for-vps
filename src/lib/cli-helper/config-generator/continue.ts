@@ -9,7 +9,7 @@ async function loadYaml() {
   return yaml;
 }
 
-const CONFIG_PATH = path.join(os.homedir(), ".continue", "config.yaml");
+const _CONFIG_PATH = path.join(os.homedir(), ".continue", "config.yaml");
 
 export async function generateContinueConfig(options: {
   baseUrl: string;

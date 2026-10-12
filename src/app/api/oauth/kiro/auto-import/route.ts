@@ -470,7 +470,7 @@ type SaveAndRespondResult = Awaited<ReturnType<typeof tryKiroCliSqlite>> & {
 async function saveAndRespond(
   result: SaveAndRespondResult,
   targetProvider: string,
-  request: Request
+  _request: Request
 ) {
   try {
     const kiroService = new KiroService();

@@ -19,7 +19,7 @@ const useThemeStore = create<ThemeState>()(
   persist(
     (set, get) => ({
       theme: THEME_CONFIG.defaultTheme,
-      colorTheme: "coral",
+      colorTheme: "jest",
       customColor: "#3b82f6",
 
       setTheme: (theme) => {
@@ -66,6 +66,8 @@ export const COLOR_THEMES: Record<string, string> = {
   violet: "#8b5cf6",
   orange: "#f97316",
   cyan: "#06b6d4",
+  // Jest Open Code — white + silver, clean minimal. Light/dark both.
+  jest: "#94a3b8",
 };
 
 // Apply light/dark theme to document
@@ -87,14 +89,28 @@ function applyColorTheme(colorTheme: string, customColor: string) {
   if (typeof window === "undefined") return;
 
   const root = document.documentElement;
-  const baseColor =
-    colorTheme === "custom"
-      ? normalizeHexColor(customColor)
-      : COLOR_THEMES[colorTheme] || COLOR_THEMES.coral;
-  const hoverColor = shadeHexColor(baseColor, -0.14);
+  // The jest theme owns its whole palette (light + dark accent) in
+  // globals.css, including --color-primary per mode. Writing inline vars
+  // here would be an inline style with higher specificity than any class
+  // rule, pinning the light accent even in dark mode. Let the class win
+  // and only set the inline vars for the flat single-color themes.
+  if (colorTheme !== "jest") {
+    const baseColor =
+      colorTheme === "custom"
+        ? normalizeHexColor(customColor)
+        : COLOR_THEMES[colorTheme] || COLOR_THEMES.jest;
+    const hoverColor = shadeHexColor(baseColor, -0.14);
+    root.style.setProperty("--color-primary", baseColor);
+    root.style.setProperty("--color-primary-hover", hoverColor);
+  } else {
+    root.style.removeProperty("--color-primary");
+    root.style.removeProperty("--color-primary-hover");
+  }
 
-  root.style.setProperty("--color-primary", baseColor);
-  root.style.setProperty("--color-primary-hover", hoverColor);
+  // Scoped full-palette overrides. Adding/removing the class (rather than
+  // inline vars) keeps globals.css the single source of truth for the palette,
+  // so a future theme only needs a matching block there.
+  root.classList.toggle("theme-jest", colorTheme === "jest");
 }
 
 function normalizeHexColor(color: string) {

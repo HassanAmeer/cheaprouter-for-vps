@@ -323,7 +323,7 @@ export function recordTokenUsage(
         for (const a of applied) {
           syncCache(a.limitId, a.windowStart, a.total);
         }
-      } catch (err) {
+      } catch {
         // better-sqlite3 auto-rolls-back on throw; verify we are not stuck mid-txn.
         if (db.inTransaction) {
           try {

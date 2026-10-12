@@ -320,7 +320,7 @@ export async function handleMcpSSE(request: Request): Promise<Response> {
         console.log("[MCP] New client initialize detected, resetting SSE singleton...");
         closeSseTransport();
       }
-    } catch (err) {}
+    } catch {}
   }
   const { transport } = ensureSseServer();
 

@@ -6,7 +6,7 @@ let syncInitialized = false;
 let modelSyncInitialized = false;
 
 // POST /api/sync/initialize - Initialize cloud sync scheduler
-export async function POST(request) {
+export async function POST(_request) {
   try {
     if (syncInitialized) {
       return NextResponse.json({
@@ -40,7 +40,7 @@ export async function POST(request) {
 }
 
 // GET /api/sync/status - Check sync initialization status
-export async function GET(request) {
+export async function GET(_request) {
   return NextResponse.json({
     initialized: syncInitialized,
     modelSyncInitialized,

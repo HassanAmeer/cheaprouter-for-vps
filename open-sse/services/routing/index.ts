@@ -29,7 +29,6 @@ import {
   getQualitySnapshot,
   recordQualityEvent,
   resetQualityTracker,
-  setSemanticQuality,
   type ProviderQuality,
 } from "./quality.ts";
 import { isRoutingOtelEnabled, OtlpHttpsEventSink } from "./otel.ts";

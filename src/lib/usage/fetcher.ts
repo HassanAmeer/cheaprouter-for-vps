@@ -61,7 +61,7 @@ export async function getUsageForProvider(connection) {
 /**
  * GitHub Copilot Usage
  */
-async function getGitHubUsage(accessToken, providerSpecificData) {
+async function getGitHubUsage(_accessToken, providerSpecificData) {
   try {
     // Use copilotToken for copilot_internal API, not GitHub OAuth accessToken
     const copilotToken = providerSpecificData?.copilotToken;
@@ -374,13 +374,13 @@ async function getAntigravityUsage(
  * Claude Usage (legacy fallback)
  * Real Claude OAuth quota windows are fetched in @omniroute/open-sse/services/usage.ts.
  */
-async function getClaudeUsage(accessToken?: string) {
+async function getClaudeUsage(_accessToken?: string) {
   try {
     return {
       message:
         "Claude connected. Detailed quota windows are handled by the open-sse usage service.",
     };
-  } catch (error) {
+  } catch {
     return { message: "Unable to fetch Claude usage." };
   }
 }
@@ -390,7 +390,7 @@ async function getClaudeUsage(accessToken?: string) {
  * Note: Actual quota tracking is handled by open-sse/services/usage.ts
  * This fallback returns a message directing users to the dashboard.
  */
-async function getCodexUsage(accessToken, providerSpecificData: Record<string, any> = {}) {
+async function getCodexUsage(_accessToken, providerSpecificData: Record<string, any> = {}) {
   try {
     // Check if workspace is bound
     const workspaceId = providerSpecificData?.workspaceId;
@@ -400,7 +400,7 @@ async function getCodexUsage(accessToken, providerSpecificData: Record<string, a
       };
     }
     return { message: "Codex connected. Check OpenAI dashboard for usage." };
-  } catch (error) {
+  } catch {
     return { message: "Unable to fetch Codex usage." };
   }
 }
@@ -408,11 +408,11 @@ async function getCodexUsage(accessToken, providerSpecificData: Record<string, a
 /**
  * Qoder Usage
  */
-async function getQoderUsage(accessToken) {
+async function getQoderUsage(_accessToken) {
   try {
     // Qoder may have usage endpoint
     return { message: "Qoder connected. Usage tracked per request." };
-  } catch (error) {
+  } catch {
     return { message: "Unable to fetch Qoder usage." };
   }
 }

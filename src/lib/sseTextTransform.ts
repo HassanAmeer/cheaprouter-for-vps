@@ -405,7 +405,7 @@ export function createSseTextTransform(
         controller.error(err);
       }
     },
-    cancel(reason: any) {
+    cancel(_reason: any) {
       if (onCancel) {
         onCancel();
       }

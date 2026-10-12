@@ -160,7 +160,7 @@ declare global {
    *
    * Remove once the bundled lib declares it.
    */
-  interface Transformer<I = unknown, O = unknown> {
+  interface Transformer<_I = unknown, _O = unknown> {
     cancel?: (reason?: unknown) => void | PromiseLike<void>;
   }
 }

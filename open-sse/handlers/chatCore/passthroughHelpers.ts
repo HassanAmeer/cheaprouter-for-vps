@@ -105,7 +105,7 @@ function isResponsesShapedBody(body: unknown): boolean {
 export function shouldUseNativeOpenAICompatibleResponsesPassthrough({
   provider,
   sourceFormat,
-  endpointPath,
+  endpointPath: _endpointPath,
   providerSpecificData,
   body,
 }: {

@@ -1,5 +1,5 @@
 // OpenAI <-> Grok tool-call translation (pure). Extracted verbatim from grok-web.ts.
-import type { GrokStreamResponse } from "./types.ts";
+
 import { findTagBlocks } from "../../utils/tagBlocks.ts";
 
 // ─── OpenAI message → Grok query translation ───────────────────────────────
@@ -547,7 +547,7 @@ export function firstString(...values: unknown[]): string | undefined {
 
 export function defaultRequiredValue(
   key: string,
-  type: string | undefined,
+  _type: string | undefined,
   args: Record<string, unknown>,
   intent: string
 ): unknown {

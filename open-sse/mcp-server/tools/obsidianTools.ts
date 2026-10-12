@@ -1,11 +1,9 @@
 import { z } from "zod";
 import { createObsidianClient, createSyncServerClient, getSyncToken } from "../../../src/lib/obsidian/api.ts";
 import {
-  getObsidianToken,
-  getObsidianBaseUrl,
   getObsidianConfigForApiKey,
 } from "../../../src/lib/db/obsidian.ts";
-import type { ObsidianClient, SyncServerClient } from "../../../src/lib/obsidian/api.ts";
+import type { ObsidianClient } from "../../../src/lib/obsidian/api.ts";
 
 type McpExtra = {
   authInfo?: { clientId?: string; scopes?: string[] };

@@ -45,7 +45,7 @@ function resolveCredentialsPath(): string {
 
   try {
     resolveDataDir = require("@/lib/dataPaths").resolveDataDir;
-  } catch (err) {
+  } catch {
     const fallbackDataDir = process.env.DATA_DIR || join(process.cwd(), "data");
     console.warn(
       `[CREDENTIALS] Could not load dataPaths module, using fallback: ${fallbackDataDir}`

@@ -15,11 +15,7 @@ import { PROVIDERS } from "../config/constants.ts";
 import { getCodexAuthIdentityHeaders } from "../config/codexClient.ts";
 import { runWithProxyContext } from "../utils/proxyFetch.ts";
 import { serializeRefresh } from "./refreshSerializer.ts";
-import {
-  extractOAuthErrorCode,
-  isUnrecoverableRefreshError,
-  type RefreshLogger,
-} from "./tokenRefresh/shared.ts";
+import { extractOAuthErrorCode, isUnrecoverableRefreshError } from "./tokenRefresh/shared.ts";
 import {
   getRefreshCacheKey,
   lookupRotation,
@@ -247,7 +243,7 @@ export function getActiveOnPersist(): RefreshPersistFn | undefined {
 export async function refreshAccessToken(
   provider,
   refreshToken,
-  credentials,
+  _credentials,
   log,
   proxyConfig: unknown = null
 ) {

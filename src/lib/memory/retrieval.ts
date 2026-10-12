@@ -16,7 +16,6 @@ import { pickApiKeyForInternalUse } from "../db/apiKeys";
 import { getRuntimePorts } from "../runtime/ports";
 import {
   estimateTokens,
-  parseMetadata,
   rowToMemory,
   getRelevanceScore,
   sanitizeFts5Query,

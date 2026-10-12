@@ -8,10 +8,7 @@ import {
   collapseExcessiveNewlines,
   extractThinkingFromContent,
 } from "./responseSanitizer/reasoning.ts";
-import {
-  applyCacheHitTokensToUsage,
-  applyCacheHitTokensToResponsesUsage,
-} from "./responseSanitizer/cacheHitTokens.ts";
+import { applyCacheHitTokensToUsage } from "./responseSanitizer/cacheHitTokens.ts";
 import { stripObfuscationZeroWidth } from "../utils/zeroWidth.ts";
 import { normalizeArrayContentChunk } from "../utils/arrayContentDelta.ts";
 export {

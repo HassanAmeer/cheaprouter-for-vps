@@ -103,7 +103,7 @@ export interface ExecuteProviderAutopilotActionInput {
 const TERMINAL_STATUSES = new Set(["banned", "expired", "credits_exhausted"]);
 const OPEN_BREAKER_STATES = new Set(["OPEN", "HALF_OPEN"]);
 
-function toRecord(value: unknown): JsonRecord {
+function _toRecord(value: unknown): JsonRecord {
   return value && typeof value === "object" && !Array.isArray(value) ? (value as JsonRecord) : {};
 }
 

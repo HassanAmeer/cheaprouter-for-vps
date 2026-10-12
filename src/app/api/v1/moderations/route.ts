@@ -31,7 +31,7 @@ export async function OPTIONS() {
  * POST /v1/moderations — content moderation
  * OpenAI Moderations API compatible.
  */
-async function postHandler(request, context) {
+async function postHandler(request, _context) {
   let rawBody;
   try {
     rawBody = await request.json();

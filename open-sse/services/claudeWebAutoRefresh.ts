@@ -199,7 +199,7 @@ export function createAutoRefreshMiddleware(options?: CookieRefreshOptions) {
             });
             currentCookie = refresh.cookie;
             continue; // Retry with new cookie
-          } catch (error) {
+          } catch {
             log?.error?.("CLAUDE-WEB-AUTO-REFRESH", "Refresh failed, returning error response");
             return response; // Return original error
           }

@@ -57,7 +57,7 @@ async function resolveLocalOverrideCredentials(provider) {
 /**
  * POST /v1/music/generations — generate music
  */
-async function postHandler(request, context) {
+async function postHandler(request, _context) {
   const parsed = await readMediaGenerationBody(request, log, "MUSIC");
   if (parsed.state === "invalid") {
     return parsed.response;

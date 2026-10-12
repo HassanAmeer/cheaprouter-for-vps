@@ -204,7 +204,7 @@ export function listConsumptionForPool(poolId: string, limit: number): Consumpti
 // Pool-wide aggregate
 // ---------------------------------------------------------------------------
 
-interface BucketPairRow {
+interface _BucketPairRow {
   api_key_id: string;
   curr: number;
   prev: number;

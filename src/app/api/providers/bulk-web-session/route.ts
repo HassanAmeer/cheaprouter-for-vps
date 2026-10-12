@@ -185,7 +185,7 @@ async function syncToCloudIfEnabled() {
     if (!cloudEnabled) return;
     const machineId = await getConsistentMachineId();
     await syncToCloud(machineId);
-  } catch (error) {
+  } catch {
     // cloud sync is best-effort — ignore errors
   }
 }

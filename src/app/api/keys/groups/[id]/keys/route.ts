@@ -17,14 +17,14 @@ const addKeyToGroupSchema = z.object({
 /**
  * GET /api/keys/groups/[id]/keys — List API keys in a group
  */
-export async function GET(request: Request, { params }: RouteParams) {
+export async function GET(_request: Request, { params }: RouteParams) {
   try {
     const { id } = await params;
     const group = getKeyGroup(id);
     if (!group) return NextResponse.json({ error: "Group not found" }, { status: 404 });
     const members = getGroupMembers(id);
     return NextResponse.json({ members });
-  } catch (error) {
+  } catch {
     return NextResponse.json({ error: "Failed to list members" }, { status: 500 });
   }
 }
@@ -49,7 +49,7 @@ export async function POST(request: Request, { params }: RouteParams) {
       return NextResponse.json({ error: "Failed to add key" }, { status: 500 });
     }
     return NextResponse.json({ success: true }, { status: 201 });
-  } catch (error) {
+  } catch {
     return NextResponse.json({ error: "Failed to add key to group" }, { status: 500 });
   }
 }
@@ -70,7 +70,7 @@ export async function DELETE(request: Request, { params }: RouteParams) {
       return NextResponse.json({ error: "Key not found in group" }, { status: 404 });
     }
     return NextResponse.json({ success: true });
-  } catch (error) {
+  } catch {
     return NextResponse.json({ error: "Failed to remove key from group" }, { status: 500 });
   }
 }

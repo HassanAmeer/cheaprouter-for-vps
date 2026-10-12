@@ -14,19 +14,7 @@ import { REGISTRY } from "./providers/index.ts";
 // `ProviderDetailPageClient.tsx`, so anything it pulls in has to survive a browser bundle
 // (#11122). `privateHost` is platform-free by contract; the guard module is not.
 import { isPrivateHost } from "@/shared/network/privateHost";
-import {
-  RegistryModel,
-  REASONING_UNSUPPORTED,
-  RegistryOAuth,
-  RegistryEntry,
-  LegacyProvider,
-  buildModels,
-  GPT_5_5_CONTEXT_LENGTH,
-  GPT_5_5_CODEX_CAPABILITIES,
-  CHAT_OPENAI_COMPAT_MODELS,
-  mapStainlessOs,
-  mapStainlessArch,
-} from "./providers/shared.ts";
+import { RegistryModel, RegistryEntry, LegacyProvider } from "./providers/shared.ts";
 
 // ── Generator Functions ───────────────────────────────────────────────────
 

@@ -146,7 +146,7 @@ type LegacyInlineRow = {
   error: string | null;
 };
 
-type DeleteResult = {
+type _DeleteResult = {
   deletedRows: number;
   deletedArtifacts: number;
 };

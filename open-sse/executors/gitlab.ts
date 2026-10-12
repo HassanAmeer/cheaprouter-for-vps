@@ -621,7 +621,7 @@ export class GitlabExecutor extends BaseExecutor {
         credentials,
         errorResponse: null,
       };
-    } catch (error) {
+    } catch {
       return {
         target: {
           mode: "monolith",

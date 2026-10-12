@@ -380,7 +380,7 @@ export function sanitizePIIResponse(response: any): any {
       const serialized = JSON.stringify(response);
       const { text: sanitized } = sanitizePII(serialized);
       return JSON.parse(sanitized);
-    } catch (fallbackErr) {
+    } catch {
       // Suppress err.message — never surface upstream error detail to the client
       // (Hard Rule #12). The underlying error is available in server logs.
       console.warn("[PII] Sanitization fallback failed:", err?.message);

@@ -5,8 +5,8 @@
  * should be retried with backoff instead of immediately renaming the DB away
  * and creating an empty one (data loss under concurrent load, #9541).
  */
-import fs from "node:fs";
-import path from "node:path";
+import "node:fs";
+import "node:path";
 
 /**
  * Identifies transient SQLite/OS probe errors that should be retried instead of

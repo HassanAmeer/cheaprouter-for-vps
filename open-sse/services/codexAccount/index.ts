@@ -1,9 +1,5 @@
 import { getCodexModelScope } from "../../config/codexQuotaScopes.ts";
-import {
-  getCodexChildQuotaHydration,
-  getEarliestCodexChildCooldown,
-  inspectCodexAccount,
-} from "./state.ts";
+import { getCodexChildQuotaHydration, inspectCodexAccount } from "./state.ts";
 import type {
   CodexAccount,
   CodexAccountConnection,

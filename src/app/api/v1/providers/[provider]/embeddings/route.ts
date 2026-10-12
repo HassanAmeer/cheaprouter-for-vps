@@ -4,8 +4,6 @@ import { getRegistryEntry } from "@omniroute/open-sse/config/providerRegistry.ts
 import {
   getProviderCredentialsWithQuotaPreflight,
   clearRecoveredProviderState,
-  extractApiKey,
-  isValidApiKey,
 } from "@/sse/services/auth";
 import { handleEmbedding } from "@omniroute/open-sse/handlers/embeddings.ts";
 import * as log from "@/sse/utils/logger";

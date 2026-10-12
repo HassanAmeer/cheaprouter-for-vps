@@ -20,7 +20,6 @@ import { makeExecutorErrorResult as makeErrorResult } from "../utils/error.ts";
 import {
   HYPERAGENT_FALLBACK_MODELS,
   clientFacingHyperAgentModelId,
-  resolveHyperAgentModel,
   wireHyperAgentModelId,
   wireHyperAgentRuntimeId,
   wireHyperAgentSubagentModelId,

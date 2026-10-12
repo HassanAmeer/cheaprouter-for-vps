@@ -179,6 +179,157 @@
   --table-cell-border: rgba(255, 255, 255, 0.04);
 }
 
+/* ═══════════════════════════════════════════════════════════════
+   Jest Open Code — White & Silver (default)
+   Clean, minimal, low-chroma. Light body = white surfaces + silver
+   borders; dark body = graphite surfaces + silver borders. The
+   accent is a muted silver so nothing competes with content.
+   Scoped to .theme-jest so the coral palette above stays intact
+   and can be restored by changing the colorTheme setting.
+   ═══════════════════════════════════════════════════════════════ */
+.theme-jest {
+  color-scheme: light;
+
+  /* Accent — jest silver (matches COLOR_THEMES.jest) */
+  --color-primary: #94a3b8;
+  --color-primary-hover: #78879b;
+
+  /* Neutral accent family: no rainbow, just silver + a cool slate */
+  --color-accent: #64748b;
+  --color-accent-hover: #475569;
+  --color-accent-light: #94a3b8;
+
+  /* Semantic (kept readable, slightly desaturated for the clean look) */
+  --color-error: #dc2626;
+  --color-success: #16a34a;
+  --color-warning: #d97706;
+
+  /* Orchestration status tokens */
+  --orch-status-success: #15803d;
+  --orch-status-warning: #b45309;
+  --orch-status-error: #b91c1c;
+  --orch-status-muted: #6b7280;
+  --orch-status-approval: #6d28d9;
+
+  /* Surfaces: white base, silver edges */
+  --color-bg: #ffffff;
+  --color-bg-alt: #f4f5f7;
+  --color-bg-primary: #ffffff;
+  --color-bg-subtle: #f4f5f7;
+  --color-surface: #ffffff;
+  --color-card: #ffffff;
+  --color-sidebar: #fafafb;
+  --color-border: rgba(15, 23, 42, 0.09);
+  --color-text-main: #18181b;
+  --color-text-primary: #18181b;
+  --color-text-muted: #71717a;
+
+  /* Data-table surfaces */
+  --table-header-bg: rgba(244, 245, 247, 0.95);
+  --table-row-zebra: rgba(15, 23, 42, 0.015);
+  --table-row-hover: rgba(15, 23, 42, 0.035);
+  --table-cell-border: rgba(15, 23, 42, 0.03);
+  --table-row-selected: rgba(100, 116, 139, 0.1);
+
+  /* Graph-paper wallpaper grid — light, barely there */
+  --grid-line: rgba(15, 23, 42, 0.05);
+  --section-alt: rgba(15, 23, 42, 0.018);
+  --surface-2: #f4f5f7;
+
+  /* Shadows — tighter, flatter, more "editor" than "dashboard" */
+  --shadow-soft: 0 1px 2px rgba(15, 23, 42, 0.04), 0 1px 3px rgba(15, 23, 42, 0.06);
+  --shadow-warm: 0 1px 2px rgba(15, 23, 42, 0.04), 0 2px 8px rgba(15, 23, 42, 0.06);
+  --shadow-elevated: 0 4px 6px rgba(15, 23, 42, 0.05), 0 12px 24px -4px rgba(15, 23, 42, 0.08);
+
+  /* Fumadocs mapping (white + silver) */
+  --color-fd-background: #ffffff;
+  --color-fd-foreground: #18181b;
+  --color-fd-muted: #f4f5f7;
+  --color-fd-muted-foreground: #71717a;
+  --color-fd-popover: #ffffff;
+  --color-fd-popover-foreground: #18181b;
+  --color-fd-card: #ffffff;
+  --color-fd-card-foreground: #18181b;
+  --color-fd-border: rgba(15, 23, 42, 0.09);
+  --color-fd-primary: #64748b;
+  --color-fd-primary-foreground: #ffffff;
+  --color-fd-secondary: #f4f5f7;
+  --color-fd-secondary-foreground: #18181b;
+  --color-fd-accent: rgba(100, 116, 139, 0.08);
+  --color-fd-accent-foreground: #18181b;
+  --color-fd-ring: #94a3b8;
+
+  --grad-brand: linear-gradient(135deg, #94a3b8, #475569);
+}
+
+/* Jest Open Code — dark body: graphite surfaces, silver edges, same silver accent */
+.dark .theme-jest,
+.theme-jest.dark {
+  color-scheme: dark;
+
+  --color-primary: #b1bcca;
+  --color-primary-hover: #cbd5e1;
+
+  --color-accent: #94a3b8;
+  --color-accent-hover: #b1bcca;
+  --color-accent-light: #cbd5e1;
+
+  --color-error: #ef4444;
+  --color-success: #22c55e;
+  --color-warning: #f59e0b;
+
+  --orch-status-success: #22c55e;
+  --orch-status-warning: #f59e0b;
+  --orch-status-error: #ef4444;
+  --orch-status-muted: #6b7280;
+  --orch-status-approval: #8b5cf6;
+
+  --color-bg: #0f1115;
+  --color-bg-alt: #15181d;
+  --color-bg-primary: #0f1115;
+  --color-bg-subtle: #15181d;
+  --color-surface: #16181d;
+  --color-card: #16181d;
+  --color-sidebar: #12141a;
+  --color-border: rgba(203, 213, 225, 0.11);
+  --color-text-main: #e5e7eb;
+  --color-text-primary: #e5e7eb;
+  --color-text-muted: #a1a1aa;
+
+  --table-header-bg: rgba(21, 24, 29, 0.95);
+  --table-row-zebra: rgba(255, 255, 255, 0.02);
+  --table-row-hover: rgba(255, 255, 255, 0.04);
+  --table-cell-border: rgba(255, 255, 255, 0.04);
+  --table-row-selected: rgba(148, 163, 184, 0.12);
+
+  --grid-line: rgba(203, 213, 225, 0.06);
+  --section-alt: rgba(255, 255, 255, 0.018);
+  --surface-2: #1b1e24;
+
+  --shadow-soft: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-warm: 0 1px 2px rgba(0, 0, 0, 0.3), 0 2px 8px rgba(0, 0, 0, 0.25);
+  --shadow-elevated: 0 4px 8px rgba(0, 0, 0, 0.3), 0 16px 32px -8px rgba(0, 0, 0, 0.4);
+
+  --color-fd-background: #0f1115;
+  --color-fd-foreground: #e5e7eb;
+  --color-fd-muted: #15181d;
+  --color-fd-muted-foreground: #a1a1aa;
+  --color-fd-popover: #16181d;
+  --color-fd-popover-foreground: #e5e7eb;
+  --color-fd-card: #16181d;
+  --color-fd-card-foreground: #e5e7eb;
+  --color-fd-border: rgba(203, 213, 225, 0.11);
+  --color-fd-primary: #94a3b8;
+  --color-fd-primary-foreground: #0f1115;
+  --color-fd-secondary: #15181d;
+  --color-fd-secondary-foreground: #e5e7eb;
+  --color-fd-accent: rgba(148, 163, 184, 0.12);
+  --color-fd-accent-foreground: #e5e7eb;
+  --color-fd-ring: #b1bcca;
+
+  --grad-brand: linear-gradient(135deg, #b1bcca, #64748b);
+}
+
 @theme inline {
   /* Primary */
   --color-primary: var(--color-primary);
@@ -390,6 +541,24 @@ body.electron-macos {
     "GRAD" 0,
     "opsz" 24;
   user-select: none;
+}
+
+/* Spinner icon centering (see src/shared/components/Loading.tsx).
+   The Material Symbols block above is UNLAYERED, so it outranks Tailwind's
+   @layer utilities — `display: inline-block` beats a `flex` class, and
+   `font-size: 24px` ignores the `size-*` box utilities. The result: the 24px
+   glyph sits top-aligned inside a larger box (size-12 = 48px), so
+   `animate-spin` — pivoting on the BOX centre — swings the off-centre glyph
+   around in a ~17px orbit instead of spinning in place, which reads as the
+   loader drifting/wobbling 20-40px in every direction.
+   Declare the fix unlayered too, with a compound selector whose specificity
+   beats the :where() rule (0,2,0 > 0,0,0), and scope it to `.spinner-icon`
+   so ordinary inline Material Symbols keep their inline-block flow. */
+.spinner-icon.material-symbols-outlined {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
 }
 
 /* Ensure icon clicks always bubble to the parent button */

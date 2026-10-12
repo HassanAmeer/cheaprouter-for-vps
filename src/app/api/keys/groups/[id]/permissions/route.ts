@@ -19,7 +19,7 @@ const addGroupPermissionSchema = z.object({
 /**
  * GET /api/keys/groups/[id]/permissions — List permissions for a group
  */
-export async function GET(request: Request, { params }: RouteParams) {
+export async function GET(_request: Request, { params }: RouteParams) {
   try {
     const { id } = await params;
     const group = getKeyGroup(id);
@@ -27,7 +27,7 @@ export async function GET(request: Request, { params }: RouteParams) {
 
     const permissions = getGroupPermissions(id);
     return NextResponse.json({ permissions });
-  } catch (error) {
+  } catch {
     return NextResponse.json({ error: "Failed to list permissions" }, { status: 500 });
   }
 }
@@ -55,7 +55,7 @@ export async function POST(request: Request, { params }: RouteParams) {
       validation.data.provider
     );
     return NextResponse.json({ permission }, { status: 201 });
-  } catch (error) {
+  } catch {
     return NextResponse.json({ error: "Failed to add permission" }, { status: 500 });
   }
 }
@@ -65,7 +65,7 @@ export async function POST(request: Request, { params }: RouteParams) {
  */
 export async function DELETE(request: Request, { params }: RouteParams) {
   try {
-    const { id } = await params;
+    const { id: _id } = await params;
     const url = new URL(request.url);
     const permissionId = url.searchParams.get("permissionId");
     if (!permissionId) {
@@ -76,7 +76,7 @@ export async function DELETE(request: Request, { params }: RouteParams) {
       return NextResponse.json({ error: "Permission not found" }, { status: 404 });
     }
     return NextResponse.json({ success: true });
-  } catch (error) {
+  } catch {
     return NextResponse.json({ error: "Failed to remove permission" }, { status: 500 });
   }
 }

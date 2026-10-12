@@ -14,13 +14,11 @@ import {
   markAccountUnavailable,
   buildExhaustionOptions,
   extractApiKey,
-  isValidApiKey,
   extractSessionAffinityKey,
 } from "../services/auth";
 import {
   getRuntimeProviderProfile,
   clearModelLock,
-  lockModel,
   recordModelLockoutFailure,
   isDailyQuotaExhausted,
 } from "@omniroute/open-sse/services/accountFallback.ts";
@@ -38,7 +36,7 @@ import {
   shouldSkipConnDisable,
 } from "@omniroute/open-sse/services/combo.ts";
 import type { ComboLike, SingleModelTarget } from "@omniroute/open-sse/services/combo/types.ts";
-import { mergeAbortSignals } from "@omniroute/open-sse/executors/base.ts";
+import "@omniroute/open-sse/executors/base.ts";
 import { resolveRequestAutoControls } from "@omniroute/open-sse/services/autoCombo/requestControls.ts";
 import { isVerifiedNativeCodexRequest } from "@omniroute/open-sse/config/codexIdentity.ts";
 import { resolveCompressionSettings } from "@omniroute/open-sse/handlers/chatCore/compressionSettings.ts";
@@ -97,7 +95,6 @@ import {
   comboTargetCredentialProviderId,
   checkPipelineGates,
   checkResourcePressureBeforeProviderWork,
-  executeChatWithBreaker,
   findShadowedCompatibleNode,
   handleNoCredentials,
   safeResolveProxy,
@@ -154,12 +151,12 @@ import { markQuotaHealthy } from "../../domain/quotaCache";
 import { resolveForcedConnectionForCredentialPool } from "../services/sessionAffinityPin.ts";
 import { RequestTelemetry, recordTelemetry } from "../../shared/utils/requestTelemetry";
 import { generateRequestId } from "../../shared/utils/requestId";
-import { logAuditEvent } from "../../lib/compliance/index";
+import "../../lib/compliance/index";
 import { enforceApiKeyPolicy } from "../../shared/utils/apiKeyPolicy";
 import { rejectIfMeteredBudgetExceeded } from "@/lib/usage/meteredBudgetPolicy";
 import { hasProviderQuotaBypassScope } from "../../shared/constants/apiKeyPolicyScopes";
 import { isMicrosoftDesignerWebProviderRetiredError } from "../../shared/constants/designerWebRetirement";
-import { cloneBoundedForLog } from "@omniroute/open-sse/utils/requestLogger.ts";
+import "@omniroute/open-sse/utils/requestLogger.ts";
 import { handleInternalUsageCommand } from "@/lib/usage/internalUsageCommand";
 import {
   applyTaskAwareRouting,
@@ -1038,7 +1035,6 @@ async function handleChatImplementation(
   // T05 — Task-Aware Smart Routing
   // Detect the semantic task type and optionally route to the optimal model
   let resolvedModelStr = modelStr;
-  let taskRouteInfo: { taskType: string; wasRouted: boolean } | null = null;
   if (getTaskRoutingConfig().enabled) {
     telemetry.startPhase("task-route");
     const tr = applyTaskAwareRouting(modelStr, body);
@@ -1052,7 +1048,6 @@ async function handleChatImplementation(
     } else if (tr.taskType !== "chat") {
       log.debug("T05", `Task-Aware: detected="${tr.taskType}" (no override configured)`);
     }
-    taskRouteInfo = { taskType: tr.taskType, wasRouted: tr.wasRouted };
     telemetry.endPhase();
   }
 
@@ -1782,7 +1777,6 @@ async function handleSingleModelChat(
   let requestRetryAttempt = 0;
   let requestRetryLastError = null;
   let requestRetryLastStatus = null;
-  let requestRetryLastCooldownMs = 0;
   // Bug #3758: per-request counter bounding the early-close (STREAM_EARLY_EOF)
   // re-attempt to exactly one for the whole request. Declared outside both retry
   // loops so it can never reset and loop.
@@ -1803,7 +1797,6 @@ async function handleSingleModelChat(
     const excludedConnectionIds = new Set<string>(agy.on ? agy.attempted : []);
     let lastError = requestRetryLastError;
     let lastStatus = requestRetryLastStatus;
-    let lastCooldownMs = requestRetryLastCooldownMs;
     let preselectedCredentials = initialPreselectedCredentials;
     initialPreselectedCredentials = null;
 
@@ -2355,7 +2348,7 @@ async function handleSingleModelChat(
 
       if (isAntigravityStreamReadinessFailure) {
         const classificationError = resolveStreamReadinessClassificationError(result);
-        const { shouldFallback, cooldownMs } = await markAccountUnavailable(
+        const { shouldFallback } = await markAccountUnavailable(
           credentials.connectionId,
           result.status || HTTP_STATUS.BAD_GATEWAY,
           classificationError,
@@ -2370,10 +2363,6 @@ async function handleSingleModelChat(
             "AUTH",
             `Antigravity connection ${accountId}... produced no useful stream content, trying fallback connection`
           );
-          if (Number.isFinite(cooldownMs) && cooldownMs > 0) {
-            lastCooldownMs = cooldownMs;
-            requestRetryLastCooldownMs = cooldownMs;
-          }
           if (runtimeOptions.sessionAffinityKey) {
             try {
               const affinity = getSessionAccountAffinity(
@@ -2404,7 +2393,7 @@ async function handleSingleModelChat(
           result.errorCode === ANTIGRAVITY_PRE_RESPONSE_TIMEOUT_CODE);
 
       if (isAntigravityPreResponseTimeout) {
-        const { shouldFallback, cooldownMs } = await markAccountUnavailable(
+        const { shouldFallback } = await markAccountUnavailable(
           credentials.connectionId,
           result.status,
           result.error || ANTIGRAVITY_PRE_RESPONSE_TIMEOUT_CODE,
@@ -2419,10 +2408,6 @@ async function handleSingleModelChat(
             "AUTH",
             `Antigravity connection ${accountId}... timed out before response headers, trying fallback connection`
           );
-          if (Number.isFinite(cooldownMs) && cooldownMs > 0) {
-            lastCooldownMs = cooldownMs;
-            requestRetryLastCooldownMs = cooldownMs;
-          }
           if (runtimeOptions.sessionAffinityKey) {
             try {
               const affinity = getSessionAccountAffinity(
@@ -2642,8 +2627,8 @@ async function handleSingleModelChat(
       const is401 = result.status === 401;
       const skipConnectionDisable = shouldSkipConnDisable(result, is401, hasExtraKeys, provider);
 
-      const { shouldFallback, cooldownMs } = skipConnectionDisable
-        ? { shouldFallback: false, cooldownMs: 0 }
+      const { shouldFallback } = skipConnectionDisable
+        ? { shouldFallback: false }
         : await markAccountUnavailable(
             credentials.connectionId,
             result.status,
@@ -2670,10 +2655,6 @@ async function handleSingleModelChat(
       // stream-readiness / pre-response-timeout and account-semaphore paths above
       // already apply.
       if (shouldFallback && !hasForcedConnection) {
-        if (Number.isFinite(cooldownMs) && cooldownMs > 0) {
-          lastCooldownMs = cooldownMs;
-          requestRetryLastCooldownMs = cooldownMs;
-        }
         log.warn("AUTH", `Account ${accountId}... unavailable (${result.status}), trying fallback`);
         // #6219: evict the sticky session pin when the pinned account fails over,
         // otherwise the next request re-pins the same throttled account until

@@ -19,7 +19,7 @@ import {
 const CLAUDE_WEB_URL = "https://claude.ai";
 const CHALLENGE_TIMEOUT = 60000; // 60s to solve challenge
 const CHALLENGE_CHECK_INTERVAL = 500; // Check every 500ms
-const MAX_RETRIES = 3;
+const _MAX_RETRIES = 3;
 
 interface TurnstileSolveResult {
   cfClearance: string;
@@ -78,7 +78,7 @@ export async function solveTurnstile(options?: {
   timeout?: number;
 }): Promise<TurnstileSolveResult> {
   const headless = options?.headless !== false;
-  const timeout = options?.timeout ?? CHALLENGE_TIMEOUT;
+  const _timeout = options?.timeout ?? CHALLENGE_TIMEOUT;
 
   let browser: Browser | null = null;
   let page: Page | null = null;

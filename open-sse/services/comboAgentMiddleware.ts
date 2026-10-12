@@ -178,7 +178,7 @@ export function stripModelTags(messages: Message[]): Message[] {
 export function applyComboAgentMiddleware(
   body: Record<string, unknown>,
   comboConfig: ComboConfig | null | undefined,
-  providerModel: string // "provider/model" string for context caching
+  _providerModel: string // "provider/model" string for context caching
 ): { body: Record<string, unknown>; pinnedModel: string | null } {
   if (!comboConfig) return { body, pinnedModel: null };
 

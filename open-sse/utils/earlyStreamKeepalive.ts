@@ -667,7 +667,7 @@ export async function withEarlyStreamKeepalive(
                   bytesForwarded += value.byteLength;
                 }
               }
-            } catch (readErr) {
+            } catch {
               // Upstream stream failed mid-flight. Only emit an error frame if
               // NO content was forwarded yet — otherwise the client already
               // received partial content and a late error frame would corrupt

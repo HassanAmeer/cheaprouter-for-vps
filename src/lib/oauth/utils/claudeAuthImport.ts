@@ -100,7 +100,7 @@ export function parseAndValidateClaudeAuth(raw: unknown): ParsedClaudeAuth {
 export async function enrichWithBootstrap(
   parsed: ParsedClaudeAuth,
   // proxyConfig reserved for future authenticated-proxy support
-  proxyConfig?: null
+  _proxyConfig?: null
 ): Promise<EnrichedClaudeAuth> {
   const base: EnrichedClaudeAuth = {
     ...parsed,

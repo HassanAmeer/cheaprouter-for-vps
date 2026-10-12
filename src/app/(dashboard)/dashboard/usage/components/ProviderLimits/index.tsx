@@ -172,7 +172,7 @@ const STATUS_TONE: Record<
 };
 
 // Worst aggregate across a list of statuses — drives the group header dot.
-function aggregateWorst(statuses: StatusKey[]): "critical" | "alert" | "ok" | "empty" {
+function _aggregateWorst(statuses: StatusKey[]): "critical" | "alert" | "ok" | "empty" {
   let worst: "ok" | "alert" | "empty" = "empty";
   for (const s of statuses) {
     if (s === "critical") return "critical";

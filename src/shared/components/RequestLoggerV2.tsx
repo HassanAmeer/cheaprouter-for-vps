@@ -568,7 +568,7 @@ const RequestLoggerV2 = forwardRef<RequestLoggerV2Handle, RequestLoggerV2Initial
         const url = new URL(globalThis.location.href);
         url.searchParams.delete("id");
         router.replace(url.pathname + url.search, { scroll: false });
-      } catch (e) {
+      } catch {
         // ignore navigation errors
       }
     }, [router]);
@@ -592,7 +592,7 @@ const RequestLoggerV2 = forwardRef<RequestLoggerV2Handle, RequestLoggerV2Initial
           const url = new URL(globalThis.location.href);
           url.searchParams.set("id", logEntry.id);
           router.replace(url.pathname + url.search, { scroll: false });
-        } catch (e) {
+        } catch {
           // ignore navigation errors
         }
         setDetailLoading(true);
@@ -742,7 +742,7 @@ const RequestLoggerV2 = forwardRef<RequestLoggerV2Handle, RequestLoggerV2Initial
           const cidLogs = await res.json();
           if (!Array.isArray(cidLogs) || cidLogs.length === 0) return;
           setLogs((prev) => {
-            const ids = new Set(cidLogs.map((l: any) => l.id));
+            const _ids = new Set(cidLogs.map((l: any) => l.id));
             let changed = false;
             const merged = prev.map((l: any) => {
               const updated = cidLogs.find((c: any) => c.id === l.id);

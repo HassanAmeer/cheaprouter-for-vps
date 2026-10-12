@@ -42,8 +42,8 @@ const MAX_RESPONSE_BYTES = 10 * 1024 * 1024; // 10 MB
 const COOKIE_CACHE_TTL_MS = 5 * 60 * 1000; // Cache fresh cookies for 5 minutes
 const COOKIE_POLL_INTERVAL_MS = 500; // Poll for cookies every 500ms
 const COOKIE_POLL_TIMEOUT_MS = 5000; // Max poll time for cookies
-const CIRCUIT_BASE_COOLDOWN_MS = 30_000; // 30s base cooldown
-const CIRCUIT_MAX_COOLDOWN_MS = 600_000; // 10 min max cooldown
+const _CIRCUIT_BASE_COOLDOWN_MS = 30_000; // 30s base cooldown
+const _CIRCUIT_MAX_COOLDOWN_MS = 600_000; // 10 min max cooldown
 
 // Cookie cache — avoids repeated browser launches when cookies are still valid
 interface CachedCookies {
@@ -311,7 +311,7 @@ export async function browserBackedChat(
     await inputLocator.fill(userMessage);
     await waitWithSignal(800, signal);
 
-    const tSubmitStart = Date.now();
+    const _tSubmitStart = Date.now();
     const responsePromise = page.waitForResponse(
       (r) =>
         r.request().method() === "POST" && chatUrlMatcher(r.url(), chatUrlMatchDomain, chatUrl),
@@ -466,7 +466,14 @@ export async function httpBackedChat(
   if (httpOverride) return httpOverride(req);
   const t0 = Date.now();
 
-  const { chatUrl, userMessage, cookieString, cookieDomain, chatUrlMatchDomain, signal } = req;
+  const {
+    chatUrl,
+    userMessage,
+    cookieString,
+    cookieDomain: _cookieDomain,
+    chatUrlMatchDomain,
+    signal,
+  } = req;
   const fingerprint = resolveHttpBackedChatFingerprint(chatUrlMatchDomain); // #7548
   // Build browser-emulated headers
   const headers: Record<string, string> = {

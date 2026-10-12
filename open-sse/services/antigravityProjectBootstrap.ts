@@ -402,7 +402,7 @@ export async function ensureAntigravityProjectAssigned(
               return;
             }
           }
-        } catch (e) {
+        } catch {
           aborted = signal?.aborted === true;
           return;
         } finally {

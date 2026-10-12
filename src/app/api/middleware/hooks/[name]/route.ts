@@ -6,7 +6,7 @@ import {
   deleteMiddlewareHook,
   getHookLogs,
 } from "@/lib/db/middleware";
-import { registerHook, unregisterHook, updateHook } from "@/lib/middleware/registry";
+import { registerHook, unregisterHook } from "@/lib/middleware/registry";
 import type { HookConfig } from "@/lib/middleware/types";
 import { isValidationFailure, validateBody } from "@/shared/validation/helpers";
 import { requireManagementAuth } from "@/lib/api/requireManagementAuth";

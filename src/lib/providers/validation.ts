@@ -86,7 +86,6 @@ import {
   validateClarifaiProvider,
   validateEmbeddingApiProvider,
   validateJinaFoundationProvider,
-  validateRerankApiProvider,
 } from "./validation/embeddingProviders";
 import {
   validateBedrockProvider,

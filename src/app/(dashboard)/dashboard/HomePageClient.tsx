@@ -18,6 +18,7 @@ import { getProviderDisplayLabel } from "@/shared/utils/providerDisplayLabel";
 import { useIsElectron, useOpenExternal } from "@/shared/hooks/useElectron";
 import { HomeProviderTopologySection } from "./HomeProviderTopologySection";
 import { shouldShowProviderTopologyOnHome } from "./homeAppearance";
+import HomeAnalytics from "../home/HomeAnalytics";
 import HomeRecentRequests from "../home/HomeRecentRequests";
 
 type UpdateStep = {
@@ -522,6 +523,17 @@ export default function HomePageClient({ machineId: _machineId }: HomePageClient
   }, [providerStats, providerMetrics, providerNodes, providerConnections]);
 
   const { lastProvider, errorProvider } = providerTopology;
+
+  // Self-defined provider nodes (openai-compatible-* and similar) are not part of
+  // the AI_PROVIDERS catalog, so count them separately for the home analytics.
+  const customProvidersCount = useMemo(
+    () =>
+      providerNodes.filter((node) => {
+        const nodeId = typeof node?.id === "string" ? node.id.trim() : "";
+        return nodeId && !AI_PROVIDERS[nodeId];
+      }).length,
+    [providerNodes]
+  );
 
   const pollBackgroundUpdate = useCallback(
     async ({
@@ -1135,6 +1147,10 @@ export default function HomePageClient({ machineId: _machineId }: HomePageClient
           </div>
         </Card>
       )}
+
+      {/* Usage analytics: provider/token/key roll-up + charts. Kept out of the
+          topology section so it renders independently of that setting. */}
+      <HomeAnalytics providerStats={providerStats} customProviders={customProvidersCount} />
 
       {showProviderTopologyOnHome && (
         <div className="grid grid-cols-1 lg:grid-cols-[2fr_1fr] gap-3">

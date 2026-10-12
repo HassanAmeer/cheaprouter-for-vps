@@ -13,7 +13,7 @@
 import fs from "fs";
 import os from "os";
 import path from "path";
-import { isRunningInDocker } from "./dockerDetect";
+import "./dockerDetect";
 
 /** Minimal keytar surface (CJS/native; typings may not expose `default`). */
 type KeytarModule = {

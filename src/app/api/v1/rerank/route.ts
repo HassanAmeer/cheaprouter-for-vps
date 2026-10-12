@@ -4,7 +4,7 @@ import {
   clearRecoveredProviderState,
 } from "@/sse/services/auth";
 import { withInjectionGuard } from "@/middleware/promptInjectionGuard";
-import { parseRerankModel, getRerankProvider } from "@omniroute/open-sse/config/rerankRegistry.ts";
+import { parseRerankModel } from "@omniroute/open-sse/config/rerankRegistry.ts";
 import { errorResponse } from "@omniroute/open-sse/utils/error.ts";
 import { HTTP_STATUS } from "@omniroute/open-sse/config/constants.ts";
 import { enforceApiKeyPolicy } from "@/shared/utils/apiKeyPolicy";
@@ -51,7 +51,7 @@ export async function OPTIONS() {
  * `RERANK_REMOTE_PROVIDER_NODES` opt-in and must pass the provider outbound URL policy
  * (see `_shared/rerankProviderNodes.ts`).
  */
-async function postHandler(request, context) {
+async function postHandler(request, _context) {
   let rawBody;
   try {
     rawBody = await request.json();

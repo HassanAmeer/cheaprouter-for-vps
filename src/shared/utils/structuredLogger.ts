@@ -240,7 +240,7 @@ export function createLogger(component: string) {
       safeStderrWrite(formatEntry("fatal", component, message, meta) + "\n");
       writeToFile(entry);
     },
-    child(defaultMeta: Record<string, unknown>) {
+    child(_defaultMeta: Record<string, unknown>) {
       return createLogger(component);
     },
   };

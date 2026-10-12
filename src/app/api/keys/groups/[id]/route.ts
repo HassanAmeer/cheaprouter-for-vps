@@ -5,10 +5,6 @@ import {
   updateKeyGroup,
   deleteKeyGroup,
   getGroupMembers,
-  addGroupPermission,
-  removeGroupPermission,
-  addKeyToGroup,
-  removeKeyFromGroup,
 } from "@/lib/db/apiKeyGroups";
 import { isValidationFailure, validateBody } from "@/shared/validation/helpers";
 
@@ -25,7 +21,7 @@ const updateKeyGroupSchema = z
 /**
  * GET /api/keys/groups/[id] — Get group details with permissions and members
  */
-export async function GET(request: Request, { params }: RouteParams) {
+export async function GET(_request: Request, { params }: RouteParams) {
   try {
     const { id } = await params;
     const group = getKeyGroupWithPermissions(id);
@@ -34,7 +30,7 @@ export async function GET(request: Request, { params }: RouteParams) {
     }
     const members = getGroupMembers(id);
     return NextResponse.json({ group, members });
-  } catch (error) {
+  } catch {
     return NextResponse.json({ error: "Failed to get group" }, { status: 500 });
   }
 }
@@ -56,7 +52,7 @@ export async function PUT(request: Request, { params }: RouteParams) {
       return NextResponse.json({ error: "Group not found" }, { status: 404 });
     }
     return NextResponse.json({ group });
-  } catch (error) {
+  } catch {
     return NextResponse.json({ error: "Failed to update group" }, { status: 500 });
   }
 }
@@ -64,7 +60,7 @@ export async function PUT(request: Request, { params }: RouteParams) {
 /**
  * DELETE /api/keys/groups/[id] — Delete a group
  */
-export async function DELETE(request: Request, { params }: RouteParams) {
+export async function DELETE(_request: Request, { params }: RouteParams) {
   try {
     const { id } = await params;
     const deleted = deleteKeyGroup(id);
@@ -72,7 +68,7 @@ export async function DELETE(request: Request, { params }: RouteParams) {
       return NextResponse.json({ error: "Group not found" }, { status: 404 });
     }
     return NextResponse.json({ success: true });
-  } catch (error) {
+  } catch {
     return NextResponse.json({ error: "Failed to delete group" }, { status: 500 });
   }
 }

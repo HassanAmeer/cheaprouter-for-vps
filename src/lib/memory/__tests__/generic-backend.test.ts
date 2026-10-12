@@ -1,4 +1,4 @@
-import { describe, test, expect, beforeEach, afterEach, vi } from "vitest";
+import { describe, test, expect, beforeEach, vi } from "vitest";
 import { GenericMemoryBackend, createGenericMemoryBackend } from "../genericBackend";
 import type { Memory } from "../types";
 import { MemoryType } from "../types";
@@ -102,7 +102,7 @@ describe("GenericMemoryBackend", () => {
     });
 
     test("reports latency in ms", async () => {
-      const start = Date.now();
+      const _start = Date.now();
       vi.spyOn(globalThis, "fetch").mockImplementation(
         () =>
           new Promise((r) =>
@@ -142,7 +142,7 @@ describe("GenericMemoryBackend", () => {
    * other endpoints return a custom response. This avoids the
    * initialize() health gate.
    */
-  function mockHealthOkThen(secondResponse: Response) {
+  function _mockHealthOkThen(secondResponse: Response) {
     let callCount = 0;
     return vi.spyOn(globalThis, "fetch").mockImplementation(async (url: string) => {
       callCount++;
@@ -157,7 +157,7 @@ describe("GenericMemoryBackend", () => {
 
   describe("create()", () => {
     test("POSTs to /memories with input body", async () => {
-      const fetchMock = vi.spyOn(globalThis, "fetch").mockImplementation(async (url: string) => {
+      const _fetchMock = vi.spyOn(globalThis, "fetch").mockImplementation(async (url: string) => {
         if (url.toString().endsWith("/health")) {
           return new Response(JSON.stringify({ status: "ok" }), { status: 200 });
         }

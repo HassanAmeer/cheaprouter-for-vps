@@ -324,7 +324,7 @@ export default function ModelLockoutCard() {
     setErrorCodesInput("");
   };
 
-  const fmt = (ms: number) => {
+  const _fmt = (ms: number) => {
     if (ms >= 60_000) return `${ms / 1000 / 60}m`;
     if (ms >= 1_000) return `${ms / 1000}s`;
     return `${ms}ms`;

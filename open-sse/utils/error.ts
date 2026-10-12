@@ -1,4 +1,4 @@
-import { CORS_HEADERS } from "./cors.ts";
+import "./cors.ts";
 import { unwrapClinepassEnvelope } from "./clinepassEnvelope.ts";
 import { extractJsonErrorFields } from "./tencentEnvelope.ts";
 import {
@@ -1197,8 +1197,8 @@ export function normalizeCookie(raw: string): string {
  */
 export function formatProviderError(
   error: { code?: string | number; message?: string; cause?: unknown } | Error,
-  provider: string,
-  model: string,
+  _provider: string,
+  _model: string,
   statusCode?: string | number | null
 ): string {
   const providerCode = "code" in error ? error.code : undefined;

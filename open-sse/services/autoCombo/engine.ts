@@ -11,7 +11,6 @@
 
 import {
   scorePool,
-  DEFAULT_WEIGHTS,
   normalizeScoringWeights,
   type ScoringWeights,
   type ProviderCandidate,

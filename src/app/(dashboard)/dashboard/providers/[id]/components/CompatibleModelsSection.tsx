@@ -26,7 +26,7 @@ import {
 import { ModelVisibilityToolbar } from "./ModelRow";
 import { sortModelsFreeFirst, isModelFreeBadge } from "@/shared/utils/freeModels";
 import { useStrictFreeBadge } from "./useStrictFreeBadge";
-import PassthroughModelRow, { type PassthroughModelRowProps } from "./PassthroughModelRow";
+import PassthroughModelRow from "./PassthroughModelRow";
 
 // ---------------------------------------------------------------------------
 // Props

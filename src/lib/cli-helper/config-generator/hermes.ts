@@ -9,7 +9,7 @@ async function loadYaml() {
   return yaml;
 }
 
-const CONFIG_PATH = path.join(os.homedir(), ".hermes", "config.yaml");
+const _CONFIG_PATH = path.join(os.homedir(), ".hermes", "config.yaml");
 
 export async function generateHermesConfig(options: {
   baseUrl: string;

@@ -32,7 +32,7 @@
 import { wildcardMatch } from "../wildcardRouter.ts";
 import { getProviderModels } from "../../config/providerModels.ts";
 import { getActiveSyncedCatalog } from "../../../src/lib/db/models/activeSyncedCatalog.ts";
-import { filterAlibabaFreeTierModels, isAlibabaModelStudioProvider } from "../alibabaFreeTier.ts";
+import { isAlibabaModelStudioProvider } from "../alibabaFreeTier.ts";
 import {
   filterAlibabaFreeEligibleModels,
   buildAlibabaFreeTierFilterContext,

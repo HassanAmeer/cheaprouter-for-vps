@@ -39,7 +39,7 @@ const STORAGE_KEY = "omniroute.cursorAgentNudgeDismissed";
 vi.mock("next-intl", () => ({ useTranslations: () => (k: string) => k }));
 
 function mockFetch(cursorAgentAvailable: boolean | null) {
-  return vi.fn(async (url: string) => {
+  return vi.fn(async (_url: string) => {
     if (cursorAgentAvailable === null) {
       return { ok: false, json: async () => ({}) } as Response;
     }

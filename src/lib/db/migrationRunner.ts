@@ -642,11 +642,11 @@ function applyApiKeyLifecycleMigration(db: SqliteAdapter): void {
   `);
 }
 
-function isSearchRequestTypeMigration(migration: { version: string; name: string }): boolean {
+function _isSearchRequestTypeMigration(migration: { version: string; name: string }): boolean {
   return migration.version === "007";
 }
 
-function applySearchRequestTypeMigration(db: SqliteAdapter): void {
+function _applySearchRequestTypeMigration(db: SqliteAdapter): void {
   ensureColumn(
     db,
     "call_logs",

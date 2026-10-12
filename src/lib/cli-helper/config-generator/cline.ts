@@ -1,7 +1,7 @@
 import path from "node:path";
 import os from "node:os";
 
-const CONFIG_PATH = path.join(os.homedir(), ".cline", "data", "globalState.json");
+const _CONFIG_PATH = path.join(os.homedir(), ".cline", "data", "globalState.json");
 
 export function generateClineConfig(options: {
   baseUrl: string;

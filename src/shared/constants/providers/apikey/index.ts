@@ -11,6 +11,7 @@ import { APIKEY_PROVIDERS_INFERENCE } from "./inference-hosts";
 import { APIKEY_PROVIDERS_ENTERPRISE } from "./enterprise-cloud";
 import { APIKEY_PROVIDERS_REGIONAL } from "./regional";
 import { APIKEY_PROVIDERS_SPECIALTY } from "./specialty-media";
+import { APIKEY_PROVIDERS_AP } from "./ap-catalog";
 
 export const APIKEY_PROVIDERS = {
   ...APIKEY_PROVIDERS_GATEWAYS,
@@ -20,4 +21,5 @@ export const APIKEY_PROVIDERS = {
   ...APIKEY_PROVIDERS_ENTERPRISE,
   ...APIKEY_PROVIDERS_REGIONAL,
   ...APIKEY_PROVIDERS_SPECIALTY,
+  ...APIKEY_PROVIDERS_AP,
 };

@@ -297,7 +297,7 @@ export function parseLooseJsonObject(raw: string): Record<string, unknown> | nul
   return null;
 }
 
-function findBareJsonCandidates(text: string): ToolParseCandidate[] {
+function _findBareJsonCandidates(text: string): ToolParseCandidate[] {
   const candidates: ToolParseCandidate[] = [];
   let start = -1;
   let depth = 0;
@@ -354,7 +354,7 @@ function findBareJsonCandidates(text: string): ToolParseCandidate[] {
   return candidates;
 }
 
-function rangesOverlap(
+function _rangesOverlap(
   a: { start: number; end: number },
   b: { start: number; end: number }
 ): boolean {

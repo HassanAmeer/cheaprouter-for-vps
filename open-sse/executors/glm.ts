@@ -1,5 +1,4 @@
 import { randomUUID } from "node:crypto";
-import type { KeyHealth } from "../services/apiKeyRotator.ts";
 
 import { DefaultExecutor } from "./default.ts";
 import {

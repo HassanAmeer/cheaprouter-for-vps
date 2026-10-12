@@ -44,7 +44,7 @@ export default function EmptyConnectionsPlaceholder({
   onOpenOAuthModal,
   onOpenImportCodex,
   onOpenImportClaude,
-  onOpenImportGemini,
+  onOpenImportGemini: _onOpenImportGemini,
   onOpenImportGrokCli,
   t,
 }: EmptyConnectionsPlaceholderProps) {

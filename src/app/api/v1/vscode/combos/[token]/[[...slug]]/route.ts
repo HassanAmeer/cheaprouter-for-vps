@@ -361,7 +361,7 @@ export async function GET(
 				...CORS_HEADERS,
 			},
 		});
-	} catch (error) {
+	} catch  {
 		return new Response(JSON.stringify({ error: "Failed to fetch combos" }), {
 			status: 500,
 			headers: { "Content-Type": "application/json", ...CORS_HEADERS },

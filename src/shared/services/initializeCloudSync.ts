@@ -1,5 +1,5 @@
 import { getCloudSyncScheduler } from "@/shared/services/cloudSyncScheduler";
-import { isCloudEnabled } from "@/lib/db/settings";
+import "@/lib/db/settings";
 import { cleanupProviderConnections } from "@/lib/db/providers";
 
 /**

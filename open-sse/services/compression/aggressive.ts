@@ -101,7 +101,7 @@ export function compressAggressive(
       return { ...msg, content: nextContent };
     });
     currentMessages = afterToolResult;
-  } catch (err) {
+  } catch {
     // Downgrade: skip tool-result compression, continue pipeline
   }
 
@@ -116,7 +116,7 @@ export function compressAggressive(
     );
     agingSavings = agingResult.saved;
     currentMessages = agingResult.messages as ChatMessage[];
-  } catch (err) {
+  } catch {
     // Downgrade: skip aging, continue with current messages
   }
 
@@ -143,7 +143,7 @@ export function compressAggressive(
         }
         return msg;
       });
-    } catch (err) {
+    } catch {
       // Downgrade: skip fallback summarizer
     }
   }
@@ -183,7 +183,7 @@ export function compressAggressive(
           resultStats.techniquesUsed.push("caveman-fallback");
         }
       }
-    } catch (err) {
+    } catch {
       // Caveman failed, try lite
     }
 
@@ -210,7 +210,7 @@ export function compressAggressive(
           resultStats.techniquesUsed.push("lite-fallback");
         }
       }
-    } catch (err) {
+    } catch {
       // Lite also failed, return current messages as-is
     }
   }

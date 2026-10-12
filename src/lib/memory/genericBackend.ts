@@ -13,7 +13,7 @@ import type {
   HealthCheckResult,
   Memory,
 } from "./backend";
-import { MemoryType } from "./types";
+import "./types";
 
 // ─── SSRF guard helpers (no DNS resolution) ────────────────────────────
 // Reused from fetchGuard.ts pattern: block requests to internal/reserved

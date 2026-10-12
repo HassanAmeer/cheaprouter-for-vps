@@ -13,11 +13,7 @@
  * testSingleConnection() for all connections.
  */
 
-import {
-  isCredentialHealthy,
-  isCredentialStale,
-  getCredentialHealthSummary,
-} from "@/lib/credentialHealth/cache";
+import { isCredentialHealthy, isCredentialStale } from "@/lib/credentialHealth/cache";
 
 export interface CredentialGateResult {
   /** true = healthy, false = skip (bad), undefined = unknown */
@@ -39,7 +35,7 @@ export interface CredentialGateResult {
  */
 export function checkCredentialGate(
   connectionId: string,
-  provider: string,
+  _provider: string,
   modelStr: string
 ): CredentialGateResult {
   // 1. Check cache (sub-millisecond)
@@ -74,7 +70,7 @@ export function checkCredentialGate(
  * Log a credential gate skip event.
  * This emits a structured warning for observability.
  */
-export function logCredentialSkip(log: any, modelStr: string, reason: string): void {
+export function logCredentialSkip(log: any, _modelStr: string, reason: string): void {
   if (log?.info) {
     log.info("CREDENTIAL_GATE", reason);
   }

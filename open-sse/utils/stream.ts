@@ -82,10 +82,7 @@ import {
   hasUnsupportedReasoningSignal,
 } from "./reasoningFields.ts";
 import { applyThinkTag, flushThink, initThinkState } from "./thinkTagParser.ts";
-import {
-  caseInsensitiveToolNameLookup,
-  restoreOpenAIToolNames,
-} from "../translator/helpers/toolCallHelper.ts";
+import { restoreOpenAIToolNames } from "../translator/helpers/toolCallHelper.ts";
 import { restoreClaudeToolName } from "../services/claudeCodeToolRemapper.ts";
 import { normalizeFinalOpenAIStreamChunk } from "./openAIStreamChunk.ts";
 import { collectClaudeDelta } from "./streamClaudeDelta.ts";
@@ -3234,7 +3231,7 @@ export function createSSEStream(options: StreamOptions = {}) {
           console.log(`[STREAM] Error in flush (${model || "unknown"}):`, error.message || error);
         }
       },
-      cancel(reason) {
+      cancel(_reason) {
         clearIdleTimer();
       },
     },

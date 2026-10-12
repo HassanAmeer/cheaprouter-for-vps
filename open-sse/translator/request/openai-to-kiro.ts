@@ -878,7 +878,7 @@ function thinkingLengthForEffort(effort: string): number {
 /**
  * Build Kiro payload from OpenAI format
  */
-export function buildKiroPayload(model, body, stream, credentials) {
+export function buildKiroPayload(model, body, _stream, credentials) {
   // Reject the Anthropic-only `[1m]` context beta before it reaches Bedrock —
   // Kiro cannot honor it and a forwarded `kr/*[1m]` id is malformed upstream.
   if (hasUnsupportedKiroContextSuffix(model)) {
@@ -944,7 +944,7 @@ export function buildKiroPayload(model, body, stream, credentials) {
     }
   }
 
-  const { history, currentMessage, toolsAttached, toolDocs } = convertMessages(
+  const { history, currentMessage, toolsAttached: _toolsAttached, toolDocs } = convertMessages(
     messages,
     tools,
     normalizedModel

@@ -12,7 +12,7 @@ import type {
   HealthCheckResult,
   Memory,
 } from "./backend";
-import { MemoryType } from "./types";
+import "./types";
 import { createMemory, getMemory, updateMemory, deleteMemory, listMemories } from "./store";
 import { retrieveMemories } from "./retrieval";
 
@@ -90,7 +90,7 @@ export class SQLiteBackend implements MemoryBackend {
     const start = Date.now();
     try {
       // Try a simple query to verify DB is accessible
-      const result = await getMemory("health-check-never-exists");
+      const _result = await getMemory("health-check-never-exists");
       return { ok: true, latencyMs: Date.now() - start };
     } catch (e) {
       return { ok: false, latencyMs: Date.now() - start, error: String(e) };

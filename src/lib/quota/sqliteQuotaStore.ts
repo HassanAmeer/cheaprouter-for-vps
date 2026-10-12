@@ -115,7 +115,7 @@ export class SqliteQuotaStore implements QuotaStore {
    * Uses the same 2-bucket sliding-window formula as peek(), applied once
    * to the pool totals so the result is consistent with per-key semantics.
    */
-  async poolConsumedTotal(poolId: string, dim: DimensionKey): Promise<number> {
+  async poolConsumedTotal(_poolId: string, dim: DimensionKey): Promise<number> {
     const nowMs = Date.now();
     const dimKey = dimensionKeyToString(dim);
     const windowMs = WINDOW_MS[dim.window];

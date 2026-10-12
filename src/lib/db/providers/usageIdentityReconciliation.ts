@@ -9,7 +9,7 @@ interface StatementLike {
 }
 
 interface DbLike {
-  prepare: <TRow = unknown>(sql: string) => StatementLike;
+  prepare: <_TRow = unknown>(sql: string) => StatementLike;
 }
 
 function nonEmptyString(value: unknown): string | null {

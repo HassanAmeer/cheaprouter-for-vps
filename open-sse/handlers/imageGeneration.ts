@@ -28,13 +28,7 @@ import {
   isJsonObject,
   parseKieResultJson,
 } from "../utils/kieTask.ts";
-import {
-  submitComfyWorkflow,
-  pollComfyResult,
-  fetchComfyOutput,
-  extractComfyOutputFiles,
-  resolveComfyUiBaseUrl,
-} from "../utils/comfyuiClient.ts";
+import { resolveComfyUiBaseUrl } from "../utils/comfyuiClient.ts";
 import { fetchUntrustedRemoteImage } from "@/shared/network/remoteImageFetch";
 import {
   FetchTimeoutError,
@@ -425,7 +419,7 @@ export async function handleImageGeneration({
   log,
   resolvedProvider = null,
   signal = null,
-  clientHeaders = null,
+  clientHeaders: _clientHeaders = null,
   peerLocality = null,
 }) {
   // Retirement guards: the retired-provider sets hold bare provider ids only, so testing

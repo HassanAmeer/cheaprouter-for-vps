@@ -57,7 +57,7 @@ export const codebuddyCn = {
     });
 
     if (!response.ok) {
-      const err = await response.text();
+      const _err = await response.text();
       throw new Error(`CodeBuddy state request failed (${response.status})`);
     }
 

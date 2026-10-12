@@ -1,6 +1,6 @@
-import { spawn, type ChildProcess } from "child_process";
+import { spawn } from "child_process";
 import fs from "fs/promises";
-import fsSync from "fs";
+import "fs";
 import path from "path";
 import os from "os";
 import { setToolStatus, getVersionManagerTool } from "@/lib/db/versionManager";
@@ -36,7 +36,7 @@ function defaultConfigDir(): string {
 async function writeConfig(
   configDir: string,
   port: number,
-  overrides?: Record<string, unknown>
+  _overrides?: Record<string, unknown>
 ): Promise<string> {
   await fs.mkdir(configDir, { recursive: true });
   const configPath = path.join(configDir, "config.yaml");

@@ -939,7 +939,7 @@ export function estimateInputTokens(body: unknown) {
     }
 
     return messageTokens + toolTokens;
-  } catch (err) {
+  } catch {
     // Fallback if stringify fails
     return 0;
   }

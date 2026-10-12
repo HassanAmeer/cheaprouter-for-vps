@@ -250,7 +250,7 @@ export async function ensureBase64ImagesForClaudeWire(
 
   // Map sequential image index → resolved data URI (null = keep original).
   const byIndex = new Map<number, string>();
-  parts.forEach((part, i) => {
+  parts.forEach((_part, i) => {
     if (resolved[i]) byIndex.set(i, resolved[i] as string);
   });
   if (byIndex.size === 0) return body;

@@ -16,7 +16,7 @@ import {
   type PipelineResult,
   type FitnessTier,
 } from "../../../src/domain/pipeline.ts";
-import { renderPrompt } from "../../../src/domain/prompts.ts";
+import "../../../src/domain/prompts.ts";
 import { getTaskFitness } from "./taskFitness.ts";
 import { mapIntentToTaskFitnessKey } from "./intentTaskFitnessMap.ts";
 
@@ -233,7 +233,7 @@ export async function handlePipelineCombo({
   handleChatCore,
   log,
   settings,
-  signal,
+  signal: _signal,
 }: PipelineComboParams): Promise<PipelineResult | Response> {
   const config = (combo as Record<string, unknown>).config as Record<string, unknown> | undefined;
   const pipelineEnabled =

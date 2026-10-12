@@ -205,7 +205,7 @@ export function removeExpiration(connectionId: string): boolean {
  * @returns Detected expiration date or null
  */
 export function detectExpirationFromResponse(
-  provider: string,
+  _provider: string,
   status: number,
   headers: Record<string, string>
 ): { expiresAt: string; expiryType: ExpiryType } | null {

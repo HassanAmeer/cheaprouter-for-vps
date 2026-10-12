@@ -29,7 +29,6 @@
 import { getAlibabaBillingMode, isAlibabaModelStudioProvider } from "./alibabaFreeTier.ts";
 import {
   asRecord,
-  getAlibabaFreeTierQuotaLastSyncAt,
   normalizeModelIdList,
   toTrimmedString,
   type AlibabaFreeTierQuotaEntry,

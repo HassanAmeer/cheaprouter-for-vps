@@ -99,6 +99,41 @@ export default async function RootLayout({ children }) {
             `,
           }}
         />
+        {/* Pre-paint theme seed: applies the persisted colorTheme class and
+            --color-primary before React hydrates, so the default Jest Open Code
+            (white + silver) theme never flashes the legacy coral palette.
+            Mirrors applyColorTheme() in src/store/themeStore.ts — keep the
+            jest color list in sync with COLOR_THEMES there. */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function () {
+                try {
+                  var store = localStorage.getItem("theme");
+                  var colorTheme = "jest";
+                  if (store) {
+                    var parsed = JSON.parse(store);
+                    if (parsed && parsed.state && typeof parsed.state.colorTheme === "string") {
+                      colorTheme = parsed.state.colorTheme;
+                    }
+                  }
+                  // The jest theme owns --color-primary per light/dark mode in
+                  // globals.css; writing an inline var here would outrank that
+                  // class rule and pin the light accent in dark mode. Only the
+                  // flat single-color themes use the inline var.
+                  if (colorTheme !== "jest") {
+                    var COLORS = { opencode: "#cbd5e1", coral: "#e54d5e", blue: "#3b82f6", red: "#ef4444", green: "#22c55e", violet: "#8b5cf6", orange: "#f97316", cyan: "#06b6d4" };
+                    var base = COLORS[colorTheme] || "#e54d5e";
+                    document.documentElement.style.setProperty("--color-primary", base);
+                  } else {
+                    document.documentElement.style.removeProperty("--color-primary");
+                  }
+                  document.documentElement.classList.toggle("theme-jest", colorTheme === "jest");
+                } catch (e) {}
+              })();
+            `,
+          }}
+        />
         {/* Material Symbols icon font is loaded from Google Fonts CDN with self-hosted fallback via globals.css (#3695). */}
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />

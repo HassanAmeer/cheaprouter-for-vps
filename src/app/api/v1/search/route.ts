@@ -1,8 +1,6 @@
 import { handleSearch } from "@omniroute/open-sse/handlers/search.ts";
 import {
   getProviderCredentialsWithQuotaPreflight,
-  extractApiKey,
-  isValidApiKey,
 } from "@/sse/services/auth";
 import {
   getAllSearchProviders,
@@ -119,7 +117,7 @@ function buildDomainFilter(filters?: {
 /**
  * POST /v1/search — execute a web search
  */
-async function postHandler(request: Request, context: unknown) {
+async function postHandler(request: Request, _context: unknown) {
   const requestStartTime = Date.now();
   let rawBody: unknown;
   try {

@@ -66,7 +66,7 @@ function extractInitDataUserId(initData: string): number {
 }
 
 function buildMiniAppLink(botUsername?: string): string {
-  const base = resolveOmniRouteBaseUrl();
+  const _base = resolveOmniRouteBaseUrl();
   // Deep link: t.me/<bot>?startapp= opens the Mini App with start_param.
   const bot = botUsername || "YOUR_BOT";
   return `https://t.me/${bot}?startapp=miniapp`;

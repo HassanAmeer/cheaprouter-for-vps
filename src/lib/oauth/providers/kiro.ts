@@ -80,7 +80,7 @@ export const kiro = {
       _authMethod: config.skipIssuerUrlForRegistration ? "idc" : "builder-id",
     };
   },
-  pollToken: async (config, deviceCode, codeVerifier, extraData) => {
+  pollToken: async (_config, deviceCode, _codeVerifier, extraData) => {
     const tokenRegion = String(extraData?._region || "us-east-1").toLowerCase();
     assertValidAwsRegion(tokenRegion);
     const tokenUrl = `https://oidc.${tokenRegion}.amazonaws.com/token`;
@@ -102,7 +102,7 @@ export const kiro = {
     let data;
     try {
       data = await response.json();
-    } catch (e) {
+    } catch {
       const text = await response.text();
       data = { error: "invalid_response", error_description: text };
     }

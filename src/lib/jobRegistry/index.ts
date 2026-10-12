@@ -1,7 +1,6 @@
 /** JobRegistry singleton - survives Next.js HMR via globalThis. */
 
 import { JobRegistry } from "./registry";
-import type { JobDefinition } from "./core";
 
 declare global {
   var __omnirouteJobRegistry: JobRegistry | undefined;

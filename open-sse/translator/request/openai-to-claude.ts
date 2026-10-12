@@ -536,7 +536,7 @@ export function openaiToClaudeRequest(model, body, stream, credentials = null) {
 // Get content blocks from single message
 function getContentBlocksFromMessage(
   msg,
-  toolNameMap = new Map(),
+  _toolNameMap_ = new Map(),
   disableToolPrefix = false,
   thinkingEnabledForRequest = false,
   isKimiCoding = false

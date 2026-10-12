@@ -6,7 +6,7 @@
  * knowledge from the system prompt.
  */
 
-import { getCopilotSystemPrompt } from "./systemPrompt";
+import "./systemPrompt";
 import { COPILOT_TOOLS, getCopilotTool, getCopilotToolDescriptions } from "./tools";
 
 // ── Types ────────────────────────────────────────────────────────────────────
@@ -27,7 +27,7 @@ export interface CopilotResponse {
 
 // ── Tool Lookup for Dynamic Dispatch ────────────────────────────────────────
 
-const TOOL_NAMES = COPILOT_TOOLS.map((t) => t.name);
+const _TOOL_NAMES = COPILOT_TOOLS.map((t) => t.name);
 
 // ── Knowledge-based responses ───────────────────────────────────────────────
 

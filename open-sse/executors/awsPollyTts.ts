@@ -87,7 +87,7 @@ function getAwsPollySampleRate(responseFormat, sampleRate) {
 }
 
 export async function handleAwsPollySpeech(
-  providerConfig,
+  _providerConfig,
   body,
   modelId,
   token,

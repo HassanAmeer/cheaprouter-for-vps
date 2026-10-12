@@ -1,7 +1,7 @@
 import path from "node:path";
 import os from "node:os";
 
-const CONFIG_PATH = path.join(os.homedir(), ".claude", "settings.json");
+const _CONFIG_PATH = path.join(os.homedir(), ".claude", "settings.json");
 
 export function generateClaudeConfig(options: {
   baseUrl: string;

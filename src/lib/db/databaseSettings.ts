@@ -301,7 +301,7 @@ export function updateDatabaseSettings(
 
   const requestedLogs = updates.logs as Partial<UserDatabaseSettings["logs"]> | undefined;
   const pipelineEnabled = requestedLogs?.callLogPipelineEnabled;
-  const detailedEnabled = requestedLogs?.detailedLogsEnabled;
+  const _detailedEnabled = requestedLogs?.detailedLogsEnabled;
 
   const requestedBackup = updates.backup as Partial<UserDatabaseSettings["backup"]> | undefined;
   if (requestedBackup?.keepLastNBackups !== undefined) {

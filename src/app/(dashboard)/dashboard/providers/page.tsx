@@ -53,6 +53,7 @@ const AddCompatibleProviderModal = dynamic(
   () => import("./components/AddCompatibleProviderModal"),
   { ssr: false }
 );
+import CustomProviderInlineForm from "./components/CustomProviderInlineForm";
 import { CategoryDot } from "./components/CategoryDot";
 const ImportProvidersFromFileModal = dynamic(
   () =>
@@ -225,9 +226,10 @@ function ProvidersPageContent() {
     useState<CodexGlobalServiceMode>("none");
   const [loading, setLoading] = useState(true);
   const [showAllProviders, _setShowAllProviders] = useState(false);
-  const [showAddCompatibleModal, setShowAddCompatibleModal] = useState(false);
-  const [showAddAnthropicCompatibleModal, setShowAddAnthropicCompatibleModal] = useState(false);
   const [showAddCcCompatibleModal, setShowAddCcCompatibleModal] = useState(false);
+  // Kilo-Code style inline custom-provider box: expands in place on this page
+  // instead of opening a modal and navigating away after save.
+  const [showCustomProviderForm, setShowCustomProviderForm] = useState(false);
   const [isCompatibleCollapsed, setIsCompatibleCollapsed] = useState(false);
   const [showImportFromFileModal, setShowImportFromFileModal] = useState(false);
   const [testingMode, setTestingMode] = useState<string | null>(null);
@@ -1065,19 +1067,26 @@ function ProvidersPageContent() {
                     )}
                     <Button
                       size="sm"
-                      icon="add"
-                      onClick={() => setShowAddAnthropicCompatibleModal(true)}
+                      icon={showCustomProviderForm ? "expand_less" : "add"}
+                      onClick={() => setShowCustomProviderForm((prev) => !prev)}
                     >
-                      {t("addAnthropicCompatible")}
-                    </Button>
-                    <Button size="sm" icon="add" onClick={() => setShowAddCompatibleModal(true)}>
-                      {t("addOpenAICompatible")}
+                      {t("customProviderTitle")}
                     </Button>
                   </div>
                 </div>
                 {!isCompatibleCollapsed && (
                   <>
                     <p className="text-sm text-text-muted -mt-2">{t("compatibleProvidersDesc")}</p>
+                    {showCustomProviderForm && (
+                      <CustomProviderInlineForm
+                        onCreated={(node) => {
+                          setProviderNodes((prev) => upsertProviderNodeById(prev, node));
+                        }}
+                        onConnectionCreated={async () => {
+                          setConnections((await loadProviderPageData()).connections);
+                        }}
+                      />
+                    )}
                     {compatibleProviders.length === 0 &&
                     anthropicCompatibleProviders.length === 0 &&
                     ccCompatibleProviders.length === 0 ? (
@@ -1853,26 +1862,6 @@ function ProvidersPageContent() {
           </>
         )}
 
-        <AddCompatibleProviderModal
-          isOpen={showAddCompatibleModal}
-          mode="openai"
-          onClose={() => setShowAddCompatibleModal(false)}
-          onCreated={(node) => {
-            setProviderNodes((prev) => upsertProviderNodeById(prev, node));
-            setShowAddCompatibleModal(false);
-            router.push(`/dashboard/providers/${node.id}`);
-          }}
-        />
-        <AddCompatibleProviderModal
-          isOpen={showAddAnthropicCompatibleModal}
-          mode="anthropic"
-          onClose={() => setShowAddAnthropicCompatibleModal(false)}
-          onCreated={(node) => {
-            setProviderNodes((prev) => upsertProviderNodeById(prev, node));
-            setShowAddAnthropicCompatibleModal(false);
-            router.push(`/dashboard/providers/${node.id}`);
-          }}
-        />
         {ccCompatibleProviderEnabled && (
           <AddCompatibleProviderModal
             isOpen={showAddCcCompatibleModal}

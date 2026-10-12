@@ -19,7 +19,6 @@ import {
   getPluginByName,
   listPlugins as dbListPlugins,
   updatePluginStatus,
-  updatePluginConfig,
   updatePluginManifest,
   deletePlugin as dbDeletePlugin,
   pluginExists,

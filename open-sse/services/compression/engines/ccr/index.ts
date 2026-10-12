@@ -225,7 +225,7 @@ function warnDurableError(operation: string, error: unknown): void {
  */
 const MAX_PENDING_DURABLE_WRITES = 1_000;
 let pendingDurableWrites = 0;
-let droppedDurableWrites = 0;
+let _droppedDurableWrites = 0;
 
 function deferDurable(operation: string, work: () => void, droppable = false): void {
   // Backpressure. A burst faster than SQLite drains would otherwise queue without bound
@@ -233,7 +233,7 @@ function deferDurable(operation: string, work: () => void, droppable = false): v
   // block is still in the map, and the client re-stores it under the same hash on its
   // next request. Deletes are never dropped, or a deleted block would come back.
   if (droppable && pendingDurableWrites >= MAX_PENDING_DURABLE_WRITES) {
-    droppedDurableWrites++;
+    _droppedDurableWrites++;
     return;
   }
   pendingDurableWrites++;

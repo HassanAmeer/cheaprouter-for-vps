@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { CORS_HEADERS, handleCorsOptions } from "@/shared/utils/cors";
-import { callCloudWithMachineId } from "@/shared/utils/cloud";
+import "@/shared/utils/cloud";
 import { handleChat } from "@/sse/handlers/chat";
 import { logAdmissionRejection } from "@/sse/handlers/admissionRejectionLog";
 import { generateRequestId } from "@/shared/utils/requestId";

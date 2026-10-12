@@ -15,7 +15,7 @@
  * #5696
  */
 
-import { getResolvedModelCapabilities } from "@/lib/modelCapabilities";
+import "@/lib/modelCapabilities";
 import { evaluateContextLimit } from "@omniroute/open-sse/services/combo/contextOverrideGate";
 import { isRecord } from "@omniroute/open-sse/services/combo/comboData";
 import {

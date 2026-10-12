@@ -97,7 +97,10 @@ export default function NavigationProgress() {
         style={{
           width: `${progress}%`,
           opacity: progress >= 100 ? 0 : 1,
-          boxShadow: "0 0 10px rgba(99, 102, 241, 0.6), 0 0 4px rgba(229, 77, 94, 0.4)",
+          // Theme-aware glow: derive from the active accent (var(--color-primary))
+          // instead of the hardcoded indigo/coral pair, which clashed with any
+          // non-coral theme and ignored the theme switcher.
+          boxShadow: "0 0 10px color-mix(in srgb, var(--color-primary) 55%, transparent)",
         }}
       />
     </div>

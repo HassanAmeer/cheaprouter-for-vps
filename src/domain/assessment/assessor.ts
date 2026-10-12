@@ -13,7 +13,6 @@ import type {
   ProbeLevel,
   AssessmentConfig,
   AssessmentRun,
-  AssessmentScope,
   AssessmentTrigger,
 } from "./types";
 import { DEFAULT_ASSESSMENT_CONFIG, PROBE_MESSAGES, PROBE_MAX_TOKENS } from "./types";

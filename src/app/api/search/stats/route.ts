@@ -49,7 +49,7 @@ export async function GET(request: Request) {
     });
 
     return NextResponse.json({ cache, providers, recent_searches });
-  } catch (error) {
+  } catch {
     return NextResponse.json({ error: "Failed to get stats" }, { status: 500 });
   }
 }

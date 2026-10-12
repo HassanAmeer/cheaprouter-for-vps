@@ -296,10 +296,10 @@ const cachedTextEncoder = new TextEncoder();
 
 let WASM_VECTOR_LEN = 0;
 
-let wasmModule, wasm;
+let _wasmModule, wasm;
 function __wbg_finalize_init(instance, module) {
     wasm = instance.exports;
-    wasmModule = module;
+    _wasmModule = module;
     cachedDataViewMemory0 = null;
     cachedUint8ArrayMemory0 = null;
     wasm.__wbindgen_start();
@@ -341,7 +341,7 @@ async function __wbg_load(module, imports) {
     }
 }
 
-function initSync(module) {
+function _initSync(module) {
     if (wasm !== undefined) return wasm;
 
 

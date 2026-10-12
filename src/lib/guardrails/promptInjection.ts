@@ -10,7 +10,6 @@ import {
   resolveBlockThreshold,
   shouldBlockDetections,
   SEVERITY_SCORES as SHARED_SEVERITY_SCORES,
-  type InjectionSeverity,
 } from "@/shared/utils/injectionSeverity";
 
 type Detection = {
@@ -59,7 +58,7 @@ const DEFAULT_GUARD_PATTERNS: PatternLike[] = [
   },
 ];
 
-const SEVERITY_SCORES = SHARED_SEVERITY_SCORES;
+const _SEVERITY_SCORES = SHARED_SEVERITY_SCORES;
 
 function normalizePatternEntry(entry: PatternLike, index: number) {
   if (entry instanceof RegExp) {

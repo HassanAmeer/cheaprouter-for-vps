@@ -222,7 +222,7 @@ export function scoreRepo(params: {
 
 // ── Scanning ─────────────────────────────────────────────────────────────────
 
-const DOC_FILES = new Set([
+const _DOC_FILES = new Set([
   "readme.md",
   "changelog.md",
   "security.md",

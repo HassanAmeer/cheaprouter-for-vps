@@ -1,10 +1,6 @@
 import { register } from "../registry.ts";
 import { FORMATS } from "../formats.ts";
-import {
-  DEFAULT_SAFETY_SETTINGS,
-  buildGeminiThinkingConfig,
-  cleanJSONSchemaForAntigravity,
-} from "../helpers/geminiHelper.ts";
+import { DEFAULT_SAFETY_SETTINGS, buildGeminiThinkingConfig } from "../helpers/geminiHelper.ts";
 import { buildGeminiTools, sanitizeGeminiToolName } from "../helpers/geminiToolsSanitizer.ts";
 import {
   buildGeminiThoughtSignatureKey,
@@ -53,7 +49,7 @@ function urlImagePart(url) {
  * Converts Claude Messages API body directly to Gemini format,
  * skipping the OpenAI hub intermediate step.
  */
-export function claudeToGeminiRequest(model, body, stream, credentials = null) {
+export function claudeToGeminiRequest(model, body, _stream, credentials = null) {
   const toolNameMap = new Map<string, string>();
   const sanitizeToolName = (name: string) =>
     sanitizeGeminiToolName(name, {
@@ -167,7 +163,7 @@ export function claudeToGeminiRequest(model, body, stream, credentials = null) {
   if (body.messages && Array.isArray(body.messages)) {
     // Tool-ids whose functionCall was omitted (no stored thought_signature) so the
     // matching tool_result becomes text instead of a Gemini-400'd functionResponse.
-    const omittedToolCallIds = new Set<string>();
+    const _omittedToolCallIds = new Set<string>();
     for (const msg of body.messages) {
       const parts = [];
       // Images returned inside tool_result blocks go right after the last tool response,

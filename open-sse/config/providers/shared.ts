@@ -906,7 +906,7 @@ export function getAnthropicCompatHeaders(): Record<string, string> {
   };
 }
 
-export function buildAntigravityUrl(base: string, model: string, stream: boolean): string {
+export function buildAntigravityUrl(base: string, _model: string, stream: boolean): string {
   const path = stream ? "/v1internal:streamGenerateContent?alt=sse" : "/v1internal:generateContent";
   return `${base}${path}`;
 }

@@ -100,7 +100,7 @@ export function crc32(buf: Uint8Array) {
 export function parseEventFrame(data: Uint8Array): EventFrame | null {
   try {
     const view = new DataView(data.buffer, data.byteOffset);
-    const totalLength = view.getUint32(0, false);
+    const _totalLength = view.getUint32(0, false);
     const headersLength = view.getUint32(4, false);
 
     // ── CRC32 validation ──

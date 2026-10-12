@@ -16,7 +16,6 @@ import {
   BaseExecutor,
   mergeAbortSignals,
   type ExecuteInput,
-  type ExecutorLog,
   type ProviderCredentials,
 } from "./base.ts";
 import {

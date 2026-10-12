@@ -18,7 +18,7 @@ import {
   LEGACY_FREE_PROVIDERS,
   deriveNoAuthFreeProviders,
 } from "../tierConfig.ts";
-import { NOAUTH_PROVIDERS } from "@/shared/constants/providers.ts";
+import "@/shared/constants/providers.ts";
 
 describe("TierResolver", () => {
   // Reset cache and pricing snapshot between tests

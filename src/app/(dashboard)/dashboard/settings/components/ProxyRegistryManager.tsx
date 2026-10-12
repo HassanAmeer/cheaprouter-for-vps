@@ -158,7 +158,7 @@ export default function ProxyRegistryManager({
   // MUST stay after the `load` const — earlier use TDZ-crashes SSR (#5918 guard).
   const {
     selectedIds,
-    setSelectedIds,
+    setSelectedIds: _setSelectedIds,
     batchDeleting,
     autoTesting,
     batchActivating,
@@ -207,7 +207,7 @@ export default function ProxyRegistryManager({
     setModalOpen(true);
   };
 
-  const loadUsage = (proxyId: string) => loadProxyUsage(proxyId, setUsageById);
+  const _loadUsage = (proxyId: string) => loadProxyUsage(proxyId, setUsageById);
 
   const handleTestProxy = async (item: ProxyItem) => {
     if (testingId) return;
@@ -843,7 +843,7 @@ export default function ProxyRegistryManager({
               </thead>
               <tbody>
                 {items.map((item) => {
-                  const usage = usageById[item.id];
+                  const _usage = usageById[item.id];
                   const health = healthById[item.id];
                   return (
                     <tr key={item.id} className="border-b border-border/60">

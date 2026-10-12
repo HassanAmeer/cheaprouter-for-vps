@@ -53,7 +53,7 @@ export async function GET(request?: Request) {
 /**
  * POST /v1/videos/generations — generate videos
  */
-async function postHandler(request, context) {
+async function postHandler(request, _context) {
   const parsed = await readMediaGenerationBody(request, log, "VIDEO");
   if (parsed.state === "invalid") {
     return parsed.response;

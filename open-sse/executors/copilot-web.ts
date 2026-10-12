@@ -16,7 +16,7 @@
  */
 import { BaseExecutor, type ExecuteInput } from "./base.ts";
 import { FETCH_TIMEOUT_MS } from "../config/constants.ts";
-import { createHash, randomBytes } from "node:crypto";
+import { createHash } from "node:crypto";
 import { sanitizeErrorMessage } from "../utils/error.ts";
 
 // ─── Constants ──────────────────────────────────────────────────────────────
@@ -631,11 +631,9 @@ export class CopilotWebExecutor extends BaseExecutor {
 
     // Get or create session (auto-rotates when turns exhausted)
     let conversationId: string;
-    let sessionCookies = "";
     try {
       const session = await this.getSession(accessToken || undefined, signal);
       conversationId = session.conversationId;
-      sessionCookies = session.cookies;
     } catch (err) {
       const msg = sanitizeErrorMessage(
         err instanceof Error ? err.message : "Failed to start Copilot conversation"
@@ -664,7 +662,6 @@ export class CopilotWebExecutor extends BaseExecutor {
         const reader = wsStream.getReader();
         const decoder = new TextDecoder();
         let fullText = "";
-        let reasoningText = "";
 
         while (true) {
           const { done, value } = await reader.read();
@@ -678,7 +675,6 @@ export class CopilotWebExecutor extends BaseExecutor {
               const parsed = JSON.parse(data);
               const delta = parsed.choices?.[0]?.delta;
               if (delta?.content) fullText += delta.content;
-              if (delta?.reasoning_content) reasoningText += delta.reasoning_content;
             } catch {
               /* skip */
             }

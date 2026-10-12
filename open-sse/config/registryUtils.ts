@@ -1,5 +1,5 @@
 import { hasUnsafeModelIdSyntax } from "../utils/modelIdSafety.ts";
-import { randomUUID } from "crypto";
+import "crypto";
 /**
  * Shared Registry Utilities
  *

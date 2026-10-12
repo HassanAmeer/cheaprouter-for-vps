@@ -107,7 +107,7 @@ function publicBaseUrlHeaders(headers: Headers): Record<string, string> {
   return out;
 }
 
-async function postHandler(request, context) {
+async function postHandler(request, _context) {
   let rawBody;
   try {
     rawBody = await request.json();

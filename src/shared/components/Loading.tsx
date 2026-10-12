@@ -52,7 +52,11 @@ export function Spinner({ size = "md", className, label }: SpinnerProps) {
       <span
         aria-hidden="true"
         className={cn(
-          "material-symbols-outlined text-primary animate-spin motion-reduce:animate-none",
+          // `spinner-icon` (globals.css) supplies the flex-centering, not Tailwind
+          // utilities: the Material Symbols block in globals.css is UNLAYERED and
+          // therefore outranks Tailwind's layered utilities, so a plain `flex`
+          // class could never override its `display: inline-block`.
+          "material-symbols-outlined spinner-icon text-primary animate-spin motion-reduce:animate-none",
           spinnerSizes[size]
         )}
       >

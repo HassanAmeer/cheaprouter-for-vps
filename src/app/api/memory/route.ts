@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireManagementAuth } from "@/lib/api/requireManagementAuth";
-import { listMemories, createMemory, getMemoryTokensUsed } from "@/lib/memory/store";
+import { getMemoryTokensUsed } from "@/lib/memory/store";
 import { memoryManager } from "@/lib/memory";
 import { memoryCache } from "@/lib/memory/cache";
 import { MemoryType } from "@/lib/memory/types";

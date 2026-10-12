@@ -7,7 +7,7 @@
  * - TlsClientUnavailableError export
  * - Test override hook (__setTlsFetchOverrideForTesting)
  */
-import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+import { describe, it, expect, beforeEach, vi } from "vitest";
 
 // Carrega o modulo de forma ESTATICA (mesma convenção dos testes irmãos
 // chatgptTlsClient.test.ts / grokTlsClient.test.ts).

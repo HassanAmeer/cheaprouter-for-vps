@@ -26,7 +26,7 @@ const assessor = new Assessor(
 );
 
 const categorizer = new Categorizer();
-const healer = new SelfHealer();
+const _healer = new SelfHealer();
 
 const modelCategories = new Set<ModelCategory>([
   "coding",

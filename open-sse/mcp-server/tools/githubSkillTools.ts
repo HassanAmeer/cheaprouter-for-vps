@@ -19,7 +19,6 @@ import {
   GitHubSkillsSearchSchema,
   GitHubSkillsScanSchema,
   GitHubSkillsInstallSchema,
-  INSTALL_TARGETS,
   type GitHubSkillRepo,
   type SkillInstallResult,
 } from "@/lib/skills/githubCollector";

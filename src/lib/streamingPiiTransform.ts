@@ -78,7 +78,7 @@ export function createPiiSseTransform(options?: PiiTransformOptions): TransformS
 
   const onFlush = (lastJson: any, isJsonStream = false, lastContentJson: any = null): any => {
     // Force final redaction on all buffers
-    for (const [index, buffers] of choiceBuffers.entries()) {
+    for (const [_index, buffers] of choiceBuffers.entries()) {
       for (const key of Object.keys(buffers)) {
         const field = key as FieldCategory;
         if (buffers[field]) {

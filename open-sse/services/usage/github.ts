@@ -28,7 +28,7 @@ export function shouldDisplayGitHubQuota(quota: UsageQuota | null): quota is Usa
  * GitHub Copilot Usage
  * Uses GitHub accessToken (not copilotToken) to call copilot_internal/user API
  */
-export async function getGitHubUsage(accessToken?: string, providerSpecificData?: JsonRecord) {
+export async function getGitHubUsage(accessToken?: string, _providerSpecificData?: JsonRecord) {
   try {
     if (!accessToken) {
       throw new Error("No GitHub access token available. Please re-authorize the connection.");

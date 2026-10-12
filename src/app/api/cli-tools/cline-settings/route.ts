@@ -65,7 +65,7 @@ export async function GET(request: Request) {
     }
 
     const globalState = await readGlobalState();
-    const secrets = await readSecrets();
+    const _secrets = await readSecrets();
 
     return NextResponse.json({
       installed: runtime.installed,

@@ -325,7 +325,7 @@ export function useModelVisibilityHandlers({
         );
         setModelTestStatus((prev) => ({ ...prev, [modelId]: "error" }));
       }
-    } catch (err) {
+    } catch  {
       notify.error(providerText(t, "modelTestNetworkError", "Network error testing model"));
       setModelTestStatus((prev) => ({ ...prev, [modelId]: "error" }));
     } finally {
@@ -394,7 +394,7 @@ export function useModelVisibilityHandlers({
                 hiddenCount++;
               }
             }
-          } catch (e) {
+          } catch  {
             error++;
             setModelTestStatus((prev) => ({ ...prev, [modelId]: "error" }));
           }

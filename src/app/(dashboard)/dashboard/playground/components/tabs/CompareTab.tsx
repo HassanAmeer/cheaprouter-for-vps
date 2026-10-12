@@ -238,7 +238,6 @@ export default function CompareTab({ configState }: CompareTabProps) {
     if (params.seed != null) body["seed"] = params.seed;
     if (params.stop != null) body["stop"] = params.stop;
 
-    let accumulated = "";
     let firstChunk = true;
 
     try {
@@ -290,7 +289,6 @@ export default function CompareTab({ configState }: CompareTabProps) {
               tracker.onFirstChunk();
               firstChunk = false;
             }
-            accumulated += content;
             tracker.onChunk(1);
 
             // Throttled: accumulate delta and flush once per animation frame

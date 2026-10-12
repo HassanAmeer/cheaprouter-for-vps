@@ -26,7 +26,7 @@ import {
  */
 export async function handleCompressionStatus(
   args: Record<string, never>,
-  extra?: McpToolExtraLike
+  _extra?: McpToolExtraLike
 ): Promise<{
   enabled: boolean;
   strategy: string;
@@ -163,7 +163,7 @@ export async function handleCompressionConfigure(
     preserveSystemPrompt?: boolean;
     mcpDescriptionCompressionEnabled?: boolean;
   },
-  extra?: McpToolExtraLike
+  _extra?: McpToolExtraLike
 ): Promise<{
   success: boolean;
   updated: Record<string, unknown>;

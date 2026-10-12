@@ -28,7 +28,6 @@ import {
   getBufferedKiroToolInput,
   validateKiroToolCallWrapperInput,
   validateKiroToolName,
-  validateKiroToolUse,
   type PendingKiroWrapperToolCall,
 } from "./kiroToolCallValidation.ts";
 
@@ -335,7 +334,7 @@ export class KiroExecutor extends BaseExecutor {
     return headers;
   }
 
-  transformRequest(model: string, body: unknown, stream: boolean, credentials: unknown): unknown {
+  transformRequest(_model_: string, body: unknown, stream: boolean, credentials: unknown): unknown {
     void stream;
     void credentials;
     const b = body as Record<string, unknown>;
@@ -372,7 +371,7 @@ export class KiroExecutor extends BaseExecutor {
     stream,
     credentials,
     signal,
-    log,
+    log: _log,
     upstreamExtraHeaders,
   }: ExecuteInput) {
     // Route to the region-specific CodeWhisperer/Amazon Q endpoint. Enterprise IAM Identity

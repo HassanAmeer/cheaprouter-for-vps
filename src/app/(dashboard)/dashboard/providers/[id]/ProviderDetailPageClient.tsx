@@ -5,7 +5,7 @@ import { useState, useEffect, useCallback, useMemo } from "react";
 import { useParams, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
-import { Card, Button, CardSkeleton } from "@/shared/components";
+import { Card, CardSkeleton } from "@/shared/components";
 import {
   NOAUTH_PROVIDERS,
   getProviderAlias,
@@ -93,7 +93,7 @@ export default function ProviderDetailPageClient() {
   const [importCodexModalOpen, setImportCodexModalOpen] = useState(false);
   const [codexCliGuideOpen, setCodexCliGuideOpen] = useState(false);
   const [importClaudeModalOpen, setImportClaudeModalOpen] = useState(false);
-  const [importGeminiModalOpen, setImportGeminiModalOpen] = useState(false);
+  const [_importGeminiModalOpen, setImportGeminiModalOpen] = useState(false);
   const [importGrokCliModalOpen, setImportGrokCliModalOpen] = useState(false);
   const [connectingVolcengineAccount, setConnectingVolcengineAccount] = useState(false);
   const isOpenAICompatible = isOpenAICompatibleProvider(providerId);

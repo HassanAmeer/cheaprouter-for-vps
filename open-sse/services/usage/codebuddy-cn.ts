@@ -190,7 +190,7 @@ export async function getCodeBuddyCnUsage(
     const plan = basePkg.PackageName || basePkg.SubProductName || "CodeBuddy CN";
 
     return { plan, quotas };
-  } catch (error: any) {
+  } catch {
     // Hard Rule #12: no raw err.message in any HTTP/SSE/executor response. Usage
     // handler returns a controlled string for the dashboard; do not include the
     // raw exception text in case it carries a path/stack snippet.

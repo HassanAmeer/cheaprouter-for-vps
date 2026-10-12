@@ -74,7 +74,7 @@ export default function KiroAuthModal({
         } else {
           setError(data.error || t("errorAutoDetect"));
         }
-      } catch (err) {
+      } catch {
         setError(t("errorAutoDetectFailed"));
       } finally {
         setAutoDetecting(false);

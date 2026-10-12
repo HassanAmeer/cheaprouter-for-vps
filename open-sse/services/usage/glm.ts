@@ -38,7 +38,7 @@ function getGlmQuotaDisplayName(quotaName: string): string {
 
 const GLM_QUOTA_ORDER = ["5 Hours Quota", "Weekly Quota", "Monthly Tools", "Tokens", "Time Limit"];
 
-function getGlmQuotaLabel(type: unknown, unit: unknown): string | null {
+function _getGlmQuotaLabel(type: unknown, unit: unknown): string | null {
   const normalized = typeof type === "string" ? type.trim().toUpperCase() : "";
   const unitValue = toNumber(unit, -1);
 

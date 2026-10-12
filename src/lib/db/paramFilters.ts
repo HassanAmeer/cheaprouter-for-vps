@@ -30,10 +30,10 @@ export interface ProviderParamFilter {
 // ── Cache ───────────────────────────────────────────────────────────────────
 
 let filterCache: Map<string, ProviderParamFilter> | null = null;
-let cacheGeneration = 0;
+let _cacheGeneration = 0;
 
 function bumpCacheGeneration(): void {
-  cacheGeneration++;
+  _cacheGeneration++;
   filterCache = null;
 }
 

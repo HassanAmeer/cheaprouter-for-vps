@@ -43,7 +43,7 @@ export type ChaosTuning = {
 type Body = Record<string, unknown>;
 
 /** Minimal shape of the downstream single-model dispatch target (carries an abort signal). */
-type ChaosTarget = { modelAbortSignal?: AbortSignal };
+type _ChaosTarget = { modelAbortSignal?: AbortSignal };
 
 export type ChaosPart = {
   model: string;
@@ -454,7 +454,7 @@ export async function handleChaosChat(opts: {
   } = opts;
   const panel = Array.isArray(models) ? models.filter(Boolean) : [];
   const hardTimeout = tuning?.panelHardTimeoutMs ?? CHAOS_DEFAULTS.panelHardTimeoutMs;
-  const minPanel = tuning?.minPanel ?? CHAOS_DEFAULTS.minPanel;
+  const _minPanel = tuning?.minPanel ?? CHAOS_DEFAULTS.minPanel;
   // Opt-in gate: only protocol-aware clients request the custom event. OpenAI
   // SDK validators choke on any `data:` payload without `choices`/`error`, so
   // the default MUST be comment-only output.

@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Card from "@/shared/components/Card";
+import { matchesSearch } from "@/shared/utils/turkishText";
 import Button from "@/shared/components/Button";
 import Input from "@/shared/components/Input";
 import ProviderIcon from "@/shared/components/ProviderIcon";
@@ -79,7 +80,12 @@ export default function ShowcaseProvidersCard() {
   }, []);
 
   useEffect(() => {
-    void loadProviders();
+    // Defer setState calls out of the effect body to avoid cascading renders
+    // (react-hooks/set-state-in-effect). loadProviders() itself updates
+    // component state, so it must run in a microtask, not inline.
+    queueMicrotask(() => {
+      void loadProviders();
+    });
   }, [loadProviders]);
 
   const toggleSelect = (id: string) => {
@@ -127,29 +133,25 @@ export default function ShowcaseProvidersCard() {
     }
   };
 
-  const filteredProviders = useMemo(() => {
-    return providers.filter((p) => {
-      // Search filter
-      if (search.trim()) {
-        const query = search.toLowerCase().trim();
-        const matches =
-          p.name.toLowerCase().includes(query) || p.id.toLowerCase().includes(query);
-        if (!matches) return false;
-      }
+  // React Compiler auto-memoizes this pure derived value; the manual
+  // useMemo wrapper was skipped by the compiler (react-hooks/preserve-manual-memoization),
+  // so drop it and let the compiler do the work.
+  const filteredProviders = providers.filter((p) => {
+    // Search filter
+    if (search.trim()) {
+      const query = search.trim();
+      if (!matchesSearch(p.name, query) && !matchesSearch(p.id, query)) return false;
+    }
 
-      // Mode filter
-      if (filterMode === "connected") return !!p.hasConnection;
-      if (filterMode === "available") return !p.hasConnection;
-      if (filterMode === "selected") return selectedIds.has(p.id);
+    // Mode filter
+    if (filterMode === "connected") return !!p.hasConnection;
+    if (filterMode === "available") return !p.hasConnection;
+    if (filterMode === "selected") return selectedIds.has(p.id);
 
-      return true;
-    });
-  }, [providers, search, filterMode, selectedIds]);
+    return true;
+  });
 
-  const connectedCount = useMemo(
-    () => providers.filter((p) => p.hasConnection).length,
-    [providers]
-  );
+  const connectedCount = providers.filter((p) => p.hasConnection).length;
 
   return (
     <Card className="mt-6 border border-border/80 bg-surface">

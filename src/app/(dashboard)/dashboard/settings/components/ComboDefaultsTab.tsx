@@ -119,7 +119,7 @@ export default function ComboDefaultsTab() {
     message: "",
   });
   const t = useTranslations("settings");
-  const tc = useTranslations("common");
+  const _tc = useTranslations("common");
   const strategyOptions = ROUTING_STRATEGIES.map((strategy) => ({
     value: strategy.value,
     label: translateOrFallback(

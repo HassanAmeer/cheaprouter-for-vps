@@ -54,7 +54,7 @@ type NotionErrorBody = {
   message: string;
 };
 
-function classifyNotionError(status: number, code: string, message: string): Error {
+function classifyNotionError(status: number, _code: string, message: string): Error {
   switch (status) {
     case 401:
       return new NotionAuthError(message);
@@ -78,7 +78,7 @@ function classifyNotionError(status: number, code: string, message: string): Err
   }
 }
 
-function sanitize(msg: string): string {
+function _sanitize(msg: string): string {
   return msg.replace(/\s+at\s+\S+/g, "").replace(/\/[\w/.-]+\.[a-z]+\:\d+/g, "").slice(0, 4096);
 }
 

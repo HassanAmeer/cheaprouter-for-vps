@@ -214,7 +214,7 @@ export class SelfHealer {
 
       const totalWeight = 100;
       const models: ComboModel[] = candidates.slice(0, 5).map((a, i) => {
-        const fitness = Math.max(...template.categories.map((c) => a.fitnessScores[c] ?? 0));
+        const _fitness = Math.max(...template.categories.map((c) => a.fitnessScores[c] ?? 0));
         const weight =
           i === 0
             ? Math.round(totalWeight * 0.35)

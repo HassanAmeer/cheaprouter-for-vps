@@ -33,7 +33,7 @@ function getDb() {
   }
 }
 
-type AuditLogWriteEntry = {
+type _AuditLogWriteEntry = {
   action: string;
   actor?: string;
   target?: string;

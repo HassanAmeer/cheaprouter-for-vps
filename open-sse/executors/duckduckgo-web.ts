@@ -1,6 +1,6 @@
 import { Buffer } from "node:buffer";
 import { generateKeyPairSync, randomUUID } from "node:crypto";
-import vm from "node:vm";
+import "node:vm";
 import { solveDuckDuckGoChallenge, makeDuckDuckGoFeSignals } from "./duckduckgo-web/challenge.ts";
 import {
   DUCKDUCKGO_DEFAULT_MODEL,

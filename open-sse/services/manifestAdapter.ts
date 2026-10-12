@@ -1,5 +1,5 @@
 import type { TierAssignment, ProviderTier } from "./tierTypes";
-import { PROVIDER_TIER } from "./tierTypes";
+import "./tierTypes";
 import type { SpecificityResult, SpecificityLevel } from "./specificityTypes";
 import { classifyTier, classifyTierAsync } from "./tierResolver";
 import {
@@ -97,8 +97,8 @@ export async function generateRoutingHints(
 
 function determineStrategyModifier(
   level: SpecificityLevel,
-  eligibleCount: number,
-  underqualifiedCount: number
+  _eligibleCount: number,
+  _underqualifiedCount: number
 ): StrategyModifier {
   if (level === "expert") return "require-premium";
   if (level === "complex") return "prefer-cheap";

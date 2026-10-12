@@ -1,4 +1,4 @@
-const ANTIGRAVITY_PROVIDER_ID = "antigravity";
+const _ANTIGRAVITY_PROVIDER_ID = "antigravity";
 
 export type AntigravityQuotaFamily = "gemini" | "claude" | "other";
 

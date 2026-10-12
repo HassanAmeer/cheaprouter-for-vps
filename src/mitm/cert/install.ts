@@ -475,12 +475,12 @@ async function uninstallCertMac(sudoPassword: string, certPath: string): Promise
       sudoPassword
     );
     console.log("✅ Uninstalled certificate from system keychain");
-  } catch (err) {
+  } catch {
     throw new Error("Failed to uninstall certificate");
   }
 }
 
-async function uninstallCertLinux(sudoPassword: string, certPath: string): Promise<void> {
+async function uninstallCertLinux(sudoPassword: string, _certPath: string): Promise<void> {
   try {
     await updateNssDatabases(null, "delete");
 
@@ -496,7 +496,7 @@ async function uninstallCertLinux(sudoPassword: string, certPath: string): Promi
     } catch {
       await execFileWithPassword("sudo", ["-S", config.cmd], sudoPassword);
     }
-  } catch (err) {
+  } catch {
     throw new Error("Failed to uninstall certificate");
   }
 }

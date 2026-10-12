@@ -46,8 +46,8 @@ export function recordCacheStats(entry: CacheStatsEntry): void {
 
 export function getCacheStatsSummary(since?: Date): CacheStatsSummary {
   const db = getDbInstance();
-  const whereClause = since ? "WHERE created_at >= ?" : "";
-  const params = since ? [since.toISOString()] : [];
+  const _whereClause = since ? "WHERE created_at >= ?" : "";
+  const _params = since ? [since.toISOString()] : [];
 
   // Global aggregates
   const globalRow = since

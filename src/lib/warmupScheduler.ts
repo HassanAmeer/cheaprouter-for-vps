@@ -9,7 +9,7 @@ import { matchesCron } from "@/lib/jobs/cronMatch";
 import { getCircuitBreakerStore } from "./warmupScheduler/circuitBreakerFactory";
 import { TERMINAL_CONNECTION_STATUSES } from "@/lib/quota/connectionRecovery";
 import { isConnectionUnavailableToAuxiliaryActivity } from "@/lib/exclusiveLeaseIsolation";
-import type { WarmupResult, WarmupFailureKind, WarmupTarget } from "./warmupScheduler/core";
+import type { WarmupResult, WarmupTarget } from "./warmupScheduler/core";
 
 export type { WarmupResult, WarmupFailureKind } from "./warmupScheduler/core";
 

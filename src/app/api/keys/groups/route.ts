@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { getAllKeyGroups, createKeyGroup, getKeyGroup } from "@/lib/db/apiKeyGroups";
+import { getAllKeyGroups, createKeyGroup } from "@/lib/db/apiKeyGroups";
 import { isValidationFailure, validateBody } from "@/shared/validation/helpers";
 
 const createKeyGroupSchema = z.object({
@@ -15,7 +15,7 @@ export async function GET() {
   try {
     const groups = getAllKeyGroups();
     return NextResponse.json({ groups });
-  } catch (error) {
+  } catch {
     return NextResponse.json({ error: "Failed to list groups" }, { status: 500 });
   }
 }
@@ -33,7 +33,7 @@ export async function POST(request: Request) {
     }
     const group = createKeyGroup(validation.data.name, validation.data.description);
     return NextResponse.json({ group }, { status: 201 });
-  } catch (error) {
+  } catch {
     return NextResponse.json({ error: "Failed to create group" }, { status: 500 });
   }
 }

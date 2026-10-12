@@ -48,7 +48,7 @@ import * as logger from "@/sse/utils/logger";
 export async function executeVideoCombo(
   comboName: string,
   body: Record<string, unknown>,
-  auth: {
+  _auth: {
     request: Request;
     policy: { apiKeyInfo?: { id?: string; name?: string } | null };
   },

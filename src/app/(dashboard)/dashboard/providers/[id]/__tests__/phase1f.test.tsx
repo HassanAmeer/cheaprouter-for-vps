@@ -312,7 +312,7 @@ describe("useProviderModels — initial state", () => {
       return <span />;
     }
 
-    const callCountBefore = fetchStub.mock.calls.length;
+    const _callCountBefore = fetchStub.mock.calls.length;
 
     await act(async () => {
       root.render(<TestWrapper />);

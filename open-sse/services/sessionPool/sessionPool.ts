@@ -27,8 +27,8 @@
  *   finally { session.release(); }
  */
 
-import { type EventEmitter } from "node:events";
-import { createHash, randomUUID } from "node:crypto";
+
+import "node:crypto";
 import { setTimeout as sleep } from "node:timers/promises";
 
 import { Session } from "./session.ts";

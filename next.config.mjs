@@ -80,6 +80,40 @@ const IGNORED_INFRASTRUCTURE_BUILD_DEPENDENCY_MODULES = [
   "/node_modules/next-intl/dist/esm/production/extractor/format/index.js",
 ];
 
+// Dev-server origin allowlist (see allowedDevOrigins below). Cycle-free and
+// dependency-free so it can be called while this config module loads.
+function resolveAllowedDevOrigins() {
+  const defaults = ["localhost", "127.0.0.1", "192.168.0.250"];
+  const origins = new Set(defaults);
+
+  // Explicit hosts: OMNIROUTE_ALLOWED_DEV_ORIGINS="a.trycloudflare.com,b.ts.net"
+  for (const origin of String(process.env.OMNIROUTE_ALLOWED_DEV_ORIGINS || "")
+    .split(",")
+    .map((value) => value.trim())
+    .filter(Boolean)) {
+    origins.add(origin);
+  }
+
+  // Tunnel convenience: OMNIROUTE_ALLOW_ALL_DEV_ORIGINS=1 trusts the shared
+  // wildcard hostnames of the tunnel providers this repo already documents in
+  // docs/ops/TUNNELS_GUIDE.md. Wildcards only cover those providers' own
+  // subdomains (Next-side dev origins, not an auth boundary).
+  if (process.env.OMNIROUTE_ALLOW_ALL_DEV_ORIGINS === "1") {
+    for (const wildcard of [
+      "*.trycloudflare.com",
+      "*.cloudflare.com",
+      "*.ts.net",
+      "*.ngrok-free.app",
+      "*.ngrok.io",
+      "*.lhr.life",
+    ]) {
+      origins.add(wildcard);
+    }
+  }
+
+  return [...origins];
+}
+
 function isKnownInfrastructureBuildDependencyWarning(args) {
   const message = args
     .filter((value) => typeof value === "string")
@@ -386,7 +420,14 @@ const nextConfig = {
     "process",
   ],
   transpilePackages: ["@omniroute/open-sse", "@lobehub/icons", "fumadocs-ui", "fumadocs-core"],
-  allowedDevOrigins: ["localhost", "127.0.0.1", "192.168.0.250"],
+  // Next 15.1+ blocks cross-origin dev requests (HMR WebSocket, /_next assets)
+  // unless the request origin is listed here. Serving the dev server through a
+  // tunnel/reverse proxy (Cloudflare quick tunnel, Tailscale Funnel, ngrok) makes
+  // every page hang on the HMR socket — the browser never sees the app as synced.
+  // Default list stays loopback + the LAN operator IP; add hosts at runtime via
+  // OMNIROUTE_ALLOWED_DEV_ORIGINS (comma-separated, e.g. "my-tunnel.trycloudflare.com")
+  // or OMNIROUTE_ALLOW_ALL_DEV_ORIGINS=1 to wildcard tunnel hostnames.
+  allowedDevOrigins: resolveAllowedDevOrigins(),
   typescript: {
     // TODO: Re-enable after fixing all sub-component useTranslations scope issues
     ignoreBuildErrors: true,

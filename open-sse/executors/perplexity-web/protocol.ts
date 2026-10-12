@@ -1,6 +1,6 @@
 // Pure Perplexity wire protocol: consts, types, SSE parsing, request/query building,
 // content extraction. Extracted verbatim from perplexity-web.ts. No host state/fetch/auth.
-import { randomUUID } from "crypto";
+import "crypto";
 
 export const PPLX_SSE_ENDPOINT = "https://www.perplexity.ai/rest/sse/perplexity_ask";
 // Perplexity's current request schema version (sent in params.version). Perplexity rejects

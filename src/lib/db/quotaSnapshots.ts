@@ -6,7 +6,7 @@ import {
 } from "./providers/codexAccountState";
 import { isCodexSparkQuotaKey } from "@omniroute/open-sse/config/codexQuotaScopes";
 
-type JsonRecord = Record<string, unknown>;
+type _JsonRecord = Record<string, unknown>;
 
 interface StatementLike<TRow = unknown> {
   all: (...params: unknown[]) => TRow[];

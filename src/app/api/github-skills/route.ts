@@ -78,7 +78,8 @@ export async function POST(request: NextRequest) {
     }
     const { repoName, targets, description } = parsed.data;
 
-    const { resolveInstallPath, INSTALL_TARGETS } = await import("@/lib/skills/githubCollector");
+    const { resolveInstallPath, INSTALL_TARGETS: _INSTALL_TARGETS } =
+      await import("@/lib/skills/githubCollector");
     const skillName = repoName.split("/").pop() || repoName;
 
     const results = targets.map((target) => {

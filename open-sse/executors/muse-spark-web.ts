@@ -1,4 +1,4 @@
-import { createHash, randomUUID } from "node:crypto";
+import { createHash } from "node:crypto";
 import { Buffer } from "node:buffer";
 import WebSocket from "ws";
 
@@ -327,7 +327,7 @@ type ConversationContext = {
   isNewConversation: boolean;
 };
 
-function buildMetaAiRequestBody(prompt: string, model: string, conversation: ConversationContext) {
+function _buildMetaAiRequestBody(prompt: string, model: string, conversation: ConversationContext) {
   const userUniqueMessageId = generateNumericMessageId();
 
   return {

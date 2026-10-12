@@ -11,7 +11,7 @@ import { sanitizeErrorMessage } from "@omniroute/open-sse/utils/error";
 
 const execFileAsync = promisify(execFile);
 import { classifyCommand } from "./commandClassification";
-import { createCombo, getCombos, updateCombo } from "@/lib/db/combos";
+import { createCombo, getCombos } from "@/lib/db/combos";
 import { getProviderConnections } from "@/lib/db/providers";
 import { createApiKey, revokeApiKey, getApiKeys } from "@/lib/db/apiKeys";
 import {
@@ -21,7 +21,6 @@ import {
   getFileContext,
   listFiles,
   getCodeGraphStats,
-  isCodeGraphAvailable,
   type CodeGraphQueryResult,
 } from "./codegraphKnowledge";
 import { getAllKeyGroups } from "@/lib/db/apiKeyGroups";

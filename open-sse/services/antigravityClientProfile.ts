@@ -1,5 +1,4 @@
 import {
-  DEFAULT_ANTIGRAVITY_CLIENT_PROFILE,
   normalizeAntigravityClientProfile,
   type AntigravityClientProfile,
 } from "@/shared/constants/antigravityClientProfile";

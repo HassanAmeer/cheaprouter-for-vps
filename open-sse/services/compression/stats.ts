@@ -280,8 +280,8 @@ export function createCompressionStats(
 
 export function trackCompressionStats(stats: CompressionStats): void {
   if (stats.originalTokens <= 0) return;
-  const rulesInfo = stats.rulesApplied?.length ? ` rules=${stats.rulesApplied.join(",")}` : "";
-  const durationInfo = stats.durationMs !== undefined ? ` ${stats.durationMs}ms` : "";
+  const _rulesInfo = stats.rulesApplied?.length ? ` rules=${stats.rulesApplied.join(",")}` : "";
+  const _durationInfo = stats.durationMs !== undefined ? ` ${stats.durationMs}ms` : "";
   // Compression stats tracking — no-op in production (use structured logging if needed)
 }
 

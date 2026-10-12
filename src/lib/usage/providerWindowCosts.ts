@@ -196,7 +196,7 @@ function scoreWeeklyQuota(name: string): number {
 }
 
 function selectWeeklyWindow(
-  provider: string,
+  _provider: string,
   connectionId: string | null,
   nowMs: number
 ): {

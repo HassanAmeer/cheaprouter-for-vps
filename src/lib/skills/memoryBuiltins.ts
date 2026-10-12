@@ -4,7 +4,7 @@ import { getMemorySettings, DEFAULT_MEMORY_SETTINGS, toMemoryRetrievalConfig } f
 import { MemoryType } from "@/lib/memory/types";
 import { logger } from "../../../open-sse/utils/logger.ts";
 
-const log = logger("MEMORY_BUILTINS");
+const _log = logger("MEMORY_BUILTINS");
 
 export const MEMORY_SAVE_TOOL_NAME = "memory_save";
 export const MEMORY_UPDATE_TOOL_NAME = "memory_update";

@@ -1,22 +1,16 @@
 import { z } from "zod";
-import {
-  ACCOUNT_FALLBACK_STRATEGY_VALUES,
-  ROUTING_STRATEGY_VALUES,
-} from "@/shared/constants/routingStrategies";
-import { SUPPORTED_BATCH_ENDPOINTS } from "@/shared/constants/batchEndpoints";
-import { MAX_REQUEST_BODY_LIMIT_MB, MIN_REQUEST_BODY_LIMIT_MB } from "@/shared/constants/bodySize";
-import { COMBO_CONFIG_MODES } from "@/shared/constants/comboConfigMode";
+import "@/shared/constants/routingStrategies";
+import "@/shared/constants/batchEndpoints";
+import "@/shared/constants/bodySize";
+import "@/shared/constants/comboConfigMode";
 import {
   MODEL_SUPPORTED_ENDPOINT_VALUES,
   normalizeModelSupportedEndpoints,
 } from "@/shared/constants/modelSupportedEndpoints";
 import { providerAllowsOptionalApiKey } from "@/shared/constants/providers";
-import { HIDEABLE_SIDEBAR_ITEM_IDS } from "@/shared/constants/sidebarVisibility";
-import {
-  isForbiddenUpstreamHeaderName,
-  isForbiddenCustomHeaderName,
-} from "@/shared/constants/upstreamHeaders";
-import { MAX_TIMER_TIMEOUT_MS } from "@/shared/utils/runtimeTimeouts";
+import "@/shared/constants/sidebarVisibility";
+import "@/shared/constants/upstreamHeaders";
+import "@/shared/utils/runtimeTimeouts";
 import { validateProviderSpecificData } from "@/shared/validation/providerSpecificData";
 import {
   isReservedProviderPrefix,
@@ -310,6 +304,12 @@ export const providerModelMutationSchema = z.object({
   // the same flag flows through `getCustomVisionCapabilityFields()` in the /v1/models
   // catalog. `null` clears a manual override back to the id-based heuristic.
   supportsVision: z.boolean().nullable().optional(),
+  // Reasoning-model flag set from the custom-provider form's per-model
+  // "Reasoning" checkbox. Persisted on the custom-model JSON row (customModels
+  // in key_value — no migration needed) and read back by the /v1/models catalog
+  // alongside supportsVision, so the same flag flows through
+  // getCustomModelCapabilityFields().
+  reasoning: z.boolean().nullable().optional(),
   dimensions: z.number().int().positive().nullable().optional(),
   supportedInputTypes: z.array(z.string()).optional(),
   modelType: z.enum(["chat", "embedding", "image", "rerank"]).optional(),

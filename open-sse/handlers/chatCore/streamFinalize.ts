@@ -40,7 +40,7 @@ export function wrapReadableStreamWithFinalize<T>(
       runFinalize();
       try {
         await reader.cancel(reason);
-      } catch (error) {
+      } catch {
         // Ignored
       }
     },

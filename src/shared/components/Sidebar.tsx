@@ -674,48 +674,36 @@ export default function Sidebar({
           {t("skipToContent")}
         </a>
 
-        {(onToggleCollapse || !isMacElectron) && (
-          <div
-            className={cn(
-              "flex items-center gap-2 pb-2",
-              isMacElectron ? "pt-3" : "pt-5",
-              collapsed ? "px-3 justify-center" : "px-4"
-            )}
-            aria-hidden="true"
-          >
-            {!isMacElectron && (
-              <>
-                <div className="w-3 h-3 rounded-full bg-[#FF5F56]" />
-                <div className="w-3 h-3 rounded-full bg-[#FFBD2E]" />
-                <div className="w-3 h-3 rounded-full bg-[#27C93F]" />
-              </>
-            )}
-            {!collapsed && <div className="flex-1" />}
-            {onToggleCollapse && (
-              <button
-                onClick={onToggleCollapse}
-                title={collapsed ? t("expandSidebar") : t("collapseSidebar")}
-                aria-expanded={!collapsed}
-                aria-label={collapsed ? t("expandSidebar") : t("collapseSidebar")}
-                className={cn(
-                  "rounded-md p-1 text-text-muted/50 transition-colors hover:bg-black/5 hover:text-text-muted dark:hover:bg-white/5",
-                  collapsed && !isMacElectron && "mt-2",
-                  isMacElectron && "ms-auto"
-                )}
-              >
-                <span className="material-symbols-outlined text-[16px]" aria-hidden="true">
-                  {collapsed ? "chevron_right" : "chevron_left"}
-                </span>
-              </button>
-            )}
-          </div>
-        )}
-
-        <div className={cn("py-3", collapsed ? "px-2" : "px-4")}>
+        {/* Brand row: the expand/collapse toggle sits on the LEFT of the logo +
+            name/version block, so the whole row acts as the sidebar control.
+            The decorative macOS traffic-light dots were removed (#sidebar-cleanup). */}
+        <div
+          className={cn(
+            "flex items-center gap-1.5 pb-2",
+            isMacElectron ? "pt-3" : "pt-5",
+            collapsed ? "px-1.5 justify-center" : "px-3"
+          )}
+        >
+          {onToggleCollapse && (
+            <button
+              onClick={onToggleCollapse}
+              title={collapsed ? t("expandSidebar") : t("collapseSidebar")}
+              aria-expanded={!collapsed}
+              aria-label={collapsed ? t("expandSidebar") : t("collapseSidebar")}
+              className="rounded-md p-1 text-text-muted/60 transition-colors hover:bg-black/5 hover:text-text-muted dark:hover:bg-white/5 shrink-0"
+            >
+              <span className="material-symbols-outlined text-[18px]" aria-hidden="true">
+                {collapsed ? "chevron_right" : "chevron_left"}
+              </span>
+            </button>
+          )}
           <Link
             href="/home"
             prefetch={false}
-            className={cn("flex items-center", collapsed ? "justify-center" : "gap-2.5")}
+            className={cn(
+              "flex items-center",
+              collapsed ? "justify-center" : "gap-2.5 min-w-0 flex-1"
+            )}
           >
             <div className="flex items-center justify-center size-8 rounded-lg overflow-hidden bg-surface-hover/50 shrink-0 border border-border">
               {customLogo ? (

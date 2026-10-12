@@ -154,6 +154,9 @@ export async function POST(request) {
       max_output_tokens: maxOutputTokens,
       // #1904: manual vision-capability override set in the add-model form.
       supportsVision,
+      // Reasoning-model flag set from the custom-provider form's per-model
+      // "Reasoning" checkbox.
+      reasoning,
       // #9820: optional video-generation job preset (job/poll path).
       generationConfig,
       isFree,
@@ -175,6 +178,7 @@ export async function POST(request) {
         ...(maxOutputTokens != null ? { outputTokenLimit: maxOutputTokens } : {}),
       },
       typeof supportsVision === "boolean" ? supportsVision : undefined,
+      typeof reasoning === "boolean" ? reasoning : undefined,
       generationConfig,
       typeof isFree === "boolean" ? isFree : undefined,
       {

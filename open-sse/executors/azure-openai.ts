@@ -21,7 +21,7 @@ export class AzureOpenAIExecutor extends DefaultExecutor {
 
   buildUrl(
     model: string,
-    stream: boolean,
+    _stream: boolean,
     urlIndex = 0,
     credentials: ProviderCredentials | null = null
   ) {

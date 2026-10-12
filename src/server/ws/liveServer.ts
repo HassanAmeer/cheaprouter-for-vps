@@ -29,9 +29,9 @@ import {
 
 import type { WsClientMessage, WsServerMessage, WsEventMessage, WsAuthResult } from "./types";
 
-import { emit, on, onAny, getEventHistory, type HistoryEntry } from "@/lib/events/eventBus";
+import { onAny, type HistoryEntry } from "@/lib/events/eventBus";
 
-import type { DashboardEventName, DashboardEventMap, DashboardChannel } from "@/lib/events/types";
+import type { DashboardEventName, DashboardChannel } from "@/lib/events/types";
 
 import { CHANNEL_EVENTS, getChannelForEvent } from "@/lib/events/types";
 import { isAutomatedTestProcess, isBuildProcess } from "@/shared/utils/testProcess";
@@ -100,7 +100,7 @@ const BACKLOG_MAX = 500;
 
 // ── Auth ──────────────────────────────────────────────────────────────────
 
-function toWebHeaders(headers: import("http").IncomingMessage["headers"]): Headers {
+function _toWebHeaders(headers: import("http").IncomingMessage["headers"]): Headers {
   const webHeaders = new Headers();
 
   for (const [name, value] of Object.entries(headers)) {

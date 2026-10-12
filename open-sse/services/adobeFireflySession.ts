@@ -12,7 +12,7 @@
  *     The durable browser profile holds Adobe SSO; Playwright is not required.
  */
 
-import { createHash, randomUUID } from "node:crypto";
+import { createHash } from "node:crypto";
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { ensureSecureDir, writeSecureFile } from "../utils/secureFileWrite.ts";

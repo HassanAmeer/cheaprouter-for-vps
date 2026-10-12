@@ -133,7 +133,7 @@ export async function stopNgrokTunnel(): Promise<NgrokTunnelStatus> {
       if (typeof listener.close === "function") {
         await listener.close();
       }
-    } catch (e) {
+    } catch  {
       // Ignore close errors
     }
     globalForNgrok.__ngrokListener = undefined;

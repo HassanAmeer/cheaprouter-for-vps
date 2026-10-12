@@ -4,10 +4,7 @@ import { getCombos, createCombo } from "@/lib/db/combos";
 import { normalizeComboModels } from "@/lib/combos/steps";
 import { duplicateAutoComboSchema } from "@/shared/validation/schemas";
 import { isValidationFailure, validateBody } from "@/shared/validation/helpers";
-import {
-  AUTO_FAMILY_IDS,
-  resolveBuiltinAutoSpec,
-} from "@omniroute/open-sse/services/autoCombo/builtinCatalog";
+import { resolveBuiltinAutoSpec } from "@omniroute/open-sse/services/autoCombo/builtinCatalog";
 import { AutoVariant } from "@omniroute/open-sse/services/autoCombo/autoPrefix";
 import { AutoComboSpec } from "@omniroute/open-sse/services/autoCombo/virtualFactory";
 import { MODEL_FAMILIES, ModelFamily } from "@omniroute/open-sse/services/autoCombo/modelFamily";
@@ -42,7 +39,7 @@ export async function POST(request: Request) {
   const { name, strategy } = validation.data;
 
   try {
-    const { createVirtualAutoCombo } =
+    const { createVirtualAutoCombo: _createVirtualAutoCombo } =
       await import("@omniroute/open-sse/services/autoCombo/virtualFactory");
 
     // Resolve the variant/spec using the same logic as builtinCatalog.

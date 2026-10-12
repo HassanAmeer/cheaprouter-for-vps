@@ -148,7 +148,7 @@ export async function listBackups(toolId: string) {
  * Restore a backup by its id (filename).
  */
 export async function restoreBackup(toolId: string, backupId: string) {
-  const dir = getToolBackupDir(toolId);
+  const _dir = getToolBackupDir(toolId);
   // Anchor backupId within the tool dir — prevent path traversal via backupId
   const backupPath = safePath(toolId, backupId);
   const metaPath = backupPath + ".meta.json";

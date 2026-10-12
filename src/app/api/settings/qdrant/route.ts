@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { isAuthenticated } from "@/shared/utils/apiAuth";
 import { validateBody, isValidationFailure } from "@/shared/validation/helpers";
 import { QdrantSettingsUpdateSchema } from "@/shared/schemas/qdrant";
-import { getQdrantConfig, normalizeQdrantConfig } from "@/lib/memory/qdrant";
+import { normalizeQdrantConfig } from "@/lib/memory/qdrant";
 import { updateSettings, getSettings } from "@/lib/db/settings";
 import { invalidateMemorySettingsCache } from "@/lib/memory/settings";
 import { sanitizeErrorMessage } from "@omniroute/open-sse/utils/error.ts";

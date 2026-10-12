@@ -1,5 +1,5 @@
 import { GithubExecutor } from "./github.ts";
-import type { ProviderCredentials, ExecuteInput, ExecutorLog } from "./base.ts";
+import type { ProviderCredentials, ExecutorLog } from "./base.ts";
 import { getModelTargetFormat } from "../config/providerModels.ts";
 
 /** Result of a successful GHE Copilot internal token exchange. */
@@ -123,8 +123,8 @@ export class GheCopilotExecutor extends GithubExecutor {
 
   override buildUrl(
     model: string,
-    stream: boolean,
-    urlIndex = 0,
+    _stream: boolean,
+    _urlIndex = 0,
     credentials: ProviderCredentials | null = null
   ): string {
     const bareModel = this.stripPrefix(model);

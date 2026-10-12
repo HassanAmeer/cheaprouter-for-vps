@@ -349,7 +349,7 @@ export function parseNotionGetSpaces(data: unknown): NotionWorkspaceCandidates {
 }
 
 /** Common shape: { [userId]: { space_view: { ... }, space: { [spaceId]: ... } } } */
-function pickSpaceIdFromUserMap(root: Record<string, unknown>): string {
+function _pickSpaceIdFromUserMap(root: Record<string, unknown>): string {
   return parseNotionGetSpaces(root).spaceIds[0] || "";
 }
 

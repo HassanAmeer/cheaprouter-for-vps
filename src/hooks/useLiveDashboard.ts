@@ -12,7 +12,7 @@
 "use client";
 
 import { useEffect, useRef, useState, useCallback, useMemo } from "react";
-import type { DashboardChannel, DashboardEventName } from "@/lib/events/types";
+import type { DashboardChannel } from "@/lib/events/types";
 import { deriveLiveWsPath, resolveLiveWsUrl, sanitizeLiveWsPort } from "@/shared/utils/wsPath";
 
 // ── Config ────────────────────────────────────────────────────────────────

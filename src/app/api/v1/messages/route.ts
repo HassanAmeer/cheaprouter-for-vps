@@ -44,7 +44,7 @@ export async function OPTIONS() {
  * `preParsedBody` is threaded from withInjectionGuard (#4041) so the body is
  * parsed at most once per request.
  */
-async function postHandler(request: any, context: any, preParsedBody: any = null) {
+async function postHandler(request: any, _context: any, preParsedBody: any = null) {
   // Reject non-JSON Content-Type with 415 before touching the body — mirrors OpenAI's
   // reference API and matches /v1/chat/completions (#6414).
   const ctRejection = requireJsonContentType(request);

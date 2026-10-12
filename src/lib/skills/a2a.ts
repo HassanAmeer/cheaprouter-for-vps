@@ -19,8 +19,8 @@ export const a2aMemorySkill = {
       },
     },
   },
-  handler: async (input: any, context: any) => {
-    const { task, contextRequired = false } = input;
+  handler: async (input: any, _context: any) => {
+    const { task: _task, contextRequired = false } = input;
     return {
       recommendedProvider: "auto",
       reason: "Memory-aware routing requires memories to be loaded",

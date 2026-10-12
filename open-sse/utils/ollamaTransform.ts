@@ -1,4 +1,4 @@
-import { CORS_HEADERS } from "./cors.ts";
+import "./cors.ts";
 import { getReadableReasoningValue } from "./reasoningFields.ts";
 
 type PendingToolCall = {
@@ -123,7 +123,7 @@ export function transformToOllama(response, model) {
                 controller.enqueue(new TextEncoder().encode(ollamaEnd));
               }
             }
-          } catch (e) {
+          } catch {
             // Silently ignore parse errors
           }
         }

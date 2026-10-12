@@ -14,8 +14,8 @@
  */
 
 import { z } from "zod";
-import type { TierConfig, ProviderTierOverride, ModelTierOverride } from "./tierTypes";
-import { PROVIDER_TIER } from "./tierTypes";
+import type { TierConfig } from "./tierTypes";
+import "./tierTypes";
 import { NOAUTH_PROVIDERS } from "@/shared/constants/providers";
 
 export const providerTierOverrideSchema = z.object({

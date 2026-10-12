@@ -30,7 +30,6 @@ import {
   buildPassthroughTestBody,
   shouldSwitchToVisibleFilter,
   type CompatModelRow,
-  type CompatByProtocolMap,
 } from "../providerPageHelpers";
 import { ModelVisibilityToolbar } from "./ModelRow";
 import { sortModelsFreeFirst, isModelFreeBadge } from "@/shared/utils/freeModels";
@@ -133,7 +132,7 @@ export default function PassthroughModelsSection({
   const [adding, setAdding] = useState(false);
   const [modelFilter, setModelFilter] = useState("");
   const [testingAll, setTestingAll] = useState(false);
-  const [testProgress, setTestProgress] = useState<{ done: number; total: number } | null>(null);
+  const [_testProgress, setTestProgress] = useState<{ done: number; total: number } | null>(null);
   const [localAutoHideFailed, setLocalAutoHideFailed] = useState(false);
   const autoHideFailed =
     autoHideFailedProp !== undefined ? autoHideFailedProp : localAutoHideFailed;
@@ -198,7 +197,7 @@ export default function PassthroughModelsSection({
             hiddenCount++;
           }
         }
-      } catch (e) {
+      } catch {
         error++;
         onModelTestStatusChange?.(model.modelId, "error");
       }

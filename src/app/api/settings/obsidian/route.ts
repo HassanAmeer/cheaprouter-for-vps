@@ -5,10 +5,8 @@ import {
   clearObsidianToken,
   getObsidianConfig,
   getObsidianBaseUrl,
-  getObsidianVaultPath,
   setObsidianToken,
   setObsidianBaseUrl,
-  setObsidianVaultPath,
 } from "@/lib/db/obsidian";
 import { createObsidianClient } from "@/lib/obsidian/api";
 import { sanitizeErrorMessage } from "@omniroute/open-sse/utils/error";

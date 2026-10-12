@@ -100,7 +100,7 @@ export function parseSSEDataPayload(
       return { ...parsed, type: eventType } as SSEJsonPayload;
     }
     return parsed as SSEJsonPayload;
-  } catch (error) {
+  } catch {
     if (options.logWarning !== false && payload.length > 0) {
       console.log(
         `[WARN] Failed to parse SSE payload (${payload.length} chars): ${payload.substring(0, 200)}...`
