@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useMemo, Suspense } from "react";
-import { Card, CardSkeleton, Button } from "@/shared/components";
+import { CardSkeleton, Button } from "@/shared/components";
 import {
   AGGREGATOR_PROVIDER_IDS,
   EMBEDDING_RERANK_PROVIDER_IDS,
@@ -30,7 +30,6 @@ import {
   connectionMatchesProviderCard,
   filterConfiguredProviderEntries,
   shouldFilterProviderEntriesForDisplayMode,
-  shouldShowFirstProviderHint,
   isPrimaryLlmProviderEntry,
   resolveVisibleWebFetchEntries,
   upsertProviderNodeById,
@@ -228,7 +227,6 @@ function ProvidersPageContent() {
   const [codexGlobalServiceMode, setCodexGlobalServiceMode] =
     useState<CodexGlobalServiceMode>("none");
   const [loading, setLoading] = useState(true);
-  const [showAllProviders, _setShowAllProviders] = useState(false);
   const [showAddCcCompatibleModal, setShowAddCcCompatibleModal] = useState(false);
   // Kilo-Code style inline custom-provider box: expands in place on this page
   // instead of opening a modal and navigating away after save.
@@ -754,44 +752,10 @@ function ProvidersPageContent() {
     compatibleProviderEntries.length +
     ideProviderEntries.length;
 
-  const showFirstProviderHint =
-    shouldShowFirstProviderHint(connections.length, searchQuery) && !showAllProviders;
-
   return (
     <OpenRouterProviderStatsProvider entries={openRouterProviderStats}>
       <div className="flex flex-col gap-6">
         <DeprecatedProviderBanner />
-
-        {showFirstProviderHint && (
-          <Card padding="lg">
-            <div className="flex flex-col items-center justify-center text-center">
-              <div className="flex items-center justify-center size-16 rounded-full bg-primary/10 mb-4">
-                <span className="material-symbols-outlined text-[32px] text-primary">dns</span>
-              </div>
-              <h2 className="text-xl font-semibold text-text-main">
-                {t("addFirstProvider") || "Add your first provider"}
-              </h2>
-              <p className="text-sm text-text-muted mt-2 max-w-md">
-                {t("addFirstProviderDesc") ||
-                  "Connect an AI provider to start routing requests through CheapRouter. You can use free providers, API keys, or OAuth accounts."}
-              </p>
-              <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
-                <Button icon="add" onClick={() => router.push("/dashboard/providers/new")}>
-                  {providerText(t, "onboardingWizard", "Provider Onboarding Wizard")}
-                </Button>
-                <a
-                  href="https://github.com/diegosouzapw/CheapRoute#-documentation"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium rounded-lg border border-border text-text-muted hover:text-text-main hover:bg-bg-subtle transition-colors"
-                >
-                  <span className="material-symbols-outlined text-[16px]">help</span>
-                  {t("learnMore") || "Learn more"}
-                </a>
-              </div>
-            </div>
-          </Card>
-        )}
 
         <ProviderTabs
           initialTab={activeTab}

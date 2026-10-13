@@ -23,8 +23,8 @@
 | Module | Scope | Status | Notes |
 |---|---|---|---|
 | **Sidebar** | Navigation ordering & deduplication | ✅ DONE | Correct order, `model-catalog` removed, types updated |
-| **Providers Page** | 5-Tab Architecture (`/dashboard/providers`) | ⚠️ POLISH | 5 Tabs live, "Add your first provider" banner to remove |
-| **Provider Detail** | 3-Section Overhaul (`/dashboard/providers/[id]`) | ⏳ TODO | Default Capabilities Prompt, Add Custom Model, Models Table |
+| **Providers Page** | 5-Tab Architecture (`/dashboard/providers`) | ✅ DONE | 5 Tabs live, "Add your first provider" banner removed |
+| **Provider Detail** | 3-Section Overhaul (`/dashboard/providers/[id]`) | ✅ DONE | Default Capabilities Prompt, Add Custom Model, Models Table |
 | **Combos Page** | Simplified Creation (`/dashboard/combos`) | ✅ DONE | `QuickComboCreator` hero + collapsible 20-strategy workbench |
 | **Users Page** | User management (`/dashboard/users`) | ✅ DONE | Accordion, BYOK keys, pause/resume, quota bars |
 | **API Keys** | Per-model quota limits & RPM | ✅ DONE | `modelLimits` schema & exact error rejection working |
