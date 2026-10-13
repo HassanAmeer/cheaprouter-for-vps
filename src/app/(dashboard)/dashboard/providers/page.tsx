@@ -23,6 +23,7 @@ import { useNotificationStore } from "@/store/notificationStore";
 import { useTranslations } from "next-intl";
 import { useSyncedModelsByProvider } from "./hooks/useSyncedModelsByProvider";
 import { useProviderUrlFilters } from "./hooks/useProviderUrlFilters";
+import { tabToCategories, type ProviderTab } from "./hooks/useProviderTabs";
 import {
   buildStaticProviderEntries,
   buildCompatibleProviderGroups,
@@ -30,7 +31,6 @@ import {
   filterConfiguredProviderEntries,
   shouldFilterProviderEntriesForDisplayMode,
   shouldShowFirstProviderHint,
-  shouldShowProviderSection,
   isPrimaryLlmProviderEntry,
   resolveVisibleWebFetchEntries,
   upsertProviderNodeById,
@@ -38,6 +38,7 @@ import {
 } from "./providerPageUtils";
 import type { ProviderEntry, OpenRouterProviderStatsEntry } from "./providerPageUtils";
 import { OpenRouterProviderStatsProvider } from "./context/openRouterProviderStatsContext";
+import { ProviderTabs } from "./components/ProviderTabs";
 import {
   shouldSyncProviderDisplayMode,
   writeProviderDisplayModePreference,
@@ -247,23 +248,20 @@ function ProvidersPageContent() {
   const [openRouterProviderStats, setOpenRouterProviderStats] = useState<
     OpenRouterProviderStatsEntry[]
   >([]);
-  const [activeCategory, setActiveCategory] = useState<string | null>(null);
-  // #4240: media-category (serviceKind) filter — composes with activeCategory,
+  const [activeTab, setActiveTab] = useState<ProviderTab>("all");
+  // #4240: media-category (serviceKind) filter — composes with activeTab,
   // search and configured-only. null = no serviceKind filter.
   const [activeServiceKind, setActiveServiceKind] = useState<string | null>(null);
   const notify = useNotificationStore();
-  const sectionCategoryAliases: Record<string, string> = {
-    cloud: "cloudagent",
-    noauth: "no-auth",
-    proxy: "upstream-proxy",
-    web: "webcookie",
-  };
-  const showSection = (category: string) => {
-    const normalizedCategory = sectionCategoryAliases[category] ?? category;
-    return shouldShowProviderSection(normalizedCategory, activeCategory, showFreeOnly);
-  };
   const t = useTranslations("providers");
   const tc = useTranslations("common");
+  
+  // Tab-based section visibility
+  const tabCategories = tabToCategories(activeTab);
+  const showSectionFromTab = (category: string) => {
+    // For tab-based system, we check if the category is in our tab's categories
+    return tabCategories.includes(category);
+  };
   const _webCookieProvidersDesc = providerText(
     t,
     "webCookieProvidersDesc",
@@ -281,8 +279,8 @@ function ProvidersPageContent() {
     setSearchQuery,
     modelSearchQuery,
     setModelSearchQuery,
-    activeCategory,
-    setActiveCategory,
+    activeCategory: null,
+    setActiveCategory: () => {},
     showFreeOnly,
     setShowFreeOnly,
     activeServiceKind,
@@ -832,10 +830,10 @@ function ProvidersPageContent() {
     liveModelsByProviderId,
     connections
   );
-  const visibleWebFetchEntries = resolveVisibleWebFetchEntries(webFetchEntries, activeCategory);
+  const visibleWebFetchEntries = resolveVisibleWebFetchEntries(webFetchEntries, null);
 
   const compactProviderEntries = buildCompactProviderEntriesForPage({
-    activeCategory,
+    activeCategory: null,
     showFreeOnly,
     freeSectionEntries,
     compatibleProviderEntries,
@@ -921,17 +919,32 @@ function ProvidersPageContent() {
           </Card>
         )}
 
+        <ProviderTabs
+          initialTab={activeTab}
+          onTabChange={setActiveTab}
+          displayMode={effectiveProviderDisplayMode}
+          setDisplayMode={setProviderDisplayMode}
+          searchQuery={searchQuery}
+          setSearchQuery={setSearchQuery}
+          modelSearchQuery={modelSearchQuery}
+          setModelSearchQuery={setModelSearchQuery}
+          showFreeOnly={showFreeOnly}
+          setShowFreeOnly={setShowFreeOnly}
+          activeServiceKind={activeServiceKind}
+          setActiveServiceKind={setActiveServiceKind}
+        />
+
         <ProviderSummaryCard
-          activeCategory={activeCategory}
+          activeCategory={null}
           activeServiceKind={activeServiceKind}
           onServiceKindChange={setActiveServiceKind}
           disabledConfigured={connections.length === 0}
           displayMode={effectiveProviderDisplayMode}
           modelSearchQuery={modelSearchQuery}
           onBatchTest={handleBatchTest}
-          onCategoryChange={(category, freeOnly) => {
-            setShowFreeOnly(freeOnly);
-            setActiveCategory(freeOnly ? null : category);
+          onCategoryChange={(_category, _freeOnly) => {
+            // Category selection is now handled by tabs; keep showFreeOnly state
+            setShowFreeOnly(_freeOnly);
           }}
           onDisplayModeChange={setProviderDisplayMode}
           onNewProvider={() => router.push("/dashboard/providers/new")}
@@ -1013,7 +1026,7 @@ function ProvidersPageContent() {
         ) : (
           <>
             {/* API Key Compatible Providers — dynamic (OpenAI/Anthropic compatible) */}
-            {showSection("compatible") && (
+            {showSectionFromTab("compatible") && (
               <div className="flex flex-col gap-4">
                 <div className="flex flex-wrap items-center gap-2">
                   <h2 className="text-xl font-semibold flex items-center gap-2 flex-1 min-w-0">
@@ -1118,7 +1131,7 @@ function ProvidersPageContent() {
             )}
 
             {/* OAuth Providers (including providers that expose free tiers via OAuth) */}
-            {showSection("oauth") && (
+            {showSectionFromTab("oauth") && (
               <div className="flex flex-col gap-4">
                 <div className="flex flex-wrap items-center gap-2">
                   <h2 className="text-xl font-semibold flex items-center gap-2 flex-1 min-w-0">
@@ -1190,7 +1203,7 @@ function ProvidersPageContent() {
             )}
 
             {/* IDE Providers (Cursor, Zed, Trae) — editors with built-in AI subscription */}
-            {showSection("ide") && (
+            {showSectionFromTab("ide") && (
               <div className="flex flex-col gap-4">
                 <div className="flex flex-wrap items-center gap-2">
                   <h2 className="text-xl font-semibold flex items-center gap-2 flex-1 min-w-0">
@@ -1250,7 +1263,7 @@ function ProvidersPageContent() {
             )}
 
             {/* Web / Cookie Providers */}
-            {showSection("web") && webCookieProviderEntries.length > 0 && (
+            {showSectionFromTab("web") && webCookieProviderEntries.length > 0 && (
               <div className="flex flex-col gap-4">
                 <div className="flex flex-wrap items-center gap-2">
                   <h2 className="text-xl font-semibold flex items-center gap-2 flex-1 min-w-0">
@@ -1300,7 +1313,7 @@ function ProvidersPageContent() {
             )}
 
             {/* Free Tier Providers */}
-            {showSection("free") && freeSectionEntries.length > 0 && (
+            {showSectionFromTab("free") && freeSectionEntries.length > 0 && (
               <div className="flex flex-col gap-4">
                 <div className="flex flex-wrap items-start gap-2">
                   <div className="flex-1 min-w-0">
@@ -1349,7 +1362,7 @@ function ProvidersPageContent() {
             )}
 
             {/* API Key Providers — fixed list */}
-            {showSection("apikey") && (
+            {showSectionFromTab("apikey") && (
               <div className="flex flex-col gap-4">
                 <div className="flex flex-wrap items-center gap-2">
                   <h2 className="text-xl font-semibold flex items-center gap-2 flex-1 min-w-0">
@@ -1404,7 +1417,7 @@ function ProvidersPageContent() {
             )}
 
             {/* No Auth Providers */}
-            {showSection("noauth") &&
+            {showSectionFromTab("noauth") &&
               !showFreeOnly &&
               (noAuthEntriesAll.length > 0 || blockedNoAuthEntries.length > 0) && (
                 <NoAuthProvidersSection
@@ -1421,7 +1434,7 @@ function ProvidersPageContent() {
               )}
 
             {/* Upstream Proxy Providers */}
-            {showSection("proxy") && upstreamProxyEntries.length > 0 && (
+            {showSectionFromTab("proxy") && upstreamProxyEntries.length > 0 && (
               <div className="flex flex-col gap-4">
                 <div className="flex flex-wrap items-center gap-2">
                   <h2 className="text-xl font-semibold flex items-center gap-2 flex-1 min-w-0">
@@ -1469,7 +1482,7 @@ function ProvidersPageContent() {
             )}
 
             {/* Web Fetch Providers */}
-            {showSection("webfetch") && visibleWebFetchEntries.length > 0 && (
+            {showSectionFromTab("webfetch") && visibleWebFetchEntries.length > 0 && (
               <div className="flex flex-col gap-4">
                 <div className="flex flex-wrap items-center gap-2">
                   <h2 className="text-xl font-semibold flex items-center gap-2 flex-1 min-w-0">
@@ -1502,7 +1515,7 @@ function ProvidersPageContent() {
             )}
 
             {/* Aggregators Gateways */}
-            {showSection("apikey") && aggregatorProviderEntries.length > 0 && (
+            {showSectionFromTab("apikey") && aggregatorProviderEntries.length > 0 && (
               <div className="flex flex-col gap-4">
                 <div className="flex flex-wrap items-center gap-2">
                   <h2 className="text-xl font-semibold flex items-center gap-2 flex-1 min-w-0">
@@ -1535,7 +1548,7 @@ function ProvidersPageContent() {
             )}
 
             {/* Enterprise & Cloud */}
-            {showSection("apikey") && enterpriseProviderEntries.length > 0 && (
+            {showSectionFromTab("apikey") && enterpriseProviderEntries.length > 0 && (
               <div className="flex flex-col gap-4">
                 <div className="flex flex-wrap items-center gap-2">
                   <h2 className="text-xl font-semibold flex items-center gap-2 flex-1 min-w-0">
@@ -1568,7 +1581,7 @@ function ProvidersPageContent() {
             )}
 
             {/* Cloud Agent Providers */}
-            {showSection("cloud") && cloudAgentProviderEntries.length > 0 && (
+            {showSectionFromTab("cloud") && cloudAgentProviderEntries.length > 0 && (
               <div className="flex flex-col gap-4">
                 <div className="flex flex-wrap items-center gap-2">
                   <h2 className="text-xl font-semibold flex items-center gap-2 flex-1 min-w-0">
@@ -1618,7 +1631,7 @@ function ProvidersPageContent() {
             )}
 
             {/* Local / Self-Hosted Providers */}
-            {showSection("local") && localProviderEntries.length > 0 && (
+            {showSectionFromTab("local") && localProviderEntries.length > 0 && (
               <div className="flex flex-col gap-4">
                 <div className="flex flex-wrap items-center gap-2">
                   <h2 className="text-xl font-semibold flex items-center gap-2 flex-1 min-w-0">
@@ -1666,7 +1679,7 @@ function ProvidersPageContent() {
             )}
 
             {/* Search Providers */}
-            {showSection("search") && searchProviderEntries.length > 0 && (
+            {showSectionFromTab("search") && searchProviderEntries.length > 0 && (
               <div className="flex flex-col gap-4">
                 <div className="flex flex-wrap items-center gap-2">
                   <h2 className="text-xl font-semibold flex items-center gap-2 flex-1 min-w-0">
@@ -1714,7 +1727,7 @@ function ProvidersPageContent() {
             )}
 
             {/* Embeddings & Rerank */}
-            {showSection("apikey") && embeddingRerankProviderEntries.length > 0 && (
+            {showSectionFromTab("apikey") && embeddingRerankProviderEntries.length > 0 && (
               <div className="flex flex-col gap-4">
                 <div className="flex flex-wrap items-center gap-2">
                   <h2 className="text-xl font-semibold flex items-center gap-2 flex-1 min-w-0">
@@ -1747,7 +1760,7 @@ function ProvidersPageContent() {
             )}
 
             {/* Image Providers */}
-            {showSection("apikey") && imageProviderEntries.length > 0 && (
+            {showSectionFromTab("apikey") && imageProviderEntries.length > 0 && (
               <div className="flex flex-col gap-4">
                 <div className="flex flex-wrap items-center gap-2">
                   <h2 className="text-xl font-semibold flex items-center gap-2 flex-1 min-w-0">
@@ -1780,7 +1793,7 @@ function ProvidersPageContent() {
             )}
 
             {/* Audio Only Providers */}
-            {showSection("audio") && audioProviderEntries.length > 0 && (
+            {showSectionFromTab("audio") && audioProviderEntries.length > 0 && (
               <div className="flex flex-col gap-4">
                 <div className="flex flex-wrap items-center gap-2">
                   <h2 className="text-xl font-semibold flex items-center gap-2 flex-1 min-w-0">
@@ -1828,7 +1841,7 @@ function ProvidersPageContent() {
             )}
 
             {/* Video Generation */}
-            {showSection("apikey") && videoProviderEntries.length > 0 && (
+            {showSectionFromTab("apikey") && videoProviderEntries.length > 0 && (
               <div className="flex flex-col gap-4">
                 <div className="flex flex-wrap items-center gap-2">
                   <h2 className="text-xl font-semibold flex items-center gap-2 flex-1 min-w-0">

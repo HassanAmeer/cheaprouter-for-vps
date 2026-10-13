@@ -150,6 +150,8 @@ vi.mock("next-intl", () => ({
       "endpoint.vscodeAliasChatLabel": "VS Code chat",
       "endpoint.machineId": "Machine {id}",
       "endpoint.usingLocalServer": "Using local server",
+      "endpoints.tabProxy": "Endpoint Proxy",
+      "endpoints.tabApiEndpoints": "API Endpoints",
       "common.copy": "Copy",
       "common.cancel": "Cancel",
     };
@@ -258,6 +260,8 @@ describe("EndpointPageClient", () => {
         return Promise.resolve(jsonResponse({ providers: [] }));
       }
       if (path === "/api/cli-tools/keys") return Promise.resolve(jsonResponse({ keys: [] }));
+      if (path.startsWith("/api/v1/reseller/byok")) return Promise.resolve(jsonResponse({ byokEnabled: true }));
+      if (path.startsWith("/api/v1/public/providers")) return Promise.resolve(jsonResponse({ success: true, providers: [] }));
       throw new Error(`Unexpected request: ${path}`);
     });
 
@@ -327,6 +331,8 @@ describe("EndpointPageClient", () => {
           })
         );
       }
+      if (path.startsWith("/api/v1/reseller/byok")) return Promise.resolve(jsonResponse({ byokEnabled: true }));
+      if (path.startsWith("/api/v1/public/providers")) return Promise.resolve(jsonResponse({ success: true, providers: [] }));
       throw new Error(`Unexpected request: ${path}`);
     });
 
@@ -423,6 +429,8 @@ describe("EndpointPageClient", () => {
       if (path === "/api/cli-tools/keys") {
         return Promise.resolve(jsonResponse({ keys: [] }));
       }
+      if (path.startsWith("/api/v1/reseller/byok")) return Promise.resolve(jsonResponse({ byokEnabled: true }));
+      if (path.startsWith("/api/v1/public/providers")) return Promise.resolve(jsonResponse({ success: true, providers: [] }));
       throw new Error(`Unexpected request: ${path}`);
     });
 

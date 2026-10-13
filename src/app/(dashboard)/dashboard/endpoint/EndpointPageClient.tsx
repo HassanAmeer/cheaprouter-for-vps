@@ -11,6 +11,7 @@ import VscodeTokenAliasCard from "./VscodeTokenAliasCard";
 import ShowcaseProvidersCard from "./components/ShowcaseProvidersCard";
 import ByokMasterToggleCard from "./components/ByokMasterToggleCard";
 import ApiDocsIntegrationHub from "./components/ApiDocsIntegrationHub";
+import ApiEndpointsTab from "./ApiEndpointsTab";
 
 const BUILD_TIME_CLOUD_URL = process.env.NEXT_PUBLIC_CLOUD_URL || null;
 const CLOUD_ACTION_TIMEOUT_MS = 15000;
@@ -121,7 +122,11 @@ export default function APIPageClient({ machineId }: Readonly<APIPageClientProps
   const [resolvedMachineId, setResolvedMachineId] = useState(machineId || "");
   const t = useTranslations("endpoint");
   const tc = useTranslations("common");
+  const te = useTranslations("endpoints");
   const [loading, setLoading] = useState(true);
+  const [activeEndpointTab, setActiveEndpointTab] = useState<"endpoint-proxy" | "api-endpoints">(
+    "endpoint-proxy"
+  );
 
   // Endpoints / models state
   const [allModels, setAllModels] = useState([]);
@@ -1236,20 +1241,48 @@ export default function APIPageClient({ machineId }: Readonly<APIPageClientProps
         </div>
       </div>
 
-      {/* API documentation. The MCP, A2A and Context Source tabs were removed:
-          this page is now API-only (see git history for the retired tabs). */}
-      <div className="flex flex-col gap-4">
-        {/* BYOK master toggle (spec §3 Tab 5 / §7) */}
-        <ByokMasterToggleCard />
-
-        {/* Public Showcase Providers Card */}
-        <ShowcaseProvidersCard />
-
-        {/* Website Integration API Documentation Hub */}
-        <ApiDocsIntegrationHub />
+      {/* Tab navigation — Endpoint Proxy vs API Endpoints catalog */}
+      <div className="flex items-center gap-1 border-b border-border/50">
+        <button
+          onClick={() => setActiveEndpointTab("endpoint-proxy")}
+          className={`px-4 py-2 text-xs font-medium rounded-t-lg transition-colors border-b-2
+            ${
+              activeEndpointTab === "endpoint-proxy"
+                ? "border-primary text-primary bg-primary/5"
+                : "border-transparent text-text-muted hover:text-text-main hover:border-border"
+            }`}
+        >
+          {te("tabProxy")}
+        </button>
+        <button
+          onClick={() => setActiveEndpointTab("api-endpoints")}
+          className={`px-4 py-2 text-xs font-medium rounded-t-lg transition-colors border-b-2
+            ${
+              activeEndpointTab === "api-endpoints"
+                ? "border-primary text-primary bg-primary/5"
+                : "border-transparent text-text-muted hover:text-text-main hover:border-border"
+            }`}
+        >
+          {te("tabApiEndpoints")}
+        </button>
       </div>
 
-      {/* Endpoint Card */}
+      {activeEndpointTab === "endpoint-proxy" && (
+        <>
+          {/* API documentation. The MCP, A2A and Context Source tabs were removed:
+              this page is now API-only (see git history for the retired tabs). */}
+          <div className="flex flex-col gap-4">
+            {/* BYOK master toggle (spec §3 Tab 5 / §7) */}
+            <ByokMasterToggleCard />
+
+            {/* Public Showcase Providers Card */}
+            <ShowcaseProvidersCard />
+
+            {/* Website Integration API Documentation Hub */}
+            <ApiDocsIntegrationHub />
+          </div>
+
+          {/* Endpoint Card */}
       <Card>
         <h2 className="text-lg font-semibold mb-4">{t("title")}</h2>
 
@@ -2092,9 +2125,17 @@ export default function APIPageClient({ machineId }: Readonly<APIPageClientProps
             />
           </div>
 
-          <VscodeTokenAliasCard className="mt-4" />
+           <VscodeTokenAliasCard className="mt-4" />
+         </div>
+       </Card>
+        </>
+      )}
+
+      {activeEndpointTab === "api-endpoints" && (
+        <div className="w-full">
+          <ApiEndpointsTab />
         </div>
-      </Card>
+      )}
 
       {/* Cloud Enable Modal */}
       <Modal
