@@ -28,7 +28,7 @@ const API_NAV_ITEMS: readonly SidebarItemDefinition[] = [
   },
   {
     id: "api-docs",
-    href: "/docs",
+    href: "/dashboard/endpoint/api-reference",
     i18nKey: "apiDocs",
     labelFallback: "API Docs",
     subtitleKey: "apiDocsSubtitle",
@@ -145,15 +145,6 @@ const MULTI_TENANT_ITEMS: readonly SidebarItemDefinition[] = [
 // ─── Sections ────────────────────────────────────────────────────────────────
 
 export const SIDEBAR_SECTIONS: readonly SidebarSectionDefinition[] = [
-  // Dedicated top-level API navigation — pinned to the very top of the sidebar
-  // so operators land on the Endpoint catalog or API Docs first.
-  {
-    id: "api",
-    titleKey: "apiSection",
-    titleFallback: "API",
-    children: API_NAV_ITEMS,
-    showTitle: false,
-  },
   {
     id: "home",
     titleKey: "home",
@@ -190,5 +181,13 @@ export const SIDEBAR_SECTIONS: readonly SidebarSectionDefinition[] = [
     titleKey: "settings",
     titleFallback: "Setting",
     children: SETTINGS_ITEMS,
+  },
+  // API navigation (Endpoint catalog + API Docs) — a collapsible "API" group
+  // (label visible) placed at the end of the sidebar.
+  {
+    id: "api",
+    titleKey: "apiSection",
+    titleFallback: "API",
+    children: API_NAV_ITEMS,
   },
 ] as const;
