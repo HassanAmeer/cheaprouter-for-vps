@@ -24,6 +24,7 @@ const saveSchema = z.object({
   customName: z.string().max(200).nullable().optional(),
   customAlias: z.string().max(200).nullable().optional(),
   isActive: z.boolean().optional(),
+  isFreeOverride: z.boolean().nullable().optional(),
 });
 
 const activeSchema = z.object({
@@ -68,7 +69,9 @@ export async function GET(request: Request) {
     // Models" UI can render the full model list (with capability badges) for
     // each provider that actually has credentials configured.
     const connectedProviderIds = Array.from(
-      new Set(connections.map((c) => (typeof c.provider === "string" ? c.provider : "")).filter(Boolean))
+      new Set(
+        connections.map((c) => (typeof c.provider === "string" ? c.provider : "")).filter(Boolean)
+      )
     );
     const modelsByProvider: Record<string, SyncedAvailableModel[]> = {};
     for (const pid of connectedProviderIds) {
@@ -112,13 +115,15 @@ export async function POST(request: Request) {
     // ── Save customization ──
     const saveResult = saveSchema.safeParse(body);
     if (saveResult.success) {
-      const { providerId, originalModelId, customName, customAlias, isActive } = saveResult.data;
+      const { providerId, originalModelId, customName, customAlias, isActive, isFreeOverride } =
+        saveResult.data;
       const row = upsertCustomization({
         providerId,
         originalModelId,
         customName,
         customAlias,
         isActive,
+        isFreeOverride,
       });
       return NextResponse.json({ success: true, customization: row }, { status: 201 });
     }
@@ -158,10 +163,7 @@ export async function DELETE(request: Request) {
   try {
     body = await request.json();
   } catch {
-    return NextResponse.json(
-      { success: false, error: "Invalid JSON body" },
-      { status: 400 }
-    );
+    return NextResponse.json({ success: false, error: "Invalid JSON body" }, { status: 400 });
   }
 
   try {
@@ -201,8 +203,7 @@ async function runLiveTest(params: {
     streamChat: true,
   });
 
-  const isOk =
-    result.status === "ok" && (result.responseText || "").trim().length > 0;
+  const isOk = result.status === "ok" && (result.responseText || "").trim().length > 0;
 
   const testStatus = isOk ? "verified" : "failed";
   const testResponse =

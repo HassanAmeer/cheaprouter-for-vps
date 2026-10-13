@@ -30,6 +30,13 @@ export type RecordNonStreamingUsageStatsContext = {
   comboStrategy: string | null | undefined;
   endpoint?: string | null | undefined;
   cpaAuthIndex?: string | null | undefined;
+  /**
+   * Reseller BYOK pass-through (§9b): true when the client supplied its own
+   * upstream key via `x-upstream-key` (or a provider-scoped variant). The
+   * usage row is still persisted for audit, but 0 tokens are deducted from
+   * the plan — the call is billed to the user's own provider account.
+   */
+  byokUsed?: boolean;
 };
 
 function logUsageTrace(
@@ -93,5 +100,7 @@ export function recordNonStreamingUsageStats(
 
   if (ctx.traceEnabled) logUsageTrace(usage, ctx.provider, ctx.connectionId);
   persistUsageRow(usage, ctx);
-  recordBillableTokens(usage, ctx.apiKeyInfo, ctx.provider, ctx.model);
+  // §9b: BYOK pass-through rides the user's own upstream key — persist the
+  // audit row above, but deduct 0 tokens from the reseller plan.
+  if (!ctx.byokUsed) recordBillableTokens(usage, ctx.apiKeyInfo, ctx.provider, ctx.model);
 }

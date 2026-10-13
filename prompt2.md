@@ -1,211 +1,350 @@
-# 📋 TRACKING & EXECUTION SPECIFICATION: PROMPT 2 (FINAL A TO Z)
-## Ecosystem: CheapRouter (VPS AI Core Gateway) + Reseller Web Platform (`reseller-models`)
+# 🚀 CHEAPROUTER — UPDATED MASTER PROMPT (A TO Z FINAL)
+> Last Updated: 2026-10-13
+> Ecosystem: **CheapRouter** (VPS AI Core Gateway) + **reseller-models** (Reseller Web Platform)
 
 ---
 
-> ### 🚨 CRITICAL DIRECTIVE FOR THE IMPLEMENTING AGENT / DEVELOPER:
-> 1. **Correction on Commit `d5d8c33` (`ProviderTabs.tsx`):**
->    Pichle commit mein doosre AI ne `ProviderTabs.tsx` mein auth categories (`API Key`, `OAuth`, `Free`, `Compatible`, `All`) ke pills bana diye thay. **Yeh ghalat hai!** Usay foran replace karein aur exact required **5 Tabs** banayein:
->    `All Providers` | `Connected Providers` | `Unconnected Providers` | `Manage Models` | `Reseller API Manage Providers`
-> 2. **Codebase Inspection & Improvement:** 
->    CheapRouter mein kai features pehle se partially maujood hain (`resellerUsers.ts`, `ByokMasterToggleCard.tsx`, `ApiDocsIntegrationHub.tsx`, `combo.ts`, `apiKeys.ts`). **Existing flow ko verify karein aur usi ko extend/polish karein**, wheel reinvent na karein.
-> 3. **Strict Design Aesthetic:** 
->    Zero flashy neon/glassmorphism colors. UI strictly clean, minimal, aur professional hona chahiye. Reseller website strictly **Silver, White, aur Deep Black** (OpenCode style) hogi.
+## 🚨 CRITICAL DIRECTIVES (READ FIRST)
+
+1. **Audit Before Building:**
+   Existing partials already in codebase: `resellerUsers.ts`, `ByokMasterToggleCard.tsx`,
+   `ApiDocsIntegrationHub.tsx`, `combo.ts`, `apiKeys.ts`.
+   **Extend/polish existing code — do NOT reinvent the wheel.**
+
+2. **Design Aesthetic:**
+   Minimalist Dark Mode. **Silver (#C0C0C0), White (#FFFFFF), Deep Black (#0A0A0A)** only.
+   Zero neon/glassmorphism. OpenCode-style clean UI.
+
+3. **No Raw SQL** — always use `src/lib/db/*` domain modules.
+
+4. **Error sanitization** — all error responses must go through `buildErrorBody()` or
+   `sanitizeErrorMessage()` from `open-sse/utils/error.ts`. Never expose raw `err.stack`.
+
+5. **TypeScript strict** — no new `any` types in `open-sse/` or `tests/`. Fix ESLint issues.
 
 ---
 
-## 📌 TABLE OF CONTENTS
-1. Sidebar Navigation: Exact Sorting & Duplicate Removal
-2. Providers Page: 5-Tab Architecture (Fix `ProviderTabs.tsx`)
-3. Provider Details Page Clean-Up & Dedicated Model Studio (`/dashboard/providers/[id]`)
-4. Dedicated "Users" Management Tab (`/dashboard/users`)
-5. Simplified Combos Engine (`/dashboard/combos`)
-6. API Keys & Strict Model-Level Quota Enforcements
-7. Multi-User BYOK (Bring Your Own Key) Stateless Pass-Through Architecture
-8. Reseller Frontend Web Application (`reseller-models`) Full Specification
+## ✅ IMPLEMENTATION STATUS TRACKER
+
+| # | Task | Status | Files |
+|---|------|--------|-------|
+| 1a | Sidebar: Remove model-catalog duplicate | ✅ DONE | sections.ts, types.ts, sidebarVisibility.ts |
+| 1b | Sidebar: Correct sort order (Home/Users/Usage top; CheapProxy; API; Info; Dev Tools; Theme bottom) | ✅ DONE | sections.ts |
+| 1c | Sidebar: Fix SidebarSectionId type (add top/info/bottom) | ✅ DONE | types.ts |
+| 2 | Providers Page: Replace auth-pills with 5-Tab architecture | ✅ DONE | ProviderTabs.tsx, useProviderTabs.ts, page.tsx |
+| 3a | Provider Details: Fetch All Models button + orange fallback alert | ⏳ TODO | ProviderDetailPageClient.tsx |
+| 3b | Provider Details: Manual Add Model form (Name, ID, Context, Capabilities) | ⏳ TODO | ProviderDetailPageClient.tsx |
+| 3c | Provider Details: Models table (Active cb, ID copy, FREE/PAID, Context, Caps, Test) | ⏳ TODO | ProviderDetailPageClient.tsx |
+| 4 | Users Page: Accordion + BYOK inspection + Quota analytics | ✅ DONE (already existed) | users/page.tsx |
+| 5a | Combos Page: Simplify 5,116-line UI — Custom Combo Name/ID | ⏳ TODO | combos/page.tsx |
+| 5b | Combos Page: Candidate Models from Manage Models active list only | ⏳ TODO | combos/page.tsx |
+| 5c | Combos Page: Auto Failover switch + Random switch (2 core strategies) | ⏳ TODO | combos/page.tsx |
+| 6a | DB Migration: provider_model_customizations table | ⏳ TODO | src/lib/db/migrations/ |
+| 6b | Manage Models Tab 4: Checkbox selection, FREE/PAID badge, Copy ID, Capability badges | ⏳ TODO | New component under providers/ |
+| 6c | Manage Models Tab 4: Live Test button with inline preview (Verified/Failed) | ⏳ TODO | New component under providers/ |
+| 6d | Manage Models Tab 4: Custom alias fields (Display Name + API Call ID) | ⏳ TODO | New component under providers/ |
+| 6e | Manage Models Tab 4: Integrate with resolveModelAlias routing logic | ⏳ TODO | open-sse/translator/ or handlers/ |
+| 7a | Reseller API Tab 5: Provider exposure checkboxes (GET /api/v1/public/providers) | ⏳ TODO | New component + API route |
+| 7b | Reseller API Tab 5: Master BYOK ON/OFF toggle (reuse ByokMasterToggleCard.tsx) | ⏳ TODO | Tab 5 panel |
+| 8a | API Keys: Per-model quota schema (allowedModels, modelLimits, rateLimits, expiresAt) | ⏳ TODO | apiKeys.ts, DB migration |
+| 8b | API Keys: Enforce per-model token limit (reject only exhausted model, not others) | ⏳ TODO | chatCore.ts |
+| 8c | API Keys: Sliding window RPM limiter | ⏳ TODO | chatCore.ts |
+| 8d | API Keys: /v1/models public listing (403 on unallowed at execution time only) | ⏳ TODO | models route |
+| 9a | BYOK Pass-through: Check Master toggle before injecting x-upstream-key header | ⏳ TODO | chatCore.ts |
+| 9b | BYOK Pass-through: 0-token deduction when BYOK key is used | ⏳ TODO | chatCore.ts |
+| 10 | reseller-models: Init Next.js standalone app + SQLite reseller.db | ⏳ TODO | /reseller-models/ |
+| 10a | reseller-models: Seed DB (admin/1234, user1@gmail.com/1234, user2@gmail.com/1234) | ⏳ TODO | /reseller-models/ |
+| 10b | reseller-models: Admin Panel (/admin) — Plans Studio + Users Table | ⏳ TODO | /reseller-models/ |
+| 10c | reseller-models: User Dashboard (/dashboard) — Subscription, API Key, BYOK, Analytics | ⏳ TODO | /reseller-models/ |
+| 10d | reseller-models: Landing Page (/) — Hero, Live Models Catalog, Pricing Table | ⏳ TODO | /reseller-models/ |
 
 ---
 
-## 1. SIDEBAR NAVIGATION: EXACT SORTING & DUPLICATE REMOVAL
-*Target File: `src/shared/constants/sidebarVisibility/sections.ts`*
+## 1. SIDEBAR — DONE ✅
+**Files:** `src/shared/constants/sidebarVisibility/sections.ts`, `types.ts`, `sidebarVisibility.ts`
 
-Sidebar ki hierarchy aur items ki upar se neeche sequence **STRICTLY** yeh honi chahiye:
-
-1. **Top Standalone Items (Outside / No Section Header - `showTitle: false`):**
-   - 🏠 **Home** (`/home`)
-   - 👥 **Users** (`/dashboard/users`) — Reseller users, plans & BYOK keys
-   - 📊 **Usage** (`/dashboard/usage`) — Live token & provider consumption
-
-2. **Section Label: `CheapProxy`**
-   - 🌐 **Providers** (`/dashboard/providers`)
-   - 📑 **Combos** (`/dashboard/combos`)
-   - 🔑 **API Keys** / API Manager (`/dashboard/api-manager`)
-   - ⚠️ **MANDATORY REMOVAL:** Purana duplicate tab `model-catalog` (`/dashboard/models` - "Models & Combos") ko `sections.ts` se **permanently delete/remove** karein taake "Models & Combos" vs "Combos" ki redundancy khatam ho jaye.
-
-3. **Section Label: `API`**
-   - 🔌 **API Endpoints** (`/dashboard/endpoint` - Visual Cards/Grid View)
-   - 📖 **API Docs** (`/dashboard/endpoint/api-reference` ya `/docs` - Interactive Developer Hub)
-
-4. **Section Label: `Info`**
-   - 💰 **Costs / Pricing** (`/dashboard/costs/pricing`)
-   - 🏆 **Free Provider Rankings** (`/dashboard/free-provider-rankings`)
-
-5. **Section Label: `Dev Tools`**
-   - 📝 **Logs** (`/dashboard/logs`)
-   - 🔀 **Proxy Logs** (`/dashboard/logs/proxy`)
-   - 💻 **Console Logs** (`/dashboard/logs/console`)
-
-6. **Bottom Standalone Item (Outside / No Section Header - `showTitle: false`):**
-   - 🎨 **Theme** / Appearance (`/dashboard/settings/appearance`)
+Final order implemented:
+```
+[No Header - showTitle:false]  Home / Users / Usage
+[CheapProxy]                   Providers / Combos / API Keys
+[API]                          API Endpoints / API Docs
+[Info]                         Costs/Pricing / Free Rankings
+[Dev Tools]                    Logs / Proxy Logs / Console Logs
+[No Header - showTitle:false]  Theme
+```
+model-catalog (`/dashboard/models`) permanently removed.
+SidebarSectionId type extended with `"top"`, `"info"`, `"bottom"`.
 
 ---
 
-## 2. PROVIDERS PAGE: 5-TAB ARCHITECTURE
-*Target Files: `src/app/(dashboard)/dashboard/providers/components/ProviderTabs.tsx`, `useProviderTabs.ts`, `page.tsx`*
+## 2. PROVIDERS PAGE: 5-TAB ARCHITECTURE — DONE ✅
+**Files:** `ProviderTabs.tsx`, `useProviderTabs.ts`, `providers/page.tsx`
 
-Existing `ProviderTabs.tsx` ke category pills (`API Key`, `OAuth`, `Free`, etc.) ko hata kar top par yeh **5 Main Tabs** banayein:
+Old auth-category pills (API Key / OAuth / Free / Compatible / All) → replaced with:
 
-### Tab 1: All Providers
-- Tamam 370+ supported providers ki directory with search bar aur filter chips.
+| Tab ID | Label | Content |
+|--------|-------|---------|
+| all-providers | All Providers | 370+ providers directory, search, filter chips |
+| connected | Connected | Credentialed/active providers only |
+| unconnected | Unconnected | Non-configured providers with "Connect" CTA |
+| manage-models | Manage Models | Model studio for connected providers |
+| reseller-api | Reseller API | Provider exposure + Master BYOK toggle |
 
-### Tab 2: Connected Providers
-- Sirf wo providers jin ke credentials/API keys currently active aur authenticated hain.
-
-### Tab 3: Unconnected Providers
-- Tamam non-configured providers jin par "Connect" CTA button ho.
-
-### Tab 4: Manage Models (Dedicated Model Studio)
-- **Data Scope:** Sirf **Connected Providers** ke models yahan display honge (collapsible provider groups).
-- **Checkbox Selection:** Provider ke 200–300 models me se operator sirf 5–10 zaroori models ko tick karega. Sirf checked models active rahenge aur downstream Combos/API keys me jayenge.
-- **Model ID One-Click Copy:** Har model ID ke samne copy icon button taake original model path/ID copy ho sake.
-- **Free vs Pro / Paid Label:** Provider status ke mutabiq badge (`FREE` / `PAID`) + manual toggle override.
-- **Model Capabilities Badges:** Har model par prominent badges: Context Window (e.g. `1M tokens`, `128K`), Modalities (`Reasoning`, `Vision`, `Audio`, `Code`, `Tools`, `STT`, `TTS`).
-- **Capability-Aware Live Test Button:**
-  - Har model ke sath "Test" button hoga.
-  - Capability template prompts (Code prompt for coding, Vision prompt for vision, Audio prompt for audio, Text prompt for text).
-  - Run dabane par real upstream response generate ho kar model ke neeche inline preview show karega:
-    - Success: Green Checkmark Badge (`Verified`) + HTTP 200 + real response preview.
-    - Error: Red Badge (`Failed`) + Status code + upstream error message.
-- **Model Renaming (Custom Aliases):**
-  - Checkmark karne par editable fields:
-    1. **Original Name:** Read-only label.
-    2. **Custom Display Name:** Editable input (e.g. `GLM 5.3 Flash`). *Blank = original.*
-    3. **Original API Model ID:** Read-only label (e.g. `glm-5.3`).
-    4. **Custom API Call ID / Alias:** Editable input (e.g. `glm-5.3_flash` ya `deepseek_flash`). *Blank = original.*
-- **Database Persistence & Routing Integration:**
-  - Settings SQLite table `provider_model_customizations` me save hongi (`provider_id`, `original_model_id`, `custom_name`, `custom_alias`, `is_active`, `is_tested`, `context_window`, `capabilities`).
-  - Codebase ke `resolveModelAlias` logic ke sath integrate karein taake client request me custom alias aane par router upstream provider ko original ID dispatch kare.
-
-### Tab 5: Reseller API Manage Providers
-- Checkboxes to select which providers to expose to reseller websites via `GET /api/v1/public/providers` with official SVG icons, names, and metadata.
-- **Master BYOK Toggle Switch:** Prominent switch: **"Enable BYOK Providers (On/Off)"**.
-  - ON = Reseller users apni custom keys bhej sakte hain.
-  - OFF = External custom keys block hongi with error: `{"error": "BYOK is currently disabled by administrator"}`.
+Tab rendering: clean underline nav bar (border-b-2 style), no pills.
 
 ---
 
-## 3. PROVIDER DETAILS PAGE CLEAN-UP (`/dashboard/providers/[id]`)
-*Target File: `src/app/(dashboard)/dashboard/providers/[id]/page.tsx`*
+## 3. PROVIDER DETAILS PAGE (/dashboard/providers/[id]) — TODO ⏳
+**File:** `src/app/(dashboard)/dashboard/providers/[id]/ProviderDetailPageClient.tsx`
 
-- **UI Clean-Up:** Faltu aur extra unnecessary sections ko remove karein. Sirf clean Connectivity + Models Studio rakhein.
-- **"Fetch All Models" Button:**
-  - Top par prominent button: **"Fetch All Models"** jo upstream provider API se models live load kare.
-  - **Orange Alert Fallback:** Agar API se models fetch na ho sakein, toh orange alert box show ho:
-    `"Failed to fetch models from API. Please add models manually."`
-- **Manual Add Model Form (Top Section):**
-  - Input fields: Model Name, Model ID, Context Window size (e.g. 1M, 128K), Capabilities Multi-Select (Text, Vision, Audio, Video, STT, TTS, Code, Reasoning), aur "Add Model" button jo table me new row append kare.
-- **Models Table in Details Page:**
-  - Columns: Active Checkbox, Model ID with One-Click Copy Button, Free vs Pro/Paid Badge, Context Window, Capabilities Icons, Test Button with inline response preview.
+> Actual logic is in `ProviderDetailPageClient.tsx` (954 lines), NOT `page.tsx` (thin wrapper).
+> Audit existing hooks first: `useProviderModels`, `useModelImportHandlers`.
 
----
+### 3.1 Fetch All Models Button
+- Prominent button at top: **"Fetch All Models"**
+- Calls upstream provider API to live-load model list
+- On failure → orange alert box:
+  `"Failed to fetch models from API. Please add models manually."`
 
-## 4. DEDICATED "USERS" TAB (`/dashboard/users`)
-*Target Files: `src/app/(dashboard)/dashboard/users/page.tsx`, `src/lib/db/resellerUsers.ts`, `src/app/api/v1/reseller/users/route.ts`*
+### 3.2 Manual Add Model Form
+Fields: Model Name | Model ID | Context Window (e.g. 1M, 128K) | Capabilities multi-select
+(Text, Vision, Audio, Video, STT, TTS, Code, Reasoning) | **"Add Model"** button
 
-- **User List Accordion View:** Har registered user ka row/card (Name, Email, Plan Tier e.g. Free/Pro/Premium, Registered Date).
-- **Attached BYOK Keys Inspection:** Expand karne par user ki add ki hui BYOK keys (Provider Name, Masked Key, Date Added).
-- **Provider Pause / Resume Toggle:** Har BYOK provider ke samne switch jisse user ya admin us key ko temporary pause ya resume kar sake.
-- **Live Quota & Usage Analytics:** Total tokens used, remaining plan balance, per-minute request counts, live charts.
+### 3.3 Models Table
+Columns: `☑ Active` | `Model ID (+ copy icon)` | `FREE/PAID badge` | `Context Window` | `Capability icons` | `Test button with inline preview`
 
 ---
 
-## 5. SIMPLIFIED COMBOS ENGINE (`/dashboard/combos`)
-*Target File: `src/app/(dashboard)/dashboard/combos/page.tsx`*
+## 4. USERS PAGE (/dashboard/users) — DONE ✅
+**File:** `src/app/(dashboard)/dashboard/users/page.tsx`
 
-5,116 lines ke complex cluttered UI ko clean aur simplified banayein:
-- **Custom Combo Name / ID:** Jo API request me `model` parameter me pass hoga (e.g. `auto-coding-combo`).
-- **Candidate Models Selection:** Multi-select dropdown jisme sirf `Manage Models` ke active models show hon unki 1M context aur capabilities ke sath.
-- **Two Core Strategy Switches:**
-  1. **Auto Combo (Auto Failover Switch):** 4–6 models ka priority sequence. Agar Model 1 timeout, rate-limit (429), server error (500), ya quota exhaust ho jaye -> router instantly Model 2 par request replay karega -> then Model 3.
-  2. **Random Combo (Random Switch):** Har incoming request par candidate models me se random model pick karega load distribution ke liye.
-- **Best Model Combo:** Curated high-performance models panel.
+Already fully implemented:
+- Accordion UserCard per user (Name, Email, Plan badge, token progress bar)
+- Expand → BYOK keys list (Provider, Masked Key, Date Added)
+- Pause/Resume toggle per BYOK key via PATCH `/api/v1/reseller/users`
+- Auto-polls every 15s
 
 ---
 
-## 6. API KEYS & STRICT MODEL-LEVEL QUOTA ENFORCEMENTS
-*Target Files: `open-sse/handlers/chatCore.ts`, `src/lib/db/apiKeys.ts`, `src/app/api/keys/route.ts`*
+## 5. COMBOS PAGE (/dashboard/combos) — TODO ⏳
+**File:** `src/app/(dashboard)/dashboard/combos/page.tsx` (5,116 lines)
 
-- **Programmatic API Creation:** Reseller backend `POST /api/keys` call karke keys banayega:
-  ```json
-  {
-    "name": "User1-Pro-Plan",
-    "allowedModels": ["glm-5.3_flash", "deepseek-r1", "gemini-2.5-flash"],
-    "modelLimits": {
-      "glm-5.3_flash": { "maxTokens": 100000000 },
-      "deepseek-r1": { "maxTokens": 50000000 }
-    },
-    "rateLimits": { "requestsPerMinute": 30 },
-    "expiresAt": "2026-11-12T00:00:00Z"
-  }
-  ```
-- **Strict Per-Model Quota Enforcement:**
-  - Agar Model A ki 100M limit reach ho jaye, toh Model A par request reject hogi with exact message:
-    `{"error": "Limit reached for this model. Please check another available model to continue."}`
-  - **Lekin Model B block nahi hoga!** Agar Model B par quota baqi hai, toh user Model B use kar sakega.
-- **Rate Limits:** Sliding window RPM rate limiter (e.g. 30 req/min).
-- **`/v1/models` Listing Rule:** `/v1/models` endpoint public/open rahega aur **tamam active models har kisi ko return karega**. Execution ke waqt strictly API key ke allowed models check honge (unallowed par 403 Forbidden).
+### Goal: Simplify the cluttered UI into a clean, focused experience.
+
+### Required UI Elements:
+1. **Custom Combo Name / ID** — text input
+   - Used as `model` param in API calls (e.g. `auto-coding-combo`)
+2. **Candidate Models** — multi-select dropdown
+   - Only shows models from **Manage Models Tab 4** active list
+   - Displays model context window + capability icons alongside each option
+3. **Two Core Strategy Switches** (prominent toggles):
+   - **Auto Failover** — priority queue: Model 1 → on timeout/429/500 → Model 2 → Model 3
+   - **Random** — each request picks a random model from candidates (load distribution)
+4. **Best Model Combo** — curated preset panel of high-performance models
+
+> Note: All 20 existing combo strategies in `open-sse/services/combo.ts` remain in the backend.
+> The UI just needs to expose the 2 most-used ones cleanly. Do not remove backend logic.
 
 ---
 
-## 7. MULTI-USER BYOK STATELESS PASS-THROUGH ARCHITECTURE
-*Target File: `open-sse/handlers/chatCore.ts`*
+## 6. MANAGE MODELS (Tab 4 of Providers Page) — TODO ⏳
+**New components under:** `src/app/(dashboard)/dashboard/providers/components/`
 
-- Reseller website user ke personal keys apne secure database me rakhti hai.
-- Chat call karte waqt pass-through headers bheje jate hain: `x-upstream-key: <user_api_key>` (ya `x-claude-key`, `x-deepseek-key`).
-- CheapRouter request aane par:
-  1. Agar Master BYOK Switch = OFF -> Return error `{"error": "BYOK is disabled"}`.
-  2. Agar Master BYOK Switch = ON -> CheapRouter VPS default key ke bajaye **user ki header key** upstream ko inject karega.
-  3. CheapRouter is call par user ke plan balance se **0 tokens** deduct karega (Free routing).
-- User ne jis provider ki key lagayi hai, us provider ke active models user freely use kar sakega.
+### 6.1 DB Migration Required
+New table: `provider_model_customizations`
+```sql
+CREATE TABLE IF NOT EXISTS provider_model_customizations (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  provider_id TEXT NOT NULL,
+  original_model_id TEXT NOT NULL,
+  custom_name TEXT,
+  custom_alias TEXT,
+  is_active INTEGER NOT NULL DEFAULT 0,
+  is_tested INTEGER NOT NULL DEFAULT 0,
+  context_window TEXT,
+  capabilities TEXT,
+  free_paid TEXT DEFAULT 'paid',
+  created_at TEXT DEFAULT (datetime('now')),
+  updated_at TEXT DEFAULT (datetime('now')),
+  UNIQUE(provider_id, original_model_id)
+);
+```
+Migration file: `src/lib/db/migrations/` (next available number)
+Domain module: `src/lib/db/providerModelCustomizations.ts`
+
+### 6.2 UI Features
+- **Collapsible provider groups** (accordion per connected provider)
+- **Checkbox** per model → only checked = active → flows to Combos + API key allowedModels
+- **Copy icon** next to each Model ID (one-click clipboard copy)
+- **FREE / PAID badge** — auto-detected from provider type + manual toggle override
+- **Capability badges:** Context Window chip (`1M`, `128K`) + Modality chips (`Reasoning`, `Vision`, `Audio`, `Code`, `Tools`, `STT`, `TTS`)
+- **Test button** per model → capability-aware prompt sent upstream:
+  - ✅ Green `Verified` badge + HTTP 200 + real response preview snippet
+  - ❌ Red `Failed` badge + status code + upstream error message
+- **Custom alias fields** (shown when model checkbox is checked):
+  | Field | Type |
+  |-------|------|
+  | Original Name | Read-only label |
+  | Custom Display Name | Editable input (blank = use original) |
+  | Original API Model ID | Read-only label |
+  | Custom API Call ID / Alias | Editable input (blank = use original) |
+- Integrate alias with `resolveModelAlias()` so client's custom alias → router uses original ID upstream
 
 ---
 
-## 8. RESELLER FRONTEND WEB APPLICATION (`reseller-models`)
-*Target Directory: `/home/hasan/Documents/reactjs/cheaprouter/reseller-models/`*
+## 7. RESELLER API (Tab 5 of Providers Page) — TODO ⏳
+**New component under:** `src/app/(dashboard)/dashboard/providers/components/`
 
-Nayi independent Next.js standalone web app initialize karein:
+### UI Features:
+- **Provider checkboxes** — select which providers expose via `GET /api/v1/public/providers`
+  - Response includes official SVG icons, names, metadata
+- **Master BYOK Toggle** (reuse existing `ByokMasterToggleCard.tsx`):
+  - **ON** → reseller users can send `x-upstream-key: <key>` (or `x-claude-key`, `x-deepseek-key`)
+  - **OFF** → CheapRouter rejects with: `{"error": "BYOK is currently disabled by administrator"}`
 
-### 8.1 UI & Design System
-- Minimalist Modern Dark Mode strictly using **Silver (#C0C0C0 / #E5E7EB), White (#FFFFFF), and Deep Black (#0A0A0A / #121212)** (OpenCode style). Zero unwanted flashy neon colors.
+### API Route Needed:
+`GET /api/v1/public/providers` — public endpoint, no auth, returns enabled providers list with SVG icons
 
-### 8.2 Local Database (SQLite3) & Auth
-- Local SQLite database `reseller.db` (tables: `users`, `plans`, `user_subscriptions`, `user_byok_keys`, `settings`).
-- **Pre-seeded Accounts:**
-  - **Admin:** Username: `admin` | Password: `1234`
-  - **User 1:** Email: `user1@gmail.com` | Password: `1234`
-  - **User 2:** Email: `user2@gmail.com` | Password: `1234`
+---
 
-### 8.3 Admin Panel (`/admin`)
-- **Plans Configuration Studio:** Admin Free, Pro, aur Premium plans configure kare (Included models, token budgets e.g. 10M, 50M, 100M, RPM limits, validity duration e.g. 7 Days, 30 Days, Unlimited).
-- **Users Management Table:** Tamam users ki list with plan badges. Admin "Edit Plan" modal se user ka plan assign/change kare, jo foran CheapRouter `POST /api/keys` call karke key sync kar de.
+## 8. API KEYS — STRICT MODEL-LEVEL QUOTA — TODO ⏳
+**Files:** `src/lib/db/apiKeys.ts`, `open-sse/handlers/chatCore.ts`, `src/app/api/keys/route.ts`
 
-### 8.4 User Dashboard (`/dashboard`)
-- **Active Subscription Card:** Current plan name, token quota progress bar (Used vs Remaining), aur Expiry Countdown ("Expires in 28 days" ya "Unlimited").
-- **API Key Section:** CheapRouter-generated key with One-Click Copy aur Regenerate button.
-- **BYOK Keys Manager (Active when Router BYOK = ON):** User custom provider keys dale, Pause / Resume kare, status dekhe.
-- **Live Analytics:** Requests per minute meter aur daily usage charts.
+### Programmatic Key Creation (`POST /api/keys`):
+```json
+{
+  "name": "User1-Pro-Plan",
+  "allowedModels": ["glm-5.3_flash", "deepseek-r1", "gemini-2.5-flash"],
+  "modelLimits": {
+    "glm-5.3_flash": { "maxTokens": 100000000 },
+    "deepseek-r1": { "maxTokens": 50000000 }
+  },
+  "rateLimits": { "requestsPerMinute": 30 },
+  "expiresAt": "2026-11-12T00:00:00Z"
+}
+```
 
-### 8.5 Public Landing Page (`/`)
-- Hero Section explaining the high-speed AI Gateway.
-- Live Models Catalog (CheapRouter `GET /api/v1/public/providers` se fetched with SVG icons).
-- Pricing Table with Free, Pro, and Premium tiers.
+### Enforcement Rules:
+- **Per-model limit hit** → reject ONLY that model:
+  `{"error": "Limit reached for this model. Please check another available model to continue."}`
+- **Other models** with remaining quota → still accessible (do NOT block all)
+- **Sliding window RPM** → reject with 429 when exceeded
+- **`/v1/models` endpoint** → public, returns all active models (no auth needed for listing)
+- **Execution-time check** → if API key does not include a model → 403 Forbidden
+
+---
+
+## 9. BYOK STATELESS PASS-THROUGH — TODO ⏳
+**File:** `open-sse/handlers/chatCore.ts`
+
+### Flow:
+1. Reseller user's keys stored in `reseller-models` SQLite DB (never sent to CheapRouter storage)
+2. On chat API call → reseller app passes header: `x-upstream-key: <user_api_key>`
+   (Provider-specific variants: `x-claude-key`, `x-deepseek-key`, `x-openai-key`)
+3. CheapRouter at request time:
+   - Check Master BYOK toggle (from settings DB)
+   - **Toggle OFF** → return: `{"error": "BYOK is disabled"}`
+   - **Toggle ON** → substitute user's header key for the VPS default key when calling upstream
+   - Deduct **0 tokens** from user's plan balance (free routing — user is using their own key)
+4. User gets access to all active models of the provider whose key they supplied
+
+---
+
+## 10. RESELLER-MODELS WEB APP — TODO ⏳
+**Target Directory:** `reseller-models/` (inside cheaprouter repo root)
+
+### Stack:
+- Next.js 14+ App Router (standalone mode)
+- SQLite3 (`reseller.db`) via better-sqlite3
+- NextAuth.js for auth (credentials provider)
+- Run on separate port (e.g. 3001)
+
+### DB Schema (`reseller.db`):
+```sql
+users (id, email, name, password_hash, role, created_at)
+plans (id, name, token_budget, rpm_limit, validity_days, models JSON, created_at)
+user_subscriptions (id, user_id, plan_id, cheaprouter_api_key, expires_at, created_at)
+user_byok_keys (id, user_id, provider_id, encrypted_key, is_paused, created_at)
+settings (key, value)
+```
+
+### Pre-seeded Accounts:
+| Role | Login | Password |
+|------|-------|----------|
+| Admin | `admin` (username) | `1234` |
+| User 1 | `user1@gmail.com` | `1234` |
+| User 2 | `user2@gmail.com` | `1234` |
+
+### Design System:
+- Dark mode only
+- Colors: `#0A0A0A` bg, `#FFFFFF` text, `#C0C0C0` secondary, `#1A1A1A` surface
+- Font: Inter or system-ui
+- Zero neon/gradient accents. Clean table-driven UI like OpenCode.
+
+### Pages:
+
+**`/` — Landing Page**
+- Hero: "Your Private AI Gateway. 370+ Models. One Endpoint."
+- Live Models Catalog fetched from `GET /api/v1/public/providers` on CheapRouter (SVG icons + model count)
+- Pricing Table: Free (10M tokens) | Pro (50M tokens) | Premium (100M tokens)
+- CTA: Sign Up / Login buttons
+
+**`/login` and `/register`**
+- Simple credential forms
+
+**`/admin` — Admin Panel** (role=admin only)
+- **Plans Configuration Studio:**
+  - Create/edit Free, Pro, Premium plans
+  - Fields: Name, Token Budget (10M/50M/100M), RPM Limit, Validity (7/30/Unlimited days), Allowed Models (multi-select from CheapRouter active models)
+- **Users Management Table:**
+  - All users list with current plan badge + usage %
+  - "Edit Plan" modal → select plan → on save: calls `POST /api/keys` on CheapRouter to create/update API key → stores key in `user_subscriptions`
+
+**`/dashboard` — User Dashboard**
+- **Active Subscription Card:** Plan name + Token Quota progress bar (`Used / Total`) + Expiry countdown ("Expires in 28 days" or "Unlimited")
+- **API Key Section:** CheapRouter key (masked) + one-click copy + "Regenerate" button (calls admin API to reissue key)
+- **BYOK Keys Manager** (only visible when CheapRouter Master BYOK = ON):
+  - Add key per provider (text input + provider selector)
+  - List of added keys: Provider | Masked Key | Status | Pause/Resume toggle | Delete
+- **Live Analytics:** Requests/min meter + 24h usage chart (bar chart, token counts)
+
+---
+
+## 📋 IMPLEMENTATION ORDER (Recommended)
+
+```
+✅ Step 1: sections.ts — Sidebar restructure + model-catalog removal
+✅ Step 2: ProviderTabs.tsx — 5-tab nav bar
+⏳ Step 3: ProviderDetailPageClient.tsx — Fetch Models btn + Manual Add + Models Table
+⏳ Step 4: DB Migration — provider_model_customizations table + domain module
+⏳ Step 5: ManageModelsTab component — checkbox, alias, test, copy, badges
+⏳ Step 6: ResellerApiTab component — public providers toggle + BYOK master switch
+⏳ Step 7: combos/page.tsx — Simplify to 2 core strategies UI
+⏳ Step 8: apiKeys.ts + chatCore.ts — Per-model quota enforcement + RPM limiter
+⏳ Step 9: chatCore.ts — BYOK stateless pass-through
+⏳ Step 10: /reseller-models — Full Next.js app scaffold + seed + all pages
+```
+
+---
+
+## 🔗 KEY FILES REFERENCE
+
+| File | Purpose |
+|------|---------|
+| `src/shared/constants/sidebarVisibility/sections.ts` | Sidebar structure ✅ |
+| `src/shared/constants/sidebarVisibility/types.ts` | SidebarSectionId type ✅ |
+| `src/shared/constants/sidebarVisibility.ts` | Icon accents map ✅ |
+| `src/app/(dashboard)/dashboard/providers/components/ProviderTabs.tsx` | 5-tab nav ✅ |
+| `src/app/(dashboard)/dashboard/providers/hooks/useProviderTabs.ts` | Tab config ✅ |
+| `src/app/(dashboard)/dashboard/providers/page.tsx` | Providers page ✅ |
+| `src/app/(dashboard)/dashboard/providers/[id]/ProviderDetailPageClient.tsx` | Detail page ⏳ |
+| `src/app/(dashboard)/dashboard/users/page.tsx` | Users page ✅ |
+| `src/app/(dashboard)/dashboard/combos/page.tsx` | Combos page ⏳ |
+| `src/lib/db/apiKeys.ts` | API key domain module ⏳ |
+| `src/lib/db/resellerUsers.ts` | Reseller users domain module |
+| `src/lib/db/providerModelCustomizations.ts` | To be created ⏳ |
+| `open-sse/handlers/chatCore.ts` | Core request handler (quota + BYOK) ⏳ |
+| `src/app/api/keys/route.ts` | API key creation endpoint ⏳ |
+| `src/app/api/v1/reseller/users/route.ts` | Reseller users API |
+| `src/app/api/v1/public/providers/route.ts` | Public providers endpoint (to create) ⏳ |
+| `src/app/(dashboard)/dashboard/providers/components/ByokMasterToggleCard.tsx` | BYOK toggle (reuse) |

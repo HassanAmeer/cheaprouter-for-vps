@@ -3127,6 +3127,18 @@ async function handleChatCoreInner({
         // FIX 5: tag this as a per-API-key token-limit breach (errorCode
         // TOKEN_LIMIT_EXCEEDED) so the combo loop can distinguish it from an
         // upstream 429 and NOT cool shared accounts / retry it transiently.
+        // Reseller contract (§8b): a model-scope breach rejects ONLY that
+        // model with the exact client-facing message — sibling models on the
+        // same key keep serving (enforcement is per-limit-row, so no extra
+        // isolation work is needed here).
+        if (tokenBreach.scopeType === "model") {
+          return createErrorResult(
+            HTTP_STATUS.RATE_LIMITED,
+            "Limit reached for this model. Please check another available model to continue.",
+            null,
+            "TOKEN_LIMIT_EXCEEDED"
+          );
+        }
         return createErrorResult(
           HTTP_STATUS.RATE_LIMITED,
           `Token limit exceeded for ${scopeLabel}: ${tokenBreach.tokensUsed}/${tokenBreach.limitValue} tokens used in the current window. Please try again later.`,

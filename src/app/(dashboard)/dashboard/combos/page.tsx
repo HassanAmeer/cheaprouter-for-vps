@@ -15,6 +15,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import Button from "@/shared/components/Button";
 import GlobalModelSearchPanel from "./GlobalModelSearchPanel";
+import QuickComboCreator from "./QuickComboCreator";
 import Card from "@/shared/components/Card";
 import { CardSkeleton } from "@/shared/components/Loading";
 import EmptyState from "@/shared/components/EmptyState";
@@ -1240,6 +1241,8 @@ function CombosPageContent() {
         onTestCombo={handleTestCombo}
         testingName={testingCombo}
       />
+
+      <QuickComboCreator onCreated={handleComboCreated} />
 
       <KimiComboPresetCard
         alreadyCreated={hasKimiCodingPreset(combos)}

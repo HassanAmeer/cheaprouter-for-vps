@@ -159,7 +159,11 @@ export async function addCustomModel(
     dimensions?: number;
     supportedInputTypes?: string[];
     modelType?: "chat" | "embedding" | "image" | "rerank";
-  }
+  },
+  // Manual-add capability badges (reseller spec §3.2: Text, Vision, Audio,
+  // Video, STT, TTS, Code, Reasoning). Persisted on the custom-model JSON row
+  // and surfaced as badges in the provider details list.
+  capabilities?: string[]
 ) {
   const db = getDbInstance();
   const row = db
@@ -195,6 +199,7 @@ export async function addCustomModel(
       ? { supportedInputTypes: extraMeta.supportedInputTypes }
       : {}),
     ...(typeof extraMeta?.modelType === "string" ? { modelType: extraMeta.modelType } : {}),
+    ...(Array.isArray(capabilities) && capabilities.length > 0 ? { capabilities } : {}),
   };
   models.push(model);
   db.prepare(

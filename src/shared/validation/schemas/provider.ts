@@ -338,6 +338,11 @@ export const providerModelMutationSchema = z.object({
       ]),
     })
     .optional(),
+  // Manual-add capability badges (Text, Vision, Audio, Video, STT, TTS, Code,
+  // Reasoning) from the provider details "Add Model" form. Persisted on the
+  // custom-model JSON row; endpoint/flag side-effects (chat endpoint,
+  // supportsVision, reasoning) are applied by the caller alongside this list.
+  capabilities: z.array(z.string().trim().min(1).max(40)).max(20).optional(),
 });
 
 export const updateModelAliasesSchema = z.object({

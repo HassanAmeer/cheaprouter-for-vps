@@ -83,6 +83,8 @@ export async function POST(request) {
       weeklyUsageLimitUsd,
       chaosModeEnabled,
       expiresAt,
+      modelLimits,
+      rateLimits,
     } = validation.data;
 
     // Always get machineId from server
@@ -101,7 +103,8 @@ export async function POST(request) {
       usageLimitEnabled === true ||
       dailyUsageLimitUsd !== undefined ||
       weeklyUsageLimitUsd !== undefined ||
-      chaosModeEnabled === true
+      chaosModeEnabled === true ||
+      rateLimits?.requestsPerMinute !== undefined
     ) {
       await updateApiKeyPermissions(apiKey.id, {
         ...(noLog === true && { noLog: true }),
@@ -110,7 +113,29 @@ export async function POST(request) {
         ...(dailyUsageLimitUsd !== undefined && { dailyUsageLimitUsd }),
         ...(weeklyUsageLimitUsd !== undefined && { weeklyUsageLimitUsd }),
         ...(chaosModeEnabled === true && { chaosModeEnabled: true }),
+        ...(rateLimits?.requestsPerMinute !== undefined && {
+          maxRequestsPerMinute: rateLimits.requestsPerMinute,
+        }),
       });
+    }
+
+    // Reseller per-model token budgets (§8a): one `model`-scope token-limit
+    // row per entry (monthly window). Enforcement is per-model — an exhausted
+    // model rejects only itself, never the sibling models on this key.
+    if (modelLimits && typeof modelLimits === "object") {
+      const { upsertTokenLimit } = await import("@/lib/db/tokenLimits");
+      for (const [modelId, limit] of Object.entries(modelLimits)) {
+        const maxTokens = (limit as { maxTokens?: unknown })?.maxTokens;
+        if (typeof maxTokens === "number" && Number.isFinite(maxTokens) && maxTokens > 0) {
+          upsertTokenLimit({
+            apiKeyId: apiKey.id,
+            scopeType: "model",
+            scopeValue: modelId,
+            tokenLimit: Math.floor(maxTokens),
+            resetInterval: "monthly",
+          });
+        }
+      }
     }
 
     // Auto sync to Cloud if enabled — fire-and-forget. Cloud sync is a

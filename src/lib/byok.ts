@@ -21,52 +21,18 @@ import { getSettings } from "@/lib/db/settings";
 import { getDbInstance } from "@/lib/db/core";
 import { errorResponse } from "@cheaproute/open-sse/utils/error.ts";
 import { HTTP_STATUS } from "@cheaproute/open-sse/config/constants.ts";
+import { extractByokKey } from "@/lib/byokHeaders";
 
-/**
- * Provider-scoped BYOK headers. The header names the provider explicitly, so
- * the pause check can run before routing. A provider-scoped header always
- * wins over the generic `x-upstream-key`.
- */
-const PROVIDER_SCOPED_BYOK_HEADERS: Record<string, string> = {
-  "x-claude-key": "claude",
-  "x-deepseek-key": "deepseek",
-  "x-openai-key": "openai",
-  "x-gemini-key": "gemini",
-  "x-grok-key": "grok",
-  "x-qwen-key": "qwen",
-  "x-glm-key": "glm",
-  "x-antseed-key": "antseed",
-};
-
-/** Generic pass-through header — the target provider is resolved by routing. */
-const GENERIC_BYOK_HEADER = "x-upstream-key";
-
-export interface ByokKey {
-  /** Provider id for provider-scoped headers; "" for the generic header. */
-  providerId: string;
-  key: string;
-}
-
-/**
- * Extract the BYOK pass-through key from a request, if any.
- * Provider-scoped headers take precedence over the generic header.
- */
-export function extractByokKey(request: Request): ByokKey | null {
-  if (!request?.headers) return null;
-  for (const [header, providerId] of Object.entries(
-    PROVIDER_SCOPED_BYOK_HEADERS
-  )) {
-    const value = request.headers.get(header);
-    if (value && value.trim()) {
-      return { providerId, key: value.trim() };
-    }
-  }
-  const generic = request.headers.get(GENERIC_BYOK_HEADER);
-  if (generic && generic.trim()) {
-    return { providerId: "", key: generic.trim() };
-  }
-  return null;
-}
+// Pure header parsing (no DB imports) — re-exported here so existing
+// `lib/byok` consumers keep working unchanged.
+export {
+  PROVIDER_SCOPED_BYOK_HEADERS,
+  GENERIC_BYOK_HEADER,
+  extractByokKey,
+  extractByokKeyFromHeaders,
+  hasByokHeader,
+  type ByokKey,
+} from "@/lib/byokHeaders";
 
 /**
  * Master BYOK switch (settings.byokEnabled, default ON). When OFF, no
@@ -85,9 +51,7 @@ export async function isByokEnabled(): Promise<boolean> {
 export function isByokKeyPaused(providerId: string, key: string): boolean {
   const db = getDbInstance();
   const rows = db
-    .prepare(
-      "SELECT masked_key FROM user_byok_keys WHERE provider_id = ? AND is_paused = 1"
-    )
+    .prepare("SELECT masked_key FROM user_byok_keys WHERE provider_id = ? AND is_paused = 1")
     .all(providerId) as Array<{ masked_key: string }>;
   for (const row of rows) {
     if (matchesMaskedKey(row.masked_key, key)) return true;
@@ -117,10 +81,7 @@ export async function assertByokAllowed(request: Request): Promise<Response | nu
   if (!byok) return null;
 
   if (!(await isByokEnabled())) {
-    return errorResponse(
-      HTTP_STATUS.FORBIDDEN,
-      "BYOK is currently disabled by administrator"
-    );
+    return errorResponse(HTTP_STATUS.FORBIDDEN, "BYOK is currently disabled by administrator");
   }
 
   // Provider-scoped headers name the provider, so the pause check can run

@@ -64,6 +64,7 @@ import {
 } from "../../executors/antigravityUpstreamError.ts";
 import { routingFinishReason } from "../chatCore/routingFinishReason.ts";
 import { getProviderCredentials } from "@/sse/services/auth";
+import { hasByokHeader } from "@/lib/byokHeaders";
 import { extractFacts } from "@/lib/memory/extraction";
 // The leaf body is unchanged from the barrel, so its closed-over values keep
 // the barrel's types. This alias only exists so the deps bag type-checks.
@@ -702,6 +703,8 @@ export async function runNonStreamingResponse(deps: NonStreamingDeps) {
       comboStrategy,
       endpoint: endpointPath,
       cpaAuthIndex: readCpaAuthIndex(providerResponse),
+      // §9b: BYOK pass-through → audit row only, 0 tokens deducted.
+      byokUsed: hasByokHeader(clientRawRequest?.headers),
     });
 
     // #12150 P1b surface 3 (fix round 1): a video-bridge-observed request's

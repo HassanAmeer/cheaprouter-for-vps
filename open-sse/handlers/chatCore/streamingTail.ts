@@ -50,6 +50,7 @@ import { assembleStreamingResponseHeaders } from "./streamingResponseHeaders.ts"
 import { storeStreamingSemanticCacheResponse } from "./streamingSemanticCacheStore.ts";
 import { recordFinalInputCalibration } from "./contextEstimation.ts";
 import { recordStreamingUsageStats } from "./streamingUsageStats.ts";
+import { hasByokHeader } from "@/lib/byokHeaders";
 import { maybeSyncClaudeExtraUsageState } from "./telemetryHelpers.ts";
 import { getExecutorTimeoutMs, resolveConnectionTimeoutMs } from "./upstreamTimeouts.ts";
 import { recordCost } from "@/domain/costRules";
@@ -450,6 +451,8 @@ export async function runStreamingTail(deps: StreamingTailDeps) {
       comboStrategy,
       endpoint: endpointPath,
       cpaAuthIndex: readCpaAuthIndex(providerResponse),
+      // §9b: BYOK pass-through → audit row only, 0 tokens deducted.
+      byokUsed: hasByokHeader(clientRawRequest?.headers),
     });
 
     // Routing event (feedback foundation) — fire-and-forget, cheap, never blocks

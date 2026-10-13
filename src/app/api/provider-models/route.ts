@@ -163,6 +163,8 @@ export async function POST(request) {
       dimensions,
       supportedInputTypes,
       modelType,
+      // Manual-add capability badges (reseller spec §3.2).
+      capabilities,
     } = validation.data;
 
     const model = await addCustomModel(
@@ -185,7 +187,8 @@ export async function POST(request) {
         ...(typeof dimensions === "number" && dimensions > 0 ? { dimensions } : {}),
         ...(Array.isArray(supportedInputTypes) ? { supportedInputTypes } : {}),
         ...(typeof modelType === "string" ? { modelType } : {}),
-      }
+      },
+      Array.isArray(capabilities) ? capabilities : undefined
     );
     return Response.json({ model });
   } catch (error) {

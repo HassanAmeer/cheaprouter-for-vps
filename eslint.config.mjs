@@ -245,6 +245,9 @@ const eslintConfig = [
       "review/**",
       // Electron app
       "electron/**",
+      // reseller-models/ — standalone Next.js app with its own toolchain
+      // (own package.json/tsconfig/eslint); never lint from the main checkout.
+      "reseller-models/**",
       // Docs
       "docs/**",
       // Open-SSE compiled/bundled output

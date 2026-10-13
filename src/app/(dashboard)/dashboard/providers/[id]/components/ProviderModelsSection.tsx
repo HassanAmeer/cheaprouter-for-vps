@@ -69,6 +69,12 @@ export interface ProviderModelsSectionProps {
   canImportModels: boolean;
   importingModels: boolean;
   handleImportModels: () => Promise<void>;
+  // Reseller spec §3a: live-fetch failure surface. The hook owns
+  // `importProgress` (phase/error); the client passes it through so a
+  // failed upstream fetch renders the orange manual-add fallback alert
+  // inline, above the models table.
+  importProgress?: { phase: string; error?: string } | null;
+  onDismissImportError?: () => void;
   isAutoSyncEnabled: boolean;
   togglingAutoSync: boolean;
   handleToggleAutoSync: () => Promise<void>;
@@ -143,6 +149,8 @@ export default function ProviderModelsSection({
   canImportModels,
   importingModels,
   handleImportModels,
+  importProgress = null,
+  onDismissImportError,
   isAutoSyncEnabled,
   togglingAutoSync,
   handleToggleAutoSync,
@@ -178,6 +186,47 @@ export default function ProviderModelsSection({
   getUpstreamHeadersRecordForModel,
   t,
 }: ProviderModelsSectionProps) {
+  // Reseller spec §3a: prominent live-fetch entry point. The existing import
+  // flow already hits the upstream `/models` endpoint — this label makes it
+  // the explicit "Fetch All Models" action (i18n-safe fallback, no new keys).
+  const fetchAllModelsLabel = providerText(t, "fetchAllModels", "Fetch All Models");
+  // Reseller spec §3a: orange fallback alert on upstream fetch failure,
+  // pointing the operator at the manual-add form (CustomModelsSection below).
+  const fetchErrorAlert = importProgress?.phase === "error" && (
+    <div
+      role="alert"
+      data-testid="fetch-models-fallback-alert"
+      className="flex items-start gap-2.5 px-4 py-3 mb-4 rounded-xl border border-orange-400/50 bg-orange-500/10 text-sm"
+    >
+      <span className="material-symbols-outlined text-[18px] text-orange-500 shrink-0 mt-px">
+        warning
+      </span>
+      <div className="flex-1 min-w-0">
+        <p className="font-medium text-orange-700 dark:text-orange-300">
+          {providerText(
+            t,
+            "fetchModelsFailedManualFallback",
+            "Failed to fetch models from API. Please add models manually."
+          )}
+        </p>
+        {importProgress?.error ? (
+          <p className="mt-1 text-xs text-orange-600/90 dark:text-orange-400/80 break-words">
+            {importProgress.error}
+          </p>
+        ) : null}
+      </div>
+      {onDismissImportError && (
+        <button
+          type="button"
+          onClick={onDismissImportError}
+          className="p-1 rounded-lg text-orange-500 hover:bg-orange-500/15 transition-colors shrink-0"
+          aria-label={providerText(t, "dismiss", "Dismiss")}
+        >
+          <span className="material-symbols-outlined text-[16px]">close</span>
+        </button>
+      )}
+    </div>
+  );
   const [freeFilter, setFreeFilter] = useState<"all" | "free" | "paid">("all");
   const [sortFreeFirst, setSortFreeFirst] = useState(false);
   const canConfigureAutoFetchModels = connections.some(
@@ -261,6 +310,7 @@ export default function ProviderModelsSection({
 
     return (
       <div>
+        {fetchErrorAlert}
         <div className="flex items-center gap-2 mb-4">
           {modelDiscoveryControls}
           {clearAllButton}
@@ -329,6 +379,7 @@ export default function ProviderModelsSection({
 
     return (
       <div>
+        {fetchErrorAlert}
         <div className="flex items-center gap-2 mb-4">
           {allowModelImport && (
             <Button
@@ -338,7 +389,7 @@ export default function ProviderModelsSection({
               onClick={handleImportModels}
               disabled={!canImportModels || importingModels}
             >
-              {importingModels ? t("importingModels") : t("importFromModels")}
+              {importingModels ? t("importingModels") : fetchAllModelsLabel}
             </Button>
           )}
           {modelDiscoveryControls}
@@ -396,7 +447,7 @@ export default function ProviderModelsSection({
         onClick={handleImportModels}
         disabled={!canImportModels || importingModels}
       >
-        {importingModels ? t("importingModels") : t("importFromModels")}
+        {importingModels ? t("importingModels") : fetchAllModelsLabel}
       </Button>
       {modelDiscoveryControls}
       {!canImportModels && (
@@ -408,6 +459,7 @@ export default function ProviderModelsSection({
   if (models.length === 0) {
     return (
       <div>
+        {fetchErrorAlert}
         {importButton}
         <p className="text-sm text-text-muted">{t("noModelsConfigured")}</p>
       </div>
@@ -460,6 +512,7 @@ export default function ProviderModelsSection({
 
   return (
     <div>
+      {fetchErrorAlert}
       {importButton}
       {modelsWithVisibility.length > 0 && (
         <ModelVisibilityToolbar

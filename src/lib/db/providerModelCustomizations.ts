@@ -29,6 +29,11 @@ export interface ProviderModelCustomization {
   testResponse: string | null;
   contextWindow: number | null;
   capabilities: string[] | null;
+  /**
+   * Manual FREE/PAID badge override (migration 208). NULL = auto-detect from
+   * the shipped free-model catalog; true forces FREE, false forces PAID.
+   */
+  isFreeOverride: boolean | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -58,9 +63,7 @@ export function getCustomization(
 export function getCustomizationByAlias(alias: string): ProviderModelCustomization | undefined {
   const db = getDbInstance();
   const row = db
-    .prepare(
-      "SELECT * FROM provider_model_customizations WHERE custom_alias = ? LIMIT 1"
-    )
+    .prepare("SELECT * FROM provider_model_customizations WHERE custom_alias = ? LIMIT 1")
     .get(alias) as RowShape | undefined;
 
   return row ? fromRow(row) : undefined;
@@ -166,13 +169,14 @@ export function upsertCustomization(params: {
   testResponse?: string | null;
   contextWindow?: number | null;
   capabilities?: string[] | null;
+  isFreeOverride?: boolean | null;
 }): ProviderModelCustomization {
   const db = getDbInstance();
   const now = new Date().toISOString();
 
   const existing = getCustomization(params.providerId, params.originalModelId);
 
-  const isoTs = (params.testStatus ?? existing?.testStatus ?? null);
+  const isoTs = params.testStatus ?? existing?.testStatus ?? null;
   const active = params.isActive ?? existing?.isActive ?? true;
   const tested = params.isTested ?? existing?.isTested ?? false;
   const caps = params.capabilities ?? existing?.capabilities ?? null;
@@ -183,6 +187,7 @@ export function upsertCustomization(params: {
   const testLatencyMs = params.testLatencyMs ?? existing?.testLatencyMs ?? null;
   const testResponse = params.testResponse ?? existing?.testResponse ?? null;
   const contextWindow = params.contextWindow ?? existing?.contextWindow ?? null;
+  const freeOverride = params.isFreeOverride ?? existing?.isFreeOverride ?? null;
 
   backupDbFile("pre-write");
 
@@ -191,7 +196,7 @@ export function upsertCustomization(params: {
       `UPDATE provider_model_customizations
          SET custom_name = ?, custom_alias = ?, is_active = ?, is_tested = ?, test_status = ?,
              test_http_status = ?, test_latency_ms = ?, test_response = ?,
-             context_window = ?, capabilities = ?, updated_at = ?
+             context_window = ?, capabilities = ?, is_free_override = ?, updated_at = ?
        WHERE provider_id = ? AND original_model_id = ?`
     ).run(
       customName,
@@ -204,17 +209,18 @@ export function upsertCustomization(params: {
       testResponse,
       contextWindow,
       caps ? JSON.stringify(caps) : null,
+      freeOverride === null ? null : freeOverride ? 1 : 0,
       now,
       params.providerId,
-      params.originalModelId,
+      params.originalModelId
     );
   } else {
     db.prepare(
       `INSERT INTO provider_model_customizations
          (provider_id, original_model_id, custom_name, custom_alias, is_active, is_tested,
           test_status, test_http_status, test_latency_ms, test_response, context_window,
-          capabilities, created_at, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+          capabilities, is_free_override, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
     ).run(
       params.providerId,
       params.originalModelId,
@@ -228,27 +234,28 @@ export function upsertCustomization(params: {
       testResponse,
       contextWindow,
       caps ? JSON.stringify(caps) : null,
+      freeOverride === null ? null : freeOverride ? 1 : 0,
       now,
-      now,
+      now
     );
   }
 
-   const row = db
-     .prepare(
-       "SELECT * FROM provider_model_customizations WHERE provider_id = ? AND original_model_id = ?"
-     )
-     .get(params.providerId, params.originalModelId) as RowShape;
+  const row = db
+    .prepare(
+      "SELECT * FROM provider_model_customizations WHERE provider_id = ? AND original_model_id = ?"
+    )
+    .get(params.providerId, params.originalModelId) as RowShape;
 
-   // Keep the routing alias namespace in sync with the curation row.
-   syncAlias({
-     providerId: params.providerId,
-     originalModelId: params.originalModelId,
-     alias: params.customAlias ?? existing?.customAlias ?? null,
-     active,
-   });
+  // Keep the routing alias namespace in sync with the curation row.
+  syncAlias({
+    providerId: params.providerId,
+    originalModelId: params.originalModelId,
+    alias: params.customAlias ?? existing?.customAlias ?? null,
+    active,
+  });
 
-   return fromRow(row);
- }
+  return fromRow(row);
+}
 
 /**
  * Delete a customization row.
@@ -263,7 +270,9 @@ export function deleteCustomization(providerId: string, originalModelId: string)
 
   backupDbFile("pre-write");
   const info = db
-    .prepare("DELETE FROM provider_model_customizations WHERE provider_id = ? AND original_model_id = ?")
+    .prepare(
+      "DELETE FROM provider_model_customizations WHERE provider_id = ? AND original_model_id = ?"
+    )
     .run(providerId, originalModelId);
 
   // Drop the alias from the routing namespace so it no longer resolves.
@@ -279,11 +288,7 @@ export function deleteCustomization(providerId: string, originalModelId: string)
  * Toggle the active flag for a model. Active models are exposed to the curated
  * `/v1/models` surface and the combo candidate pool.
  */
-export function setModelActive(
-  providerId: string,
-  originalModelId: string,
-  active: boolean
-): void {
+export function setModelActive(providerId: string, originalModelId: string, active: boolean): void {
   const db = getDbInstance();
   const row = db
     .prepare(
@@ -322,6 +327,7 @@ type RowShape = {
   test_response: string | null;
   context_window: number | null;
   capabilities: string | null;
+  is_free_override: number | null;
   created_at: string;
   updated_at: string;
 };
@@ -341,6 +347,7 @@ function fromRow(row: RowShape): ProviderModelCustomization {
     testResponse: row.test_response,
     contextWindow: row.context_window,
     capabilities: row.capabilities ? JSON.parse(row.capabilities) : null,
+    isFreeOverride: row.is_free_override === 1 ? true : row.is_free_override === 0 ? false : null,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };

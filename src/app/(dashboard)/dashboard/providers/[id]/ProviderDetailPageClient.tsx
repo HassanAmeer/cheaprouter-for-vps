@@ -803,6 +803,10 @@ export default function ProviderDetailPageClient() {
             canImportModels={canImportModels}
             importingModels={importingModels}
             handleImportModels={handleImportModels}
+            importProgress={importProgress}
+            onDismissImportError={() =>
+              setImportProgress((prev) => ({ ...prev, phase: "idle", error: "" }))
+            }
             isAutoSyncEnabled={isAutoSyncEnabled}
             togglingAutoSync={togglingAutoSync}
             handleToggleAutoSync={handleToggleAutoSync}

@@ -30,7 +30,7 @@ import { getImageModelEntry } from "@cheaproute/open-sse/config/imageRegistry.ts
 import { acceptHeaderForcesStream } from "@cheaproute/open-sse/utils/aiSdkCompat.ts";
 import { applyNoThinkingAlias } from "@cheaproute/open-sse/utils/noThinkingAlias.ts";
 import { resolveCcDiscoveryAliasStrip } from "@/lib/ccDiscoveryAliasResolve";
-import { extractByokKey } from "@/lib/byok";
+import { extractByokKey, isByokEnabled } from "@/lib/byok";
 import {
   handleComboChat,
   resolveComboTargets,
@@ -448,6 +448,14 @@ async function handleChatImplementation(
   const byok = extractByokKey(request);
   const byokKey = byok?.key;
   const byokProviderId = byok?.providerId ?? "";
+
+  // Reseller BYOK master switch (§9a, central gate): when the operator turns
+  // BYOK OFF, every chat entry route (all funnel through handleChat) rejects
+  // pass-through keys with 403 instead of silently falling back to the VPS
+  // default key. Same message as lib/byok.ts::assertByokAllowed.
+  if (byokKey && !(await isByokEnabled())) {
+    return errorResponse(HTTP_STATUS.FORBIDDEN, "BYOK is currently disabled by administrator");
+  }
 
   // Pipeline: Start request telemetry
   const reqId = correlationId || generateRequestId();
@@ -1217,9 +1225,7 @@ async function handleChatImplementation(
           ...(target?.connectionId ? { forcedConnectionId: target.connectionId } : {}),
           ...(bypassProviderQuotaPolicy ? { bypassQuotaPolicy: true } : {}),
           ...(managedLease ? { lease: credentialLease(managedLease) } : {}),
-          ...(byokKey && (byokProviderId === "" || byokProviderId === provider)
-            ? { byokKey }
-            : {}),
+          ...(byokKey && (byokProviderId === "" || byokProviderId === provider) ? { byokKey } : {}),
         }
       );
       if (
@@ -1576,6 +1582,12 @@ async function handleSingleModelChat(
   const byok = extractByokKey(request);
   const byokKey = byok?.key;
   const byokProviderId = byok?.providerId ?? "";
+
+  // Reseller BYOK master switch (§9a, central gate — single-model path):
+  // reject pass-through keys with 403 when the operator turned BYOK OFF.
+  if (byokKey && !(await isByokEnabled())) {
+    return errorResponse(HTTP_STATUS.FORBIDDEN, "BYOK is currently disabled by administrator");
+  }
 
   // 1. Resolve model → provider/model
   const resolved = await resolveModelOrError(

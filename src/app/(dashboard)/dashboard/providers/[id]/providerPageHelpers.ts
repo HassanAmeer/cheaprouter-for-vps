@@ -96,6 +96,10 @@ export type CompatModelRow = {
    * discovery metadata doesn't self-report an image input modality. */
   supportsVision?: boolean;
   isFree?: boolean;
+  /** #1294: manual token limit set in the add-model form (context badge). */
+  inputTokenLimit?: number;
+  /** Reseller spec §3.2: manual-add capability badges. */
+  capabilities?: string[];
 };
 
 export type CompatModelMap = Map<string, CompatModelRow>;

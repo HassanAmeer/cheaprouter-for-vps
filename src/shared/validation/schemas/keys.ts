@@ -59,6 +59,21 @@ export const createKeySchema = z
     expiresAt: z.string().datetime().nullable().optional(),
     scopes: z.array(z.string().trim().min(1).max(64)).max(32).optional(),
     allowedConnections: z.array(z.string().uuid()).min(1).max(100).optional(),
+    // Reseller programmatic provisioning (§8a): per-model token budgets.
+    // Each entry becomes a `model`-scope row in `api_key_token_limits`
+    // (monthly reset window). Only the exhausted model is rejected at
+    // execution time — other models on the same key keep serving.
+    modelLimits: z
+      .record(
+        z.string().trim().min(1).max(200),
+        z.object({ maxTokens: z.coerce.number().int().positive().max(100000000000) })
+      )
+      .optional(),
+    // Reseller programmatic provisioning (§8a): sliding-window RPM cap,
+    // stored as max_requests_per_minute and enforced pre-dispatch.
+    rateLimits: z
+      .object({ requestsPerMinute: z.coerce.number().int().positive().max(1000000) })
+      .optional(),
   })
   .superRefine((value, ctx) => {
     requireConsistentModelAccess(value, ctx);

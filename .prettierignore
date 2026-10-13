@@ -27,3 +27,6 @@ skills/*/references/*.md
 # reconciled by scripts/release/*, which are its formatter of record.
 CHANGELOG.md
 docs/i18n/*/CHANGELOG.md
+
+# reseller-models/ is a standalone Next.js app with its own toolchain.
+reseller-models/**

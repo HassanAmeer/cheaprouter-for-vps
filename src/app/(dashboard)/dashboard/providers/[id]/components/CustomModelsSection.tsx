@@ -66,6 +66,47 @@ const MODEL_ENDPOINT_OPTIONS: ModelSupportedEndpoint[] = [
   "audio-transcriptions",
 ];
 
+// Reseller spec §3.2: manual-add capability multi-select. Each option folds
+// into persisted endpoint/flag fields in handleAdd (plus the free-form
+// `capabilities` badge list on the custom-model row).
+const MANUAL_CAPABILITIES = [
+  "Text",
+  "Vision",
+  "Audio",
+  "Video",
+  "STT",
+  "TTS",
+  "Code",
+  "Reasoning",
+] as const;
+
+/**
+ * Parse a manual context-window input: plain token counts ("200000") plus
+ * suffixed shorthand ("128K", "1M", case-insensitive, decimals allowed).
+ * Returns null for blank input (no override).
+ */
+export function parseManualContextWindow(raw: string): number | null {
+  const trimmed = raw.trim();
+  if (!trimmed) return null;
+  const match = /^(\d+(?:\.\d+)?)\s*([kKmM])?$/.exec(trimmed);
+  if (!match) return null;
+  const value = Number(match[1]);
+  if (!Number.isFinite(value) || value <= 0) return null;
+  const suffix = (match[2] ?? "").toUpperCase();
+  const scaled = suffix === "M" ? value * 1_000_000 : suffix === "K" ? value * 1000 : value;
+  return Math.floor(scaled);
+}
+
+/** Compact context badge label for the custom-model list (1M, 128K). */
+export function formatManualContextBadge(tokens: number): string {
+  if (tokens >= 1_000_000) {
+    const m = tokens / 1_000_000;
+    return `${Number.isInteger(m) ? m : m.toFixed(1)}M ctx`;
+  }
+  if (tokens >= 1000) return `${Math.round(tokens / 1000)}K ctx`;
+  return `${tokens} ctx`;
+}
+
 function endpointLabel(endpoint: ModelSupportedEndpoint, t: (key: string) => string): string {
   const labels: Partial<Record<ModelSupportedEndpoint, string>> = {
     chat: `💬 ${t("supportedEndpointChat")}`,
@@ -142,6 +183,12 @@ export default function CustomModelsSection({
   const [editingSupportsVision, setEditingSupportsVision] = useState(false);
   const [newIsFree, setNewIsFree] = useState(false);
   const [editingIsFree, setEditingIsFree] = useState(false);
+  // Reseller spec §3.2: manual-add Context Window (free text: 1M, 128K, 200000)
+  // + Capabilities multi-select (Text, Vision, Audio, Video, STT, TTS, Code,
+  // Reasoning). Capabilities map onto persisted endpoint/flag fields plus the
+  // free-form `capabilities` badge list on the custom-model row.
+  const [newContextWindow, setNewContextWindow] = useState("");
+  const [newCapabilities, setNewCapabilities] = useState<string[]>([]);
 
   const customMap = useMemo(() => buildCompatMap(customModels), [customModels]);
   const overrideMap = useMemo(() => buildCompatMap(modelCompatOverrides), [modelCompatOverrides]);
@@ -173,6 +220,29 @@ export default function CustomModelsSection({
 
   const handleAdd = async () => {
     if (!newModelId.trim() || adding) return;
+    // Reseller spec §3.2: fold capability checkboxes into persisted fields.
+    const endpoints = new Set(newEndpoints);
+    if (newCapabilities.includes("Text")) endpoints.add("chat");
+    if (newCapabilities.includes("STT")) endpoints.add("audio-transcriptions");
+    if (newCapabilities.includes("TTS")) endpoints.add("audio-speech");
+    if (newCapabilities.includes("Audio")) {
+      endpoints.add("audio-speech");
+      endpoints.add("audio-transcriptions");
+    }
+    if (newCapabilities.includes("Video")) endpoints.add("videos");
+    const vision = newSupportsVision || newCapabilities.includes("Vision");
+    const reasoning = newCapabilities.includes("Reasoning");
+    const contextTokens = parseManualContextWindow(newContextWindow);
+    if (newContextWindow.trim() && contextTokens == null) {
+      notify.error(
+        providerText(
+          t,
+          "contextWindowInvalid",
+          "Context window must be a token count like 200000, 128K, or 1M"
+        )
+      );
+      return;
+    }
     setAdding(true);
     try {
       const res = await fetch("/api/provider-models", {
@@ -183,9 +253,12 @@ export default function CustomModelsSection({
           modelId: newModelId.trim(),
           modelName: newModelName.trim() || undefined,
           apiFormat: newApiFormat,
-          supportedEndpoints: newEndpoints,
+          supportedEndpoints: [...endpoints],
           ...(newTargetFormat ? { targetFormat: newTargetFormat } : {}),
-          ...(newSupportsVision ? { supportsVision: true } : {}),
+          ...(vision ? { supportsVision: true } : {}),
+          ...(reasoning ? { reasoning: true } : {}),
+          ...(contextTokens != null ? { max_input_tokens: contextTokens } : {}),
+          ...(newCapabilities.length > 0 ? { capabilities: newCapabilities } : {}),
           ...(newIsFree ? { isFree: true } : {}),
         }),
       });
@@ -197,6 +270,8 @@ export default function CustomModelsSection({
         setNewTargetFormat("");
         setNewSupportsVision(false);
         setNewIsFree(false);
+        setNewContextWindow("");
+        setNewCapabilities([]);
         await fetchCustomModels();
         onModelsChanged?.();
       }
@@ -521,6 +596,25 @@ export default function CustomModelsSection({
               ))}
             </div>
           </div>
+          <div className="w-40">
+            <label htmlFor="custom-model-context" className="text-xs text-text-muted mb-1 block">
+              {providerText(t, "contextWindowLabel", "Context Window")}
+            </label>
+            <input
+              id="custom-model-context"
+              type="text"
+              value={newContextWindow}
+              onChange={(e) => setNewContextWindow(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && handleAdd()}
+              placeholder="e.g. 1M, 128K"
+              title={providerText(
+                t,
+                "contextWindowHint",
+                "Upstream context size: plain tokens or K/M shorthand"
+              )}
+              className="w-full px-3 py-2 text-sm border border-border rounded-lg bg-background focus:outline-none focus:border-primary"
+            />
+          </div>
           <div>
             <span className="text-xs text-text-muted mb-1 block">&nbsp;</span>
             <label
@@ -551,6 +645,37 @@ export default function CustomModelsSection({
               />
               FREE
             </label>
+          </div>
+        </div>
+
+        {/* Capabilities multi-select (reseller spec §3.2) */}
+        <div className="flex items-start gap-4 flex-wrap">
+          <div className="flex-1 min-w-[240px]">
+            <span className="text-xs text-text-muted mb-1 block">
+              {providerText(t, "capabilitiesLabel", "Capabilities")}
+            </span>
+            <div className="flex items-center gap-3 flex-wrap">
+              {MANUAL_CAPABILITIES.map((cap) => (
+                <label
+                  key={cap}
+                  className="flex items-center gap-1.5 text-xs text-text-main cursor-pointer"
+                >
+                  <input
+                    type="checkbox"
+                    checked={newCapabilities.includes(cap)}
+                    onChange={(e) => {
+                      if (e.target.checked) {
+                        setNewCapabilities((prev) => [...prev, cap]);
+                      } else {
+                        setNewCapabilities((prev) => prev.filter((x) => x !== cap));
+                      }
+                    }}
+                    className="rounded border-border"
+                  />
+                  {cap}
+                </label>
+              ))}
+            </div>
           </div>
         </div>
       </div>
@@ -635,6 +760,27 @@ export default function CustomModelsSection({
                         FREE
                       </span>
                     )}
+                    {typeof model.inputTokenLimit === "number" && model.inputTokenLimit > 0 && (
+                      <span
+                        className="text-[10px] px-1.5 py-0.5 rounded-full bg-cyan-500/15 text-cyan-400 font-medium"
+                        title={providerText(
+                          t,
+                          "contextWindowHint",
+                          "Upstream context size: plain tokens or K/M shorthand"
+                        )}
+                      >
+                        {formatManualContextBadge(model.inputTokenLimit)}
+                      </span>
+                    )}
+                    {Array.isArray(model.capabilities) &&
+                      model.capabilities.map((cap: string) => (
+                        <span
+                          key={cap}
+                          className="text-[10px] px-1.5 py-0.5 rounded-full bg-sidebar text-text-muted font-medium"
+                        >
+                          {cap}
+                        </span>
+                      ))}
                     {model.supportedEndpoints?.includes("embeddings") && (
                       <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-purple-500/15 text-purple-400 font-medium">
                         {`📐 ${t("supportedEndpointEmbeddings")}`}
