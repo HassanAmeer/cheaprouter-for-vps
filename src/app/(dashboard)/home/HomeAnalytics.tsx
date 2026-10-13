@@ -304,7 +304,7 @@ export default function HomeAnalytics({ providerStats, customProviders }: HomeAn
                     {loading ? "—" : card.value}
                   </div>
                   <div className="text-[11px] font-medium text-text-main mt-0.5">
-                    {t(`analytics${card.key === "apiKeys" ? "ApiKeys" : card.key}Label`)}
+                    {t(`analytics${card.key.charAt(0).toUpperCase() + card.key.slice(1)}Label`)}
                   </div>
                   <div className="text-[10px] text-text-muted leading-snug mt-0.5">
                     {loading ? "" : card.hint}
@@ -365,10 +365,7 @@ export default function HomeAnalytics({ providerStats, customProviders }: HomeAn
           <div className="flex flex-col items-center justify-center py-8 text-center gap-2">
             <span className="material-symbols-outlined text-3xl text-text-muted">cloud_off</span>
             <p className="text-sm text-text-muted">{t("noProvidersConfigured")}</p>
-            <Link
-              href="/dashboard/providers"
-              className="text-xs text-primary hover:underline"
-            >
+            <Link href="/dashboard/providers" className="text-xs text-primary hover:underline">
               {t("addProvider")}
             </Link>
           </div>
@@ -497,11 +494,7 @@ function TopProvidersChart({
 
   return (
     <ResponsiveContainer width="100%" height={200}>
-      <BarChart
-        data={data}
-        layout="vertical"
-        margin={{ top: 4, right: 8, left: 0, bottom: 0 }}
-      >
+      <BarChart data={data} layout="vertical" margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
         <XAxis type="number" hide />
         <YAxis
           type="category"
