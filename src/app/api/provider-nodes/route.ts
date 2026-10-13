@@ -182,7 +182,10 @@ export async function POST(request) {
     if (nodeType === "openai-compatible") {
       const resolvedName = (name || "").trim();
       const resolvedPrefix = (prefix || "").trim();
-      const resolvedBaseUrl = (baseUrl || OPENAI_COMPATIBLE_DEFAULTS.baseUrl).trim();
+      let resolvedBaseUrl = (baseUrl || OPENAI_COMPATIBLE_DEFAULTS.baseUrl).trim().replace(/\/$/, "");
+      if (resolvedBaseUrl.endsWith("/models")) {
+        resolvedBaseUrl = resolvedBaseUrl.slice(0, -7).replace(/\/$/, "");
+      }
       const baseUrlError = validateProviderNodeBaseUrl(resolvedBaseUrl);
       if (baseUrlError) return baseUrlError;
 

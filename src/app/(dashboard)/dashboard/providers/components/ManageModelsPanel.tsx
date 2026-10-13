@@ -20,6 +20,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { Card } from "@/shared/components";
 import { isCatalogFreeModel } from "@/shared/utils/freeModels";
 import { matchesSearch } from "@/shared/utils/turkishText";
+import DefaultCapabilitiesPromptModal from "./DefaultCapabilitiesPromptModal";
 
 interface SyncedModel {
   id: string;
@@ -130,6 +131,12 @@ export default function ManageModelsPanel() {
   );
   const [savingAlias, setSavingAlias] = useState<string | null>(null);
 
+  // ── Global Test Prompt State (Modal in Header) ───────────────────────────
+  const [showCapabilityPrompt, setShowCapabilityPrompt] = useState(false);
+  const [testPrompt, setTestPrompt] = useState("Hi");
+  const [fetchingProviderId, setFetchingProviderId] = useState<string | null>(null);
+  const [fetchErrorByProvider, setFetchErrorByProvider] = useState<Record<string, string>>({});
+
   const applyPayload = useCallback(
     (payload: {
       providerIds: string[];
@@ -237,7 +244,12 @@ export default function ManageModelsPanel() {
         const res = await fetch("/api/v1/models/curation", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ action: "liveTest", providerId, modelId }),
+          body: JSON.stringify({
+            action: "liveTest",
+            providerId,
+            modelId,
+            prompt: testPrompt,
+          }),
         });
         const data = await res.json().catch(() => null);
         setTestResults((prev) => ({
@@ -258,6 +270,33 @@ export default function ManageModelsPanel() {
         }));
       } finally {
         setTestingId(null);
+      }
+    },
+    [refresh, testPrompt]
+  );
+
+  const handleFetchModelsForProvider = useCallback(
+    async (pId: string) => {
+      setFetchingProviderId(pId);
+      setFetchErrorByProvider((prev) => {
+        const next = { ...prev };
+        delete next[pId];
+        return next;
+      });
+      try {
+        const res = await fetch(`/api/providers/${encodeURIComponent(pId)}/models?refresh=true`);
+        if (!res.ok) {
+          const errorData = await res.json().catch(() => null);
+          throw new Error(
+            errorData?.error || `HTTP ${res.status}: Failed to fetch models from API`
+          );
+        }
+        await refresh();
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : "Failed to fetch models from API";
+        setFetchErrorByProvider((prev) => ({ ...prev, [pId]: msg }));
+      } finally {
+        setFetchingProviderId(null);
       }
     },
     [refresh]
@@ -346,6 +385,25 @@ export default function ManageModelsPanel() {
 
   return (
     <div className="flex flex-col gap-4">
+      {/* ── Top Header Bar with Capabilities Test Suite Trigger ── */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2 border-b border-border/40">
+        <div>
+          <h2 className="text-base font-semibold text-text-main">Manage Models Studio</h2>
+          <p className="text-xs text-text-muted">
+            Configure active models, custom aliases, live capability verification, and billing
+            tiers.
+          </p>
+        </div>
+        <div className="self-end sm:self-auto">
+          <DefaultCapabilitiesPromptModal
+            testPrompt={testPrompt}
+            onPromptChange={setTestPrompt}
+            isOpen={showCapabilityPrompt}
+            onToggle={() => setShowCapabilityPrompt((prev) => !prev)}
+          />
+        </div>
+      </div>
+
       <div className="flex flex-wrap items-center gap-3">
         <div className="relative flex-1 min-w-[220px]">
           <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-[18px] text-text-muted">
@@ -374,19 +432,58 @@ export default function ManageModelsPanel() {
         const isOpen = expanded[providerId] !== false;
         return (
           <Card key={providerId} className="p-0 overflow-hidden">
-            <button
-              type="button"
-              onClick={() => setExpanded((prev) => ({ ...prev, [providerId]: !isOpen }))}
-              className="w-full flex items-center gap-3 px-4 py-3 hover:bg-bg-subtle/60 transition-colors text-left"
-            >
-              <span className="material-symbols-outlined text-[20px] text-text-muted transition-transform">
-                {isOpen ? "expand_less" : "expand_more"}
-              </span>
-              <span className="font-semibold text-text-main">{providerId}</span>
-              <span className="text-xs px-2 py-0.5 rounded-full bg-bg-subtle border border-border text-text-muted">
-                {activeCount}/{all.length} active
-              </span>
-            </button>
+            <div className="w-full flex items-center justify-between px-4 py-3 hover:bg-bg-subtle/60 transition-colors">
+              <button
+                type="button"
+                onClick={() => setExpanded((prev) => ({ ...prev, [providerId]: !isOpen }))}
+                className="flex items-center gap-3 text-left flex-1"
+              >
+                <span className="material-symbols-outlined text-[20px] text-text-muted transition-transform">
+                  {isOpen ? "expand_less" : "expand_more"}
+                </span>
+                <span className="font-semibold text-text-main">{providerId}</span>
+                <span className="text-xs px-2 py-0.5 rounded-full bg-bg-subtle border border-border text-text-muted">
+                  {activeCount}/{all.length} active
+                </span>
+              </button>
+
+              <button
+                type="button"
+                disabled={fetchingProviderId === providerId}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  void handleFetchModelsForProvider(providerId);
+                }}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border bg-bg-subtle hover:bg-bg hover:border-primary/40 text-text-main text-xs font-medium transition disabled:opacity-50 cursor-pointer shadow-sm shrink-0"
+                title={`Fetch live models for ${providerId} from /v1/models`}
+              >
+                <span
+                  className={`material-symbols-outlined text-[15px] ${
+                    fetchingProviderId === providerId ? "animate-spin" : ""
+                  }`}
+                >
+                  {fetchingProviderId === providerId ? "progress_activity" : "cloud_sync"}
+                </span>
+                <span>
+                  {fetchingProviderId === providerId ? "Fetching..." : "Fetch All Models"}
+                </span>
+              </button>
+            </div>
+
+            {/* Provider Fetch Error Alert */}
+            {fetchErrorByProvider[providerId] && (
+              <div className="px-4 py-2.5 bg-red-950/30 border-y border-red-800/40 text-red-200 text-xs flex items-start gap-2">
+                <span className="material-symbols-outlined text-red-400 text-[17px] flex-shrink-0 mt-0.5">
+                  error
+                </span>
+                <div className="flex flex-col gap-0.5">
+                  <span className="font-semibold text-red-300">Model Discovery Failed</span>
+                  <span className="font-mono text-[11px] text-red-200/90 break-all">
+                    {fetchErrorByProvider[providerId]}
+                  </span>
+                </div>
+              </div>
+            )}
 
             {isOpen && (
               <div className="border-t border-border divide-y divide-border/60">

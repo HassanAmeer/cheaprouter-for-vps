@@ -270,7 +270,18 @@ export async function POST(request) {
     }
 
     // OpenAI Compatible Validation (Default)
-    const openAiBase = baseUrl.replace(/\/$/, "");
+    let openAiBase = baseUrl.trim().replace(/\/$/, "");
+    if (openAiBase.endsWith("/models")) {
+      openAiBase = openAiBase.slice(0, -7).replace(/\/$/, "");
+    }
+    if (openAiBase.endsWith("/chat/completions")) {
+      openAiBase = openAiBase.slice(0, -17).replace(/\/$/, "");
+    } else if (openAiBase.endsWith("/completions")) {
+      openAiBase = openAiBase.slice(0, -12).replace(/\/$/, "");
+    }
+    if (openAiBase.endsWith("/v1") && !openAiBase.endsWith("://v1")) {
+      openAiBase = openAiBase.slice(0, -3).replace(/\/$/, "");
+    }
 
     if (apiType === "audio-transcriptions") {
       if (!trimmedModelId) {
@@ -295,15 +306,39 @@ export async function POST(request) {
       });
     }
 
-    const modelsUrl = `${openAiBase}${modelsPath || "/models"}`;
-    const res = await safeOutboundFetch(modelsUrl, {
-      ...SAFE_OUTBOUND_FETCH_PRESETS.validationRead,
-      guard: getProviderValidationGuard(),
-      headers: { Authorization: `Bearer ${apiKey}` },
-    });
+    const cleanRaw = baseUrl.trim().replace(/\/$/, "");
+    const candidateUrls = modelsPath
+      ? [`${openAiBase}${modelsPath}`]
+      : [
+          ...(cleanRaw.endsWith("/models") ? [cleanRaw] : []),
+          `${openAiBase}/v1/models`,
+          `${openAiBase}/models`,
+          `${cleanRaw}/models`,
+        ];
+    const uniqueCandidateUrls = [...new Set(candidateUrls)];
 
-    if (res.ok) return NextResponse.json({ valid: true, error: null });
-    if (res.status === 401 || res.status === 403) {
+    let res: Response | null = null;
+    let lastStatus = 0;
+    for (const testUrl of uniqueCandidateUrls) {
+      try {
+        const response = await safeOutboundFetch(testUrl, {
+          ...SAFE_OUTBOUND_FETCH_PRESETS.validationRead,
+          guard: getProviderValidationGuard(),
+          headers: apiKey ? { Authorization: `Bearer ${apiKey}` } : {},
+        });
+        if (response.ok) {
+          res = response;
+          break;
+        }
+        res = response;
+        lastStatus = response.status;
+      } catch {
+        // Probe next candidate
+      }
+    }
+
+    if (res && res.ok) return NextResponse.json({ valid: true, error: null });
+    if (lastStatus === 401 || lastStatus === 403) {
       return NextResponse.json({ valid: false, error: "API key unauthorized" });
     }
     if (trimmedModelId) {
@@ -319,7 +354,10 @@ export async function POST(request) {
         method: "chat",
       });
     }
-    return NextResponse.json({ valid: false, error: getModelsErrorMessage(res.status) });
+    return NextResponse.json({
+      valid: false,
+      error: getModelsErrorMessage(lastStatus || (res ? res.status : 404)),
+    });
   } catch (error) {
     const attemptedBaseUrl =
       rawBody && typeof rawBody === "object" && "baseUrl" in rawBody

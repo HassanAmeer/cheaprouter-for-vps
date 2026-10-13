@@ -81,7 +81,21 @@
   - **STRICT FILTER:** Shows **ONLY** providers that have **NO** credentials or are **PAUSED/DISCONNECTED**.
   - Displays "Connect" CTA button leading to configuration wizard.
 - **Tab 4: Manage Models (`manage-models`):**
-  - **🔘 "Default Capabilities Prompt" Button:** Collapsible button at the top. Expands to show editable global test prompt (e.g. `"Hi"`, Code, Vision presets). **Directly linked to model row test buttons below!**
+  - **🔘 "Default Capabilities Prompt" Trigger Button:** Clean button placed in the **Top-Right** header with `expand_more` arrow and `info` icon.
+    - When clicked, opens a premium capabilities test suite modal/drawer containing 9 multimodal presets with high-res image previews:
+      1. *Text / Hi* (Lightweight greeting & reasoning)
+      2. *Code / HTML* (Modern CSS button generation)
+      3. *Reasoning* (Mathematical chain-of-thought logic)
+      4. *Vision* (Cat photo visual analysis)
+      5. *OCR* (Document / receipt text & number extraction)
+      6. *Text to Image* (Photorealistic cyberpunk cityscape prompt)
+      7. *Image to Image* (Ukiyo-e woodblock artistic transformation)
+      8. *Video Analysis* (Temporal scene & camera motion breakdown)
+      9. *Audio / STT* (Speech transcription & ambient acoustics)
+    - Includes custom editable textarea, "Reset to Hi", and "Done" button.
+    - **Directly linked to model row test buttons below!**
+  - **⚡ "Fetch All Models" Button (Table Mounted):** Positioned **directly above the models table** on each provider group header beside the count badge.
+  - **Detailed Upstream Error Diagnostics:** Any discovery failure displays the exact HTTP status code and upstream response body (e.g. `HTTP 502 from http://...`) so the router operator can immediately inspect and debug custom endpoints.
   - **Search Bar:** Instant fuzzy search filter by Model Name or Model ID.
   - **Collapsible Provider Groups:** Accordion per connected provider (click header to expand/collapse).
   - **Model Rows:**
@@ -115,31 +129,32 @@
 - ❌ Remove `ProviderCcAliasSection` (Cloud Code / discovery alias)
 - ❌ Remove `ProviderParamFilterSection` (Parameter filter section)
 - ❌ Remove `UpstreamProxyCard`, `ZedImportCard`, `CursorAgentNudge`
+- ❌ Remove detached/awkward standalone "Upstream Model Discovery" panel box
 
-### 4.2 Exactly Three (3) Required Sections:
-1. **🔘 Section 1: "Default Capabilities Prompt" (Collapsible Panel)**
-   - Header button: **"Default Capabilities Prompt"** (click to expand/collapse).
-   - Pre-configured editable prompt box (default `"Hi"` or quick preset buttons for Text, Code/HTML, Vision, OCR).
-   - **Direct Link to Model Table:** Clicking "Test" on any model in Section 3 sends THIS prompt upstream and turns the test status to a **Green Checkmark ✅** on success!
-2. **⚡ Section 2: "Fetch All Models" Button + ➕ "Add Custom Model" Form**
-   - **"Fetch All Models" Button:** Calls upstream API (orange alert if failed).
-   - **"Add Custom Model" Form** (for manual addition):
-     - `Model ID` (required)
-     - `Model Display Name` (optional)
-     - `Context Limit / Window` input (e.g. `128K`, `1M`, `200K`)
-     - `Capabilities Selector with Icons & Tooltips`:
-       - Clickable chips: `Text`, `Vision`, `Code`, `Reasoning`, `Tools`, `Audio`, `Video`, `STT`, `TTS`.
-       - Hovering over an icon explains what it does.
-       - Selected chips show checkmarks.
-     - FREE / PAID toggle.
-     - **"Add Model" Button:** Saves and adds model to the table in Section 3.
-3. **📋 Section 3: Available Models Table**
-   - `☑ Active` Checkbox.
-   - `Model Name` + `Model ID` (1-click copy).
-   - `Context Limit` badge.
-   - `Capability Icons` with hover tooltips.
-   - `FREE / PAID` badge with manual override.
-   - `⚡ Test Button`: Runs the prompt from Section 1 upstream, displays latency + response snippet, and shows a **Green Checkmark ✅** on success.
+### 4.2 Top Header & Layout Architecture:
+- **Provider Header:** Name, ID, Icon, Website/referral link, and connection count.
+- **Top-Right "Default Capabilities Prompt" Button:**
+  - Compact trigger button with `expand_more` arrow and `info` icon.
+  - Expands into the 9-preset capability test suite drawer with image previews and custom prompt editor.
+- **Section 1: ➕ "Add Custom Model" Form** (Manual model entry)
+  - `Model ID` (required)
+  - `Model Display Name` (optional)
+  - `Context Limit / Window` input (e.g. `128K`, `1M`, `200K`)
+  - `Capabilities Selector with Icons & Tooltips` (`Text`, `Vision`, `Code`, `Reasoning`, `Tools`, `Audio`, `Video`, `STT`, `TTS`)
+  - FREE / PAID toggle + "Add Model" button.
+- **Section 2: 📋 Available Models Table (Table-Mounted Model Fetching)**
+  - **⚡ "Fetch All Models" Button:** Mounted **directly in the table header bar** right next to the search input.
+  - **Comprehensive Upstream Router Support:**
+    - Seamlessly supports both `http://` and `https://` custom provider routers (e.g. `http://187.52.117.2:8377/v1/models`).
+    - Automatically normalizes base URLs, stripping trailing `/models`, `/chat/completions`, and `/completions`.
+    - Probes candidate endpoints (`/v1/models`, `/models`) without throwing unhandled exceptions.
+    - Full error visibility banner with HTTP status code and upstream body on failure.
+  - `☑ Active` Checkbox.
+  - `Model Name` + `Model ID` (1-click copy).
+  - `Context Limit` badge.
+  - `Capability Icons` with hover tooltips.
+  - `FREE / PAID` badge with manual override.
+  - `⚡ Test Button`: Dispatches the top capability prompt upstream, displays latency + snippet, and turns into a **Green Checkmark ✅** on success.
 
 ---
 

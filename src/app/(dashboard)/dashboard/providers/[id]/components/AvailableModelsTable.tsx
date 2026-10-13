@@ -28,6 +28,9 @@ export interface AvailableModelsTableProps {
   onRefreshModels: () => Promise<void> | void;
   copied: string | null;
   onCopy: (text: string) => void;
+  onFetchModels?: () => Promise<void> | void;
+  isFetchingModels?: boolean;
+  fetchError?: string | null;
 }
 
 export function formatContextWindow(tokens?: number): string {
@@ -51,6 +54,9 @@ export default function AvailableModelsTable({
   onRefreshModels,
   copied,
   onCopy,
+  onFetchModels,
+  isFetchingModels = false,
+  fetchError = null,
 }: AvailableModelsTableProps) {
   const notify = useNotificationStore();
   const [search, setSearch] = useState("");
@@ -177,20 +183,55 @@ export default function AvailableModelsTable({
           </span>
         </div>
 
-        {/* Search Input */}
-        <div className="relative min-w-[240px]">
-          <span className="material-symbols-outlined absolute left-2.5 top-1/2 -translate-y-1/2 text-[16px] text-[#737373]">
-            search
-          </span>
-          <input
-            type="text"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search models by name or ID..."
-            className="w-full pl-8 pr-3 py-1.5 text-xs bg-[#171717] text-white border border-[#333] rounded-lg focus:outline-none focus:border-[#C0C0C0]"
-          />
+        <div className="flex items-center gap-2.5">
+          {/* Search Input */}
+          <div className="relative min-w-[220px]">
+            <span className="material-symbols-outlined absolute left-2.5 top-1/2 -translate-y-1/2 text-[16px] text-[#737373]">
+              search
+            </span>
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search models by name or ID..."
+              className="w-full pl-8 pr-3 py-1.5 text-xs bg-[#171717] text-white border border-[#333] rounded-lg focus:outline-none focus:border-[#C0C0C0]"
+            />
+          </div>
+
+          {/* Fetch All Models Button placed directly above the table */}
+          {onFetchModels && (
+            <button
+              type="button"
+              disabled={isFetchingModels}
+              onClick={() => void onFetchModels()}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-white text-black hover:bg-[#E5E5E5] transition-colors disabled:opacity-50 cursor-pointer shadow-sm shrink-0"
+              title="Query upstream /v1/models to fetch and synchronize all available models"
+            >
+              <span
+                className={`material-symbols-outlined text-[15px] ${
+                  isFetchingModels ? "animate-spin" : ""
+                }`}
+              >
+                {isFetchingModels ? "progress_activity" : "cloud_sync"}
+              </span>
+              <span>{isFetchingModels ? "Fetching..." : "Fetch All Models"}</span>
+            </button>
+          )}
         </div>
       </div>
+
+      {/* Upstream Fetch Error Alert */}
+      {fetchError && (
+        <div className="px-5 py-3 bg-red-950/30 border-b border-red-800/40 text-red-200 text-xs flex items-start gap-2.5">
+          <span className="material-symbols-outlined text-red-400 text-[18px] flex-shrink-0 mt-0.5">
+            error
+          </span>
+          <div className="flex flex-col gap-0.5">
+            <span className="font-semibold text-red-300">Upstream Model Discovery Failed</span>
+            <span className="font-mono text-[11px] text-red-200/90 break-all">{fetchError}</span>
+          </div>
+        </div>
+      )}
 
       {/* Models Table */}
       <div className="overflow-x-auto">
@@ -224,9 +265,7 @@ export default function AvailableModelsTable({
 
                 // Detect context window
                 const rawTokens =
-                  model.contextWindowOverride ||
-                  model.max_input_tokens ||
-                  model.inputTokenLimit;
+                  model.contextWindowOverride || model.max_input_tokens || model.inputTokenLimit;
                 const contextStr = formatContextWindow(rawTokens);
 
                 // Detect capabilities
@@ -249,9 +288,7 @@ export default function AvailableModelsTable({
                 const hasCode =
                   caps.includes("Code") || mid.includes("code") || mid.includes("coder");
                 const hasTools =
-                  caps.includes("Tools") ||
-                  endpoints.includes("tools") ||
-                  !mid.includes("embed");
+                  caps.includes("Tools") || endpoints.includes("tools") || !mid.includes("embed");
                 const hasAudio =
                   caps.includes("Audio") ||
                   endpoints.includes("audio-speech") ||
@@ -260,10 +297,7 @@ export default function AvailableModelsTable({
                   mid.includes("whisper");
 
                 return (
-                  <tr
-                    key={model.id}
-                    className="hover:bg-[#181818]/60 transition-colors group"
-                  >
+                  <tr key={model.id} className="hover:bg-[#181818]/60 transition-colors group">
                     {/* Active Checkmark */}
                     <td className="py-3 px-4 text-center align-middle">
                       <input
@@ -406,9 +440,7 @@ export default function AvailableModelsTable({
                               className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-red-500/15 text-red-400 border border-red-500/30 text-[11px] font-medium max-w-[120px] truncate"
                               title={testResult.error}
                             >
-                              <span className="material-symbols-outlined text-[13px]">
-                                error
-                              </span>
+                              <span className="material-symbols-outlined text-[13px]">error</span>
                               <span>Failed</span>
                             </span>
                           )}

@@ -161,7 +161,34 @@ export async function GET(
       searchParams.get("chatOnly") === "true" ||
       request.headers.get("x-cheaproute-model-surface")?.toLowerCase() === "chat";
 
-    const connection = await getCachedProviderConnectionById(id);
+    let connection = await getCachedProviderConnectionById(id);
+    if (!connection) {
+      try {
+        const { getProviderConnections, getProviderNodes } = await import("@/lib/db/providers");
+        const conns = await getProviderConnections({ provider: id });
+        if (conns && conns.length > 0) {
+          connection = conns.find((c: any) => c.isActive !== false) || conns[0];
+        } else {
+          const nodes = await getProviderNodes({ id });
+          const node =
+            nodes && nodes.length > 0 ? nodes[0] : (await getProviderNodes({ prefix: id }))?.[0];
+          if (node) {
+            connection = {
+              id: node.id,
+              provider: node.prefix || node.id,
+              name: node.name,
+              providerSpecificData: {
+                baseUrl: node.baseUrl,
+                apiType: node.apiType || "chat",
+                ...(node.customHeaders ? { customHeaders: node.customHeaders } : {}),
+              },
+            };
+          }
+        }
+      } catch {
+        // Fall through to 404 if not found
+      }
+    }
     const connectionProvider =
       typeof connection?.provider === "string" && connection.provider.trim().length > 0
         ? connection.provider
@@ -803,11 +830,14 @@ export async function GET(
         );
       }
 
-      let base = baseUrl.replace(/\/$/, "");
+      let base = baseUrl.trim().replace(/\/$/, "");
+      if (base.endsWith("/models")) {
+        base = base.slice(0, -7).replace(/\/$/, "");
+      }
       if (base.endsWith("/chat/completions")) {
-        base = base.slice(0, -17);
+        base = base.slice(0, -17).replace(/\/$/, "");
       } else if (base.endsWith("/completions")) {
-        base = base.slice(0, -12);
+        base = base.slice(0, -12).replace(/\/$/, "");
       }
 
       // Strip trailing /v1 unconditionally so the next step re-adds it exactly once.
@@ -816,14 +846,16 @@ export async function GET(
       // produces "…/v1/v1/models" — a 308 redirect that blocked model fetch (#5899).
       // Guard against a literal "scheme://v1" authority so we never strip the host itself.
       if (base.endsWith("/v1") && !base.endsWith("://v1")) {
-        base = base.slice(0, -3);
+        base = base.slice(0, -3).replace(/\/$/, "");
       }
 
       // T39: Try multiple endpoint formats
+      const cleanRaw = baseUrl.trim().replace(/\/$/, "");
       const endpoints = [
+        ...(cleanRaw.endsWith("/models") ? [cleanRaw] : []),
         `${base}/v1/models`,
         `${base}/models`,
-        `${baseUrl.replace(/\/$/, "")}/models`, // Original fallback
+        `${cleanRaw}/models`,
       ];
 
       // #8347: opt-in `client_version` query param on the model-LIST request only (never on
@@ -838,6 +870,7 @@ export async function GET(
       );
       let models = null;
       let lastErrorStatus = null;
+      let lastErrorMessage = "";
       const token = apiKey || accessToken;
 
       for (const modelsUrl of uniqueEndpoints) {
@@ -860,19 +893,23 @@ export async function GET(
             const data = await response.json();
             models = isNamedOpenAIStyleProvider(provider)
               ? normalizeOpenAiLikeModelsResponse(data, provider)
-              : data.data || data.models || [];
+              : data.data || data.models || (Array.isArray(data) ? data : []);
             if (provider === "ollama-local")
               models = await enrichOllamaLocalModels(models, baseUrl, proxy, token);
             break; // Success!
           }
 
+          lastErrorStatus = response.status;
+          const errorText = await response.text().catch(() => "");
+          lastErrorMessage = `HTTP ${response.status} from ${modelsUrl}: ${errorText.slice(0, 150)}`;
+
           if (response.status === 401 || response.status === 403) {
-            lastErrorStatus = response.status;
             throw new Error("auth_failed");
           }
         } catch (err: unknown) {
           if (err instanceof Error && err.message === "auth_failed") break; // Don't try other endpoints if auth failed
           if (err instanceof SyntaxError) continue;
+          lastErrorMessage = err instanceof Error ? err.message : String(err);
           // Non-Safe errors must not abort catalogue sync — probe the next endpoint.
           if (!(err instanceof SafeOutboundFetchError)) continue;
 
@@ -888,7 +925,7 @@ export async function GET(
       }
 
       // If all endpoints failed (but not because of auth), fallback to local catalog
-      if (!models) {
+      if (!models || models.length === 0) {
         const fallback = buildDiscoveryFallbackResponse({
           cacheWarning:
             lastErrorStatus === 401 || lastErrorStatus === 403
@@ -908,15 +945,33 @@ export async function GET(
           );
         }
 
-        console.warn(`[models] All endpoints failed for ${provider}, using local catalog`);
-        models = toLocalCatalogModels();
-        return buildResponse({
-          provider,
-          connectionId,
-          models,
-          source: "local_catalog",
-          warning: "API unavailable — using local catalog",
-        });
+        const localModels = toLocalCatalogModels();
+        if (localModels.length > 0) {
+          console.warn(`[models] All endpoints failed for ${provider}, using local catalog`);
+          return buildResponse({
+            provider,
+            connectionId,
+            models: localModels,
+            source: "local_catalog",
+            warning: "API unavailable — using local catalog",
+          });
+        }
+
+        return NextResponse.json(
+          {
+            error:
+              lastErrorMessage ||
+              `Failed to fetch models from API (HTTP ${lastErrorStatus || 404})`,
+            statusCode: lastErrorStatus || 404,
+            endpointsTried: uniqueEndpoints,
+          },
+          {
+            status:
+              lastErrorStatus && lastErrorStatus >= 400 && lastErrorStatus < 600
+                ? lastErrorStatus
+                : 502,
+          }
+        );
       }
       return buildApiDiscoveryResponse(models);
     }
