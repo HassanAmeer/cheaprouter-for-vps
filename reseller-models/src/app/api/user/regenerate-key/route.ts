@@ -7,7 +7,7 @@ import { provisionApiKey } from "@/lib/cheaproute";
 export async function POST() {
   let user;
   try {
-    user = requireUser();
+    user = await requireUser();
   } catch {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }

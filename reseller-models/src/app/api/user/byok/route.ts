@@ -3,9 +3,9 @@ import { getDb } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
 import { encryptKey, maskKey } from "@/lib/crypto";
 
-function authed() {
+async function authed() {
   try {
-    return requireUser();
+    return await requireUser();
   } catch {
     return null;
   }
@@ -13,7 +13,7 @@ function authed() {
 
 /** GET /api/user/byok — list my keys (masked; never the raw secret). */
 export async function GET() {
-  const user = authed();
+  const user = await authed();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const rows = getDb()
     .prepare(
@@ -26,7 +26,7 @@ export async function GET() {
 
 /** POST /api/user/byok — add a key (stored encrypted, only masked ref exposed). */
 export async function POST(request: Request) {
-  const user = authed();
+  const user = await authed();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const body = await request.json().catch(() => null);
   const providerId = typeof body?.providerId === "string" ? body.providerId.trim() : "";
@@ -55,7 +55,7 @@ export async function POST(request: Request) {
 
 /** PATCH /api/user/byok — pause / resume a key. */
 export async function PATCH(request: Request) {
-  const user = authed();
+  const user = await authed();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const body = await request.json().catch(() => null);
   const id = Number(body?.id);
@@ -74,7 +74,7 @@ export async function PATCH(request: Request) {
 
 /** DELETE /api/user/byok?id= — delete a key. */
 export async function DELETE(request: Request) {
-  const user = authed();
+  const user = await authed();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const id = Number(new URL(request.url).searchParams.get("id"));
   if (!Number.isInteger(id)) {

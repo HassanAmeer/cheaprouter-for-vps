@@ -62,18 +62,19 @@ export function getSessionUser(token: string | undefined): SessionUser | null {
   return row ?? null;
 }
 
-export function sessionFromCookies(): SessionUser | null {
-  return getSessionUser(cookies().get(SESSION_COOKIE)?.value);
+export async function sessionFromCookies(): Promise<SessionUser | null> {
+  const cookieStore = await cookies();
+  return getSessionUser(cookieStore.get(SESSION_COOKIE)?.value);
 }
 
-export function requireUser(): SessionUser {
-  const user = sessionFromCookies();
+export async function requireUser(): Promise<SessionUser> {
+  const user = await sessionFromCookies();
   if (!user) throw new Error("Unauthorized");
   return user;
 }
 
-export function requireAdmin(): SessionUser {
-  const user = requireUser();
+export async function requireAdmin(): Promise<SessionUser> {
+  const user = await requireUser();
   if (user.role !== "admin") throw new Error("Forbidden");
   return user;
 }

@@ -10,7 +10,7 @@ import { provisionApiKey } from "@/lib/cheaproute";
  */
 export async function POST(request: Request) {
   try {
-    requireAdmin();
+    await requireAdmin();
   } catch {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }

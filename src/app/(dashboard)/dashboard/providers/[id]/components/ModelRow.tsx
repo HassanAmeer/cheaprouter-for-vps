@@ -17,6 +17,7 @@ import {
 } from "@/shared/utils/modelCatalogSearch";
 import { providerText } from "../providerPageHelpers";
 import ModelCompatPopover from "./ModelCompatPopover";
+import { formatManualContextBadge } from "./CustomModelsSection";
 
 // ---------------------------------------------------------------------------
 // Shared prop types
@@ -260,7 +261,19 @@ export function ModelVisibilityToolbar({
 // ---------------------------------------------------------------------------
 
 export interface ModelRowProps {
-  model: { id: string; name?: string; source?: string; isHidden?: boolean };
+  model: {
+    id: string;
+    name?: string;
+    source?: string;
+    isHidden?: boolean;
+    isFree?: boolean;
+    inputTokenLimit?: number;
+    contextWindowOverride?: number;
+    capabilities?: string[];
+    supportedEndpoints?: string[];
+    supportsVision?: boolean;
+    [key: string]: unknown;
+  };
   fullModel: string;
   provider: string;
   alias?: string;
@@ -309,6 +322,35 @@ export default function ModelRow({
   const [aliasValue, setAliasValue] = useState(alias || "");
   const inputRef = useRef<HTMLInputElement>(null);
 
+  // Detect capabilities
+  const mid = model.id.toLowerCase();
+  const caps = model.capabilities ?? [];
+  const endpoints = model.supportedEndpoints ?? [];
+  const hasReasoning =
+    caps.includes("Reasoning") ||
+    mid.includes("reason") ||
+    mid.includes("r1") ||
+    mid.includes("o1") ||
+    mid.includes("o3");
+  const hasVision =
+    caps.includes("Vision") ||
+    model.supportsVision === true ||
+    endpoints.includes("images") ||
+    mid.includes("vision") ||
+    mid.includes("vl");
+  const hasTools = caps.includes("Tools") || endpoints.includes("chat") || endpoints.length === 0;
+  const hasCode = caps.includes("Code") || mid.includes("code") || mid.includes("coder");
+  const hasAudio =
+    caps.includes("Audio") ||
+    endpoints.includes("audio") ||
+    endpoints.includes("audio-speech") ||
+    endpoints.includes("audio-transcriptions") ||
+    mid.includes("audio") ||
+    mid.includes("tts") ||
+    mid.includes("whisper");
+
+  const contextWindow = model.inputTokenLimit || model.contextWindowOverride;
+
   useEffect(() => {
     if (editing && inputRef.current) {
       inputRef.current.focus();
@@ -344,11 +386,30 @@ export default function ModelRow({
 
   return (
     <div
-      className={`flex min-w-[220px] max-w-md items-center gap-2 rounded-lg border border-border px-3 py-2 hover:bg-sidebar/50 transition-opacity ${
-        isHidden ? "opacity-50" : ""
+      className={`flex min-w-[240px] max-w-lg items-center gap-2 rounded-lg border border-border px-3 py-2 hover:bg-sidebar/50 transition-all ${
+        isHidden ? "opacity-60 bg-muted/20" : "bg-card/40"
       }`}
     >
-      <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
+      {/* Active checkbox */}
+      {onToggleHidden && (
+        <label
+          className="flex items-center gap-1 cursor-pointer shrink-0"
+          title={!isHidden ? "Active (click to deactivate)" : "Inactive (click to activate)"}
+        >
+          <input
+            type="checkbox"
+            checked={!isHidden}
+            onChange={() => onToggleHidden(model.id, !isHidden)}
+            disabled={togglingHidden}
+            className="size-3.5 rounded border-border text-primary focus:ring-primary/40 cursor-pointer"
+          />
+          <span className="text-[10px] font-semibold text-text-muted select-none">
+            {!isHidden ? "Active" : "Inactive"}
+          </span>
+        </label>
+      )}
+
+      <div className="flex min-w-0 flex-1 flex-wrap items-center gap-1.5">
         <span
           className="material-symbols-outlined shrink-0 text-base"
           style={{ color: isHidden ? "var(--color-text-muted)" : undefined }}
@@ -358,7 +419,70 @@ export default function ModelRow({
         <code className="rounded bg-sidebar px-1.5 py-0.5 font-mono text-xs text-text-muted">
           {fullModel}
         </code>
+        <button
+          onClick={() => onCopy(fullModel, `model-${model.id}`)}
+          className="rounded p-0.5 text-text-muted hover:bg-sidebar hover:text-primary transition-colors"
+          title={t("copyModel")}
+        >
+          <span className="material-symbols-outlined text-sm">
+            {copied === `model-${model.id}` ? "check" : "content_copy"}
+          </span>
+        </button>
+
+        {/* FREE / PAID badge */}
+        {model.isFree !== undefined && (
+          <span
+            className={`text-[9px] px-1.5 py-0.5 rounded-full font-bold uppercase tracking-wider ${
+              model.isFree
+                ? "bg-green-500/15 text-green-500 border border-green-500/30"
+                : "bg-blue-500/15 text-blue-400 border border-blue-500/30"
+            }`}
+          >
+            {model.isFree ? "FREE" : "PAID"}
+          </span>
+        )}
+
+        {/* Context window badge */}
+        {Boolean(contextWindow) && (
+          <span
+            className="text-[9px] px-1.5 py-0.5 rounded-full bg-cyan-500/15 text-cyan-400 font-medium"
+            title="Context Window"
+          >
+            {formatManualContextBadge(Number(contextWindow))}
+          </span>
+        )}
+
+        {/* Capability icons */}
+        <div className="flex items-center gap-0.5 text-[11px]">
+          {hasReasoning && (
+            <span title="Reasoning" className="material-symbols-outlined text-[13px] text-purple-400">
+              psychology
+            </span>
+          )}
+          {hasVision && (
+            <span title="Vision" className="material-symbols-outlined text-[13px] text-pink-400">
+              visibility
+            </span>
+          )}
+          {hasTools && (
+            <span title="Tools" className="material-symbols-outlined text-[13px] text-amber-400">
+              build
+            </span>
+          )}
+          {hasCode && (
+            <span title="Code" className="material-symbols-outlined text-[13px] text-blue-400">
+              code
+            </span>
+          )}
+          {hasAudio && (
+            <span title="Audio" className="material-symbols-outlined text-[13px] text-green-400">
+              volume_up
+            </span>
+          )}
+        </div>
+
         <ModelSourceBadge source={model.source} />
+
         {onSetAlias && (
           <span className="flex min-w-0 items-center text-[9px] gap-1">
             {editing ? (
@@ -389,39 +513,22 @@ export default function ModelRow({
             )}
           </span>
         )}
-        <button
-          onClick={() => onCopy(fullModel, `model-${model.id}`)}
-          className="rounded p-0.5 text-text-muted hover:bg-sidebar hover:text-primary"
-          title={t("copyModel")}
-        >
-          <span className="material-symbols-outlined text-sm">
-            {copied === `model-${model.id}` ? "check" : "content_copy"}
-          </span>
-        </button>
       </div>
+
       <div className="flex shrink-0 items-center gap-1">
-        {onToggleHidden && testStatus === "error" && (
-          <button
-            onClick={() => onToggleHidden(model.id, true)}
-            disabled={togglingHidden}
-            className={`flex items-center gap-1 rounded p-0.5 text-[11px] text-red-500 hover:bg-sidebar transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${togglingHidden ? "animate-pulse" : ""}`}
-            title={providerText(
-              t,
-              "blacklistModelTooltip",
-              "Blacklist this model — hide it from the catalog"
-            )}
-          >
-            <span className="material-symbols-outlined text-sm">
-              {togglingHidden ? "progress_activity" : "block"}
-            </span>
-            <span>{providerText(t, "blacklistModel", "Blacklist")}</span>
-          </button>
-        )}
         {onTestModel && (
           <button
             onClick={() => onTestModel(model.id, fullModel)}
             disabled={testingModel}
-            className={`rounded p-0.5 hover:bg-sidebar transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${testStatus === "ok" ? "text-green-500" : testStatus === "quota" ? "text-amber-500" : testStatus === "error" ? "text-red-500" : "text-text-muted hover:text-primary"}`}
+            className={`flex items-center gap-1 rounded px-1.5 py-0.5 text-[11px] font-medium border border-border/70 hover:bg-sidebar transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${
+              testStatus === "ok"
+                ? "text-green-500 border-green-500/30 bg-green-500/5"
+                : testStatus === "quota"
+                  ? "text-amber-500 border-amber-500/30 bg-amber-500/5"
+                  : testStatus === "error"
+                    ? "text-red-500 border-red-500/30 bg-red-500/5"
+                    : "text-text-muted hover:text-primary"
+            }`}
             title={
               testingModel
                 ? t("testingModel")
@@ -435,18 +542,29 @@ export default function ModelRow({
             }
           >
             {testingModel ? (
-              <span className="material-symbols-outlined text-sm animate-spin">
+              <span className="material-symbols-outlined text-[13px] animate-spin">
                 progress_activity
               </span>
             ) : testStatus === "ok" ? (
-              <span className="material-symbols-outlined text-sm">check_circle</span>
+              <span className="material-symbols-outlined text-[13px]">check_circle</span>
             ) : testStatus === "quota" ? (
-              <span className="material-symbols-outlined text-sm">warning</span>
+              <span className="material-symbols-outlined text-[13px]">warning</span>
             ) : testStatus === "error" ? (
-              <span className="material-symbols-outlined text-sm">error</span>
+              <span className="material-symbols-outlined text-[13px]">error</span>
             ) : (
-              <span className="material-symbols-outlined text-sm">play_circle</span>
+              <span className="material-symbols-outlined text-[13px]">play_circle</span>
             )}
+            <span>
+              {testingModel
+                ? "Testing"
+                : testStatus === "ok"
+                  ? "OK"
+                  : testStatus === "quota"
+                    ? "Quota"
+                    : testStatus === "error"
+                      ? "Error"
+                      : "Test"}
+            </span>
           </button>
         )}
         {onToggleHidden && (

@@ -76,7 +76,7 @@ function baseProps() {
     testingAll: false,
     testProgress: null,
     autoHideFailed: false,
-    visibilityFilter: "all",
+    visibilityFilter: "all" as "visible" | "hidden" | "all",
     providerAliasEntries: [],
     setModelFilter: noop,
     setAutoHideFailed: noop,

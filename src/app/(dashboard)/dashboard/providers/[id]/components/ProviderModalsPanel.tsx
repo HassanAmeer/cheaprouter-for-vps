@@ -101,8 +101,8 @@ interface ProviderModalsPanelProps {
   externalLinkLoading: boolean;
   externalLinkError: string | null;
   externalLinkUrl: string | null;
-  externalLinkCopied: boolean;
-  externalLinkCopy: () => void;
+  externalLinkCopied: string | null | boolean;
+  externalLinkCopy: (text?: string, key?: string) => void | Promise<boolean>;
   // Edit connection
   showEditModal: boolean;
   setShowEditModal: (open: boolean) => void;
@@ -395,8 +395,14 @@ export default function ProviderModalsPanel({
           loading={externalLinkLoading}
           error={externalLinkError}
           url={externalLinkUrl}
-          copied={externalLinkCopied}
-          onCopy={externalLinkCopy}
+          copied={
+            typeof externalLinkCopied === "string"
+              ? externalLinkCopied
+              : Boolean(externalLinkCopied)
+                ? "extlink"
+                : false
+          }
+          onCopy={(text: string, key: string) => void externalLinkCopy(text, key)}
         />
       )}
       {providerId === "claude" && applyClaudeModalConnectionId && (

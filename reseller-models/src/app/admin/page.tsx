@@ -2,8 +2,8 @@ import { redirect } from "next/navigation";
 import { sessionFromCookies } from "@/lib/auth";
 import AdminClient from "./AdminClient";
 
-export default function AdminPage() {
-  const user = sessionFromCookies();
+export default async function AdminPage() {
+  const user = await sessionFromCookies();
   if (!user) redirect("/login");
   if (user.role !== "admin") redirect("/dashboard");
   return (

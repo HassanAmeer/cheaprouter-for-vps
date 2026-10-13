@@ -298,7 +298,7 @@ export function connectionMatchesProviderCard(
 
 type GetProviderStats = (
   providerId: string,
-  authType: "oauth" | "free" | "apikey"
+  authType: ProviderEntry["toggleAuthType"]
 ) => ProviderStatsSnapshot;
 
 function getProviderSortLabel<TProvider>(entry: ProviderEntry<TProvider>): string {
@@ -493,13 +493,11 @@ export function filterConfiguredProviderEntries<TProvider>(
   modelSearchQuery?: string,
   serviceKindFilter?: string | null,
   liveModelsByProviderId?: LiveModelsByProviderId,
-  connections?: ProviderSearchConnection[]
+  connections?: ProviderSearchConnection[],
+  connectionStatusFilter?: "all" | "connected" | "unconnected"
 ): ProviderEntry<TProvider>[] {
   let filtered = entries;
 
-  // #4240: category (serviceKind) filter — keep providers whose declared OR
-  // registry-derived serviceKinds include the selected kind. Composes with the
-  // configured-only / free / search predicates below.
   if (serviceKindFilter) {
     filtered = filtered.filter((entry) => {
       const declared = (entry.provider as { serviceKinds?: string[] }).serviceKinds;
@@ -507,7 +505,12 @@ export function filterConfiguredProviderEntries<TProvider>(
     });
   }
 
-  if (showConfiguredOnly) {
+  // Connection status filter (connected vs unconnected tab filter)
+  if (connectionStatusFilter === "connected") {
+    filtered = filtered.filter((entry) => Number(entry.stats?.total || 0) > 0);
+  } else if (connectionStatusFilter === "unconnected") {
+    filtered = filtered.filter((entry) => Number(entry.stats?.total || 0) === 0);
+  } else if (showConfiguredOnly) {
     // no-auth providers never create a DB connection row (stats.total === 0) but
     // are always usable and appear unconditionally in the /v1/models catalog, so
     // they must not be hidden by the configured-only filter (#3290).

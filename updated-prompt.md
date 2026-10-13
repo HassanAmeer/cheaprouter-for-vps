@@ -1,258 +1,155 @@
-# 🚀 CHEAPROUTER — UPDATED MASTER PROMPT (A TO Z FINAL)
-> Last Updated: 2026-10-13
+# 🚀 CHEAPROUTER — UPDATED MASTER PROMPT (A TO Z FINAL & FIXES)
+> Last Updated: 2026-10-13  
 > Ecosystem: **CheapRouter** (VPS AI Core Gateway) + **reseller-models** (Reseller Web Platform)
 
 ---
 
-## 🚨 CRITICAL DIRECTIVES (READ FIRST)
+## 📌 EXECUTIVE STATUS SUMMARY
 
-1. **Fix Commit `d5d8c33` (`ProviderTabs.tsx`):**
-   Previous AI made auth-category pills (API Key, OAuth, Free, Compatible, All). **WRONG!**
-   Replace with exact **5 Tabs**:
-   `All Providers` | `Connected Providers` | `Unconnected Providers` | `Manage Models` | `Reseller API Manage Providers`
-
-2. **Audit Before Building:**
-   Existing partials: `resellerUsers.ts`, `ByokMasterToggleCard.tsx`, `ApiDocsIntegrationHub.tsx`, `combo.ts`, `apiKeys.ts`.
-   **Extend/polish existing code — do NOT reinvent the wheel.**
-
-3. **Design Aesthetic:**
-   Minimalist Dark Mode. **Silver (#C0C0C0), White (#FFFFFF), Deep Black (#0A0A0A)** only.
-   Zero neon/glassmorphism. OpenCode-style clean UI.
-
-4. **No Raw SQL** — always use `src/lib/db/*` domain modules.
+| Task / Feature | Status | Notes |
+|---|---|---|
+| **1. Sidebar Navigation** | ✅ DONE | Correct order; `model-catalog` removed; section types updated |
+| **2. Providers Page (5 Tabs Nav)** | ⚠️ PARTIAL | Tab bar & panels exist; **Connected/Unconnected filtering is currently broken** |
+| **3. Provider Details Page (`[id]`)** | ⚠️ PARTIAL | "Fetch All Models" button added; **Type errors & manual table columns need completion** |
+| **4. Users Management (`/dashboard/users`)** | ✅ DONE | Accordion, BYOK keys, pause/resume, quota bars all functional |
+| **5. Combos Page (`/dashboard/combos`)** | ⚠️ PARTIAL | `QuickComboCreator` exists but **5,116-line page needs clean layout reorganization** |
+| **6. Manage Models (Tab 4)** | ✅ DONE | `ManageModelsPanel.tsx`, table migrations (206, 208), aliases, testing all active |
+| **7. Reseller API (Tab 5)** | ✅ DONE | `ResellerApiPanel.tsx`, public provider checkboxes & master BYOK toggle working |
+| **8. API Keys Model-Level Quota** | ✅ DONE | Per-model token budget schema & exact error message rejection working |
+| **9. BYOK Stateless Pass-through** | ✅ DONE | Master BYOK gate active; 0-token deduction on user key pass-through active |
+| **10. `reseller-models` Web App** | ⚠️ BROKEN | Scaffolded with SQLite/pages; **5 critical Next.js `cookies()` TS errors must be fixed** |
 
 ---
 
-## ✅ IMPLEMENTATION STATUS TRACKER
-
-| # | Task | Status | File(s) |
-|---|------|--------|---------|
-| 1 | Sidebar: Remove model-catalog duplicate | ⏳ TODO | sections.ts |
-| 1 | Sidebar: Correct sort order | ✅ DONE | sections.ts |
-| 2 | Providers Page: Replace auth-pills with 5-Tab architecture | ✅ DONE | ProviderTabs.tsx, useProviderTabs.ts |
-| 3 | Provider Details Page: Clean-up + Fetch Models + Manual Add | ⏳ TODO | providers/[id]/page.tsx |
-| 4 | Users Page: Accordion + BYOK inspection + Quota analytics | ⏳ TODO | users/page.tsx, resellerUsers.ts |
-| 5 | Combos Page: Simplify UI, 2 core strategy switches | ⏳ TODO | combos/page.tsx |
-| 6 | API Keys: Per-model quota enforcement | ⏳ TODO | chatCore.ts, apiKeys.ts |
-| 7 | BYOK: Stateless pass-through with Master ON/OFF switch | ⏳ TODO | chatCore.ts |
-| 8 | reseller-models: Full Next.js app (SQLite, Auth, Admin, User, Landing) | ⏳ TODO | /reseller-models/ |
+## 🚨 MANDATORY FIXES & REMAINING WORK (STEP-BY-STEP)
 
 ---
 
-## 1. SIDEBAR NAVIGATION (sections.ts)
-Target: src/shared/constants/sidebarVisibility/sections.ts
+### 🛠️ STEP 1: FIX `reseller-models` NEXT.JS COOKIE TS ERRORS (CRITICAL)
 
-### Required Final Order (Top to Bottom):
+In Next.js modern typing / App Router, `cookies()` returns a `Promise<ReadonlyRequestCookies>` and requires `await cookies()`. The current synchronous calls cause 5 TypeScript compiler errors preventing the app from building.
 
+#### Files to Fix:
+1. `reseller-models/src/app/api/auth/login/route.ts`:
+   - Change: `cookies().set(...)` ➔ `const cookieStore = await cookies(); cookieStore.set(...)`
+2. `reseller-models/src/app/api/auth/logout/route.ts`:
+   - Change: `cookies().get(...)` & `cookies().delete(...)` ➔ `const cookieStore = await cookies(); cookieStore.get(...); cookieStore.delete(...)`
+3. `reseller-models/src/app/api/auth/register/route.ts`:
+   - Change: `cookies().set(...)` ➔ `const cookieStore = await cookies(); cookieStore.set(...)`
+4. `reseller-models/src/lib/auth.ts`:
+   - Change: `getSessionUser(cookies().get(...)?.value)` ➔ `const cookieStore = await cookies(); return getSessionUser(cookieStore.get(SESSION_COOKIE)?.value);`
+   - Mark `getCurrentUser()` as `async` if not already async, and await calls at route call sites.
+
+**Verification:**  
+Run `npm --prefix reseller-models run typecheck` — MUST exit with **0 errors**.
+
+---
+
+### 🛠️ STEP 2: FIX PROVIDERS PAGE TAB FILTERING (CONNECTED / UNCONNECTED)
+
+**Files:** `src/app/(dashboard)/dashboard/providers/page.tsx`, `src/app/(dashboard)/dashboard/providers/hooks/useProviderTabs.ts`
+
+#### Problem:
+Currently, clicking the "Connected" or "Unconnected" tabs renders all 370 providers without any filtering because `tabToCategories` returns all categories unconditionally, and the provider render list does not check connection status.
+
+#### Requirements:
+1. When `activeTab === "all-providers"`:
+   - Render the complete directory of providers with search and category filters.
+2. When `activeTab === "connected"`:
+   - Filter and display **ONLY** providers that have configured credentials/connections (`connectionCount > 0` or matching `connections` list).
+   - Show an empty state card if no providers are connected: *"No connected providers yet. Go to All Providers to configure one."*
+3. When `activeTab === "unconnected"`:
+   - Filter and display **ONLY** providers that have no active connections/credentials (`connectionCount === 0`).
+   - Each card displays a prominent "Connect" CTA button.
+4. When `activeTab === "manage-models"`:
+   - Render `<ManageModelsPanel />` (already implemented).
+5. When `activeTab === "reseller-api"`:
+   - Render `<ResellerApiPanel />` (already implemented).
+
+---
+
+### 🛠️ STEP 3: PROVIDER DETAILS PAGE (`/dashboard/providers/[id]`) CLEANUP
+
+**Files:** `src/app/(dashboard)/dashboard/providers/[id]/ProviderDetailPageClient.tsx`, `components/ProviderModelsSection.tsx`
+
+#### Requirements:
+1. Fix type mismatches in `ProviderDetailPageClient.tsx`:
+   - Resolve `ModelMeta` vs `{ customModels, modelCompatOverrides }` typing.
+   - Resolve `externalLinkCopied` (boolean vs string) and callback signatures.
+2. Fix `src/app/(dashboard)/dashboard/providers/[id]/components/__tests__/fetch-models-fallback-alert.test.tsx`:
+   - Set `visibilityFilter: "all"` properly typed as `"visible" | "hidden" | "all"`.
+3. In `ProviderModelsSection.tsx`:
+   - Keep the prominent **"Fetch All Models"** button at the top.
+   - On fetch failure: Display the orange fallback alert banner:
+     *"Failed to fetch models from API. Please add models manually."*
+   - Ensure model cards/table rows display:
+     - `☑ Active` checkbox
+     - `Model ID` with one-click clipboard copy icon
+     - `FREE / PAID` badge
+     - Context window badge (e.g. `128K`, `1M`)
+     - Capability icons (Reasoning, Vision, Tools, Code, Audio)
+     - `Test` button with inline status preview
+
+---
+
+### 🛠️ STEP 4: COMBOS PAGE UI REORGANIZATION (`/dashboard/combos`)
+
+**Files:** `src/app/(dashboard)/dashboard/combos/page.tsx`, `src/app/(dashboard)/dashboard/combos/QuickComboCreator.tsx`
+
+#### Problem:
+The Combos page is over 5,100 lines long and currently renders the full advanced routing workbench right below `QuickComboCreator`, resulting in cognitive overload for users.
+
+#### Requirements:
+1. **Hero / Primary Section:**
+   - Display `QuickComboCreator` prominently at the top as the default combo creation experience:
+     - Combo Name / ID input (e.g. `auto-coding-combo`).
+     - Candidate Models multi-select dropdown (filtered to active models from Manage Models Tab 4).
+     - Two core strategy toggles:
+       - **Auto Failover** (`priority`): Model 1 ➔ Model 2 ➔ Model 3 fallback queue.
+       - **Random** (`random`): Random selection across candidates for load distribution.
+2. **Advanced Tools Collapsible Section:**
+   - Wrap the remaining complex workbench (the other 18 combo strategies, fusion panel, matrix editor) inside a collapsible accordion:
+     *"Advanced Combo Workbench (20 Strategies, Fusion, Cost Optimization)"* — collapsed by default.
+3. Keep all underlying backend routing engines (`open-sse/services/combo.ts`) intact.
+
+---
+
+### 🛠️ STEP 5: VERIFY & POLISH RESELLER APP & INTEGRATION
+
+**Directory:** `/reseller-models/`
+
+#### Requirements:
+1. **Pre-seeded Accounts Check:**
+   - Ensure `npm --prefix reseller-models run seed` seeds:
+     - Admin: `admin` / `1234`
+     - User 1: `user1@gmail.com` / `1234`
+     - User 2: `user2@gmail.com` / `1234`
+2. **Landing Page (`/`):**
+   - Verify models catalog loads from CheapRouter `GET /api/v1/public/providers`.
+   - Minimalist Dark design: `#0A0A0A` background, `#FFFFFF` text, `#C0C0C0` accents. Zero neon.
+3. **Admin Panel (`/admin`):**
+   - Plans Studio (Token budget, RPM, validity days, allowed models multi-select).
+   - Users Table with plan assignment calling `POST /api/keys` on CheapRouter.
+4. **User Dashboard (`/dashboard`):**
+   - Active subscription progress bar (tokens used / total).
+   - API key copy & regenerate.
+   - BYOK manager (visible when Master BYOK is ON).
+
+---
+
+## 🧪 VALIDATION CHECKLIST (RUN BEFORE REPORTING DONE)
+
+```bash
+# 1. Typecheck reseller-models (MUST BE 0 ERRORS)
+npm --prefix reseller-models run typecheck
+
+# 2. Typecheck core Next.js application
+npm run typecheck:core
+
+# 3. Check for any ESLint regressions
+npm run lint
+
+# 4. Verify dev servers start cleanly
+npm run dev
+npm --prefix reseller-models run dev
 ```
-[No Section Header - showTitle: false]
-  Home             /home
-  Users            /dashboard/users
-  Usage            /dashboard/usage
-
-[Section: CheapProxy]
-  Providers        /dashboard/providers
-  Combos           /dashboard/combos
-  API Keys         /dashboard/api-manager
-  REMOVE: model-catalog (/dashboard/models) — DELETE PERMANENTLY
-
-[Section: API]
-  API Endpoints    /dashboard/endpoint
-  API Docs         /dashboard/endpoint/api-reference
-
-[Section: Info]
-  Costs/Pricing    /dashboard/costs/pricing
-  Free Rankings    /dashboard/free-provider-rankings
-
-[Section: Dev Tools]
-  Logs             /dashboard/logs
-  Proxy Logs       /dashboard/logs/proxy
-  Console Logs     /dashboard/logs/console
-
-[No Section Header - showTitle: false]
-  Theme            /dashboard/settings/appearance
-```
-
-### Current Issues in sections.ts to Fix:
-- OMNI_PROXY_ITEMS has model-catalog entry → DELETE IT
-- OMNI_PROXY_ITEMS order wrong: api-manager first, providers second → providers should be first
-- SIDEBAR_SECTIONS order wrong: cheap-proxy before top standalone items
-- usage is in COSTS_ITEMS under Info → move to top standalone section
-- multi-tenant section has its own label "Reseller" → merge into top standalone (no label)
-- API section is at bottom → move between CheapProxy and Info
-- settings section has label "Setting" → make standalone (showTitle: false)
-
----
-
-## 2. PROVIDERS PAGE: 5-TAB ARCHITECTURE
-Target: ProviderTabs.tsx, useProviderTabs.ts, providers/page.tsx
-
-Remove: Auth-category pills (API Key, OAuth, Free, Compatible, All)
-
-Replace with 5 tabs:
-1. All Providers — 370+ providers directory, search bar, filter chips
-2. Connected Providers — credentialed/active providers only
-3. Unconnected Providers — non-configured providers with "Connect" CTA
-4. Manage Models — active providers' models, checkbox activation, aliases, live test
-5. Reseller API — provider exposure toggles + Master BYOK ON/OFF switch
-
-### Tab 4 — Manage Models Details:
-- Collapsible provider groups
-- Checkbox per model (only checked = active downstream)
-- Copy icon next to each Model ID
-- FREE / PAID badge + manual toggle override
-- Capability badges: Context Window (1M, 128K), Modalities (Reasoning, Vision, Audio, Code, Tools, STT, TTS)
-- Test button per model with inline response preview:
-  - Success: Green "Verified" badge + HTTP 200 + response preview
-  - Error: Red "Failed" badge + status code + error message
-- Custom Alias fields (when model is checked):
-  - Original Name (read-only)
-  - Custom Display Name (editable)
-  - Original API Model ID (read-only)
-  - Custom API Call ID / Alias (editable)
-- DB Table: provider_model_customizations
-  - Columns: provider_id, original_model_id, custom_name, custom_alias, is_active, is_tested, context_window, capabilities
-- Integrate with resolveModelAlias routing logic
-
-### Tab 5 — Reseller API Details:
-- Provider checkboxes → exposed via GET /api/v1/public/providers
-- Master BYOK Toggle ON/OFF:
-  - ON → reseller users can send x-upstream-key header
-  - OFF → returns {"error": "BYOK is currently disabled by administrator"}
-
----
-
-## 3. PROVIDER DETAILS PAGE (/dashboard/providers/[id])
-Target: providers/[id]/page.tsx
-
-- Remove all unnecessary clutter, keep: Connectivity + Models Studio only
-- "Fetch All Models" button → live fetch from upstream provider API
-  - If fails → orange alert: "Failed to fetch models from API. Please add models manually."
-- Manual Add Model form:
-  - Fields: Model Name, Model ID, Context Window, Capabilities (multi-select)
-  - "Add Model" button appends to table
-- Models Table columns: Active checkbox | Model ID (+ copy) | FREE/PAID badge | Context Window | Capabilities icons | Test button
-
----
-
-## 4. USERS PAGE (/dashboard/users)
-Target: users/page.tsx, resellerUsers.ts, reseller/users/route.ts
-
-- Accordion/card list: Name, Email, Plan Tier, Registered Date
-- Expand → user's BYOK keys: Provider Name, Masked Key, Date Added
-- Pause / Resume toggle per BYOK provider key
-- Quota & Usage analytics: tokens used, remaining balance, RPM, live charts
-
----
-
-## 5. COMBOS PAGE (/dashboard/combos)
-Target: combos/page.tsx
-
-Simplify the 5,116-line cluttered UI:
-- Custom Combo Name / ID (used as `model` param, e.g. auto-coding-combo)
-- Candidate Models — multi-select from Manage Models active models only
-- Two Core Strategy Switches:
-  1. Auto Failover: Priority sequence (4-6 models). On timeout/429/500 → next model
-  2. Random: Each request → random pick from candidates
-- Best Model Combo — curated high-perf panel
-
----
-
-## 6. API KEYS — STRICT MODEL-LEVEL QUOTA
-Target: chatCore.ts, apiKeys.ts, api/keys/route.ts
-
-Programmatic Creation (POST /api/keys):
-```json
-{
-  "name": "User1-Pro-Plan",
-  "allowedModels": ["glm-5.3_flash", "deepseek-r1", "gemini-2.5-flash"],
-  "modelLimits": {
-    "glm-5.3_flash": { "maxTokens": 100000000 },
-    "deepseek-r1": { "maxTokens": 50000000 }
-  },
-  "rateLimits": { "requestsPerMinute": 30 },
-  "expiresAt": "2026-11-12T00:00:00Z"
-}
-```
-
-Per-Model Quota Enforcement:
-- Model A limit reached → reject: {"error": "Limit reached for this model. Please check another available model to continue."}
-- Model B NOT blocked if it still has quota
-- Sliding window RPM limiter
-- /v1/models public, returns all active models; enforcement at execution time (403 on unallowed)
-
----
-
-## 7. BYOK STATELESS PASS-THROUGH
-Target: chatCore.ts
-
-Flow:
-1. Reseller user stores keys in reseller-models DB
-2. On chat request → passes x-upstream-key: <key> header
-3. CheapRouter checks Master BYOK toggle:
-   - OFF → {"error": "BYOK is disabled"}
-   - ON → inject user's header key to upstream (bypass VPS default key); deduct 0 tokens from plan
-4. User can use all active models of the provider whose key they supplied
-
----
-
-## 8. RESELLER-MODELS WEB APP
-Target: /home/hasan/Documents/reactjs/cheaprouter/reseller-models/
-
-Stack: Next.js (standalone) + SQLite3 (reseller.db)
-DB Tables: users, plans, user_subscriptions, user_byok_keys, settings
-
-Pre-seeded Accounts:
-| Role  | Credential              |
-|-------|-------------------------|
-| Admin | admin / 1234            |
-| User1 | user1@gmail.com / 1234  |
-| User2 | user2@gmail.com / 1234  |
-
-Design: Minimalist Dark — Silver + White + Deep Black. Zero neon.
-
-Landing Page (/)
-- Hero: high-speed AI Gateway pitch
-- Live Models Catalog (from GET /api/v1/public/providers — SVG icons)
-- Pricing Table: Free / Pro / Premium
-
-Admin Panel (/admin)
-- Plans Configuration Studio (models, token budgets 10M/50M/100M, RPM, validity)
-- Users Management Table → assign plan → auto-calls POST /api/keys on CheapRouter
-
-User Dashboard (/dashboard)
-- Active Subscription Card: plan name, token progress bar, expiry countdown
-- API Key section: copy + regenerate
-- BYOK Keys Manager (visible when Master BYOK = ON): add/pause/resume keys
-- Live Analytics: RPM meter + daily usage charts
-
----
-
-## 📋 IMPLEMENTATION ORDER (Recommended)
-
-Step 1: sections.ts — Sidebar sort fix + remove model-catalog     [QUICKEST WIN]
-Step 2: ProviderTabs.tsx + useProviderTabs.ts — 5-tab replace      [HIGH PRIORITY]
-Step 3: providers/[id]/page.tsx — Details page clean-up            [MEDIUM]
-Step 4: users/page.tsx — Users accordion + BYOK inspection         [MEDIUM]
-Step 5: combos/page.tsx — Simplified UI                            [MEDIUM]
-Step 6: apiKeys.ts + chatCore.ts — Per-model quota enforcement     [BACKEND]
-Step 7: chatCore.ts — BYOK pass-through logic                      [BACKEND]
-Step 8: /reseller-models — Full new app init + seed + pages        [LARGEST]
-
----
-
-## 🔗 KEY FILES REFERENCE
-
-| File | Purpose |
-|------|---------|
-| src/shared/constants/sidebarVisibility/sections.ts | Sidebar structure |
-| src/app/(dashboard)/dashboard/providers/components/ProviderTabs.tsx | Provider tabs UI |
-| src/app/(dashboard)/dashboard/providers/hooks/useProviderTabs.ts | Tab config hook |
-| src/app/(dashboard)/dashboard/providers/[id]/page.tsx | Provider detail page |
-| src/app/(dashboard)/dashboard/users/page.tsx | Users management page |
-| src/app/(dashboard)/dashboard/combos/page.tsx | Combos page |
-| src/lib/db/apiKeys.ts | API key domain module |
-| src/lib/db/resellerUsers.ts | Reseller users domain module |
-| open-sse/handlers/chatCore.ts | Core request handler (quota + BYOK) |
-| src/app/api/keys/route.ts | API key creation endpoint |
-| src/app/api/v1/reseller/users/route.ts | Reseller users API |

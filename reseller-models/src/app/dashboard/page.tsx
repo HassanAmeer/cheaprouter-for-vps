@@ -2,8 +2,8 @@ import { redirect } from "next/navigation";
 import { sessionFromCookies } from "@/lib/auth";
 import DashboardClient from "./DashboardClient";
 
-export default function DashboardPage() {
-  const user = sessionFromCookies();
+export default async function DashboardPage() {
+  const user = await sessionFromCookies();
   if (!user) redirect("/login");
   return (
     <div className="wrap">

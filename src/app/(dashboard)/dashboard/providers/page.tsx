@@ -552,17 +552,24 @@ function ProvidersPageContent() {
   );
   const isCompactProviderDisplay = effectiveProviderDisplayMode === "compact";
 
+  const connectionStatusFilter: "all" | "connected" | "unconnected" =
+    activeTab === "connected" ? "connected" : activeTab === "unconnected" ? "unconnected" : "all";
+
+  const filterEntries = <T,>(entries: ProviderEntry<T>[], explicitFreeOnly?: boolean) =>
+    filterConfiguredProviderEntries(
+      entries,
+      effectiveShowConfiguredOnly,
+      searchQuery,
+      explicitFreeOnly !== undefined ? explicitFreeOnly : showFreeOnly,
+      modelSearchQuery,
+      activeServiceKind,
+      liveModelsByProviderId,
+      connections,
+      connectionStatusFilter
+    );
+
   const oauthProviderEntriesAll = buildStaticProviderEntries("oauth", getProviderStats);
-  const oauthProviderEntries = filterConfiguredProviderEntries(
-    oauthProviderEntriesAll,
-    effectiveShowConfiguredOnly,
-    searchQuery,
-    showFreeOnly,
-    modelSearchQuery,
-    activeServiceKind,
-    liveModelsByProviderId,
-    connections
-  );
+  const oauthProviderEntries = filterEntries(oauthProviderEntriesAll);
 
   const rawNoAuthEntriesAll = buildStaticProviderEntries("no-auth", getProviderStats);
   // Partition rather than drop: blocked no-auth providers stay surfaced on the page
@@ -572,166 +579,49 @@ function ProvidersPageContent() {
   // aggregate/count/model list that consumes it is unchanged.
   const { visible: noAuthEntriesAll, blocked: blockedNoAuthEntries } =
     partitionNoAuthEntriesByBlocked(rawNoAuthEntriesAll, blockedProviders);
-  const noAuthEntries = filterConfiguredProviderEntries(
-    noAuthEntriesAll,
-    effectiveShowConfiguredOnly,
-    searchQuery,
-    showFreeOnly,
-    modelSearchQuery,
-    activeServiceKind,
-    liveModelsByProviderId,
-    connections
-  );
+  const noAuthEntries = filterEntries(noAuthEntriesAll);
 
   const apiKeyProviderEntriesAll = buildStaticProviderEntries("apikey", getProviderStats);
   const llmProviderEntriesAll = apiKeyProviderEntriesAll.filter(isPrimaryLlmProviderEntry);
-  const llmProviderEntries = filterConfiguredProviderEntries(
-    llmProviderEntriesAll,
-    effectiveShowConfiguredOnly,
-    searchQuery,
-    showFreeOnly,
-    modelSearchQuery,
-    activeServiceKind,
-    liveModelsByProviderId,
-    connections
-  );
+  const llmProviderEntries = filterEntries(llmProviderEntriesAll);
   const aggregatorProviderEntriesAll = apiKeyProviderEntriesAll.filter((entry) =>
     AGGREGATOR_PROVIDER_IDS.has(entry.providerId)
   );
-  const aggregatorProviderEntries = filterConfiguredProviderEntries(
-    aggregatorProviderEntriesAll,
-    effectiveShowConfiguredOnly,
-    searchQuery,
-    showFreeOnly,
-    modelSearchQuery,
-    activeServiceKind,
-    liveModelsByProviderId,
-    connections
-  );
+  const aggregatorProviderEntries = filterEntries(aggregatorProviderEntriesAll);
   const imageProviderEntriesAll = apiKeyProviderEntriesAll.filter((entry) =>
     IMAGE_ONLY_PROVIDER_IDS.has(entry.providerId)
   );
-  const imageProviderEntries = filterConfiguredProviderEntries(
-    imageProviderEntriesAll,
-    effectiveShowConfiguredOnly,
-    searchQuery,
-    showFreeOnly,
-    modelSearchQuery,
-    activeServiceKind,
-    liveModelsByProviderId,
-    connections
-  );
+  const imageProviderEntries = filterEntries(imageProviderEntriesAll);
   const enterpriseProviderEntriesAll = apiKeyProviderEntriesAll.filter((entry) =>
     ENTERPRISE_CLOUD_PROVIDER_IDS.has(entry.providerId)
   );
-  const enterpriseProviderEntries = filterConfiguredProviderEntries(
-    enterpriseProviderEntriesAll,
-    effectiveShowConfiguredOnly,
-    searchQuery,
-    showFreeOnly,
-    modelSearchQuery,
-    activeServiceKind,
-    liveModelsByProviderId,
-    connections
-  );
+  const enterpriseProviderEntries = filterEntries(enterpriseProviderEntriesAll);
   const videoProviderEntriesAll = apiKeyProviderEntriesAll.filter((entry) =>
     VIDEO_PROVIDER_IDS.has(entry.providerId)
   );
-  const videoProviderEntries = filterConfiguredProviderEntries(
-    videoProviderEntriesAll,
-    effectiveShowConfiguredOnly,
-    searchQuery,
-    showFreeOnly,
-    modelSearchQuery,
-    activeServiceKind,
-    liveModelsByProviderId,
-    connections
-  );
+  const videoProviderEntries = filterEntries(videoProviderEntriesAll);
   const embeddingRerankProviderEntriesAll = apiKeyProviderEntriesAll.filter((entry) =>
     EMBEDDING_RERANK_PROVIDER_IDS.has(entry.providerId)
   );
-  const embeddingRerankProviderEntries = filterConfiguredProviderEntries(
-    embeddingRerankProviderEntriesAll,
-    effectiveShowConfiguredOnly,
-    searchQuery,
-    showFreeOnly,
-    modelSearchQuery,
-    activeServiceKind,
-    liveModelsByProviderId,
-    connections
-  );
+  const embeddingRerankProviderEntries = filterEntries(embeddingRerankProviderEntriesAll);
 
   const webCookieProviderEntriesAll = buildStaticProviderEntries("web-cookie", getProviderStats);
-  const webCookieProviderEntries = filterConfiguredProviderEntries(
-    webCookieProviderEntriesAll,
-    effectiveShowConfiguredOnly,
-    searchQuery,
-    showFreeOnly,
-    modelSearchQuery,
-    activeServiceKind,
-    liveModelsByProviderId,
-    connections
-  );
+  const webCookieProviderEntries = filterEntries(webCookieProviderEntriesAll);
 
   const localProviderEntriesAll = buildStaticProviderEntries("local", getProviderStats);
-  const localProviderEntries = filterConfiguredProviderEntries(
-    localProviderEntriesAll,
-    effectiveShowConfiguredOnly,
-    searchQuery,
-    showFreeOnly,
-    modelSearchQuery,
-    activeServiceKind,
-    liveModelsByProviderId,
-    connections
-  );
+  const localProviderEntries = filterEntries(localProviderEntriesAll);
 
   const searchProviderEntriesAll = buildStaticProviderEntries("search", getProviderStats);
-  const searchProviderEntries = filterConfiguredProviderEntries(
-    searchProviderEntriesAll,
-    effectiveShowConfiguredOnly,
-    searchQuery,
-    showFreeOnly,
-    modelSearchQuery,
-    activeServiceKind,
-    liveModelsByProviderId,
-    connections
-  );
+  const searchProviderEntries = filterEntries(searchProviderEntriesAll);
 
   const audioProviderEntriesAll = buildStaticProviderEntries("audio", getProviderStats);
-  const audioProviderEntries = filterConfiguredProviderEntries(
-    audioProviderEntriesAll,
-    effectiveShowConfiguredOnly,
-    searchQuery,
-    showFreeOnly,
-    modelSearchQuery,
-    activeServiceKind,
-    liveModelsByProviderId,
-    connections
-  );
+  const audioProviderEntries = filterEntries(audioProviderEntriesAll);
 
   const cloudAgentProviderEntriesAll = buildStaticProviderEntries("cloud-agent", getProviderStats);
-  const cloudAgentProviderEntries = filterConfiguredProviderEntries(
-    cloudAgentProviderEntriesAll,
-    effectiveShowConfiguredOnly,
-    searchQuery,
-    showFreeOnly,
-    modelSearchQuery,
-    activeServiceKind,
-    liveModelsByProviderId,
-    connections
-  );
+  const cloudAgentProviderEntries = filterEntries(cloudAgentProviderEntriesAll);
 
   const upstreamProxyEntriesAll = buildStaticProviderEntries("upstream-proxy", getProviderStats);
-  const upstreamProxyEntries = filterConfiguredProviderEntries(
-    upstreamProxyEntriesAll,
-    effectiveShowConfiguredOnly,
-    searchQuery,
-    showFreeOnly,
-    modelSearchQuery,
-    activeServiceKind,
-    liveModelsByProviderId,
-    connections
-  );
+  const upstreamProxyEntries = filterEntries(upstreamProxyEntriesAll);
 
   const compatibleProviderEntriesAll = [
     ...compatibleProviders.map((provider) => ({
@@ -756,16 +646,7 @@ function ProvidersPageContent() {
       toggleAuthType: "apikey" as const,
     })),
   ];
-  const compatibleProviderEntries = filterConfiguredProviderEntries(
-    compatibleProviderEntriesAll,
-    effectiveShowConfiguredOnly,
-    searchQuery,
-    showFreeOnly,
-    modelSearchQuery,
-    activeServiceKind,
-    liveModelsByProviderId,
-    connections
-  );
+  const compatibleProviderEntries = filterEntries(compatibleProviderEntriesAll);
 
   const staticProviderEntriesAll = dedupeProviderEntries([
     ...oauthProviderEntriesAll,
@@ -783,16 +664,7 @@ function ProvidersPageContent() {
     ...compatibleProviderEntriesAll,
   ]);
   const freeSectionEntriesAll = dashboardProviderEntriesAll.filter(providerEntryHasFree);
-  const freeSectionEntries = filterConfiguredProviderEntries(
-    freeSectionEntriesAll,
-    effectiveShowConfiguredOnly,
-    searchQuery,
-    undefined,
-    modelSearchQuery,
-    activeServiceKind,
-    liveModelsByProviderId,
-    connections
-  );
+  const freeSectionEntries = filterEntries(freeSectionEntriesAll, false);
 
   // IDE providers: subset of oauth/apikey providers that are editors/IDEs with
   // built-in AI subscription. Rendered in a dedicated "IDE Providers" section
@@ -800,16 +672,7 @@ function ProvidersPageContent() {
   const ideProviderEntriesAll = [...oauthProviderEntriesAll, ...apiKeyProviderEntriesAll].filter(
     (e) => IDE_PROVIDER_IDS.has(e.providerId)
   );
-  const ideProviderEntries = filterConfiguredProviderEntries(
-    ideProviderEntriesAll,
-    effectiveShowConfiguredOnly,
-    searchQuery,
-    showFreeOnly,
-    modelSearchQuery,
-    activeServiceKind,
-    liveModelsByProviderId,
-    connections
-  );
+  const ideProviderEntries = filterEntries(ideProviderEntriesAll);
 
   const oauthOnlyEntriesAll = oauthProviderEntriesAll
     .filter((e) => e.toggleAuthType === "oauth")
@@ -822,16 +685,7 @@ function ProvidersPageContent() {
       return p.serviceKinds?.includes("webFetch") === true;
     }) as DashboardProviderEntry[]
   );
-  const webFetchEntries = filterConfiguredProviderEntries(
-    webFetchEntriesAll,
-    effectiveShowConfiguredOnly,
-    searchQuery,
-    showFreeOnly,
-    modelSearchQuery,
-    activeServiceKind,
-    liveModelsByProviderId,
-    connections
-  );
+  const webFetchEntries = filterEntries(webFetchEntriesAll);
   const visibleWebFetchEntries = resolveVisibleWebFetchEntries(webFetchEntries, null);
 
   const compactProviderEntries = buildCompactProviderEntriesForPage({
@@ -881,6 +735,24 @@ function ProvidersPageContent() {
       </div>
     );
   }
+
+  const totalVisibleEntriesCount =
+    oauthProviderEntries.filter((e) => !IDE_PROVIDER_IDS.has(e.providerId)).length +
+    noAuthEntries.length +
+    llmProviderEntries.length +
+    aggregatorProviderEntries.length +
+    imageProviderEntries.length +
+    enterpriseProviderEntries.length +
+    videoProviderEntries.length +
+    embeddingRerankProviderEntries.length +
+    webCookieProviderEntries.length +
+    localProviderEntries.length +
+    searchProviderEntries.length +
+    audioProviderEntries.length +
+    cloudAgentProviderEntries.length +
+    upstreamProxyEntries.length +
+    compatibleProviderEntries.length +
+    ideProviderEntries.length;
 
   const showFirstProviderHint =
     shouldShowFirstProviderHint(connections.length, searchQuery) && !showAllProviders;
@@ -1014,6 +886,31 @@ function ProvidersPageContent() {
                 />
               ))}
             </div>
+          ) : activeTab === "connected" ? (
+            <div
+              className="flex flex-col items-center justify-center gap-3 py-16 px-4 border border-dashed border-border rounded-2xl bg-bg-surface/50 text-center"
+              data-testid="connected-empty-state"
+            >
+              <div className="size-12 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+                <span className="material-symbols-outlined text-[28px]">link_off</span>
+              </div>
+              <div className="max-w-md">
+                <h3 className="text-base font-semibold text-text-main">
+                  No connected providers yet. Go to All Providers to configure one.
+                </h3>
+                <p className="text-sm text-text-muted mt-1">
+                  Connect an API key, OAuth account, or local model endpoint to start routing AI requests.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setActiveTab("all-providers")}
+                className="mt-2 inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-white text-sm font-medium hover:bg-primary-hover transition-colors shadow-xs"
+              >
+                <span className="material-symbols-outlined text-[18px]">apps</span>
+                <span>Go to All Providers</span>
+              </button>
+            </div>
           ) : (
             <div
               className="flex items-center justify-center gap-2 py-8 border border-dashed border-border rounded-xl text-text-muted text-sm"
@@ -1023,10 +920,36 @@ function ProvidersPageContent() {
               <span>{providerText(t, "noProvidersMatch", "No providers match your search.")}</span>
             </div>
           )
+        ) : activeTab === "connected" && totalVisibleEntriesCount === 0 ? (
+          <div
+            className="flex flex-col items-center justify-center gap-3 py-16 px-4 border border-dashed border-border rounded-2xl bg-bg-surface/50 text-center"
+            data-testid="connected-empty-state"
+          >
+            <div className="size-12 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+              <span className="material-symbols-outlined text-[28px]">link_off</span>
+            </div>
+            <div className="max-w-md">
+              <h3 className="text-base font-semibold text-text-main">
+                No connected providers yet. Go to All Providers to configure one.
+              </h3>
+              <p className="text-sm text-text-muted mt-1">
+                Connect an API key, OAuth account, or local model endpoint to start routing AI requests.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setActiveTab("all-providers")}
+              className="mt-2 inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-white text-sm font-medium hover:bg-primary-hover transition-colors shadow-xs"
+            >
+              <span className="material-symbols-outlined text-[18px]">apps</span>
+              <span>Go to All Providers</span>
+            </button>
+          </div>
         ) : (
           <>
             {/* API Key Compatible Providers — dynamic (OpenAI/Anthropic compatible) */}
-            {showSectionFromTab("compatible") && (
+            {showSectionFromTab("compatible") &&
+              (activeTab === "all-providers" || compatibleProviderEntries.length > 0) && (
               <div className="flex flex-col gap-4">
                 <div className="flex flex-wrap items-center gap-2">
                   <h2 className="text-xl font-semibold flex items-center gap-2 flex-1 min-w-0">
@@ -1131,7 +1054,9 @@ function ProvidersPageContent() {
             )}
 
             {/* OAuth Providers (including providers that expose free tiers via OAuth) */}
-            {showSectionFromTab("oauth") && (
+            {showSectionFromTab("oauth") &&
+              (activeTab === "all-providers" ||
+                oauthProviderEntries.filter((e) => !IDE_PROVIDER_IDS.has(e.providerId)).length > 0) && (
               <div className="flex flex-col gap-4">
                 <div className="flex flex-wrap items-center gap-2">
                   <h2 className="text-xl font-semibold flex items-center gap-2 flex-1 min-w-0">
@@ -1203,7 +1128,8 @@ function ProvidersPageContent() {
             )}
 
             {/* IDE Providers (Cursor, Zed, Trae) — editors with built-in AI subscription */}
-            {showSectionFromTab("ide") && (
+            {showSectionFromTab("ide") &&
+              (activeTab === "all-providers" || ideProviderEntries.length > 0) && (
               <div className="flex flex-col gap-4">
                 <div className="flex flex-wrap items-center gap-2">
                   <h2 className="text-xl font-semibold flex items-center gap-2 flex-1 min-w-0">
@@ -1362,7 +1288,8 @@ function ProvidersPageContent() {
             )}
 
             {/* API Key Providers — fixed list */}
-            {showSectionFromTab("apikey") && (
+            {showSectionFromTab("apikey") &&
+              (activeTab === "all-providers" || llmProviderEntries.length > 0) && (
               <div className="flex flex-col gap-4">
                 <div className="flex flex-wrap items-center gap-2">
                   <h2 className="text-xl font-semibold flex items-center gap-2 flex-1 min-w-0">
@@ -1418,6 +1345,7 @@ function ProvidersPageContent() {
 
             {/* No Auth Providers */}
             {showSectionFromTab("noauth") &&
+              activeTab !== "connected" &&
               !showFreeOnly &&
               (noAuthEntriesAll.length > 0 || blockedNoAuthEntries.length > 0) && (
                 <NoAuthProvidersSection

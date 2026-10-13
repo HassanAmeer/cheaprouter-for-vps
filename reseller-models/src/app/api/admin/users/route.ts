@@ -5,7 +5,7 @@ import { requireAdmin } from "@/lib/auth";
 /** GET /api/admin/users — roster with plan badge + usage %. */
 export async function GET() {
   try {
-    requireAdmin();
+    await requireAdmin();
   } catch {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }

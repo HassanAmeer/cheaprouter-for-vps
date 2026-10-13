@@ -5,7 +5,7 @@ import { requireAdmin } from "@/lib/auth";
 /** GET /api/admin/plans — list all plans. */
 export async function GET() {
   try {
-    requireAdmin();
+    await requireAdmin();
   } catch {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
@@ -18,7 +18,7 @@ export async function GET() {
 /** POST /api/admin/plans — create or update a plan. */
 export async function POST(request: Request) {
   try {
-    requireAdmin();
+    await requireAdmin();
   } catch {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }

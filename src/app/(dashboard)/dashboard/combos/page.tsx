@@ -876,6 +876,7 @@ function CombosPageContent() {
   const [routingSettings, setRoutingSettings] = useState(null);
   const [promptCompressionEnabled, setPromptCompressionEnabled] = useState(false);
   const [selectedIntelligentComboId, setSelectedIntelligentComboId] = useState<string | null>(null);
+  const [showAdvancedWorkbench, setShowAdvancedWorkbench] = useState(false);
   const comboDragIndexRef = useRef<number | null>(null);
   const activeFilter = normalizeIntelligentRoutingFilter(searchParams.get("filter"));
   const intelligentCombos = useMemo(
@@ -1113,6 +1114,7 @@ function CombosPageContent() {
       globalThis.localStorage?.removeItem(COMBO_USAGE_GUIDE_STORAGE_KEY);
     } catch {}
     setUsageGuideHiddenForNow(false);
+    setShowAdvancedWorkbench(true);
     emitUsageGuideChange();
   };
 
@@ -1236,27 +1238,64 @@ function CombosPageContent() {
         </div>
       </div>
 
-      <AutoComboCatalog
-        onComboCreated={handleComboCreated}
-        onTestCombo={handleTestCombo}
-        testingName={testingCombo}
-      />
-
+      {/* Hero / Primary Section: QuickComboCreator */}
       <QuickComboCreator onCreated={handleComboCreated} />
 
-      <KimiComboPresetCard
-        alreadyCreated={hasKimiCodingPreset(combos)}
-        creating={creatingKimiPreset}
-        onCreate={handleCreateKimiPreset}
-      />
+      {/* Advanced Tools Collapsible Section */}
+      <Card padding="none" className="overflow-hidden border border-border/80">
+        <button
+          type="button"
+          onClick={() => setShowAdvancedWorkbench((prev) => !prev)}
+          className="w-full flex items-center justify-between p-4 bg-bg-surface hover:bg-bg-subtle/50 transition-colors text-left focus:outline-none cursor-pointer"
+          aria-expanded={showAdvancedWorkbench}
+        >
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="size-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary shrink-0">
+              <span className="material-symbols-outlined text-[20px]">tune</span>
+            </div>
+            <div className="min-w-0">
+              <h2 className="text-sm font-semibold text-text-primary">
+                Advanced Combo Workbench (20 Strategies, Fusion, Cost Optimization)
+              </h2>
+              <p className="text-xs text-text-muted truncate">
+                Zero-config templates, fusion synthesis, cost-aware routing & Kimi coding presets
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            <span className="text-xs text-text-muted px-2 py-0.5 rounded-full bg-bg-subtle border border-border/60">
+              {showAdvancedWorkbench ? "Hide" : "Show"}
+            </span>
+            <span className="material-symbols-outlined text-[20px] text-text-muted transition-transform duration-200">
+              {showAdvancedWorkbench ? "expand_less" : "expand_more"}
+            </span>
+          </div>
+        </button>
 
-      {showUsageGuide && (
-        <ComboUsageGuide
-          onHide={() => setUsageGuideHiddenForNow(true)}
-          onHideForever={handleHideUsageGuideForever}
-          onCreateCombo={() => setShowCreateModal(true)}
-        />
-      )}
+        {showAdvancedWorkbench && (
+          <div className="p-4 pt-0 border-t border-border/40 flex flex-col gap-4 bg-bg-subtle/20">
+            <AutoComboCatalog
+              onComboCreated={handleComboCreated}
+              onTestCombo={handleTestCombo}
+              testingName={testingCombo}
+            />
+
+            <KimiComboPresetCard
+              alreadyCreated={hasKimiCodingPreset(combos)}
+              creating={creatingKimiPreset}
+              onCreate={handleCreateKimiPreset}
+            />
+
+            {showUsageGuide && (
+              <ComboUsageGuide
+                onHide={() => setUsageGuideHiddenForNow(true)}
+                onHideForever={handleHideUsageGuideForever}
+                onCreateCombo={() => setShowCreateModal(true)}
+              />
+            )}
+          </div>
+        )}
+      </Card>
 
       {recentlyCreatedCombo && (
         <Card

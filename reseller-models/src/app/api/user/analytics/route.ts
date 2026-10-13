@@ -11,7 +11,7 @@ import { getDb, rowToPlan } from "@/lib/db";
 export async function GET() {
   let user;
   try {
-    user = requireUser();
+    user = await requireUser();
   } catch {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }

@@ -636,32 +636,44 @@ const ProviderCard = forwardRef<ProviderCardHandle, ProviderCardProps>(function 
                 )}
               </div>
               <div className="flex items-center gap-2 shrink-0">
-                {Number(stats.total || 0) > 0 && (
-                  <div onClick={handleToggle}>
-                    <Toggle
-                      size="xs"
-                      checked={!allDisabled}
-                      onChange={undefined}
-                      title={allDisabled ? t("enableProvider") : t("disableProvider")}
-                    />
-                  </div>
-                )}
-                {isLlmProvider && (
-                  <button
-                    type="button"
-                    onClick={handleTestClick}
-                    title={tp("expandTest")}
-                    className="inline-flex items-center gap-0.5 rounded-md border border-border bg-bg-subtle px-2 py-0.5 text-[11px] text-text-muted hover:text-text-primary hover:border-primary/30 transition-colors"
+                {Number(stats.total || 0) > 0 ? (
+                  <>
+                    <div onClick={handleToggle}>
+                      <Toggle
+                        size="xs"
+                        checked={!allDisabled}
+                        onChange={undefined}
+                        title={allDisabled ? t("enableProvider") : t("disableProvider")}
+                      />
+                    </div>
+                    {isLlmProvider && (
+                      <button
+                        type="button"
+                        onClick={handleTestClick}
+                        title={tp("expandTest")}
+                        className="inline-flex items-center gap-0.5 rounded-md border border-border bg-bg-subtle px-2 py-0.5 text-[11px] text-text-muted hover:text-text-primary hover:border-primary/30 transition-colors"
+                      >
+                        <span className="material-symbols-outlined text-[11px] leading-none">
+                          play_arrow
+                        </span>
+                        {tp("testLabel")}
+                      </button>
+                    )}
+                    {!isLlmProvider && (
+                      <span className="material-symbols-outlined text-text-muted opacity-0 group-hover:opacity-100 transition-opacity">
+                        chevron_right
+                      </span>
+                    )}
+                  </>
+                ) : (
+                  <span
+                    className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold rounded-md bg-primary text-white hover:bg-primary-hover shadow-xs transition-colors cursor-pointer"
+                    title={providerText(t, "connectProvider", "Connect {name}", {
+                      name: provider.name,
+                    })}
                   >
-                    <span className="material-symbols-outlined text-[11px] leading-none">
-                      play_arrow
-                    </span>
-                    {tp("testLabel")}
-                  </button>
-                )}
-                {!isLlmProvider && (
-                  <span className="material-symbols-outlined text-text-muted opacity-0 group-hover:opacity-100 transition-opacity">
-                    chevron_right
+                    <span className="material-symbols-outlined text-[14px] leading-none">add</span>
+                    Connect
                   </span>
                 )}
               </div>

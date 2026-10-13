@@ -7,7 +7,7 @@ import { fetchResellerUsage } from "@/lib/cheaproute";
 export async function GET() {
   let user;
   try {
-    user = requireUser();
+    user = await requireUser();
   } catch {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
