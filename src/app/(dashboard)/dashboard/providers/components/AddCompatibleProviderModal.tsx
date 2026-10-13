@@ -20,8 +20,10 @@ interface AddCompatibleProviderModalProps {
   isOpen: boolean;
   mode: CompatibleMode;
   title?: string;
+  initialNode?: CompatibleProviderNode | null;
   onClose: () => void;
   onCreated: (node: CompatibleProviderNode) => void;
+  onUpdated?: (node: CompatibleProviderNode) => void;
 }
 
 interface CompatibleFormState {
@@ -80,8 +82,28 @@ const MODE_DEFAULTS: Record<
   },
 };
 
-function createInitialForm(mode: CompatibleMode): CompatibleFormState {
+function createInitialForm(
+  mode: CompatibleMode,
+  initialNode?: CompatibleProviderNode | null
+): CompatibleFormState {
   const defaults = MODE_DEFAULTS[mode];
+  if (initialNode) {
+    const pData = (initialNode.providerSpecificData || {}) as Record<string, unknown>;
+    return {
+      name: String(initialNode.name || ""),
+      prefix: String(initialNode.prefix || ""),
+      apiType: String(initialNode.apiType || "chat"),
+      baseUrl: String(initialNode.baseUrl || defaults.baseUrl),
+      chatPath: String(initialNode.chatPath || defaults.chatPath),
+      modelsPath: String(initialNode.modelsPath || ""),
+      iconUrl: String(initialNode.iconUrl || ""),
+      clientIdentityProfile: "default",
+      newApiAggregatorBalance: Boolean(pData.newApiAggregatorBalance),
+      consoleApiKey: String(pData.consoleApiKey || ""),
+      newApiUserId: String(pData.newApiUserId || ""),
+      quotaPerUnit: pData.quotaPerUnit ? String(pData.quotaPerUnit) : "",
+    };
+  }
   return {
     name: "",
     prefix: "",
@@ -102,12 +124,16 @@ export default function AddCompatibleProviderModal({
   isOpen,
   mode,
   title,
+  initialNode,
   onClose,
   onCreated,
+  onUpdated,
 }: AddCompatibleProviderModalProps) {
   const t = useTranslations("providers");
   const defaults = MODE_DEFAULTS[mode];
-  const [formData, setFormData] = useState<CompatibleFormState>(() => createInitialForm(mode));
+  const [formData, setFormData] = useState<CompatibleFormState>(() =>
+    createInitialForm(mode, initialNode)
+  );
   const [submitting, setSubmitting] = useState(false);
   const [checkKey, setCheckKey] = useState("");
   const [checkModelId, setCheckModelId] = useState("");
@@ -116,6 +142,9 @@ export default function AddCompatibleProviderModal({
     valid: boolean;
     error?: string | null;
     method?: string | null;
+    models?: Array<{ id: string; name?: string }>;
+    totalModels?: number;
+    probeUrl?: string | null;
   }>(null);
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [iconUrlError, setIconUrlError] = useState<string | null>(null);
@@ -133,19 +162,19 @@ export default function AddCompatibleProviderModal({
     [t]
   );
 
-  // Fresh form on every open (and on a mode switch while open) — applied as a
-  // render-phase adjustment guarded by the previously initialized mode
-  // (react.dev "adjusting state when a prop changes") instead of a
-  // synchronous-setState effect. Closing clears the marker so the next open
-  // re-initializes again.
-  const [initializedFor, setInitializedFor] = useState<{ mode: CompatibleMode } | null>(null);
+  const [initializedFor, setInitializedFor] = useState<{
+    mode: CompatibleMode;
+    nodeId?: string;
+  } | null>(null);
   if (isOpen) {
-    if (initializedFor?.mode !== mode) {
-      setInitializedFor({ mode });
-      setFormData(createInitialForm(mode));
+    const currentKey = initialNode?.id || mode;
+    const prevKey = initializedFor?.nodeId || initializedFor?.mode;
+    if (prevKey !== currentKey) {
+      setInitializedFor({ mode, nodeId: initialNode?.id });
+      setFormData(createInitialForm(mode, initialNode));
       setValidationResult(null);
       setCheckKey("");
-      setShowAdvanced(false);
+      setShowAdvanced(Boolean(initialNode?.chatPath || initialNode?.modelsPath));
       setSaveError(null);
       setIconUrlError(null);
     }
@@ -155,11 +184,13 @@ export default function AddCompatibleProviderModal({
 
   const modalTitle =
     title ||
-    (mode === "openai"
-      ? t("addOpenAICompatible")
-      : mode === "anthropic"
-        ? t("addAnthropicCompatible")
-        : t("addCcCompatible"));
+    (initialNode
+      ? `Edit Provider: ${initialNode.name || initialNode.prefix}`
+      : mode === "openai"
+        ? t("addOpenAICompatible")
+        : mode === "anthropic"
+          ? t("addAnthropicCompatible")
+          : t("addCcCompatible"));
 
   const namePlaceholder =
     mode === "cc"
@@ -194,7 +225,7 @@ export default function AddCompatibleProviderModal({
   const hasRequiredFields = Boolean(
     formData.name.trim() && formData.prefix.trim() && formData.baseUrl.trim()
   );
-  const canValidate = Boolean(checkKey.trim() && formData.baseUrl.trim());
+  const canValidate = Boolean(formData.baseUrl.trim());
 
   const resetAfterCreate = () => {
     setFormData(createInitialForm(mode));
@@ -228,9 +259,7 @@ export default function AddCompatibleProviderModal({
       if (defaults.compatMode) body.compatMode = defaults.compatMode;
       body.iconUrl = formData.iconUrl.trim();
       // Merge the selected identity profile's preset headers into the SAME
-      // `customHeaders` field the node already persists (see
-      // src/lib/db/providers/nodes.ts + open-sse/executors/default.ts
-      // `applyCustomHeaders`) — no separate profile field, no new pipeline.
+      // `customHeaders` field the node already persists
       const identityHeaders = getClientIdentityProfileHeaders(formData.clientIdentityProfile);
       if (Object.keys(identityHeaders).length > 0) body.customHeaders = identityHeaders;
 
@@ -254,24 +283,35 @@ export default function AddCompatibleProviderModal({
         }
       }
 
-      const res = await fetch("/api/provider-nodes", {
-        method: "POST",
+      const url = initialNode?.id
+        ? `/api/provider-nodes/${encodeURIComponent(initialNode.id)}`
+        : "/api/provider-nodes";
+      const method = initialNode?.id ? "PUT" : "POST";
+
+      const res = await fetch(url, {
+        method,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
       });
-      const failedCreate = providerText(t, "failedCreate", "Failed to create provider");
+      const failedMsg = initialNode
+        ? "Failed to update provider"
+        : providerText(t, "failedCreate", "Failed to create provider");
       if (!res.ok) {
-        setSaveError(await readFetchErrorMessage(res, failedCreate));
+        setSaveError(await readFetchErrorMessage(res, failedMsg));
         return;
       }
 
       const data = await res.json().catch(() => ({}));
       if (data.node) {
-        onCreated(data.node);
+        if (initialNode && onUpdated) {
+          onUpdated(data.node);
+        } else {
+          onCreated(data.node);
+        }
         resetAfterCreate();
         return;
       }
-      setSaveError(failedCreate);
+      setSaveError(failedMsg);
     } catch {
       setSaveError(providerText(t, "networkError", "Network error"));
     } finally {
@@ -306,6 +346,10 @@ export default function AddCompatibleProviderModal({
         valid: !!data.valid,
         error: data.error ?? null,
         method: data.method ?? null,
+        models: Array.isArray(data.models) ? data.models : [],
+        totalModels:
+          typeof data.totalModels === "number" ? data.totalModels : (data.models?.length || 0),
+        probeUrl: data.probeUrl ?? null,
       });
     } catch {
       setValidationResult({
@@ -444,7 +488,7 @@ export default function AddCompatibleProviderModal({
               disabled={!canValidate || validating}
               variant="secondary"
             >
-              {validating ? t("checking") : t("check")}
+              {validating ? t("checking") : "Check & Fetch Models"}
             </Button>
           </div>
         </div>
@@ -456,16 +500,39 @@ export default function AddCompatibleProviderModal({
           hint={t("testModelIdHint")}
         />
         {validationResult && (
-          <div className="flex flex-col gap-1">
-            <Badge variant={validationResult.valid ? "success" : "error"}>
-              {validationResult.valid ? t("valid") : t("invalid")}
-            </Badge>
+          <div className="flex flex-col gap-2">
+            <div className="flex items-center gap-2">
+              <Badge variant={validationResult.valid ? "success" : "error"}>
+                {validationResult.valid
+                  ? validationResult.totalModels
+                    ? `✓ Valid (${validationResult.totalModels} models found)`
+                    : t("valid")
+                  : t("invalid")}
+              </Badge>
+              {validationResult.probeUrl && (
+                <span className="text-[11px] text-text-muted truncate max-w-[280px]">
+                  {validationResult.probeUrl}
+                </span>
+              )}
+            </div>
             {validationResult.error && (
-              <span
-                className={`text-sm ${validationResult.valid ? "text-text-muted" : "text-red-500"}`}
-              >
+              <span className="text-sm text-red-500">
                 {validationResult.error}
               </span>
+            )}
+            {validationResult.valid && Array.isArray(validationResult.models) && validationResult.models.length > 0 && (
+              <div className="flex flex-col gap-1 mt-1">
+                <label className="text-xs text-text-muted font-medium">
+                  Discovered Models Preview ({validationResult.models.length}):
+                </label>
+                <textarea
+                  readOnly
+                  rows={4}
+                  value={validationResult.models.map((m: any) => m.id).join("\n")}
+                  className="w-full text-xs font-mono bg-black/60 border border-white/10 rounded-lg p-2.5 text-white/90 resize-none focus:outline-none"
+                  placeholder="Discovered models list..."
+                />
+              </div>
             )}
           </div>
         )}
@@ -481,7 +548,13 @@ export default function AddCompatibleProviderModal({
         )}
         <div className="flex gap-2">
           <Button onClick={handleSubmit} fullWidth disabled={!hasRequiredFields || submitting}>
-            {submitting ? t("creating") : t("add")}
+            {submitting
+              ? initialNode
+                ? "Saving..."
+                : t("creating")
+              : initialNode
+                ? "Save Changes"
+                : t("add")}
           </Button>
           <Button onClick={onClose} variant="ghost" fullWidth>
             {t("cancel")}

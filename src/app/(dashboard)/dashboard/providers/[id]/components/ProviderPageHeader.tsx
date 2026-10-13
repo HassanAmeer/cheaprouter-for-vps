@@ -29,6 +29,7 @@ interface ProviderPageHeaderProps {
   isOpenAICompatible: boolean;
   isAnthropicProtocolCompatible: boolean;
   onOpenTutorial: () => void;
+  onEditProvider?: () => void;
   t: ProviderMessageTranslator;
   /**
    * True when `providerInfo.website` was overridden with a Radar default
@@ -47,6 +48,7 @@ export default function ProviderPageHeader({
   isOpenAICompatible,
   isAnthropicProtocolCompatible,
   onOpenTutorial,
+  onEditProvider,
   t,
   isReferralLink = false,
 }: ProviderPageHeaderProps) {
@@ -140,6 +142,17 @@ export default function ProviderPageHeader({
               </span>
             )}
             {apiKeyLink}
+            {onEditProvider && (
+              <button
+                type="button"
+                onClick={onEditProvider}
+                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md border border-white/20 bg-white/5 hover:bg-white/10 text-white text-xs font-medium transition-colors"
+                title="Edit Custom Provider Settings"
+              >
+                <span className="material-symbols-outlined text-[15px]">edit</span>
+                Edit Provider
+              </button>
+            )}
             {providerId === "adapta-web" && (
               <button
                 onClick={onOpenTutorial}

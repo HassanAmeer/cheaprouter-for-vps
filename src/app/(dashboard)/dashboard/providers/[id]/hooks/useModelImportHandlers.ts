@@ -123,7 +123,7 @@ export function useModelImportHandlers({
   const handleImportModels = async () => {
     if (importingModels) return;
     const activeConnection = connections.find((conn) => conn.isActive !== false);
-    if (!activeConnection && !isFreeNoAuth) return;
+    if (!activeConnection && !isFreeNoAuth && connections.length > 0) return;
     const importTargetId = activeConnection?.id ?? providerId;
 
     setImportingModels(true);

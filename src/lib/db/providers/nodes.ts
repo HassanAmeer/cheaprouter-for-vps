@@ -42,11 +42,24 @@ export async function getProviderNodes(filter: JsonRecord = {}, limit?: number, 
   const db = getDbInstance() as unknown as DbLike;
   let sql = "SELECT * FROM provider_nodes";
   const params: Record<string, unknown> = {};
+  const clauses: string[] = [];
 
   if (filter.type) {
-    sql += " WHERE type = @type";
+    clauses.push("type = @type");
     params.type = filter.type;
   }
+  if (filter.prefix) {
+    clauses.push("prefix = @prefix");
+    params.prefix = filter.prefix;
+  }
+  if (filter.id) {
+    clauses.push("id = @id");
+    params.id = filter.id;
+  }
+  if (clauses.length > 0) {
+    sql += ` WHERE ${clauses.join(" AND ")}`;
+  }
+
   sql += " ORDER BY id ASC";
   if (limit !== undefined) {
     sql += " LIMIT @limit OFFSET @offset";
@@ -61,10 +74,22 @@ export function getProviderNodesCount(filter: JsonRecord = {}): number {
   const db = getDbInstance() as unknown as DbLike;
   let sql = "SELECT count(*) as cnt FROM provider_nodes";
   const params: Record<string, unknown> = {};
+  const clauses: string[] = [];
 
   if (filter.type) {
-    sql += " WHERE type = @type";
+    clauses.push("type = @type");
     params.type = filter.type;
+  }
+  if (filter.prefix) {
+    clauses.push("prefix = @prefix");
+    params.prefix = filter.prefix;
+  }
+  if (filter.id) {
+    clauses.push("id = @id");
+    params.id = filter.id;
+  }
+  if (clauses.length > 0) {
+    sql += ` WHERE ${clauses.join(" AND ")}`;
   }
 
   const row = db.prepare(sql).get(params) as { cnt: number };

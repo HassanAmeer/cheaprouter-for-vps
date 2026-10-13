@@ -43,6 +43,8 @@ export function selectProviderNodeForConnection<T extends SelectableNode>(
   if (!idOrType) return null;
   const exact = nodes.find((n) => n.id === idOrType);
   if (exact) return exact;
+  const byPrefix = nodes.find((n) => n.prefix === idOrType);
+  if (byPrefix) return byPrefix;
   const ofType = nodes.filter((n) => typeof n.id === "string" && nodeTypeFromId(n.id) === idOrType);
   return ofType.length === 1 ? ofType[0] : null;
 }

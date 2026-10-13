@@ -8,6 +8,7 @@ import Breadcrumbs from "../Breadcrumbs";
 import MaintenanceBanner from "../MaintenanceBanner";
 import CommandPalette from "../CommandPalette";
 import NavigationProgress from "../NavigationProgress";
+import { RuntimeRequestInspector } from "../RuntimeRequestInspector";
 import { useIsElectron } from "@/shared/hooks/useElectron";
 import {
   installDashboardCsrfFetch,
@@ -138,6 +139,9 @@ export default function DashboardLayout({ children }) {
       <NotificationToast />
 
       <CommandPalette isOpen={commandPaletteOpen} onClose={() => setCommandPaletteOpen(false)} />
+
+      {/* Floating live request inspector */}
+      <RuntimeRequestInspector />
     </div>
   );
 }

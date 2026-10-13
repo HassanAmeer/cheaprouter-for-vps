@@ -162,32 +162,63 @@ export async function GET(
       request.headers.get("x-cheaproute-model-surface")?.toLowerCase() === "chat";
 
     let connection = await getCachedProviderConnectionById(id);
+    let matchedNode: any = null;
+    try {
+      const { getProviderNodes, getProviderNodeById } = await import("@/lib/db/providers");
+      matchedNode = (await getProviderNodeById(id)) || null;
+      if (!matchedNode) {
+        const nodes = await getProviderNodes();
+        matchedNode = (nodes || []).find((n: any) => n.id === id || n.prefix === id) || null;
+      }
+    } catch {
+      // ignore
+    }
+
     if (!connection) {
       try {
-        const { getProviderConnections, getProviderNodes } = await import("@/lib/db/providers");
-        const conns = await getProviderConnections({ provider: id });
+        const { getProviderConnections } = await import("@/lib/db/providers");
+        let conns = await getProviderConnections({ provider: id });
+        if (!conns || conns.length === 0) {
+          if (matchedNode) {
+            conns = (await getProviderConnections({ provider: matchedNode.id })) || [];
+            if (conns.length === 0 && matchedNode.prefix) {
+              conns = (await getProviderConnections({ provider: matchedNode.prefix })) || [];
+            }
+          }
+        }
         if (conns && conns.length > 0) {
           connection = conns.find((c: any) => c.isActive !== false) || conns[0];
-        } else {
-          const nodes = await getProviderNodes({ id });
-          const node =
-            nodes && nodes.length > 0 ? nodes[0] : (await getProviderNodes({ prefix: id }))?.[0];
-          if (node) {
-            connection = {
-              id: node.id,
-              provider: node.prefix || node.id,
-              name: node.name,
-              providerSpecificData: {
-                baseUrl: node.baseUrl,
-                apiType: node.apiType || "chat",
-                ...(node.customHeaders ? { customHeaders: node.customHeaders } : {}),
-              },
-            };
-          }
+        } else if (matchedNode) {
+          connection = {
+            id: matchedNode.id,
+            provider: matchedNode.prefix || matchedNode.id,
+            name: matchedNode.name,
+            providerSpecificData: {
+              baseUrl: matchedNode.baseUrl,
+              apiType: matchedNode.apiType || "chat",
+              prefix: matchedNode.prefix,
+              ...(matchedNode.chatPath ? { chatPath: matchedNode.chatPath } : {}),
+              ...(matchedNode.modelsPath ? { modelsPath: matchedNode.modelsPath } : {}),
+              ...(matchedNode.customHeaders ? { customHeaders: matchedNode.customHeaders } : {}),
+            },
+          };
         }
       } catch {
         // Fall through to 404 if not found
       }
+    }
+
+    if (connection && matchedNode && !getProviderBaseUrl(connection.providerSpecificData)) {
+      const existingData = (connection.providerSpecificData as Record<string, unknown> | undefined) || {};
+      connection.providerSpecificData = {
+        ...existingData,
+        baseUrl: matchedNode.baseUrl,
+        apiType: matchedNode.apiType || "chat",
+        prefix: matchedNode.prefix,
+        ...(matchedNode.chatPath ? { chatPath: matchedNode.chatPath } : {}),
+        ...(matchedNode.modelsPath ? { modelsPath: matchedNode.modelsPath } : {}),
+        ...(matchedNode.customHeaders ? { customHeaders: matchedNode.customHeaders } : {}),
+      };
     }
     const connectionProvider =
       typeof connection?.provider === "string" && connection.provider.trim().length > 0
@@ -215,7 +246,13 @@ export async function GET(
     }
 
     if (!connection) {
-      return NextResponse.json({ error: "Connection not found" }, { status: 404 });
+      return NextResponse.json(
+        {
+          error: `Provider or connection "${id}" not found. Please add this provider or configure its credentials first.`,
+          statusCode: 404,
+        },
+        { status: 404 }
+      );
     }
 
     if (await isConnectionUnavailableToAuxiliaryActivity(id))
@@ -793,7 +830,18 @@ export async function GET(
       }
     }
 
+    const isCustomOpenAiCompatible =
+      Boolean(matchedNode && matchedNode.type !== "anthropic-compatible") ||
+      isOpenAICompatibleProvider(provider) ||
+      isOpenAICompatibleProvider(connection.id) ||
+      Boolean(
+        connection.providerSpecificData &&
+          getProviderBaseUrl(connection.providerSpecificData) &&
+          !isAnthropicCompatibleProvider(provider)
+      );
+
     if (
+      isCustomOpenAiCompatible ||
       isOpenAICompatibleProvider(provider) ||
       isLocalOpenAIStyleProvider(provider) ||
       isNamedOpenAIStyleProvider(provider)
@@ -810,21 +858,26 @@ export async function GET(
           : null;
       const rawBaseUrl =
         getProviderBaseUrl(connection.providerSpecificData) ||
+        (matchedNode?.baseUrl ? String(matchedNode.baseUrl) : null) ||
         (typeof registryEntry?.baseUrl === "string" ? registryEntry.baseUrl : null);
       const baseUrl = rawBaseUrl;
       if (!baseUrl) {
-        const fallback = buildDiscoveryFallbackResponse({
-          cacheWarning: "Base URL unavailable — using cached catalog",
-          localWarning: "Base URL unavailable — using local catalog",
-        });
-        if (fallback) return fallback;
+        if (!refresh) {
+          const fallback = buildDiscoveryFallbackResponse({
+            cacheWarning: "Base URL unavailable — using cached catalog",
+            localWarning: "Base URL unavailable — using local catalog",
+          });
+          if (fallback) return fallback;
+        }
         return NextResponse.json(
           {
-            error: isOpenAICompatibleProvider(provider)
-              ? "No base URL configured for OpenAI compatible provider"
-              : isLocalOpenAIStyleProvider(provider)
-                ? "No base URL configured for local provider"
-                : "No base URL configured for provider",
+            error:
+              isCustomOpenAiCompatible || isOpenAICompatibleProvider(provider)
+                ? `No base URL configured for provider "${provider}". Please configure a Base URL in settings.`
+                : isLocalOpenAIStyleProvider(provider)
+                  ? "No base URL configured for local provider"
+                  : "No base URL configured for provider",
+            statusCode: 400,
           },
           { status: 400 }
         );
@@ -841,25 +894,33 @@ export async function GET(
       }
 
       // Strip trailing /v1 unconditionally so the next step re-adds it exactly once.
-      // Without this, baseUrls that embed /v1 (e.g. "https://api.airforce/v1/chat/completions")
-      // become "…/v1" after stripping "/chat/completions", and then appending "/v1/models"
-      // produces "…/v1/v1/models" — a 308 redirect that blocked model fetch (#5899).
       // Guard against a literal "scheme://v1" authority so we never strip the host itself.
       if (base.endsWith("/v1") && !base.endsWith("://v1")) {
         base = base.slice(0, -3).replace(/\/$/, "");
       }
 
-      // T39: Try multiple endpoint formats
+      // Try multiple endpoint formats
+      const connData =
+        (connection.providerSpecificData as Record<string, unknown> | null | undefined) || {};
+      const customModelsPath =
+        (connData.modelsPath as string | undefined) ||
+        (matchedNode?.modelsPath as string | undefined);
       const cleanRaw = baseUrl.trim().replace(/\/$/, "");
       const endpoints = [
+        ...(customModelsPath
+          ? [
+              customModelsPath.startsWith("http://") || customModelsPath.startsWith("https://")
+                ? customModelsPath
+                : `${cleanRaw}${customModelsPath.startsWith("/") ? "" : "/"}${customModelsPath}`,
+            ]
+          : []),
         ...(cleanRaw.endsWith("/models") ? [cleanRaw] : []),
         `${base}/v1/models`,
         `${base}/models`,
         `${cleanRaw}/models`,
       ];
 
-      // #8347: opt-in `client_version` query param on the model-LIST request only (never on
-      // any inference URL, and never on this path by default) — see discoveryClientVersion.ts.
+      // #8347: opt-in `client_version` query param on the model-LIST request only
       const discoveryClientVersionOptions = getDiscoveryClientVersionOptions(
         connection.providerSpecificData
       );
@@ -872,21 +933,23 @@ export async function GET(
       let lastErrorStatus = null;
       let lastErrorMessage = "";
       const token = apiKey || accessToken;
+      const nodeHeaders = (matchedNode?.customHeaders || {}) as Record<string, string>;
+      const connHeaders = (connData.customHeaders || {}) as Record<string, string>;
+      const mergedCustomHeaders = { ...nodeHeaders, ...connHeaders };
 
       for (const modelsUrl of uniqueEndpoints) {
         try {
           const response = await safeOutboundFetch(modelsUrl, {
             ...SAFE_OUTBOUND_FETCH_PRESETS.modelsProbe,
-            // #6939: model-list discovery for local/OpenAI-compatible providers (e.g. LM
-            // Studio on a LAN host) must use the same guard tier as the test-connection path
-            // (getProviderValidationGuard — respects the local-first default) rather than the
-            // stricter outbound guard, which never allows LAN hosts by default.
             guard: getProviderValidationGuard(),
             proxyConfig: proxy,
             method: "GET",
-            headers: isNamedOpenAIStyleProvider(provider)
-              ? buildNamedOpenAiStyleHeaders(provider, token)
-              : buildOptionalBearerHeaders(token),
+            headers: {
+              ...(isNamedOpenAIStyleProvider(provider)
+                ? buildNamedOpenAiStyleHeaders(provider, token)
+                : buildOptionalBearerHeaders(token)),
+              ...mergedCustomHeaders,
+            },
           });
 
           if (response.ok) {
@@ -901,7 +964,7 @@ export async function GET(
 
           lastErrorStatus = response.status;
           const errorText = await response.text().catch(() => "");
-          lastErrorMessage = `HTTP ${response.status} from ${modelsUrl}: ${errorText.slice(0, 150)}`;
+          lastErrorMessage = `HTTP ${response.status} from ${modelsUrl}: ${errorText.slice(0, 300) || response.statusText || "Unknown error"}`;
 
           if (response.status === 401 || response.status === 403) {
             throw new Error("auth_failed");
@@ -926,27 +989,34 @@ export async function GET(
 
       // If all endpoints failed (but not because of auth), fallback to local catalog
       if (!models || models.length === 0) {
-        const fallback = buildDiscoveryFallbackResponse({
-          cacheWarning:
-            lastErrorStatus === 401 || lastErrorStatus === 403
-              ? `Auth failed (${lastErrorStatus}) — using cached catalog`
-              : "API unavailable — using cached catalog",
-          localWarning:
-            lastErrorStatus === 401 || lastErrorStatus === 403
-              ? `Auth failed (${lastErrorStatus}) — using local catalog`
-              : "API unavailable — using local catalog",
-        });
-        if (fallback) return fallback;
+        if (!refresh) {
+          const fallback = buildDiscoveryFallbackResponse({
+            cacheWarning:
+              lastErrorStatus === 401 || lastErrorStatus === 403
+                ? `Auth failed (${lastErrorStatus}) — using cached catalog`
+                : "API unavailable — using cached catalog",
+            localWarning:
+              lastErrorStatus === 401 || lastErrorStatus === 403
+                ? `Auth failed (${lastErrorStatus}) — using local catalog`
+                : "API unavailable — using local catalog",
+          });
+          if (fallback) return fallback;
+        }
 
         if (lastErrorStatus === 401 || lastErrorStatus === 403) {
           return NextResponse.json(
-            { error: `Auth failed: ${lastErrorStatus}` },
+            {
+              error:
+                lastErrorMessage ||
+                `Authentication failed (HTTP ${lastErrorStatus}): Check your API key or credentials for ${provider}`,
+              statusCode: lastErrorStatus,
+            },
             { status: lastErrorStatus }
           );
         }
 
         const localModels = toLocalCatalogModels();
-        if (localModels.length > 0) {
+        if (localModels.length > 0 && !refresh) {
           console.warn(`[models] All endpoints failed for ${provider}, using local catalog`);
           return buildResponse({
             provider,
@@ -961,7 +1031,7 @@ export async function GET(
           {
             error:
               lastErrorMessage ||
-              `Failed to fetch models from API (HTTP ${lastErrorStatus || 404})`,
+              `Failed to fetch models from API (HTTP ${lastErrorStatus || 404}). Check if the upstream provider at ${baseUrl} is accessible.`,
             statusCode: lastErrorStatus || 404,
             endpointsTried: uniqueEndpoints,
           },
@@ -1957,7 +2027,11 @@ export async function GET(
     });
     if (vertexResponse) return vertexResponse;
 
-    if (isAnthropicCompatibleProvider(provider)) {
+    const isCustomAnthropicCompatible =
+      Boolean(matchedNode && matchedNode.type === "anthropic-compatible") ||
+      isAnthropicCompatibleProvider(provider);
+
+    if (isCustomAnthropicCompatible) {
       // CC providers never support models listing — this check must precede
       // the cached-discovery / auto-fetch fallbacks, which would otherwise
       // return a misleading 200 "no models" for a CC node (#10828 ordering).
@@ -1974,7 +2048,9 @@ export async function GET(
       const autoFetchDisabledResponse = maybeReturnAutoFetchDisabled();
       if (autoFetchDisabledResponse) return autoFetchDisabledResponse;
 
-      let baseUrl = getProviderBaseUrl(connection.providerSpecificData);
+      let baseUrl =
+        getProviderBaseUrl(connection.providerSpecificData) ||
+        (matchedNode?.baseUrl ? String(matchedNode.baseUrl) : null);
       if (!baseUrl) {
         const fallback = buildDiscoveryFallbackResponse({
           cacheWarning: "Base URL unavailable — using cached catalog",
@@ -2291,15 +2367,18 @@ export async function GET(
     // Get auth token
     const token = accessToken || apiKey;
     if (!token) {
-      const fallback = buildDiscoveryFallbackResponse({
-        cacheWarning: "No token configured — using cached catalog",
-        localWarning: "No token configured — using local catalog",
-      });
-      if (fallback) return fallback;
+      if (!refresh) {
+        const fallback = buildDiscoveryFallbackResponse({
+          cacheWarning: "No token configured — using cached catalog",
+          localWarning: "No token configured — using local catalog",
+        });
+        if (fallback) return fallback;
+      }
       return NextResponse.json(
         {
           error:
-            "No API key configured for this provider. Please add an API key in the provider settings.",
+            `No API key configured for provider "${provider}". Please add an API key or connection in Connections before fetching upstream models.`,
+          statusCode: 400,
         },
         { status: 400 }
       );
@@ -2406,18 +2485,44 @@ export async function GET(
           ...fetchOptions,
         });
       } catch (error) {
-        const fallback = buildDiscoveryErrorFallbackResponse(error);
-        if (fallback) return fallback;
-        throw error;
+        if (!refresh) {
+          const fallback = buildDiscoveryErrorFallbackResponse(error);
+          if (fallback) return fallback;
+        }
+        const msg = error instanceof Error ? error.message : String(error);
+        return NextResponse.json(
+          {
+            error: `Network error connecting to ${provider} models endpoint: ${msg}`,
+            statusCode: 502,
+          },
+          { status: 502 }
+        );
       }
 
       if (!response.ok) {
         const errorText = await response.text();
         console.log("Error fetching models from provider", { provider, errorText });
-        const fallback = buildDiscoveryFallbackResponse();
-        if (fallback) return fallback;
+        if (!refresh) {
+          const fallback = buildDiscoveryFallbackResponse();
+          if (fallback) return fallback;
+        }
+        let parsedErrMsg = "";
+        try {
+          const errObj = JSON.parse(errorText);
+          parsedErrMsg = errObj?.error?.message || errObj?.error || errObj?.message || "";
+        } catch {
+          // ignore
+        }
+        const errorDetail = parsedErrMsg
+          ? `: ${parsedErrMsg}`
+          : errorText.slice(0, 250)
+            ? `: ${errorText.slice(0, 250)}`
+            : "";
         return NextResponse.json(
-          { error: `Failed to fetch models: ${response.status}` },
+          {
+            error: `Upstream error fetching models from ${provider} (HTTP ${response.status})${errorDetail}`,
+            statusCode: response.status,
+          },
           { status: response.status }
         );
       }

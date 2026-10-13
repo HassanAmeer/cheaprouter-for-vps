@@ -76,7 +76,10 @@ async function loadProviderConnectionsData(
     let nodeResolved = false;
     if (nodesRes.ok) {
       nodeResolved = true;
-      node = (nodesData.nodes || []).find((entry: any) => entry.id === providerId) || null;
+      node =
+        (nodesData.nodes || []).find(
+          (entry: any) => entry.id === providerId || entry.prefix === providerId
+        ) || null;
 
       // Newly created compatible nodes can be briefly unavailable on one worker.
       if (!node && isCompatible) {
@@ -85,7 +88,10 @@ async function loadProviderConnectionsData(
           const retryRes = await fetch("/api/provider-nodes", { cache: "no-store" });
           if (!retryRes.ok) continue;
           const retryData = await retryRes.json();
-          node = (retryData.nodes || []).find((entry: any) => entry.id === providerId) || null;
+          node =
+            (retryData.nodes || []).find(
+              (entry: any) => entry.id === providerId || entry.prefix === providerId
+            ) || null;
           if (node) break;
         }
       }

@@ -319,6 +319,9 @@ export async function POST(request) {
 
     let res: Response | null = null;
     let lastStatus = 0;
+    let discoveredModels: Array<{ id: string; name?: string }> = [];
+    let successfulProbeUrl: string | null = null;
+
     for (const testUrl of uniqueCandidateUrls) {
       try {
         const response = await safeOutboundFetch(testUrl, {
@@ -328,6 +331,21 @@ export async function POST(request) {
         });
         if (response.ok) {
           res = response;
+          successfulProbeUrl = testUrl;
+          try {
+            const data = await response.json();
+            const rawModels = data?.data || data?.models || (Array.isArray(data) ? data : []);
+            if (Array.isArray(rawModels)) {
+              discoveredModels = rawModels
+                .map((m: any) => ({
+                  id: typeof m === "string" ? m : m.id || m.name || m.model,
+                  name: typeof m === "string" ? m : m.name || m.id || m.model,
+                }))
+                .filter((m: any) => typeof m.id === "string" && m.id.length > 0);
+            }
+          } catch {
+            // ignore JSON parse error on probe
+          }
           break;
         }
         res = response;
@@ -337,7 +355,15 @@ export async function POST(request) {
       }
     }
 
-    if (res && res.ok) return NextResponse.json({ valid: true, error: null });
+    if (res && res.ok) {
+      return NextResponse.json({
+        valid: true,
+        error: null,
+        models: discoveredModels,
+        totalModels: discoveredModels.length,
+        probeUrl: successfulProbeUrl,
+      });
+    }
     if (lastStatus === 401 || lastStatus === 403) {
       return NextResponse.json({ valid: false, error: "API key unauthorized" });
     }

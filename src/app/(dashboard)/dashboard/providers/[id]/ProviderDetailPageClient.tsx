@@ -26,10 +26,14 @@ import ProviderPageHeader from "./components/ProviderPageHeader";
 import AddCustomModelCard from "./components/AddCustomModelCard";
 import AvailableModelsTable from "./components/AvailableModelsTable";
 import DefaultCapabilitiesPromptModal from "../components/DefaultCapabilitiesPromptModal";
+import AddCompatibleProviderModal from "../components/AddCompatibleProviderModal";
 
 export default function ProviderDetailPageClient() {
   const params = useParams();
   const providerId = params.id as string;
+
+  // ── Edit Provider Modal State ───────────────────────────────────────────
+  const [editingProviderNode, setEditingProviderNode] = useState(false);
 
   // ── Global Test Prompt State (Modal in Header) ───────────────────────────
   const [showCapabilityPrompt, setShowCapabilityPrompt] = useState(false);
@@ -39,19 +43,26 @@ export default function ProviderDetailPageClient() {
   const [fetchingAllModels, setFetchingAllModels] = useState(false);
   const [fetchError, setFetchError] = useState<string | null>(null);
 
-  const isOpenAICompatible = isOpenAICompatibleProvider(providerId);
-  const isCcCompatible = isClaudeCodeCompatibleProvider(providerId);
-  const isAnthropicCompatible =
-    isAnthropicCompatibleProvider(providerId) && !isClaudeCodeCompatibleProvider(providerId);
-  const isCompatible = isOpenAICompatible || isAnthropicCompatible || isCcCompatible;
-  const isAnthropicProtocolCompatible = isAnthropicCompatible || isCcCompatible;
-  const usesCuratedModelsOnly = providerUsesCuratedModelsOnly(providerId);
-
   const { connections, providerNode, loading, fetchConnections } = useProviderConnections(
     providerId,
-    isCompatible,
+    isOpenAICompatibleProvider(providerId) ||
+      isAnthropicCompatibleProvider(providerId) ||
+      isClaudeCodeCompatibleProvider(providerId),
     false
   );
+
+  const isOpenAICompatible =
+    isOpenAICompatibleProvider(providerId) ||
+    Boolean(providerNode && providerNode.type !== "anthropic-compatible");
+  const isCcCompatible = isClaudeCodeCompatibleProvider(providerId);
+  const isAnthropicCompatible =
+    (isAnthropicCompatibleProvider(providerId) ||
+      Boolean(providerNode && providerNode.type === "anthropic-compatible")) &&
+    !isClaudeCodeCompatibleProvider(providerId);
+  const isCompatible =
+    isOpenAICompatible || isAnthropicCompatible || isCcCompatible || Boolean(providerNode);
+  const isAnthropicProtocolCompatible = isAnthropicCompatible || isCcCompatible;
+  const usesCuratedModelsOnly = providerUsesCuratedModelsOnly(providerId);
 
   const {
     modelMeta,
@@ -157,12 +168,21 @@ export default function ProviderDetailPageClient() {
       );
       if (!res.ok) {
         const errorData = await res.json().catch(() => null);
-        const errDetail = errorData?.error || `HTTP ${res.status}: Failed to fetch models from API`;
+        const errDetail =
+          errorData?.error ||
+          (errorData?.statusCode
+            ? `HTTP ${errorData.statusCode}: Failed to fetch models from API`
+            : `HTTP ${res.status}: Failed to fetch models from API`);
         throw new Error(errDetail);
       }
+      const data = await res.json().catch(() => ({}));
       await handleImportModels();
       await fetchProviderModelMeta();
-      notify.success("All models fetched and updated successfully.");
+      notify.success(
+        Array.isArray(data?.models) && data.models.length > 0
+          ? `Discovered and updated ${data.models.length} models successfully.`
+          : "All models fetched and updated successfully."
+      );
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Failed to fetch models from API";
       setFetchError(msg);
@@ -203,6 +223,7 @@ export default function ProviderDetailPageClient() {
           isOpenAICompatible={isOpenAICompatible}
           isAnthropicProtocolCompatible={isAnthropicProtocolCompatible}
           onOpenTutorial={() => {}}
+          onEditProvider={providerNode ? () => setEditingProviderNode(true) : undefined}
           t={t}
           isReferralLink={isReferralLink}
         />
@@ -233,6 +254,23 @@ export default function ProviderDetailPageClient() {
         isFetchingModels={fetchingAllModels || importingModels}
         fetchError={fetchError}
       />
+
+      {providerNode && (
+        <AddCompatibleProviderModal
+          isOpen={editingProviderNode}
+          mode={providerNode.type === "anthropic-compatible" ? "anthropic" : "openai"}
+          title={`Edit Provider: ${providerNode.name || providerNode.prefix}`}
+          initialNode={providerNode}
+          onClose={() => setEditingProviderNode(false)}
+          onCreated={() => {}}
+          onUpdated={async () => {
+            setEditingProviderNode(false);
+            await fetchConnections();
+            await fetchProviderModelMeta();
+            notify.success("Provider updated successfully");
+          }}
+        />
+      )}
     </div>
   );
 }
