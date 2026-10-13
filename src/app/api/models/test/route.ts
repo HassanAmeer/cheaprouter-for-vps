@@ -10,6 +10,7 @@ const testModelSchema = z.object({
   providerId: z.string().min(1),
   modelId: z.string().min(1),
   connectionId: z.string().min(1).optional(),
+  prompt: z.string().optional(),
 });
 
 const NVIDIA_SINGLE_TEST_TIMEOUT_MS = 180_000;
@@ -39,7 +40,7 @@ export async function POST(request: Request) {
         { status: 400 }
       );
     }
-    const { providerId, modelId, connectionId } = validation.data;
+    const { providerId, modelId, connectionId, prompt } = validation.data;
 
     // #6328 (follow-up to #6495): REMOVE — not just hide — paid Test dispatches
     // when hidePaidModels is on. 403 (distinct from validation-400) so callers
@@ -66,6 +67,7 @@ export async function POST(request: Request) {
       providerId,
       modelId,
       ...(connectionId ? { connectionId } : {}),
+      ...(prompt ? { prompt } : {}),
       timeoutMs:
         providerId.trim().toLowerCase() === "nvidia"
           ? NVIDIA_SINGLE_TEST_TIMEOUT_MS

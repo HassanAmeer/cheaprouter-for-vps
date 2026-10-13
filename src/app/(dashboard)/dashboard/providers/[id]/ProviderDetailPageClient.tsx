@@ -1,195 +1,60 @@
 "use client";
 
-// Issue #3501 strangler-fig decomposition — Phase 1t (final push)
-import { useState, useEffect, useCallback, useMemo } from "react";
-import { useParams, useSearchParams } from "next/navigation";
+import { useState, useEffect, useMemo } from "react";
+import { useParams } from "next/navigation";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
-import { Card, CardSkeleton } from "@/shared/components";
+import { CardSkeleton } from "@/shared/components";
 import {
-  NOAUTH_PROVIDERS,
   getProviderAlias,
-  getProviderById,
   isOpenAICompatibleProvider,
   isAnthropicCompatibleProvider,
   isClaudeCodeCompatibleProvider,
-  supportsApiKeyOnFreeProvider,
-  supportsDualAuthProvider,
 } from "@/shared/constants/providers";
 import { getModelsByProviderId } from "@/shared/constants/models";
-import {
-  compatibleProviderSupportsModelImport,
-  getCompatibleFallbackModels,
-} from "@/lib/providers/managedAvailableModels";
-import { getProviderServiceKinds } from "@/lib/providers/serviceKindIndex";
-import {
-  providerLacksModelListing,
-  providerUsesCuratedModelsOnly,
-} from "@/lib/providers/modelListingCapability";
+import { providerUsesCuratedModelsOnly } from "@/lib/providers/modelListingCapability";
 import { mergeProviderModelListing } from "@/lib/providers/mergeProviderModelListing";
 import { normalizeModelCatalogSource } from "@/shared/utils/modelCatalogSearch";
 import { useCopyToClipboard } from "@/shared/hooks/useCopyToClipboard";
-import useEmailPrivacyStore from "@/store/emailPrivacyStore";
 import { useNotificationStore } from "@/store/notificationStore";
 import {
   resolveDashboardProviderInfo,
   resolveProviderHeaderLink,
-  resolveProviderOAuthBackendId,
 } from "../providerPageUtils";
 import { findDefaultReferral } from "@/lib/radar/referrals";
-import { type ConnectionRowConnection } from "./components/ConnectionRow";
 import { useProviderConnections } from "./hooks/useProviderConnections";
-import { useProviderQuota } from "./hooks/useProviderQuota";
-import { useProviderSettings } from "./hooks/useProviderSettings";
 import { useProviderModels } from "./hooks/useProviderModels";
-import { useCommandCodeAuth } from "./hooks/useCommandCodeAuth";
-import { useConnectionAutoSync } from "./hooks/useConnectionAutoSync";
-import { useExternalLinkFlow } from "./hooks/useExternalLinkFlow";
-import { useAuthFileHandlers } from "./hooks/useAuthFileHandlers";
 import { useModelImportHandlers } from "./hooks/useModelImportHandlers";
-import { useApiKeySave } from "./hooks/useApiKeySave";
-import { useModelVisibilityHandlers } from "./hooks/useModelVisibilityHandlers";
-import { useModelCompatState } from "./hooks/useModelCompatState";
-import { useConnectionGate } from "./hooks/useConnectionGate";
-import { useProviderNodeActions } from "./hooks/useProviderNodeActions";
-import ProviderExtraPanels from "./components/ProviderExtraPanels";
-import ProviderModelsSection from "./components/ProviderModelsSection";
-import CustomModelsSection from "./components/CustomModelsSection";
-import ConnectionsListPanel from "./components/ConnectionsListPanel";
-import CoolingConnectionsPanel from "./components/CoolingConnectionsPanel";
-import ConnectionsHeaderToolbar from "./components/ConnectionsHeaderToolbar";
-import VolcengineConnectModal from "./components/VolcengineConnectModal";
-import ProviderAccountRoutingCard from "../../settings/components/ProviderAccountRoutingCard";
-import ZedImportCard from "./components/ZedImportCard";
-import CursorAgentNudge from "./components/CursorAgentNudge";
 import ProviderPageHeader from "./components/ProviderPageHeader";
-import CompatibleNodeCard from "./components/CompatibleNodeCard";
-import ProviderModalsPanel from "./components/ProviderModalsPanel";
-import EmptyConnectionsPlaceholder from "./components/EmptyConnectionsPlaceholder";
-import UpstreamProxyCard from "./components/UpstreamProxyCard";
-import SearchProviderCard from "./components/SearchProviderCard";
-import NoAuthProviderControls from "./components/NoAuthProviderControls";
-import AnonymousFallbackToggle from "./components/AnonymousFallbackToggle";
-// providerText used by UpstreamProxyCard (Phase 1t.7)
+import AddCustomModelCard from "./components/AddCustomModelCard";
+import AvailableModelsTable from "./components/AvailableModelsTable";
 
 export default function ProviderDetailPageClient() {
   const params = useParams();
-  const searchParams = useSearchParams();
   const providerId = params.id as string;
 
-  // ── UI-only modal state (not owned by hooks) ─────────────────────────────
-  const [showOAuthModal, _setShowOAuthModal] = useState(false);
-  const [reauthConnection, setReauthConnection] = useState<ConnectionRowConnection | null>(null);
-  const [showKimiAuthMethodModal, setShowKimiAuthMethodModal] = useState(false);
-  const [showVolcengineConnectModal, setShowVolcengineConnectModal] = useState(false);
-  const [showAddApiKeyModal, setShowAddApiKeyModal] = useState(false);
-  const [showSiliconFlowEndpointModal, setShowSiliconFlowEndpointModal] = useState(false);
-  const [siliconFlowInitialBaseUrl, setSiliconFlowInitialBaseUrl] = useState<string | undefined>();
-  const [showEditModal, setShowEditModal] = useState(false);
-  const [showEditNodeModal, setShowEditNodeModal] = useState(false);
-  const [showTutorialModal, setShowTutorialModal] = useState(false);
-  const [selectedConnection, setSelectedConnection] = useState(null);
-  const [proxyTarget, setProxyTarget] = useState(null);
-  const [importCodexModalOpen, setImportCodexModalOpen] = useState(false);
-  const [codexCliGuideOpen, setCodexCliGuideOpen] = useState(false);
-  const [importClaudeModalOpen, setImportClaudeModalOpen] = useState(false);
-  const [_importGeminiModalOpen, setImportGeminiModalOpen] = useState(false);
-  const [importGrokCliModalOpen, setImportGrokCliModalOpen] = useState(false);
-  const [connectingVolcengineAccount, setConnectingVolcengineAccount] = useState(false);
+  // ── Section 1: Default Capabilities Prompt State ────────────────────────
+  const [showCapabilityPrompt, setShowCapabilityPrompt] = useState(false);
+  const [testPrompt, setTestPrompt] = useState("Hi");
+
+  // ── Section 2: Fetch Live State ──────────────────────────────────────────
+  const [fetchingAllModels, setFetchingAllModels] = useState(false);
+  const [fetchFailed, setFetchFailed] = useState(false);
+
   const isOpenAICompatible = isOpenAICompatibleProvider(providerId);
   const isCcCompatible = isClaudeCodeCompatibleProvider(providerId);
-  const isCommandCode = providerId === "command-code";
   const isAnthropicCompatible =
     isAnthropicCompatibleProvider(providerId) && !isClaudeCodeCompatibleProvider(providerId);
   const isCompatible = isOpenAICompatible || isAnthropicCompatible || isCcCompatible;
   const isAnthropicProtocolCompatible = isAnthropicCompatible || isCcCompatible;
-  // #5420: hide model listing for tool-only providers, not just `-search` ids.
-  const declaredServiceKinds = (
-    resolveDashboardProviderInfo(providerId) as { serviceKinds?: readonly string[] } | null
-  )?.serviceKinds;
-  const isSearchProvider = providerLacksModelListing(
-    providerId,
-    getProviderServiceKinds(providerId, declaredServiceKinds)
-  );
   const usesCuratedModelsOnly = providerUsesCuratedModelsOnly(providerId);
-  const {
-    connections,
-    setConnections,
-    providerNode,
-    loading,
-    retestingId,
-    handleClearCooldown,
-    clearingCooldownId,
-    batchTesting,
-    batchTestResults,
-    selectedIds,
-    batchDeleting,
-    batchUpdating,
-    batchRetesting,
-    batchDeleteConfirmOpen,
-    healthFilter,
-    page,
-    accountSearch,
-    distributingProxies,
-    proxyConfig,
-    connProxyMap,
-    cpaProviderEnabled,
-    upstreamProxyMode,
-    upstreamProxyFallbackBackend,
-    refreshingId,
-    setPage,
-    setHealthFilter,
-    setAccountSearch,
-    setSelectedIds,
-    setBatchDeleteConfirmOpen,
-    setBatchTestResults,
-    setProviderNode,
-    fetchConnections,
-    refreshProxyState,
-    deleteConfirm,
-    handleUpdateConnectionStatus,
-    handleToggleRateLimit,
-    handleToggleQuotaVisibility,
-    handleToggleClaudeExtraUsage,
-    handleToggleCodexPaidCredits,
-    handleToggleCodexLimit,
-    handleToggleCliproxyapiMode,
-    handleSetUpstreamProxyMode,
-    handleToggleProxyEnabled,
-    handleTogglePerKeyProxyEnabled,
-    handleRetestConnection,
-    handleRefreshToken,
-    handleSwapPriority,
-    handleReorderByAvailability,
-    reorderingByAvailability,
-    handleBatchSetActive,
-    handleBatchDeleteOpenModal,
-    handleBatchDeleteConfirm,
-    handleBatchRetest,
-    handleBatchTestAll,
-    handleToggleSelectOne,
-    handleToggleSelectAll,
-    handleDistributeProxies,
-    parseApiErrorMessage,
-    getAttachmentFilename,
-    PAGE_SIZE,
-  } = useProviderConnections(providerId, isCompatible, isSearchProvider);
 
   const {
-    codexGlobalServiceMode,
-    codexSettingsLoaded,
-    codexSettingsLoadError,
-    savingCodexGlobalServiceMode,
-    codexGlobalServiceModeOptions,
-    loadCodexSettings,
-    handleChangeCodexGlobalServiceMode,
-    preferClaudeCodeForUnprefixedClaudeModels,
-    claudeRoutingSettingsLoaded,
-    claudeRoutingSettingsLoadError,
-    savingClaudeRoutingPreference,
-    loadClaudeRoutingSettings,
-    handleToggleClaudeRoutingPreference,
-  } = useProviderSettings(providerId);
+    connections,
+    providerNode,
+    loading,
+    fetchConnections,
+  } = useProviderConnections(providerId, isCompatible, false);
 
   const {
     modelMeta,
@@ -199,44 +64,11 @@ export default function ProviderDetailPageClient() {
     fetchProviderModelMeta,
     fetchAliases,
     handleSetAlias,
-    handleDeleteAlias,
-  } = useProviderModels(providerId, isSearchProvider);
+  } = useProviderModels(providerId, false);
 
-  // ── shared hook/store ─────────────────────────────────────────────────────
   const { copied, copy } = useCopyToClipboard();
   const t = useTranslations("providers");
-  const emailsVisible = useEmailPrivacyStore((s) => s.emailsVisible);
   const notify = useNotificationStore();
-  // Per-account usage/limits strip — cached snapshot from the server's
-  // providerLimitsCache, with per-connection on-demand live refresh.
-  const {
-    quotaByConnectionId,
-    refreshingIds: quotaRefreshingIds,
-    refreshConnection,
-  } = useProviderQuota();
-  const handleRefreshQuota = useCallback(
-    (connectionId: string) => {
-      void refreshConnection(connectionId);
-    },
-    [refreshConnection]
-  );
-
-  // Phase 1i: external link flow — placed after notify/fetchConnections are defined
-  const {
-    externalLinkModalOpen,
-    setExternalLinkModalOpen,
-    externalLinkUrl,
-    externalLinkLoading,
-    externalLinkError,
-    externalLinkCopied,
-    externalLinkCopy,
-    openExternalLinkFlow,
-  } = useExternalLinkFlow({ providerId, notify, fetchConnections });
-
-  const setShowOAuthModal = (show: boolean, connectionRow?: ConnectionRowConnection) => {
-    _setShowOAuthModal(show);
-    setReauthConnection(show && connectionRow ? connectionRow : null);
-  };
 
   const providerInfo = resolveDashboardProviderInfo(providerId, {
     providerNode,
@@ -247,14 +79,6 @@ export default function ProviderDetailPageClient() {
     },
   });
 
-  // D28 — Radar default referral link ("Pegue seus créditos grátis"). Fetched
-  // from the LOCAL /api/radar/referrals route only (never talks to the
-  // private feed server directly) — same client-fetch pattern the Radar
-  // dashboard page already uses for its own data. This keeps the providers
-  // page decoupled from @/lib/radar (DB-touching, Node-only): a 404 (flag
-  // off) or 401/network failure just leaves `referralUrl` null, and
-  // `resolveProviderHeaderLink` below then falls back to the static catalog
-  // website — byte-identical to before this feature existed.
   const [referralUrl, setReferralUrl] = useState<string | null>(null);
   useEffect(() => {
     let cancelled = false;
@@ -268,42 +92,25 @@ export default function ProviderDetailPageClient() {
         const match = findDefaultReferral(fixed, providerId);
         setReferralUrl(match?.url ?? null);
       } catch {
-        // Best-effort only — never blocks rendering of the provider page.
+        // Best-effort only — never blocks rendering
       }
     })();
     return () => {
       cancelled = true;
     };
   }, [providerId]);
+
   const { website: providerHeaderWebsite, isReferralLink } = resolveProviderHeaderLink(
     providerInfo?.website,
     referralUrl
   );
-  const oauthProviderId = resolveProviderOAuthBackendId(providerId, providerInfo);
-  const providerSupportsOAuth =
-    providerInfo?.toggleAuthType === "oauth" ||
-    providerInfo?.toggleAuthType === "free" ||
-    oauthProviderId !== providerId;
-  const subscriptionRisk = providerInfo?.subscriptionRisk === true;
 
-  // ── Phase 1t.3: connection gate + risk-notice modal state ───────────────
-  const {
-    showRiskNoticeModal,
-    gateConnectionFlow,
-    handleConfirmRiskNotice,
-    handleCancelRiskNotice,
-  } = useConnectionGate({ providerId, subscriptionRisk });
-
-  const providerSupportsPat = supportsApiKeyOnFreeProvider(providerId);
-  const supportsDualAuth = supportsDualAuthProvider(providerId);
-  const isOAuth = providerSupportsOAuth && !providerSupportsPat;
   const providerAlias = getProviderAlias(providerId);
-  const isFreeNoAuth =
-    NOAUTH_PROVIDERS[providerId]?.noAuth === true ||
-    getProviderById(providerId)?.managedAccount === true;
+  const providerStorageAlias = isCompatible ? providerId : providerAlias;
+  const providerDisplayAlias = isCompatible ? providerNode?.prefix || providerId : providerAlias;
+
   const registryModels = getModelsByProviderId(providerId);
-  // Use the server's active-catalog authority decision for display and Test All.
-  // Registry entries supply metadata/fallback; operator custom models remain.
+
   const models = useMemo(() => {
     return mergeProviderModelListing({
       providerId,
@@ -326,34 +133,17 @@ export default function ProviderDetailPageClient() {
     syncedCatalogAuthoritative,
     usesCuratedModelsOnly,
   ]);
-  const isUpstreamProxyProvider = providerInfo?.category === "upstream-proxy";
-  const compatibleSupportsModelImport = compatibleProviderSupportsModelImport(providerId);
-
-  const providerStorageAlias = isCompatible ? providerId : providerAlias;
-  const providerDisplayAlias = isCompatible ? providerNode?.prefix || providerId : providerAlias;
 
   const {
     importingModels,
-    showImportModal,
-    importProgress,
-    togglingAutoSync,
-    togglingAutoFetchModels,
-    canImportModels,
-    isAutoSyncEnabled,
-    isAutoFetchModelsEnabled,
-    setShowImportModal,
-    setImportProgress,
     handleImportModels,
-    handleCompatibleImportWithProgress,
-    handleToggleAutoSync,
-    handleToggleAutoFetchModels,
   } = useModelImportHandlers({
     providerId,
     models,
     modelMeta,
     modelAliases,
     connections,
-    isFreeNoAuth,
+    isFreeNoAuth: false,
     handleSetAlias,
     fetchAliases,
     fetchProviderModelMeta,
@@ -363,189 +153,29 @@ export default function ProviderDetailPageClient() {
     providerStorageAlias,
   });
 
-  const handleToggleConnectionAutoSync = useConnectionAutoSync(
-    connections,
-    setConnections,
-    notify,
-    t
-  );
-
-  // ── model-related effects (loading gate) ────────────────────────────────
-  useEffect(() => {
-    if (loading || isSearchProvider) return;
-    fetchProviderModelMeta();
-    fetchAliases();
-  }, [loading, isSearchProvider, fetchProviderModelMeta, fetchAliases]);
-
-  const handleOAuthSuccess = useCallback(() => {
-    fetchConnections();
-    setShowOAuthModal(false);
-  }, [fetchConnections]);
-
-  const openApiKeyAddFlow = useCallback(() => {
-    if (providerId === "siliconflow") {
-      setShowSiliconFlowEndpointModal(true);
-      return;
-    }
-    setShowAddApiKeyModal(true);
-  }, [providerId]);
-
-  useEffect(() => {
-    if (searchParams.get("action") === "add-api-key") gateConnectionFlow(openApiKeyAddFlow);
-  }, [searchParams, gateConnectionFlow, openApiKeyAddFlow]);
-
-  const openPrimaryAddFlow = useCallback(() => {
-    if (providerId === "kimi-coding") return setShowKimiAuthMethodModal(true);
-    if (isOAuth) {
-      setShowOAuthModal(true);
-      return;
-    }
-    openApiKeyAddFlow();
-  }, [providerId, isOAuth, openApiKeyAddFlow]);
-
-  // Legacy manual flow: headful browser login on the machine running CheapRoute.
-  // Kept as the fallback for the phone/SMS auto-login modal.
-  const connectVolcengineAccountManually = useCallback(async () => {
-    setConnectingVolcengineAccount(true);
+  const handleFetchAllModels = async () => {
+    setFetchingAllModels(true);
+    setFetchFailed(false);
     try {
-      const response = await fetch("/api/providers/volcengine-plan/connect", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ timeout: 300_000 }),
-      });
-      const data = await response.json().catch(() => ({}));
-      if (!response.ok || !data?.success) {
-        throw new Error(data?.error || "Failed to connect Volcano account");
+      const importTargetId = isCompatible ? providerNode?.prefix || providerId : providerId;
+      const res = await fetch(`/api/providers/${encodeURIComponent(importTargetId)}/models?refresh=true`);
+      if (!res.ok) {
+        throw new Error("Failed to fetch models from API");
       }
-      const results = Array.isArray(data?.binding?.results) ? data.binding.results : [];
-      const connected = results.filter((item: any) => item?.ok).length;
-      const failed = results.filter((item: any) => item && item.ok === false && item.available);
-      if (connected > 0) {
-        notify.success(`Connected ${connected} Volcano plan${connected > 1 ? "s" : ""}`);
-      }
-      if (failed.length > 0) {
-        notify.error(
-          failed.map((item: any) => `${item.plan}: ${item.error || "failed"}`).join("; ")
-        );
-      }
-      await fetchConnections();
-    } catch (error) {
-      notify.error(error instanceof Error ? error.message : "Failed to connect Volcano account");
+      await handleImportModels();
+      await fetchProviderModelMeta();
+      notify.success("All models fetched and updated successfully.");
+    } catch {
+      setFetchFailed(true);
+      notify.error("Failed to fetch models from API. Please add models manually below.");
     } finally {
-      setConnectingVolcengineAccount(false);
+      setFetchingAllModels(false);
     }
-  }, [fetchConnections, notify]);
-
-  const connectVolcengineAccount = useCallback(() => {
-    setShowVolcengineConnectModal(true);
-  }, []);
-
-  const {
-    commandCodeAuthState,
-    handleCloseAddApiKeyModal,
-    handleStartCommandCodeAuth,
-    handleOpenCommandCodeConnect,
-  } = useCommandCodeAuth({
-    providerId,
-    fetchConnections,
-    setSiliconFlowInitialBaseUrl,
-    setShowAddApiKeyModal,
-    notify,
-  });
-
-  // Phase 1s: handleSaveApiKey extracted to hooks/useApiKeySave.ts
-  const { handleSaveApiKey } = useApiKeySave({
-    providerId,
-    fetchConnections,
-    fetchProviderModelMeta,
-    setImportProgress,
-    setShowImportModal,
-    setShowAddApiKeyModal,
-    setSiliconFlowInitialBaseUrl,
-    notify,
-    t,
-  });
-
-  // ── Phase 1t.4: node/connection update handlers ──────────────────────────
-  const { handleUpdateNode, handleUpdateConnection } = useProviderNodeActions({
-    providerId,
-    fetchConnections,
-    selectedConnection,
-    setProviderNode,
-    setShowEditNodeModal,
-    setShowEditModal,
-    t,
-  });
-
-  // Phase 1j: auth file handlers
-  const {
-    applyingCodexAuthId,
-    applyCodexModalConnectionId,
-    setApplyCodexModalConnectionId,
-    exportingCodexAuthId,
-    handleApplyCodexAuthLocal,
-    handleExportCodexAuthFile,
-    applyingClaudeAuthId,
-    applyClaudeModalConnectionId,
-    setApplyClaudeModalConnectionId,
-    exportingClaudeAuthId,
-    handleApplyClaudeAuthLocal,
-    handleExportClaudeAuthFile,
-  } = useAuthFileHandlers({ parseApiErrorMessage, getAttachmentFilename, notify, t });
-
-  // Phase 1e: compat-state derivations
-  const compat = useModelCompatState(modelMeta.customModels, modelMeta.modelCompatOverrides);
-  const { customMap } = compat;
-  const effectiveModelNormalize = compat.effectiveModelNormalize;
-  const effectiveModelPreserveDeveloper = compat.effectiveModelPreserveDeveloper;
-  const effectiveModelHidden = compat.isModelHidden;
-  const getUpstreamHeadersRecordForModel = compat.getUpstreamHeadersRecord;
-
-  const compatibleFallbackModels = useMemo(
-    () => getCompatibleFallbackModels(providerId, modelMeta.customModels),
-    [providerId, modelMeta.customModels]
-  );
-
-  // ── Phase 1l: model visibility handlers ─────────────────────────────────
-  const {
-    compatSavingModelId,
-    togglingModelId,
-    bulkVisibilityAction,
-    clearingModels,
-    modelFilter,
-    testingModelId,
-    modelTestStatus,
-    testingAll,
-    testProgress,
-    autoHideFailed,
-    visibilityFilter,
-    providerAliasEntries,
-    setModelFilter,
-    setAutoHideFailed,
-    setVisibilityFilter,
-    saveModelCompatFlags,
-    handleToggleModelHidden,
-    handleBulkToggleModelHidden,
-    handleClearAllModels,
-    onTestModel,
-    handleTestAll,
-    onModelTestStatusChange,
-  } = useModelVisibilityHandlers({
-    providerId,
-    modelAliases,
-    customMap,
-    providerStorageAlias,
-    fetchProviderModelMeta,
-    fetchAliases,
-    notify,
-    t,
-    selectedConnection,
-    providerNode,
-  });
+  };
 
   if (loading) {
     return (
-      <div className="flex flex-col gap-8">
+      <div className="flex flex-col gap-6 p-6">
         <CardSkeleton />
         <CardSkeleton />
       </div>
@@ -555,8 +185,8 @@ export default function ProviderDetailPageClient() {
   if (!providerInfo) {
     return (
       <div className="text-center py-20">
-        <p className="text-text-muted">{t("providerNotFound")}</p>
-        <Link href="/dashboard/providers" className="text-primary mt-4 inline-block">
+        <p className="text-[#A3A3A3]">{t("providerNotFound")}</p>
+        <Link href="/dashboard/providers" className="text-white hover:underline mt-4 inline-block">
           {t("backToProviders")}
         </Link>
       </div>
@@ -564,393 +194,212 @@ export default function ProviderDetailPageClient() {
   }
 
   return (
-    <div className="flex flex-col gap-8">
+    <div className="flex flex-col gap-6 max-w-7xl mx-auto pb-16 text-white">
+      {/* ── PROVIDER HEADER (Title, Provider ID, Status, Back to List) ── */}
       <ProviderPageHeader
         providerId={providerId}
         providerInfo={{ ...providerInfo, website: providerHeaderWebsite }}
         connectionsCount={connections.length}
         isOpenAICompatible={isOpenAICompatible}
         isAnthropicProtocolCompatible={isAnthropicProtocolCompatible}
-        onOpenTutorial={() => setShowTutorialModal(true)}
+        onOpenTutorial={() => {}}
         t={t}
         isReferralLink={isReferralLink}
       />
 
-      {providerId === "zed" && (
-        <ZedImportCard fetchConnections={fetchConnections} notify={notify} />
-      )}
-      {providerId === "cursor" && <CursorAgentNudge />}
-      {isCompatible && providerNode && (
-        <CompatibleNodeCard
-          providerId={providerId}
-          providerNode={providerNode}
-          isCcCompatible={isCcCompatible}
-          isAnthropicCompatible={isAnthropicCompatible}
-          isAnthropicProtocolCompatible={isAnthropicProtocolCompatible}
-          gateConnectionFlow={gateConnectionFlow}
-          openApiKeyAddFlow={openApiKeyAddFlow}
-          onOpenEditNodeModal={() => setShowEditNodeModal(true)}
-          t={t}
-        />
-      )}
-      {!isUpstreamProxyProvider && isFreeNoAuth && (
-        <NoAuthProviderControls
-          providerId={providerId}
-          providerName={providerInfo?.name || providerId}
-          providerProxy={proxyConfig?.providers?.[providerId]}
-          onConfigureProviderProxy={() =>
-            setProxyTarget({
-              level: "provider",
-              id: providerId,
-              label: providerInfo?.name || providerId,
-            })
-          }
-        />
-      )}
-      {!isUpstreamProxyProvider && !isFreeNoAuth && (
-        <AnonymousFallbackToggle
-          providerId={providerId}
-          providerName={providerInfo?.name || providerId}
-        />
-      )}
-      {!isUpstreamProxyProvider && (!isFreeNoAuth || providerSupportsPat) && (
-        <Card>
-          <ProviderAccountRoutingCard
-            providerKey={providerId}
-            connectionCount={connections.length}
-          />
-          <ConnectionsHeaderToolbar
-            providerId={providerId}
-            providerInfo={providerInfo}
-            isCompatible={isCompatible}
-            isCommandCode={isCommandCode}
-            isOAuth={isOAuth}
-            supportsDualAuth={supportsDualAuth}
-            providerSupportsPat={providerSupportsPat}
-            connections={connections}
-            batchTesting={batchTesting}
-            batchRetesting={batchRetesting}
-            retestingId={retestingId}
-            distributingProxies={distributingProxies}
-            proxyConfig={proxyConfig}
-            reorderingByAvailability={reorderingByAvailability}
-            handleReorderByAvailability={handleReorderByAvailability}
-            preferClaudeCodeForUnprefixedClaudeModels={preferClaudeCodeForUnprefixedClaudeModels}
-            claudeRoutingSettingsLoaded={claudeRoutingSettingsLoaded}
-            claudeRoutingSettingsLoadError={claudeRoutingSettingsLoadError}
-            savingClaudeRoutingPreference={savingClaudeRoutingPreference}
-            handleToggleClaudeRoutingPreference={handleToggleClaudeRoutingPreference}
-            loadClaudeRoutingSettings={loadClaudeRoutingSettings}
-            codexGlobalServiceMode={codexGlobalServiceMode}
-            codexGlobalServiceModeOptions={codexGlobalServiceModeOptions}
-            codexSettingsLoaded={codexSettingsLoaded}
-            codexSettingsLoadError={codexSettingsLoadError}
-            savingCodexGlobalServiceMode={savingCodexGlobalServiceMode}
-            handleChangeCodexGlobalServiceMode={handleChangeCodexGlobalServiceMode}
-            loadCodexSettings={loadCodexSettings}
-            onSetProxyTarget={setProxyTarget}
-            handleDistributeProxies={handleDistributeProxies}
-            handleBatchTestAll={handleBatchTestAll}
-            gateConnectionFlow={gateConnectionFlow}
-            openApiKeyAddFlow={openApiKeyAddFlow}
-            openPrimaryAddFlow={openPrimaryAddFlow}
-            connectVolcengineAccount={connectVolcengineAccount}
-            connectingVolcengineAccount={connectingVolcengineAccount}
-            openExternalLinkFlow={openExternalLinkFlow}
-            handleOpenCommandCodeConnect={handleOpenCommandCodeConnect}
-            commandCodeAuthState={commandCodeAuthState}
-            onOpenOAuthModal={() => setShowOAuthModal(true)}
-            onOpenCodexCliGuide={() => setCodexCliGuideOpen(true)}
-            onOpenImportCodex={() => setImportCodexModalOpen(true)}
-            onOpenImportClaude={() => setImportClaudeModalOpen(true)}
-            onOpenImportGemini={() => setImportGeminiModalOpen(true)}
-            onOpenImportGrokCli={() => setImportGrokCliModalOpen(true)}
-            t={t}
-          />
+      {/* ── SECTION 1: 🔘 "Default Capabilities Prompt" (COLLAPSIBLE TEST PANEL) ── */}
+      <div className="rounded-xl border border-[#262626] bg-[#121212] overflow-hidden transition-all shadow-sm">
+        <button
+          type="button"
+          onClick={() => setShowCapabilityPrompt((prev) => !prev)}
+          className="w-full flex items-center justify-between px-5 py-4 bg-[#161616] hover:bg-[#1a1a1a] transition-colors cursor-pointer text-left"
+        >
+          <div className="flex items-center gap-3">
+            <span className="material-symbols-outlined text-[20px] text-[#C0C0C0]">
+              psychology_alt
+            </span>
+            <div>
+              <div className="text-sm font-semibold text-white flex items-center gap-2">
+                <span>Default Capabilities Prompt</span>
+                <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-white/5 border border-white/10 text-[#A3A3A3]">
+                  Global Test Payload
+                </span>
+              </div>
+              <p className="text-xs text-[#737373] mt-0.5">
+                Configures the test prompt dispatched when clicking &ldquo;Test&rdquo; on any model in Section 3.
+              </p>
+            </div>
+          </div>
 
-          {connections.length === 0 ? (
-            <EmptyConnectionsPlaceholder
-              isOAuth={isOAuth}
-              isCompatible={isCompatible}
-              isCommandCode={isCommandCode}
-              providerId={providerId}
-              supportsDualAuth={supportsDualAuth}
-              providerSupportsPat={providerSupportsPat}
-              commandCodeAuthState={commandCodeAuthState}
-              gateConnectionFlow={gateConnectionFlow}
-              openApiKeyAddFlow={openApiKeyAddFlow}
-              openPrimaryAddFlow={openPrimaryAddFlow}
-              handleOpenCommandCodeConnect={handleOpenCommandCodeConnect}
-              onOpenOAuthModal={() => setShowOAuthModal(true)}
-              onOpenImportCodex={() => setImportCodexModalOpen(true)}
-              onOpenImportClaude={() => setImportClaudeModalOpen(true)}
-              onOpenImportGemini={() => setImportGeminiModalOpen(true)}
-              onOpenImportGrokCli={() => setImportGrokCliModalOpen(true)}
-              t={t}
-            />
-          ) : (
-            <>
-              <CoolingConnectionsPanel
-                connections={connections}
-                onClearCooldown={handleClearCooldown}
-                clearingCooldownId={clearingCooldownId}
+          <div className="flex items-center gap-3">
+            <div className="hidden sm:flex items-center gap-1.5 text-xs text-[#A3A3A3] font-mono bg-[#0A0A0A] px-2.5 py-1 rounded border border-[#262626] max-w-[240px] truncate">
+              <span className="text-[#737373]">Prompt:</span>
+              <span className="text-white truncate">&ldquo;{testPrompt}&rdquo;</span>
+            </div>
+            <span className="material-symbols-outlined text-[20px] text-[#C0C0C0] transition-transform">
+              {showCapabilityPrompt ? "expand_less" : "expand_more"}
+            </span>
+          </div>
+        </button>
+
+        {showCapabilityPrompt && (
+          <div className="p-5 border-t border-[#262626] flex flex-col gap-4 bg-[#0E0E0E]">
+            {/* Quick preset buttons */}
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-xs font-medium text-[#737373] mr-1">Quick Presets:</span>
+              <button
+                type="button"
+                onClick={() => setTestPrompt("Hi")}
+                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors cursor-pointer ${
+                  testPrompt === "Hi"
+                    ? "bg-white/10 border-white/30 text-white"
+                    : "bg-[#181818] border-[#2E2E2E] text-[#A3A3A3] hover:text-white hover:bg-[#222]"
+                }`}
+              >
+                <span>💬</span>
+                <span>Text / Hi</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setTestPrompt("Generate a modern CSS button with HTML.")}
+                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors cursor-pointer ${
+                  testPrompt === "Generate a modern CSS button with HTML."
+                    ? "bg-white/10 border-white/30 text-white"
+                    : "bg-[#181818] border-[#2E2E2E] text-[#A3A3A3] hover:text-white hover:bg-[#222]"
+                }`}
+              >
+                <span>💻</span>
+                <span>Code / HTML</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() =>
+                  setTestPrompt(
+                    "https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?w=400 Describe this image in detail."
+                  )
+                }
+                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors cursor-pointer ${
+                  testPrompt.includes("Describe this image in detail.")
+                    ? "bg-white/10 border-white/30 text-white"
+                    : "bg-[#181818] border-[#2E2E2E] text-[#A3A3A3] hover:text-white hover:bg-[#222]"
+                }`}
+              >
+                <span>👁️</span>
+                <span>Vision</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() =>
+                  setTestPrompt(
+                    "https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?w=400 Extract all text from this receipt."
+                  )
+                }
+                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors cursor-pointer ${
+                  testPrompt.includes("Extract all text from this receipt.")
+                    ? "bg-white/10 border-white/30 text-white"
+                    : "bg-[#181818] border-[#2E2E2E] text-[#A3A3A3] hover:text-white hover:bg-[#222]"
+                }`}
+              >
+                <span>🔍</span>
+                <span>OCR</span>
+              </button>
+            </div>
+
+            {/* Prompt Editor Box */}
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-medium text-[#A3A3A3]">
+                Customizable Test Prompt:
+              </label>
+              <textarea
+                value={testPrompt}
+                onChange={(e) => setTestPrompt(e.target.value)}
+                rows={3}
+                placeholder="Enter prompt to verify model capabilities..."
+                className="w-full p-3 text-xs bg-[#141414] text-white border border-[#2E2E2E] rounded-lg font-mono focus:outline-none focus:border-[#C0C0C0] transition-colors resize-y placeholder-[#555]"
               />
-              <ConnectionsListPanel
-                connections={connections}
-                providerId={providerId}
-                isCcCompatible={isCcCompatible}
-                isOAuth={isOAuth}
-                codexGlobalServiceMode={codexGlobalServiceMode}
-                selectedIds={selectedIds}
-                batchUpdating={batchUpdating}
-                batchRetesting={batchRetesting}
-                batchDeleting={batchDeleting}
-                batchTesting={batchTesting}
-                retestingId={retestingId}
-                refreshingId={refreshingId}
-                distributingProxies={distributingProxies}
-                healthFilter={healthFilter}
-                page={page}
-                accountSearch={accountSearch}
-                PAGE_SIZE={PAGE_SIZE}
-                connProxyMap={connProxyMap}
-                proxyConfig={proxyConfig}
-                applyingCodexAuthId={applyingCodexAuthId}
-                exportingCodexAuthId={exportingCodexAuthId}
-                applyingClaudeAuthId={applyingClaudeAuthId}
-                exportingClaudeAuthId={exportingClaudeAuthId}
-                emailsVisible={emailsVisible}
-                setSelectedIds={setSelectedIds}
-                setPage={setPage}
-                setHealthFilter={setHealthFilter}
-                setAccountSearch={setAccountSearch}
-                deleteConfirm={deleteConfirm}
-                handleUpdateConnectionStatus={handleUpdateConnectionStatus}
-                handleToggleRateLimit={handleToggleRateLimit}
-                handleToggleQuotaVisibility={handleToggleQuotaVisibility}
-                handleToggleClaudeExtraUsage={handleToggleClaudeExtraUsage}
-                handleToggleCodexPaidCredits={handleToggleCodexPaidCredits}
-                canAutoSync={!usesCuratedModelsOnly && compatibleSupportsModelImport}
-                handleToggleConnectionAutoSync={handleToggleConnectionAutoSync}
-                handleToggleCliproxyapiMode={handleToggleCliproxyapiMode}
-                handleSetUpstreamProxyMode={handleSetUpstreamProxyMode}
-                upstreamProxyMode={upstreamProxyMode}
-                upstreamProxyFallbackBackend={upstreamProxyFallbackBackend}
-                handleToggleCodexLimit={handleToggleCodexLimit}
-                handleToggleProxyEnabled={handleToggleProxyEnabled}
-                handleTogglePerKeyProxyEnabled={handleTogglePerKeyProxyEnabled}
-                handleRetestConnection={handleRetestConnection}
-                handleRefreshToken={handleRefreshToken}
-                handleSwapPriority={handleSwapPriority}
-                handleBatchSetActive={handleBatchSetActive}
-                handleBatchDeleteOpenModal={handleBatchDeleteOpenModal}
-                handleBatchRetest={handleBatchRetest}
-                handleToggleSelectOne={handleToggleSelectOne}
-                handleToggleSelectAll={handleToggleSelectAll}
-                handleDistributeProxies={handleDistributeProxies}
-                cpaProviderEnabled={cpaProviderEnabled}
-                quotaByConnectionId={quotaByConnectionId}
-                quotaRefreshingIds={quotaRefreshingIds}
-                handleRefreshQuota={handleRefreshQuota}
-                onOpenEditModal={(conn) => {
-                  setSelectedConnection(conn);
-                  setShowEditModal(true);
-                }}
-                onOpenOAuth={(conn) => gateConnectionFlow(() => setShowOAuthModal(true, conn))}
-                onSetProxyTarget={setProxyTarget}
-                onOpenApplyCodexModal={setApplyCodexModalConnectionId}
-                onExportCodexAuthFile={handleExportCodexAuthFile}
-                onOpenApplyClaudeModal={setApplyClaudeModalConnectionId}
-                onExportClaudeAuthFile={handleExportClaudeAuthFile}
-                gateConnectionFlow={gateConnectionFlow}
-                t={t}
-              />
-            </>
-          )}
-        </Card>
-      )}
-      {isUpstreamProxyProvider && <UpstreamProxyCard t={t} />}
+              <div className="text-[11px] text-[#737373] flex items-center gap-1.5 mt-0.5">
+                <span className="material-symbols-outlined text-[14px] text-emerald-400">check_circle</span>
+                <span>
+                  Clicking &ldquo;Test&rdquo; on any row in the Available Models Table will dispatch this prompt upstream.
+                </span>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
 
-      {/* Models — hidden for search providers (they don't have models) */}
-      {!isSearchProvider && !isUpstreamProxyProvider && (
-        <Card>
-          <h2 className="text-lg font-semibold mb-4">{t("availableModels")}</h2>
-          <ProviderModelsSection
-            providerId={providerId}
-            providerAlias={providerAlias}
-            providerStorageAlias={providerStorageAlias}
-            providerDisplayAlias={providerDisplayAlias}
-            providerInfo={providerInfo}
-            isCcCompatible={isCcCompatible}
-            isAnthropicCompatible={isAnthropicCompatible}
-            isAnthropicProtocolCompatible={isAnthropicProtocolCompatible}
-            isManagedAvailableModelsProvider={isCompatible || providerId === "openrouter"}
-            compatibleSupportsModelImport={compatibleSupportsModelImport}
-            allowModelImport={!usesCuratedModelsOnly}
-            models={models}
-            modelMeta={modelMeta}
-            modelAliases={modelAliases}
-            syncedAvailableModels={syncedAvailableModels}
-            syncedCatalogAuthoritative={syncedCatalogAuthoritative}
-            compatibleFallbackModels={compatibleFallbackModels}
-            copied={copied}
-            onCopy={copy}
-            onSetAlias={handleSetAlias}
-            onDeleteAlias={handleDeleteAlias}
-            fetchProviderModelMeta={fetchProviderModelMeta}
-            connections={connections}
-            selectedConnection={selectedConnection}
-            canImportModels={canImportModels}
-            importingModels={importingModels}
-            handleImportModels={handleImportModels}
-            importProgress={importProgress}
-            onDismissImportError={() =>
-              setImportProgress((prev) => ({ ...prev, phase: "idle", error: "" }))
-            }
-            isAutoSyncEnabled={isAutoSyncEnabled}
-            togglingAutoSync={togglingAutoSync}
-            handleToggleAutoSync={handleToggleAutoSync}
-            isAutoFetchModelsEnabled={isAutoFetchModelsEnabled}
-            togglingAutoFetchModels={togglingAutoFetchModels}
-            handleToggleAutoFetchModels={handleToggleAutoFetchModels}
-            handleCompatibleImportWithProgress={handleCompatibleImportWithProgress}
-            compatSavingModelId={compatSavingModelId}
-            togglingModelId={togglingModelId}
-            bulkVisibilityAction={bulkVisibilityAction}
-            clearingModels={clearingModels}
-            modelFilter={modelFilter}
-            testingModelId={testingModelId}
-            modelTestStatus={modelTestStatus}
-            onModelTestStatusChange={onModelTestStatusChange}
-            testingAll={testingAll}
-            testProgress={testProgress}
-            autoHideFailed={autoHideFailed}
-            visibilityFilter={visibilityFilter}
-            providerAliasEntries={providerAliasEntries}
-            setModelFilter={setModelFilter}
-            setAutoHideFailed={setAutoHideFailed}
-            setVisibilityFilter={setVisibilityFilter}
-            saveModelCompatFlags={saveModelCompatFlags}
-            handleToggleModelHidden={handleToggleModelHidden}
-            handleBulkToggleModelHidden={handleBulkToggleModelHidden}
-            handleClearAllModels={handleClearAllModels}
-            onTestModel={onTestModel}
-            handleTestAll={handleTestAll}
-            effectiveModelNormalize={effectiveModelNormalize}
-            effectiveModelPreserveDeveloper={effectiveModelPreserveDeveloper}
-            effectiveModelHidden={effectiveModelHidden}
-            getUpstreamHeadersRecordForModel={getUpstreamHeadersRecordForModel}
-            t={t}
-          />
+      {/* ── SECTION 2: ⚡ "Fetch All Models" Button + ➕ "Add Custom Model" Form ── */}
+      <div className="flex flex-col gap-4">
+        {/* Fetch Action Bar */}
+        <div className="flex flex-wrap items-center justify-between gap-3 p-4 rounded-xl border border-[#262626] bg-[#121212]">
+          <div className="flex items-center gap-3">
+            <span className="material-symbols-outlined text-[20px] text-[#C0C0C0]">cloud_sync</span>
+            <div>
+              <div className="text-sm font-semibold text-white">Upstream Model Discovery</div>
+              <p className="text-xs text-[#737373]">
+                Synchronize live model catalogs from upstream or register custom endpoints.
+              </p>
+            </div>
+          </div>
 
-          {/* Custom Models — available for all providers */}
-          <CustomModelsSection
-            providerId={providerId}
-            providerAlias={providerDisplayAlias}
-            copied={copied}
-            onCopy={copy}
-            onModelsChanged={fetchProviderModelMeta}
-            syncedModelIds={syncedAvailableModels.map((model) => model.id)}
-          />
-        </Card>
-      )}
+          <button
+            type="button"
+            disabled={fetchingAllModels || importingModels}
+            onClick={handleFetchAllModels}
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-medium bg-white text-black hover:bg-[#E5E5E5] transition-colors disabled:opacity-50 cursor-pointer font-sans shadow-sm"
+          >
+            {fetchingAllModels || importingModels ? (
+              <>
+                <span className="material-symbols-outlined text-[16px] animate-spin">
+                  progress_activity
+                </span>
+                <span>Fetching Models...</span>
+              </>
+            ) : (
+              <>
+                <span className="material-symbols-outlined text-[16px]">sync</span>
+                <span>Fetch All Models</span>
+              </>
+            )}
+          </button>
+        </div>
 
-      {/* Search provider info */}
-      {isSearchProvider && <SearchProviderCard providerId={providerId} t={t} />}
+        {/* Orange alert box if fetch failed */}
+        {fetchFailed && (
+          <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-4 text-amber-200 text-xs flex items-start gap-3">
+            <span className="material-symbols-outlined text-amber-400 text-lg flex-shrink-0">
+              warning
+            </span>
+            <div className="flex flex-col gap-0.5">
+              <span className="font-semibold text-amber-300">
+                Failed to fetch models from API.
+              </span>
+              <span className="text-amber-200/80">
+                Please add models manually below.
+              </span>
+            </div>
+          </div>
+        )}
 
-      {/* Playground + param filters — extracted to components/ProviderExtraPanels.tsx (#6649) */}
-      <ProviderExtraPanels providerId={providerId} />
+        {/* Add Custom Model Form Card */}
+        <AddCustomModelCard
+          providerId={providerId}
+          onModelAdded={fetchProviderModelMeta}
+        />
+      </div>
 
-      <ProviderModalsPanel
+      {/* ── SECTION 3: 📋 AVAILABLE MODELS TABLE ── */}
+      <AvailableModelsTable
         providerId={providerId}
-        providerInfo={providerInfo}
-        isCompatible={isCompatible}
-        isAnthropicProtocolCompatible={isAnthropicProtocolCompatible}
-        isCcCompatible={isCcCompatible}
-        isCommandCode={isCommandCode}
-        isUpstreamProxyProvider={isUpstreamProxyProvider}
-        subscriptionRisk={subscriptionRisk}
-        existingConnectionNames={connections.map((c) => c.name ?? "").filter(Boolean)}
-        showRiskNoticeModal={showRiskNoticeModal}
-        handleConfirmRiskNotice={handleConfirmRiskNotice}
-        handleCancelRiskNotice={handleCancelRiskNotice}
-        showKimiAuthMethodModal={showKimiAuthMethodModal}
-        setShowKimiAuthMethodModal={setShowKimiAuthMethodModal}
-        showOAuthModal={showOAuthModal}
-        reauthConnection={reauthConnection}
-        handleOAuthSuccess={handleOAuthSuccess}
-        setShowOAuthModal={setShowOAuthModal}
-        showSiliconFlowEndpointModal={showSiliconFlowEndpointModal}
-        setSiliconFlowInitialBaseUrl={setSiliconFlowInitialBaseUrl}
-        setShowSiliconFlowEndpointModal={setShowSiliconFlowEndpointModal}
-        setShowAddApiKeyModal={setShowAddApiKeyModal}
-        showAddApiKeyModal={showAddApiKeyModal}
-        siliconFlowInitialBaseUrl={siliconFlowInitialBaseUrl}
-        commandCodeAuthState={commandCodeAuthState}
-        handleStartCommandCodeAuth={handleStartCommandCodeAuth}
-        handleSaveApiKey={handleSaveApiKey}
-        handleCloseAddApiKeyModal={handleCloseAddApiKeyModal}
-        batchDeleteConfirmOpen={batchDeleteConfirmOpen}
-        setBatchDeleteConfirmOpen={setBatchDeleteConfirmOpen}
-        handleBatchDeleteConfirm={handleBatchDeleteConfirm}
-        selectedIds={selectedIds}
-        batchDeleting={batchDeleting}
-        deleteConfirm={deleteConfirm}
-        applyCodexModalConnectionId={applyCodexModalConnectionId}
-        setApplyCodexModalConnectionId={setApplyCodexModalConnectionId}
-        applyingCodexAuthId={applyingCodexAuthId}
-        handleApplyCodexAuthLocal={handleApplyCodexAuthLocal}
-        importCodexModalOpen={importCodexModalOpen}
-        setImportCodexModalOpen={setImportCodexModalOpen}
-        fetchConnections={fetchConnections}
-        externalLinkModalOpen={externalLinkModalOpen}
-        setExternalLinkModalOpen={setExternalLinkModalOpen}
-        externalLinkLoading={externalLinkLoading}
-        externalLinkError={externalLinkError}
-        externalLinkUrl={externalLinkUrl}
-        externalLinkCopied={externalLinkCopied}
-        externalLinkCopy={externalLinkCopy}
-        showEditModal={showEditModal}
-        setShowEditModal={setShowEditModal}
-        selectedConnection={selectedConnection}
-        handleUpdateConnection={handleUpdateConnection}
-        handleCompatibleImportWithProgress={handleCompatibleImportWithProgress}
-        showEditNodeModal={showEditNodeModal}
-        setShowEditNodeModal={setShowEditNodeModal}
-        providerNode={providerNode}
-        handleUpdateNode={handleUpdateNode}
-        codexCliGuideOpen={codexCliGuideOpen}
-        setCodexCliGuideOpen={setCodexCliGuideOpen}
-        applyClaudeModalConnectionId={applyClaudeModalConnectionId}
-        setApplyClaudeModalConnectionId={setApplyClaudeModalConnectionId}
-        applyingClaudeAuthId={applyingClaudeAuthId}
-        handleApplyClaudeAuthLocal={handleApplyClaudeAuthLocal}
-        importClaudeModalOpen={importClaudeModalOpen}
-        setImportClaudeModalOpen={setImportClaudeModalOpen}
-        importGrokCliModalOpen={importGrokCliModalOpen}
-        setImportGrokCliModalOpen={setImportGrokCliModalOpen}
-        batchTestResults={batchTestResults}
-        setBatchTestResults={setBatchTestResults}
-        emailsVisible={emailsVisible}
-        proxyTarget={proxyTarget}
-        setProxyTarget={setProxyTarget}
-        refreshProxyState={refreshProxyState}
-        importProgress={importProgress}
-        showImportModal={showImportModal}
-        setShowImportModal={setShowImportModal}
-        showTutorialModal={showTutorialModal}
-        setShowTutorialModal={setShowTutorialModal}
-        t={t}
-      />
-
-      {/* Volcano Engine console phone/SMS auto-login (falls back to manual browser login) */}
-      <VolcengineConnectModal
-        isOpen={showVolcengineConnectModal}
-        onClose={() => setShowVolcengineConnectModal(false)}
-        onFallbackManual={connectVolcengineAccountManually}
-        onConnected={fetchConnections}
-        notify={notify}
-        t={t}
+        providerDisplayAlias={providerDisplayAlias}
+        models={models}
+        testPrompt={testPrompt}
+        onRefreshModels={fetchProviderModelMeta}
+        copied={copied}
+        onCopy={copy}
       />
     </div>
   );
