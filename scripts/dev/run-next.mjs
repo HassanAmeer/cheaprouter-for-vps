@@ -14,6 +14,12 @@ import methodGuard from "./http-method-guard.cjs";
 import headResponseGuard from "./head-response-guard.cjs";
 import { ensureNativeSqlite } from "./ensure-native-sqlite.mjs";
 import { isTurbopackCacheCorruption, purgeAllTurbopackCaches } from "./turbopackCacheHeal.mjs";
+import {
+  clearCrashMarker,
+  isFreshTurbopackCrash,
+  readCrashMarker,
+  writeCrashMarker,
+} from "./turbopackCrashGuard.mjs";
 import { randomUUID } from "node:crypto";
 import { getMainServerTimeoutConfig } from "./main-server-timeouts.mjs";
 import { createSystemdNotifier } from "./systemd-notify.mjs";
@@ -114,7 +120,27 @@ process.env.CHEAPROUTE_BOUND_HOST = hostname;
 // webpack escape hatch. Under Bun, Turbopack native V8 bindings are unavailable,
 // so Bun automatically disables Turbopack and uses Webpack.
 const isBun = Boolean(process.versions.bun);
-const useTurbopack = dev && mergedEnv.CHEAPROUTE_USE_TURBOPACK !== "0" && !isBun;
+let useTurbopack = dev && mergedEnv.CHEAPROUTE_USE_TURBOPACK !== "0" && !isBun;
+// Crash-guard: a Turbopack Rust panic aborts the process with NO cleanup, so a
+// leftover fresh marker means the previous run died mid-compile. Auto-switch
+// that next boot to webpack ( + purge the Turbopack cache) instead of booting
+// straight back into the crash. Applies whether Turbopack came from the
+// default or an explicit =1 (the shipped .env default is =1, so exempting it
+// would disable the guard for everyone); =0 still forces webpack outright.
+// The fallback only ever fires after a real unclean death — clean shutdowns
+// clear the marker — so healthy Turbopack setups never see it.
+if (useTurbopack) {
+  const marker = readCrashMarker();
+  if (isFreshTurbopackCrash(marker)) {
+    console.log(
+      "[bootstrap] ⚠️  Previous dev run crashed under Turbopack — auto-switching to webpack for this run."
+    );
+    purgeAllTurbopackCaches();
+    useTurbopack = false;
+  } else if (marker) {
+    clearCrashMarker();
+  }
+}
 process.env.CHEAPROUTE_WS_BRIDGE_SECRET ||= randomUUID();
 // Per-process secret used to prove the trusted peer-IP stamp came from this
 // server (read by the authz middleware in the same process). See peer-stamp.mjs.
@@ -246,6 +272,9 @@ async function start() {
       process.exit(1);
     }
     isShuttingDown = true;
+    // Clean shutdown — forget any crash marker so the next boot keeps the
+    // default bundler (a panic/SIGKILL never reaches here, leaving it behind).
+    clearCrashMarker();
 
     // Safety net: force exit after 2s if keep-alive sockets or Next.js app close hangs
     const forceExitTimer = setTimeout(() => {
@@ -286,6 +315,10 @@ async function start() {
     process.exit(1);
   });
   const bundler = dev ? (useTurbopack ? "turbopack" : "webpack") : "production";
+  // Crash marker for the Turbopack auto-fallback: written once serving (a Rust
+  // panic aborts with no cleanup, so a leftover marker = unclean death),
+  // cleared on clean shutdown below.
+  if (dev) writeCrashMarker(bundler);
   console.log(
     `[Next] ${mode} server listening on http://${hostname}:${dashboardPort} (${bundler})`
   );
