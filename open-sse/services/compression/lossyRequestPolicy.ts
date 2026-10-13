@@ -12,7 +12,7 @@ const LOSSY_SINGLE_MODES = new Set([
   "ultra",
   "rtk",
   "relevance",
-  "cheapglyph",
+  "omniglyph",
   "codex-responses",
 ]);
 

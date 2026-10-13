@@ -57,7 +57,7 @@ function bearerHeaders(accessToken: string): Record<string, string> {
   return {
     Accept: "application/json",
     Authorization: `Bearer ${accessToken}`,
-    "User-Agent": "cheaproute-cursor-quota",
+    "User-Agent": "omniroute-cursor-quota",
   };
 }
 

@@ -174,9 +174,9 @@ export const ENGINE_CATALOG: Record<string, EngineMeta> = {
       cacheImpact: "high",
     },
   },
-  cheapglyph: {
-    id: "cheapglyph",
-    label: "CheapGlyph",
+  omniglyph: {
+    id: "omniglyph",
+    label: "OmniGlyph",
     stackPriority: 90,
     isSingleMode: true,
     description: "Contexto-como-imagem (Claude Fable 5, rota direta).",

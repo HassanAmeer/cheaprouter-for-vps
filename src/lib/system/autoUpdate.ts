@@ -213,7 +213,7 @@ export function getAutoUpdateConfig(
     repoDir,
     composeFile: env.AUTO_UPDATE_COMPOSE_FILE || path.join(repoDir, "docker-compose.yml"),
     composeProfile: env.AUTO_UPDATE_COMPOSE_PROFILE || "cli",
-    composeService: env.AUTO_UPDATE_SERVICE || "cheaproute-cli",
+    composeService: env.AUTO_UPDATE_SERVICE || "omniroute-cli",
     gitRemote: env.AUTO_UPDATE_GIT_REMOTE || "origin",
     patchCommits: parsePatchCommits(env.AUTO_UPDATE_PATCH_COMMITS),
     logPath: env.AUTO_UPDATE_LOG_PATH || path.join(dataDir, "logs", "auto-update.log"),

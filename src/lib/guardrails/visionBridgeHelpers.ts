@@ -211,7 +211,7 @@ const VISION_BRIDGE_UA_FETCH: typeof fetch = ((input: RequestInfo | URL, init?: 
   undiciFetch(input as string | URL, {
     ...(init as Parameters<typeof undiciFetch>[1]),
     headers: {
-      "user-agent": "cheaproute-vision-bridge",
+      "user-agent": "omniroute-vision-bridge",
       ...((init?.headers as Record<string, string> | undefined) ?? {}),
     },
   })) as unknown as typeof fetch;
@@ -782,12 +782,12 @@ async function callVisionModelSingle(
       if (bearer) headers.Authorization = `Bearer ${bearer}`;
       // Any call into our own listener carries the recursion guard, including a bare-id one.
       if (useFullModelId || selfLoopBearer) {
-        headers["x-cheaproute-disabled-guardrails"] = routeThroughCheapRoute
+        headers["x-omniroute-disabled-guardrails"] = routeThroughCheapRoute
           ? "vision-bridge,video-bridge"
           : "vision-bridge";
         // The compression pipeline must not touch the image payload of the
         // self-loop describe call (stacked RTK/Caveman can mangle data URIs).
-        headers["x-cheaproute-compression"] = "off";
+        headers["x-omniroute-compression"] = "off";
       }
       if (selfLoopBearer) {
         // Internal self-loop sub-request: the parent request already holds the
@@ -796,7 +796,7 @@ async function callVisionModelSingle(
         // `chat_admission_busy` before it is described. The route only honors
         // this header when the bearer is the self-loop bearer (set above), so
         // external clients cannot use it to bypass admission.
-        headers["x-cheaproute-admission-bypass"] = "internal";
+        headers["x-omniroute-admission-bypass"] = "internal";
       }
 
       response = await fetchImpl(`${baseUrl}/chat/completions`, {

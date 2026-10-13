@@ -20,7 +20,7 @@
 import { logger } from "@cheaproute/open-sse/utils/logger.ts";
 import { estimateTokens } from "@cheaproute/open-sse/services/contextManager.ts";
 import { adaptBodyForCompression } from "@cheaproute/open-sse/services/compression/bodyAdapter.ts";
-import { resolveCheapGlyphTransport } from "@cheaproute/open-sse/services/compression/imageTransportPolicy.ts";
+import { resolveOmniGlyphTransport } from "@cheaproute/open-sse/services/compression/imageTransportPolicy.ts";
 import type {
   CompressionConfig,
   CompressionResult,
@@ -87,7 +87,7 @@ export async function applyResponsesWsCompression(
 
     const result = await applyCompressionAsync(adapter.body, mode, {
       model: ctx.model,
-      ...resolveCheapGlyphTransport(ctx.provider),
+      ...resolveOmniGlyphTransport(ctx.provider),
       provider: ctx.provider,
       config: settings as CompressionConfig,
       cachingContext,

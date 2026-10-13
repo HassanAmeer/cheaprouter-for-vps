@@ -12,7 +12,7 @@ import {
 const IS_WIN = process.platform === "win32";
 const IS_MAC = process.platform === "darwin";
 
-const LINUX_CERT_NAME = "cheaproute-mitm.crt";
+const LINUX_CERT_NAME = "omniroute-mitm.crt";
 
 interface LinuxCertConfig {
   dir: string;
@@ -328,10 +328,10 @@ export async function installCertResult(
  * trust store. Named wrapper over {@link installCertResult} for call-site
  * clarity — the underlying platform installers
  * (`installCertLinux`/`installCertMac`/`installCertWindows`) are already
- * cert-path-agnostic and keep writing to the same `cheaproute-mitm.crt`
+ * cert-path-agnostic and keep writing to the same `omniroute-mitm.crt`
  * trust-store slot the old single-leaf install used, so the CA cert simply
  * supersedes the old leaf under that slot; no new slot, no dual-trust
- * cleanup needed. Distinct from TPROXY's own `cheaproute-tproxy-ca.crt` slot
+ * cleanup needed. Distinct from TPROXY's own `omniroute-tproxy-ca.crt` slot
  * (`src/mitm/tproxy/caTrust.ts`), which this feature does not touch. #6684
  */
 export async function installCaCert(

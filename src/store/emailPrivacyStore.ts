@@ -17,7 +17,7 @@ const useEmailPrivacyStore = create<EmailPrivacyState>()(
       setEmailsVisible: (visible) => set({ emailsVisible: visible }),
     }),
     {
-      name: "cheaproute-email-privacy",
+      name: "omniroute-email-privacy",
     }
   )
 );

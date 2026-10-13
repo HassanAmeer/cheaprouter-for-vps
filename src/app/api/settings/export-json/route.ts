@@ -87,7 +87,7 @@ export async function GET(request: Request) {
       // Metadata to identify export version
       _meta: {
         exportedAt: new Date().toISOString(),
-        version: "cheaproute-v3-legacy-export",
+        version: "omniroute-v3-legacy-export",
         includesHistory: includeHistory,
       },
     };
@@ -105,7 +105,7 @@ export async function GET(request: Request) {
       status: 200,
       headers: {
         "Content-Type": "application/json",
-        "Content-Disposition": `attachment; filename="cheaproute-legacy-backup-${new Date().toISOString().replace(/[:.]/g, "-")}.json"`,
+        "Content-Disposition": `attachment; filename="omniroute-legacy-backup-${new Date().toISOString().replace(/[:.]/g, "-")}.json"`,
       },
     });
   } catch (error) {

@@ -23,7 +23,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 export const SMOKE_MARKER = "CHEAPROUTE_SMOKE_OK";
-export const SMOKE_TOKEN = "cheaproute-smoke-sentinel";
+export const SMOKE_TOKEN = "omniroute-smoke-sentinel";
 export const DEFAULT_SMOKE_TARGETS = Object.freeze(["aider", "goose", "opencode", "qwen", "codex"]);
 
 const SCRIPT_PATH = fileURLToPath(import.meta.url);
@@ -405,7 +405,7 @@ function binaryAvailable(target, env) {
 }
 
 async function runTarget(target, options) {
-  const temporary = mkdtempSync(path.join(os.tmpdir(), "cheaproute-real-cli-smoke-"));
+  const temporary = mkdtempSync(path.join(os.tmpdir(), "omniroute-real-cli-smoke-"));
   let server;
   const result = { target, status: "FAIL", requests: [] };
   try {

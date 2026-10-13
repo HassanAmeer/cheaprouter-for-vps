@@ -74,7 +74,7 @@ export async function validateDifyProvider({
           inputs: {},
           query: "ping",
           response_mode: "blocking",
-          user: "cheaproute-key-check",
+          user: "omniroute-key-check",
         }),
       },
       false

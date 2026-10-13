@@ -96,7 +96,7 @@ import { checkResourcePressureGuard } from "../utils/resourcePressure.ts";
 import { normalizeHeaders } from "../utils/headers.ts";
 import { resolveChatCoreRequestFormat } from "./chatCore/requestFormat.ts";
 import { resolveChatCoreTargetFormat } from "./chatCore/targetFormat.ts";
-import { resolveCheapGlyphTransport } from "../services/compression/imageTransportPolicy.ts";
+import { resolveOmniGlyphTransport } from "../services/compression/imageTransportPolicy.ts";
 import { stripStore, usesClaudeBridge } from "./chatCore/agentRouterProtocol.ts";
 import { normalizeClaudeToolsForDispatch } from "./chatCore/claudeToolDefaults.ts";
 import {
@@ -1287,7 +1287,7 @@ async function handleChatCoreInner({
   let cavemanOutputModeIntensity: string | null = null;
   let preCompressionBody: typeof body | null = null;
   let compressionResponseMeta: string | null = null;
-  // CheapGlyph 1.3.x has native OpenAI Chat/Responses transformers. When the
+  // OmniGlyph 1.3.x has native OpenAI Chat/Responses transformers. When the
   // inbound protocol differs from the provider wire, defer only that engine to
   // the post-translation body; the text engines still run in their legacy lane.
   let runPostTranslationCompression:
@@ -1693,10 +1693,10 @@ async function handleChatCoreInner({
           // models, which is intentionally NOT `false` so the gate still preserves images.
           supportsVision: getResolvedModelCapabilities({ provider, model: effectiveModel })
             .supportsVision,
-          // CheapGlyph uses a measured provider/image-fidelity allowlist. Direct HTTP
+          // OmniGlyph uses a measured provider/image-fidelity allowlist. Direct HTTP
           // alone is not proof that a route preserves PNG bytes and dimensions.
-          ...resolveCheapGlyphTransport(provider),
-          // Sem o provider, a contabilidade do CheapGlyph cai para `unknown` e
+          ...resolveOmniGlyphTransport(provider),
+          // Sem o provider, a contabilidade do OmniGlyph cai para `unknown` e
           // recusa deduzir a semântica de cache (Anthropic usa buckets disjuntos,
           // OpenAI reporta cached como subconjunto do input).
           provider,
@@ -1732,15 +1732,15 @@ async function handleChatCoreInner({
         };
         const runCompression = (input: Record<string, unknown>) =>
           applyCompressionAsync(input, mode, compressionOptions);
-        const cheapglyphSelected =
-          mode === "cheapglyph" ||
+        const omniglyphSelected =
+          mode === "omniglyph" ||
           (mode === "stacked" &&
             Array.isArray(compressionConfig.stackedPipeline) &&
             compressionConfig.stackedPipeline.some((step) =>
-              typeof step === "string" ? step === "cheapglyph" : step.engine === "cheapglyph"
+              typeof step === "string" ? step === "omniglyph" : step.engine === "omniglyph"
             ));
         if (
-          cheapglyphSelected &&
+          omniglyphSelected &&
           (targetFormat === FORMATS.CLAUDE ||
             targetFormat === FORMATS.OPENAI ||
             targetFormat === FORMATS.OPENAI_RESPONSES) &&
@@ -2598,7 +2598,7 @@ async function handleChatCoreInner({
     return result;
   }
 
-  // The latest CheapGlyph release has protocol-native OpenAI transforms. Run
+  // The latest OmniGlyph release has protocol-native OpenAI transforms. Run
   // the deferred stage only after translation so Chat/Responses receives the
   // exact provider wire shape (and so a source→target conversion never embeds
   // Anthropic image blocks into an OpenAI request, or vice versa).
@@ -2608,7 +2608,7 @@ async function handleChatCoreInner({
     for (const [key, value] of Object.entries(postInput)) {
       // Translators keep response-side aliases in Maps under private keys. They
       // are not JSON request fields and would otherwise be stringified to `{}`
-      // by the CheapGlyph library wrapper; restore them after the wire transform.
+      // by the OmniGlyph library wrapper; restore them after the wire transform.
       if (key.startsWith("_") && value instanceof Map) {
         transientFields.set(key, value);
         delete postInput[key];
@@ -2654,7 +2654,7 @@ async function handleChatCoreInner({
         }
         log?.info?.(
           "COMPRESSION",
-          `Post-translation CheapGlyph applied (${sourceFormat} → ${targetFormat})`
+          `Post-translation OmniGlyph applied (${sourceFormat} → ${targetFormat})`
         );
       }
     } catch (error) {
@@ -2662,7 +2662,7 @@ async function handleChatCoreInner({
       // must never turn an otherwise valid translated request into a 500.
       log?.warn?.(
         "COMPRESSION",
-        "Post-translation CheapGlyph skipped: " +
+        "Post-translation OmniGlyph skipped: " +
           (error instanceof Error ? error.message : String(error))
       );
     }

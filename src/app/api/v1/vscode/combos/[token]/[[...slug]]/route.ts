@@ -122,7 +122,7 @@ function toOllamaTagCombo(combo: ComboCatalogEntry) {
 			}
 			: {}),
 		details: {
-			format: "cheaproute-combo",
+			format: "omniroute-combo",
 			family,
 			parameter_size: contextLength > 0 ? `${contextLength} ctx` : "unknown",
 			quantization_level: "dynamic",
@@ -193,7 +193,7 @@ function buildComboShowPayload(combo: ComboCatalogEntry) {
 		template: "",
 		details: {
 			parent_model: combo.root || actualModelId,
-			format: "cheaproute-combo",
+			format: "omniroute-combo",
 			family,
 			families: [family],
 			parameter_size:

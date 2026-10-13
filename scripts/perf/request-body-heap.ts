@@ -31,7 +31,7 @@ import fs from "node:fs";
 
 // Must happen BEFORE the dynamic imports below: open-sse/utils/requestLogger.ts transitively
 // opens the SQLite store at import time, and the benchmark must stay hermetic.
-const TMP_DATA_DIR = fs.mkdtempSync(path.join(os.tmpdir(), "cheaproute-heapbench-"));
+const TMP_DATA_DIR = fs.mkdtempSync(path.join(os.tmpdir(), "omniroute-heapbench-"));
 process.env.DATA_DIR = TMP_DATA_DIR;
 
 // open-sse/utils/requestLogger.ts imports @/lib/usage/usageHistory, so merely importing the

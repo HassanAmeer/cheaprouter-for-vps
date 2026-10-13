@@ -19,7 +19,7 @@ try {
 // #13679 PR B: checked-in literal, used ONLY as a last-resort fallback (see
 // getActiveSalt() below) — /etc/machine-id is commonly world-readable, so relying on
 // this literal as the real default let any local user derive the same bearer token.
-const BUILTIN_DEFAULT_SALT = "cheaproute-cli-auth-v1";
+const BUILTIN_DEFAULT_SALT = "omniroute-cli-auth-v1";
 const SALT_FILE_NAME = "cli-token-salt.json";
 const PERSISTED_SALT_RE = /^[0-9a-f]{64}$/;
 

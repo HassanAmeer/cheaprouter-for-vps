@@ -199,7 +199,7 @@ export async function getLatestVersionFromGitHub(
       signal: controller.signal,
       headers: {
         // GitHub's API rejects requests without a User-Agent.
-        "User-Agent": "cheaproute-version-check",
+        "User-Agent": "omniroute-version-check",
         Accept: "application/vnd.github+json",
       },
     });

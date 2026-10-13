@@ -82,7 +82,7 @@ export async function install(version = "latest"): Promise<InstallResult> {
     fs.writeFileSync(
       hostPkgPath,
       JSON.stringify(
-        { name: "cheaproute-bifrost-host", version: "0.0.0", private: true, dependencies: {} },
+        { name: "omniroute-bifrost-host", version: "0.0.0", private: true, dependencies: {} },
         null,
         2
       ),

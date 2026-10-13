@@ -66,7 +66,7 @@ export function ensureRuntimeDir() {
       pkgPath,
       JSON.stringify(
         {
-          name: "cheaproute-runtime",
+          name: "omniroute-runtime",
           version: "1.0.0",
           private: true,
           description: "User-writable runtime deps for CheapRoute (native binaries)",

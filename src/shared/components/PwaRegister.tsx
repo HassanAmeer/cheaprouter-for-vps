@@ -40,7 +40,7 @@ export function PwaRegister() {
     // is the build identity, so when a cache from another build is still
     // present, drop the worker and every cache, then reload exactly once.
     const workerUrl = `/sw.js?v=${process.env.NEXT_PUBLIC_SW_BUILD_ID}`;
-    const RESET_FLAG = "cheaproute-sw-reset";
+    const RESET_FLAG = "omniroute-sw-reset";
     void (async () => {
       try {
         const registrations = await navigator.serviceWorker.getRegistrations();

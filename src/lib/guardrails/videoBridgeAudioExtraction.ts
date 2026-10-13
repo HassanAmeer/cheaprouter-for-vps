@@ -54,7 +54,7 @@ export async function extractVideoAudioFromBytes(
   bytes: Uint8Array,
   options: VideoAudioExtractionOptions
 ): Promise<ExtractedVideoAudio> {
-  const temporaryDirectory = await mkdtemp(join(tmpdir(), "cheaproute-video-audio-broker-"));
+  const temporaryDirectory = await mkdtemp(join(tmpdir(), "omniroute-video-audio-broker-"));
   try {
     if (options.signal?.aborted) throw new Error("Video audio extraction request aborted");
     const runner = options.runner ?? defaultRunner;

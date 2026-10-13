@@ -8,7 +8,7 @@
  */
 
 const KNOWN_WEAK_SECRETS = [
-  "cheaproute-default-secret-change-me",
+  "omniroute-default-secret-change-me",
   "change-me-to-a-long-random-secret",
   "endpoint-proxy-api-key-secret",
   "change-me-storage-encryption-key",

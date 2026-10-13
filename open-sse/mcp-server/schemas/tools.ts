@@ -1186,7 +1186,7 @@ export const compressionConfigureInput = z.object({
       "rtk",
       "codex-responses",
       "stacked",
-      "cheapglyph",
+      "omniglyph",
     ])
     .optional()
     .describe("Compression mode"),
@@ -1200,7 +1200,7 @@ export const compressionConfigureInput = z.object({
       "rtk",
       "codex-responses",
       "stacked",
-      "cheapglyph",
+      "omniglyph",
     ])
     .optional(),
   maxTokens: z

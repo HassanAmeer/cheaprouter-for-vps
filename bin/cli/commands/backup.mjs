@@ -168,7 +168,7 @@ async function pruneBackups(backupDir, retention) {
   if (!retention || retention <= 0 || !existsSync(backupDir)) return;
   try {
     const dirs = readdirSync(backupDir)
-      .filter((f) => f.startsWith("cheaproute-backup-"))
+      .filter((f) => f.startsWith("omniroute-backup-"))
       .sort()
       .reverse();
     for (const old of dirs.slice(retention)) {
@@ -183,7 +183,7 @@ export async function runBackupCommand(opts = {}) {
   const backupDir = getBackupDir();
   const timestamp = new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19);
   const safeName = opts.name ? String(opts.name).replace(/[/\\]/g, "_") : null;
-  const backupName = safeName ? `cheaproute-backup-${safeName}` : `cheaproute-backup-${timestamp}`;
+  const backupName = safeName ? `omniroute-backup-${safeName}` : `omniroute-backup-${timestamp}`;
   const backupPath = join(backupDir, backupName);
   const excludePatterns = opts.exclude || [];
 
@@ -239,7 +239,7 @@ export async function runBackupCommand(opts = {}) {
     if (backedUp > 0) {
       const info = {
         timestamp: new Date().toISOString(),
-        version: "cheaproute-cli-v1",
+        version: "omniroute-cli-v1",
         encrypted: !!opts.encrypt,
         files: FILES_TO_BACKUP.filter(
           (f) => existsSync(join(dataDir, f.name)) && !shouldExclude(f.name, excludePatterns)
@@ -280,7 +280,7 @@ async function _uploadBackupToCloud(backupPath, info) {
     return 1;
   }
   try {
-    const boundary = `cheaproute-backup-${Date.now().toString(36)}-${randomBytes(8).toString("hex")}`;
+    const boundary = `omniroute-backup-${Date.now().toString(36)}-${randomBytes(8).toString("hex")}`;
     const headers = new Headers({
       accept: "application/json",
       "content-type": `multipart/form-data; boundary=${boundary}`,
@@ -391,7 +391,7 @@ export async function runRestoreCommand(backupId, opts = {}) {
 
     try {
       const dirs = readdirSync(backupDir)
-        .filter((f) => f.startsWith("cheaproute-backup-"))
+        .filter((f) => f.startsWith("omniroute-backup-"))
         .sort()
         .reverse();
 
@@ -404,12 +404,12 @@ export async function runRestoreCommand(backupId, opts = {}) {
         const infoPath = join(backupDir, dir, "backup-info.json");
         if (existsSync(infoPath)) {
           const info = JSON.parse(readFileSync(infoPath, "utf8"));
-          const id = dir.replace("cheaproute-backup-", "");
+          const id = dir.replace("omniroute-backup-", "");
           const dateStr = new Date(info.timestamp).toLocaleString();
           console.log(`  ${id}`);
           console.log(`\x1b[2m    ${dateStr} — ${info.files?.length || 0} files\x1b[0m`);
         } else {
-          console.log(`\x1b[2m  ${dir.replace("cheaproute-backup-", "")}\x1b[0m`);
+          console.log(`\x1b[2m  ${dir.replace("omniroute-backup-", "")}\x1b[0m`);
         }
       }
     } catch (err) {
@@ -424,7 +424,7 @@ export async function runRestoreCommand(backupId, opts = {}) {
   }
 
   const safeBackupId = String(backupId).replace(/[/\\]/g, "_");
-  const backupPath = join(backupDir, `cheaproute-backup-${safeBackupId}`);
+  const backupPath = join(backupDir, `omniroute-backup-${safeBackupId}`);
   if (!existsSync(backupPath)) {
     console.error(t("backup.notFound", { name: backupId }));
     return 1;

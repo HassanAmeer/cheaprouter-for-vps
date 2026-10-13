@@ -7069,7 +7069,7 @@ paths:
       security: []
       parameters:
         - in: header
-          name: x-cheaproute-video-bridge-principal
+          name: x-omniroute-video-bridge-principal
           required: true
           description: Canonical visible-ASCII, opaque non-secret principal ID; production tenant derivation is required before enabling a caller
           schema:
@@ -7111,7 +7111,7 @@ paths:
       security: []
       parameters:
         - in: header
-          name: x-cheaproute-video-bridge-principal
+          name: x-omniroute-video-bridge-principal
           required: true
           description: Canonical visible-ASCII, opaque non-secret principal ID; production tenant derivation is required before enabling a caller
           schema:
@@ -7180,7 +7180,7 @@ paths:
       security: []
       parameters:
         - in: header
-          name: x-cheaproute-video-bridge-principal
+          name: x-omniroute-video-bridge-principal
           required: true
           description: Canonical visible-ASCII, opaque non-secret principal ID; production tenant derivation is required before enabling a caller
           schema:
@@ -9308,12 +9308,12 @@ paths:
       summary: "GET cli tools › config"
       description: >-
         Returns redacted, non-cacheable previews. Send the configuration API key
-        in x-cheaproute-config-api-key, separate from management authentication.
+        in x-omniroute-config-api-key, separate from management authentication.
         API keys in query strings are rejected. Preview content must not be
         copied into a credential-bearing configuration or submitted as an apply payload.
       parameters:
         - in: header
-          name: x-cheaproute-config-api-key
+          name: x-omniroute-config-api-key
           required: true
           schema:
             type: string

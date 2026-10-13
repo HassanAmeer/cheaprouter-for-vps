@@ -17,7 +17,7 @@ import {
   anthropicImageTokens,
   ANTHROPIC_IMAGE_BLOCK_OVERHEAD_TOKENS,
   openAIVisionTokens,
-} from "cheapglyph";
+} from "omniglyph";
 import { isInlineBase64ImageBlock } from "../contextManager.ts";
 import {
   jsonLength,
@@ -31,7 +31,7 @@ const DEFAULT_IMAGE_TOKEN_ESTIMATE = 1200;
 /**
  * Anthropic image block shape this estimator recognizes:
  * `{ type: "image", source: { type: "base64", media_type: "image/png", data: "<b64>" } }`.
- * Only PNG is decoded (the only format cheapglyph emits); anything else falls back to
+ * Only PNG is decoded (the only format omniglyph emits); anything else falls back to
  * char-counting that block, same as before.
  */
 interface AnthropicImageBlock {
@@ -138,7 +138,7 @@ function charTokensOf(value: unknown): number {
  * image-token cost (`anthropicImageTokens` + per-block overhead). Malformed/undecodable
  * blocks are left as-is and fall back to char-counting like any other value — never throw.
  * Tier is fixed to "standard": production resolves every tier to standard today (measured
- * in the cheapglyph billing sweep — see anthropic-vision.ts), so there is no model-specific
+ * in the omniglyph billing sweep — see anthropic-vision.ts), so there is no model-specific
  * signal available here that would change the result.
  */
 function blankImageBlocksAndSumImageTokens(body: Record<string, unknown>): {

@@ -9,7 +9,7 @@ import { ionizerEngine } from "./ionizer/index.ts";
 import { relevanceEngine } from "./relevance/index.ts";
 import { llmCompressorEngine } from "./llm/index.ts";
 import { readLifecycleEngine } from "./readLifecycle/index.ts";
-import { cheapglyphEngine } from "./cheapglyphAdapter.ts";
+import { omniglyphEngine } from "./omniglyphAdapter.ts";
 import { codexResponsesEngine } from "./codexResponses/index.ts";
 
 let registered = false;
@@ -37,7 +37,7 @@ export function registerBuiltinCompressionEngines(): void {
     { id: "relevance", engine: relevanceEngine },
     { id: "llm", engine: llmCompressorEngine },
     { id: "read-lifecycle", engine: readLifecycleEngine },
-    { id: "cheapglyph", engine: cheapglyphEngine },
+    { id: "omniglyph", engine: omniglyphEngine },
   ];
 
   for (const { id, engine } of engines) {

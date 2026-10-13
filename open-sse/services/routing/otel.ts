@@ -164,7 +164,7 @@ export function buildOtlpTracesPayload(events: RoutingEventLike[], serviceName: 
       resource: {
         attributes: [
           { key: "service.name", value: { stringValue: serviceName } },
-          { key: "telemetry.sdk.name", value: { stringValue: "cheaproute-routing" } },
+          { key: "telemetry.sdk.name", value: { stringValue: "omniroute-routing" } },
         ],
       },
       scopeSpans: [

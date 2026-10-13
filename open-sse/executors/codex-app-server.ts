@@ -283,7 +283,7 @@ export class CodexAppServerExecutor extends BaseExecutor {
         await client.connect(config.url, config.token);
         await client.request("initialize", {
           clientInfo: {
-            name: "cheaproute-codex-app-server",
+            name: "omniroute-codex-app-server",
             title: null,
             version: "1.0",
           },

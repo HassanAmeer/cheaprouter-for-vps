@@ -412,8 +412,8 @@ export function bootstrapEnv({ dataDirOverride, quiet = false } = {}) {
                 .slice(0, 16);
               const dynamicKey = scryptSync(merged.STORAGE_ENCRYPTION_KEY, dynamicSalt, 32);
 
-              // Legacy salt (fallback): scryptSync(secret, "cheaproute-field-encryption-v1", 32)
-              const legacySalt = "cheaproute-field-encryption-v1";
+              // Legacy salt (fallback): scryptSync(secret, "omniroute-field-encryption-v1", 32)
+              const legacySalt = "omniroute-field-encryption-v1";
               const legacyKey = scryptSync(merged.STORAGE_ENCRYPTION_KEY, legacySalt, 32);
 
               let keyMatched = false;

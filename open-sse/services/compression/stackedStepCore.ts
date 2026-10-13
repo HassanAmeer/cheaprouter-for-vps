@@ -111,7 +111,7 @@ export function mergeStackStep(
     ...(result.stats.rulesApplied ? { rulesApplied: result.stats.rulesApplied } : {}),
     ...(result.stats.durationMs !== undefined ? { durationMs: result.stats.durationMs } : {}),
     // O agregado do pipeline soma tokens de todas as engines; a contabilidade
-    // física do cheapglyph só faz sentido no passo que a produziu.
-    ...(result.stats.cheapglyph ? { cheapglyph: result.stats.cheapglyph } : {}),
+    // física do omniglyph só faz sentido no passo que a produziu.
+    ...(result.stats.omniglyph ? { omniglyph: result.stats.omniglyph } : {}),
   });
 }

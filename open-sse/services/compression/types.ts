@@ -16,7 +16,7 @@ import type { RiskGateConfig } from "./riskGate/riskGate.ts";
 import type { PipelineCircuitBreakerConfig } from "./pipelineEngineBreaker.ts";
 import type { RiskGateStats } from "./riskGate/riskGateStep.ts";
 import type { QuantumLockConfig, QuantumLockStats } from "./quantumLock/quantumPatterns.ts";
-import type { CheapGlyphAccounting } from "./cheapglyphTelemetry.ts";
+import type { OmniGlyphAccounting } from "./omniglyphTelemetry.ts";
 
 // Re-export so consumers that already import from this module (e.g. src/lib/db/compression.ts)
 // can get ENGINE_IDS without a second bare `@cheaproute/open-sse/...engineCatalog.ts` specifier.
@@ -33,7 +33,7 @@ export type CompressionMode =
   | "ultra"
   | "rtk"
   | "codex-responses"
-  | "cheapglyph"
+  | "omniglyph"
   | "stacked";
 export type CavemanIntensity = "lite" | "full" | "ultra";
 export type RtkIntensity = "minimal" | "standard" | "aggressive";
@@ -49,7 +49,7 @@ export type CompressionEngineId =
   | "ccr"
   | "llmlingua"
   | "relevance"
-  | "cheapglyph"
+  | "omniglyph"
   | "codex-responses";
 
 export interface CavemanRule {
@@ -162,11 +162,11 @@ export interface LiveZoneConfig {
   enabled: boolean;
 }
 
-/** Perfil semântico do CheapGlyph (pacote 1.4.0+). */
-export type CheapglyphProfile = "coding-safe" | "balanced" | "aggressive" | "passthrough";
+/** Perfil semântico do OmniGlyph (pacote 1.4.0+). */
+export type OmniglyphProfile = "coding-safe" | "balanced" | "aggressive" | "passthrough";
 
 /**
- * Política do CheapGlyph escolhida pelo operador.
+ * Política do OmniGlyph escolhida pelo operador.
  *
  * O perfil é um TETO: `mergeCompressionProfileOptions` do pacote não deixa um
  * override reabrir uma lane que o perfil fechou. Trocar de `aggressive` para
@@ -174,8 +174,8 @@ export type CheapglyphProfile = "coding-safe" | "balanced" | "aggressive" | "pas
  * medido de a engine não fazer nada até a sessão acumular histórico
  * (`minCompressChars` vai ao máximo). Por isso o default é `aggressive`.
  */
-export interface CheapglyphConfig {
-  profile: CheapglyphProfile;
+export interface OmniglyphConfig {
+  profile: OmniglyphProfile;
 }
 
 /** Lite detail settings for proactive request-time transformations. */
@@ -229,8 +229,8 @@ export interface CompressionConfig {
   comboOverrides: Record<string, CompressionMode>;
   compressionComboId?: string | null;
   stackedPipeline?: CompressionPipelineStep[];
-  /** Política do engine CheapGlyph (perfil semântico). */
-  cheapglyph?: CheapglyphConfig;
+  /** Política do engine OmniGlyph (perfil semântico). */
+  omniglyph?: OmniglyphConfig;
   /** Opt-in QuantumLock cache-prefix stabilization (default off). */
   quantumLock?: QuantumLockConfig;
   /** Opt-in per-step fidelity gate (default disabled). */
@@ -331,11 +331,11 @@ export interface CompressionStats {
   /** #7847 observability: true when this result was served from the result memo cache. */
   memoHit?: boolean;
   /**
-   * Contabilidade física do CheapGlyph, normalizada pelo próprio pacote
-   * (`normalizeAccounting`). Só número e enum — ver `cheapglyphTelemetry.ts`
+   * Contabilidade física do OmniGlyph, normalizada pelo próprio pacote
+   * (`normalizeAccounting`). Só número e enum — ver `omniglyphTelemetry.ts`
    * para a allowlist e o que nunca pode entrar aqui.
    */
-  cheapglyph?: CheapGlyphAccounting;
+  omniglyph?: OmniGlyphAccounting;
   riskGate?: RiskGateStats;
   /**
    * Phase 4 (B): which `ultra` tier actually ran for this request.
@@ -374,8 +374,8 @@ export interface CompressionStats {
     durationMs?: number;
     rejected?: boolean;
     rejectReason?: string;
-    /** Contabilidade física — presente só no passo cheapglyph que comprimiu. */
-    cheapglyph?: CheapGlyphAccounting;
+    /** Contabilidade física — presente só no passo omniglyph que comprimiu. */
+    omniglyph?: OmniGlyphAccounting;
   }>;
   /** Present only when QuantumLock stabilized ≥1 fragment this run. */
   quantumLock?: QuantumLockStats;
@@ -500,10 +500,10 @@ export const DEFAULT_COMPRESSION_LANGUAGE_CONFIG: CompressionLanguageConfig = {
 /**
  * `aggressive` é a política que os recibos publicados mediram. Medido nesta
  * base: com `coding-safe`/`balanced`, uma sessão sem histórico acumulado para em
- * `below_min_chars` e a engine não faz nada — como o CheapGlyph é opt-in, esse
+ * `below_min_chars` e a engine não faz nada — como o OmniGlyph é opt-in, esse
  * default entregaria "ligado, 0% de ganho".
  */
-export const DEFAULT_CHEAPGLYPH_CONFIG: CheapglyphConfig = {
+export const DEFAULT_OMNIGLYPH_CONFIG: OmniglyphConfig = {
   profile: "aggressive",
 };
 

@@ -1127,7 +1127,7 @@
     "contextLite": "Lite",
     "contextAggressive": "Aggressive",
     "contextUltra": "Ultra",
-    "contextCheapglyph": "CheapGlyph",
+    "contextOmniglyph": "OmniGlyph",
     "contextSettings": "Compression Settings",
     "contextHeadroom": "Headroom",
     "contextSessionDedup": "Session Dedup",
@@ -1145,7 +1145,7 @@
     "contextLiteSubtitle": "Fast whitespace cleanup",
     "contextAggressiveSubtitle": "Summary and aging",
     "contextUltraSubtitle": "Heuristic pruning",
-    "contextCheapglyphSubtitle": "Context as images",
+    "contextOmniglyphSubtitle": "Context as images",
     "compressionStudioSubtitle": "Live engine cascade",
     "compressionExclusionsSubtitle": "Per-model/endpoint bypass",
     "chaosConfigSubtitle": "Multi-model parallel execution",
@@ -1788,7 +1788,7 @@
     "headroom": "Headroom",
     "lite": "Lite",
     "llmlingua": "LLMLingua",
-    "cheapglyph": "CheapGlyph",
+    "omniglyph": "OmniGlyph",
     "rtk": "RTK",
     "sessionDedup": "Session Dedup",
     "ultra": "Ultra",
@@ -6874,7 +6874,7 @@
     "routingBlockTextHint": "Full text of the new system block. Use a literal string; the system block stores text only.",
     "routingIdempotencyKeyHint": "Optional. If set, the op skips when a block whose text starts with this key is already present. Prevents double-prepend on retries.",
     "routingBillingEntrypointHint": "Value injected as 'cc_entrypoint='. Anthropic accepts 'sdk-cli' (Agent SDK), 'cli' (Claude Code CLI), or other documented values.",
-    "routingBillingVersionFormatHint": "How the 3-char build hash after cc_version= is computed. 'ex-machina' = sha256 of CCH_SALT+chars-from-first-user-msg+version (per-message). 'cheaproute-daystamp' = sha256 of YYYY-MM-DD+version (stable per-day).",
+    "routingBillingVersionFormatHint": "How the 3-char build hash after cc_version= is computed. 'ex-machina' = sha256 of CCH_SALT+chars-from-first-user-msg+version (per-message). 'omniroute-daystamp' = sha256 of YYYY-MM-DD+version (stable per-day).",
     "routingBillingCchAlgoHint": "How the 5-char cch= token is computed. 'sha256-first-user' = sha256 of first user message text. 'xxhash64-body' = body-level signing fills it later. 'static-zero' = literal '00000' placeholder.",
     "routingObfuscateWordsHint": "Lowercase words to obfuscate. ZWJ insertion is applied case-insensitively, so 'opencode' also matches 'OpenCode' and 'OPENCODE'.",
     "routingObfuscateTargetsHint": "Which body regions to scan for the words: system blocks, user/assistant messages, and/or tool descriptions.",
@@ -6952,7 +6952,7 @@
     "memoryDesc": "Persistent cross-session conversational memory",
     "memoryEnabled": "Enable Memory",
     "memoryEnabledDesc": "When enabled, CheapRouter will inject relevant past context.",
-    "memoryTokenCostWarning": "Heads up: with memory enabled, CheapRouter injects up to {tokens} tokens of retrieved context into every chat request — this increases token usage and cost. To skip injection for a specific request, send the \"x-cheaproute-no-memory: true\" header.",
+    "memoryTokenCostWarning": "Heads up: with memory enabled, CheapRouter injects up to {tokens} tokens of retrieved context into every chat request — this increases token usage and cost. To skip injection for a specific request, send the \"x-omniroute-no-memory: true\" header.",
     "maxTokens": "Max Tokens",
     "retentionDays": "Retention",
     "recent": "Recent",
@@ -8215,7 +8215,7 @@
     "redisLauncherRunning": "Running",
     "redisLauncherReachable": "Reachable",
     "redisLauncherError": "Error: {message}",
-    "redisLauncherHint": "Equivalent to running `cheaproute redis up`. The container is named `cheaproute-redis` and listens on 127.0.0.1:6379.",
+    "redisLauncherHint": "Equivalent to running `cheaproute redis up`. The container is named `omniroute-redis` and listens on 127.0.0.1:6379.",
     "compressionSettingsAutoTriggerMode": "Auto trigger mode",
     "compressionSettingsMcpDescriptionCompression": "MCP description compression",
     "mcpAccessibilityTitle": "MCP accessibility output",
@@ -8294,8 +8294,8 @@
         "label": "Ultra",
         "description": "Heuristic token pruning with an optional SLM."
       },
-      "cheapglyph": {
-        "label": "CheapGlyph",
+      "omniglyph": {
+        "label": "OmniGlyph",
         "description": "Context as an image (Claude Fable 5, direct route)."
       }
     },
@@ -9248,9 +9248,9 @@
     "bytes": "bytes",
     "tokensCl100k": "tokens (cl100k)"
   },
-  "cheapglyph": {
+  "omniglyph": {
     "preview": "Preview",
-    "description": "Context-as-image compression. Renders the system prompt, tool documentation, and dense history as compact PNG pages for the measured Claude Fable 5 path. The published CheapGlyph package also exposes native GPT 5.6 transformers, but CheapRouter keeps those routes fail-closed until provider fidelity and reading receipts exist.",
+    "description": "Context-as-image compression. Renders the system prompt, tool documentation, and dense history as compact PNG pages for the measured Claude Fable 5 path. The published OmniGlyph package also exposes native GPT 5.6 transformers, but CheapRouter keeps those routes fail-closed until provider fidelity and reading receipts exist.",
     "economicsTitle": "The economics",
     "economics": {
       "fewerTokens": "fewer tokens on the converted block",
@@ -9289,7 +9289,7 @@
       }
     },
     "enableTitle": "Enable the engine",
-    "enableDescription": "Runs last in the stack after text engines clean the request, using the native provider wire; OpenAI Chat/Responses requests are compressed after translation so their shape is preserved. It also runs standalone through <code>cheapglyph</code> mode. This is a preview and remains off by default until end-to-end validation is complete.",
+    "enableDescription": "Runs last in the stack after text engines clean the request, using the native provider wire; OpenAI Chat/Responses requests are compressed after translation so their shape is preserved. It also runs standalone through <code>omniglyph</code> mode. This is a preview and remains off by default until end-to-end validation is complete.",
     "profileTitle": "Compression profile",
     "profileDescription": "The profile is a ceiling, not a floor: a stricter profile cannot be reopened by a per-step override. Measured on this codebase: with coding-safe or balanced, a session that has not accumulated history yet compresses nothing, because both raise the minimum-characters threshold and keep the system prompt, tool schemas and tool results native.",
     "profiles": {
@@ -9310,11 +9310,11 @@
         "description": "Routes without transforming. The engine is skipped and the request is forwarded untouched."
       }
     },
-    "profileAria": "Select the CheapGlyph compression profile",
+    "profileAria": "Select the OmniGlyph compression profile",
     "saved": "Saved.",
     "saveFailed": "Could not save.",
-    "enableAria": "Enable the CheapGlyph engine",
-    "title": "CheapGlyph"
+    "enableAria": "Enable the OmniGlyph engine",
+    "title": "OmniGlyph"
   },
   "embeddedServices": {
     "title": "Embedded Services",
@@ -11238,7 +11238,7 @@
     "googleLoopbackTitle": "Google sign-in can't complete from this address",
     "googleLoopbackWhatHappens": "Google only releases the authorization code once <code>{redirectUri}</code> is reachable from the browser that approves the sign-in. Here that address points at this computer, not at the CheapRouter server — so the consent screen hangs instead of redirecting, and there is no callback URL to copy.",
     "googleLoopbackRecommended": "Recommended — run this on your own computer, then paste the result below:",
-    "googleLoopbackHelperNote": "It opens the Google consent locally (where 127.0.0.1 works) and prints a one-line cheaproute-cred-v1.… blob. Paste that blob into the Step 2 field below — it accepts a credential blob as well as a callback URL.",
+    "googleLoopbackHelperNote": "It opens the Google consent locally (where 127.0.0.1 works) and prints a one-line omniroute-cred-v1.… blob. Paste that blob into the Step 2 field below — it accepts a credential blob as well as a callback URL.",
     "googleLoopbackTunnelLabel": "Or forward the dashboard port over SSH and reload CheapRouter through the tunnel:",
     "googleLoopbackTunnelNote": "Replace {userPlaceholder} with your SSH username, keep the terminal open, then open {localUrl} and connect again from there.",
     "googleLoopbackHeadlessAlt": "For fully headless use with no local callback at all, <a>configure your own Google OAuth credentials</a> plus a public base URL.",

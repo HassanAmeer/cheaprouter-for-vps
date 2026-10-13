@@ -58,7 +58,7 @@ export function buildSmokeEnvironment(temporary, token, binDir = "", inherited =
     CHEAPROUTE_CLI_SKIP_DEFAULT_DATA_ENV: "1",
     CHEAPROUTE_CLI_SKIP_REPO_ENV: "1",
     CHEAPROUTE_NO_UPDATE_NOTIFIER: "1",
-    STORAGE_ENCRYPTION_KEY: "cheaproute-smoke-storage-sentinel-not-a-real-key",
+    STORAGE_ENCRYPTION_KEY: "omniroute-smoke-storage-sentinel-not-a-real-key",
     OPENCODE_DISABLE_AUTOUPDATE: "true",
     OPENCODE_DISABLE_SHARE: "true",
     OPENCODE_DISABLE_MODELS_FETCH: "true",

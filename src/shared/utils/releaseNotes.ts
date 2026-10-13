@@ -6,7 +6,7 @@ export const CHANGELOG_RAW_URL =
   "https://raw.githubusercontent.com/diegosouzapw/CheapRoute/main/CHANGELOG.md";
 export const CHANGELOG_GITHUB_URL =
   "https://github.com/diegosouzapw/CheapRoute/blob/main/CHANGELOG.md";
-export const NEWS_DISMISS_STORAGE_NAME = "cheaproute-news-dismissed-v2";
+export const NEWS_DISMISS_STORAGE_NAME = "omniroute-news-dismissed-v2";
 export const NEWS_DISMISS_EVENT = "cheaproute:news-dismissed";
 
 const NEWS_ID_PATTERN = /^[a-z0-9](?:[a-z0-9-]{0,78}[a-z0-9])?$/;

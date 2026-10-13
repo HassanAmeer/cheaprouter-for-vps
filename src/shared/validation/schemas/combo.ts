@@ -127,7 +127,7 @@ export const compressionModeSchema = z.enum([
   "rtk",
   "stacked",
   "codex-responses",
-  "cheapglyph",
+  "omniglyph",
 ]);
 
 export const comboCompressionOverrideSchema = z.union([z.literal(""), compressionModeSchema]);

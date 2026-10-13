@@ -4,7 +4,7 @@ import { useCallback, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 
-const DISMISS_STORAGE_KEY = "cheaproute-first-run-readiness-dismissed";
+const DISMISS_STORAGE_KEY = "omniroute-first-run-readiness-dismissed";
 
 type FirstRunReadinessCardProps = {
   setupComplete: boolean;

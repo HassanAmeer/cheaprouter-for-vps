@@ -157,7 +157,7 @@ const bootstrapEnvVars = bootstrapEnv({
 const runtimePorts = resolveRuntimePorts(bootstrapEnvVars);
 const bootstrapMode = process.env.CHEAPROUTE_E2E_BOOTSTRAP_MODE || "auth";
 const playwrightPassword =
-  process.env.CHEAPROUTE_E2E_PASSWORD || process.env.INITIAL_PASSWORD || "cheaproute-e2e-password";
+  process.env.CHEAPROUTE_E2E_PASSWORD || process.env.INITIAL_PASSWORD || "omniroute-e2e-password";
 const testServerEnv = {
   ...sanitizeColorEnv(bootstrapEnvVars),
   ...sanitizeColorEnv(process.env),

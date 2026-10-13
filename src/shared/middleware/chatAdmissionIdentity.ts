@@ -3,9 +3,9 @@ import { isOwnListenerSelfHop, SELF_HOP_HEADER } from "@cheaproute/open-sse/util
 import { timingSafeCompare } from "@/shared/utils/timingSafeCompare";
 
 const ADMISSION_BYPASS_VALUE = "internal";
-const FINGERPRINT_KEY = "cheaproute-admission-fingerprint-v1";
+const FINGERPRINT_KEY = "omniroute-admission-fingerprint-v1";
 
-export const ADMISSION_BYPASS_HEADER = "x-cheaproute-admission-bypass";
+export const ADMISSION_BYPASS_HEADER = "x-omniroute-admission-bypass";
 
 export function resolveSessionId(request: Request): string {
   const authHeader = request.headers.get("authorization") || "";

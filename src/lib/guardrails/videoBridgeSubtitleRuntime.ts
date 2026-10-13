@@ -174,7 +174,7 @@ export async function extractVideoSubtitlesFromBytes(
     timeoutMs: number;
   }
 ): Promise<VideoSubtitleExtractionResult> {
-  const temporaryDirectory = await mkdtemp(join(tmpdir(), "cheaproute-video-subtitle-"));
+  const temporaryDirectory = await mkdtemp(join(tmpdir(), "omniroute-video-subtitle-"));
   try {
     if (options.signal?.aborted) throw new Error("Video subtitle extraction request aborted");
     const inputPath = join(temporaryDirectory, "input.video");

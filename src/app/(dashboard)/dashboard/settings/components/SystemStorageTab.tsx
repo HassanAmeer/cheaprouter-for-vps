@@ -546,7 +546,7 @@ export default function SystemStorageTab() {
     try {
       await fetchAndDownload(
         "/api/settings/export-json",
-        `cheaproute-legacy-backup-${new Date().toISOString().replace(/[:.]/g, "-")}.json`,
+        `omniroute-legacy-backup-${new Date().toISOString().replace(/[:.]/g, "-")}.json`,
         t("jsonExportFailed")
       );
     } catch (err) {
@@ -616,7 +616,7 @@ export default function SystemStorageTab() {
     try {
       await fetchAndDownload(
         "/api/db-backups/export",
-        `cheaproute-backup-${new Date().toISOString().replace(/[:.]/g, "-")}.sqlite`,
+        `omniroute-backup-${new Date().toISOString().replace(/[:.]/g, "-")}.sqlite`,
         t("exportFailed")
       );
     } catch (err) {
@@ -1339,7 +1339,7 @@ export default function SystemStorageTab() {
               try {
                 await fetchAndDownload(
                   "/api/db-backups/exportAll",
-                  "cheaproute-full-backup.tar.gz",
+                  "omniroute-full-backup.tar.gz",
                   t("exportFailed")
                 );
               } catch (err) {

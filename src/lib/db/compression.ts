@@ -26,8 +26,8 @@ import {
   DEFAULT_CODEX_RESPONSES_CONFIG,
   type CodexResponsesConfig,
   type ContextEditingConfig,
-  DEFAULT_CHEAPGLYPH_CONFIG,
-  type CheapglyphConfig,
+  DEFAULT_OMNIGLYPH_CONFIG,
+  type OmniglyphConfig,
   type EngineToggle,
   type HeadroomConfig,
   type McpAccessibilityConfig,
@@ -55,7 +55,7 @@ const COMPRESSION_MODES = new Set<CompressionMode>([
   "rtk",
   "codex-responses",
   "stacked",
-  "cheapglyph",
+  "omniglyph",
 ]);
 
 type JsonRecord = Record<string, unknown>;
@@ -304,7 +304,7 @@ function normalizeLanguageConfig(value: unknown): CompressionLanguageConfig {
   };
 }
 
-function normalizeCheapglyphConfig(value: unknown): CheapglyphConfig {
+function normalizeOmniglyphConfig(value: unknown): OmniglyphConfig {
   const record = toRecord(value);
   const profile = record.profile;
   // Um perfil desconhecido não pode virar "roda com a política padrão": cai para
@@ -313,7 +313,7 @@ function normalizeCheapglyphConfig(value: unknown): CheapglyphConfig {
     profile:
       profile === "coding-safe" || profile === "balanced" || profile === "passthrough"
         ? profile
-        : DEFAULT_CHEAPGLYPH_CONFIG.profile,
+        : DEFAULT_OMNIGLYPH_CONFIG.profile,
   };
 }
 
@@ -342,7 +342,7 @@ const STACKED_PIPELINE_ENGINE_IDS = new Set([
   "ccr",
   "llmlingua",
   "relevance",
-  "cheapglyph",
+  "omniglyph",
 ]);
 
 export function normalizeStackedPipeline(value: unknown): CompressionPipelineStep[] {
@@ -502,7 +502,7 @@ const SINGLE_MODE_ENGINE: Partial<Record<CompressionMode, string>> = {
   aggressive: "aggressive",
   ultra: "ultra",
   rtk: "rtk",
-  cheapglyph: "cheapglyph",
+  omniglyph: "omniglyph",
   "codex-responses": "codex-responses",
 };
 
@@ -722,7 +722,7 @@ export async function getCompressionSettings(): Promise<CompressionConfig> {
     ...buildDetailConfigDefaults(),
     contextBudget: normalizeContextBudgetConfig(undefined),
     contextEditing: { ...DEFAULT_CONTEXT_EDITING_CONFIG },
-    cheapglyph: { ...DEFAULT_CHEAPGLYPH_CONFIG },
+    omniglyph: { ...DEFAULT_OMNIGLYPH_CONFIG },
     liveZone: { enabled: false },
     engines: {},
     activeComboId: null,
@@ -882,8 +882,8 @@ export async function getCompressionSettings(): Promise<CompressionConfig> {
       case "contextEditing":
         config.contextEditing = normalizeContextEditingConfig(parsed);
         break;
-      case "cheapglyph":
-        config.cheapglyph = normalizeCheapglyphConfig(parsed);
+      case "omniglyph":
+        config.omniglyph = normalizeOmniglyphConfig(parsed);
         break;
       case "liveZone":
         config.liveZone = { enabled: toRecord(parsed).enabled === true };

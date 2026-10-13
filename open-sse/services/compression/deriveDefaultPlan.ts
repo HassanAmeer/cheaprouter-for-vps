@@ -9,7 +9,7 @@ const SINGLE_MODE_OF: Record<string, string> = {
   ultra: "ultra",
   rtk: "rtk",
   "codex-responses": "codex-responses",
-  cheapglyph: "cheapglyph",
+  omniglyph: "omniglyph",
 };
 
 export type CompressionSource =
