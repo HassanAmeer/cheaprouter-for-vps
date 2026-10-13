@@ -1,13 +1,12 @@
 export const HIDEABLE_SIDEBAR_ITEM_IDS = [
   // Home
   "home",
-  // API nav (top of sidebar)
+  // API nav
   "api-endpoints",
   "api-docs",
   // CheapProxy
   "api-manager",
   "providers",
-  "model-catalog",
   "combos",
   // Multi-tenant / reseller
   "users",
@@ -32,13 +31,16 @@ export type SidebarItemId = HideableSidebarItemId | AlwaysVisibleSidebarItemId;
 
 export type SidebarSectionId =
   | "home"
+  | "top"
   | "pinned"
   | "api"
   | "cheap-proxy"
   | "multi-tenant"
   | "costs"
+  | "info"
   | "devtools"
-  | "settings";
+  | "settings"
+  | "bottom";
 
 export interface SidebarItemDefinition {
   id: SidebarItemId;

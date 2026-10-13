@@ -1,77 +1,15 @@
 "use client";
 
-import { useState, useMemo, useCallback, useEffect } from "react";
-import { ProviderDisplayMode } from "../providerPageStorage";
-import { ProviderTab, PROVIDER_TABS_CONFIG, tabToCategories } from "../hooks/useProviderTabs";
-import { Button, Card } from "@/shared/components";
-import { useTranslations } from "next-intl";
-
-function StepPill({
-  active,
-  done,
-  label,
-  icon,
-  onClick,
-  className,
-}: {
-  active: boolean;
-  done: boolean;
-  label: string;
-  icon: string;
-  onClick: () => void;
-  className?: string;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={className || `flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
-        active
-          ? "border-primary/50 bg-primary/10 text-primary"
-          : done
-            ? "border-success/30 bg-success/10 text-success"
-            : "border-border bg-bg-subtle text-text-muted"}
-      `}
-    >
-      <span className="material-symbols-outlined text-[14px]">
-        {icon}
-      </span>
-      <span>
-        {label}
-      </span>
-    </button>
-  );
-}
+import { useState, useCallback } from "react";
+import { ProviderTab, PROVIDER_TABS_CONFIG } from "../hooks/useProviderTabs";
 
 export function ProviderTabs({
-  initialTab = "all",
+  initialTab = "all-providers",
   onTabChange,
-  displayMode,
-  setDisplayMode,
-  searchQuery,
-  setSearchQuery,
-  modelSearchQuery,
-  setModelSearchQuery,
-  showFreeOnly,
-  setShowFreeOnly,
-  activeServiceKind,
-  setActiveServiceKind,
 }: {
   initialTab?: ProviderTab;
   onTabChange?: (tab: ProviderTab) => void;
-  displayMode?: ProviderDisplayMode;
-  setDisplayMode?: (mode: ProviderDisplayMode) => void;
-  searchQuery?: string;
-  setSearchQuery?: (q: string) => void;
-  modelSearchQuery?: string;
-  setModelSearchQuery?: (q: string) => void;
-  showFreeOnly?: boolean;
-  setShowFreeOnly?: (v: boolean) => void;
-  activeServiceKind?: string | null;
-  setActiveServiceKind?: (k: string | null) => void;
 }) {
-  const t = useTranslations("providers");
-
   const [activeTab, setActiveTab] = useState<ProviderTab>(initialTab as ProviderTab);
 
   const handleTabChange = useCallback(
@@ -79,31 +17,35 @@ export function ProviderTabs({
       setActiveTab(tab);
       onTabChange?.(tab);
     },
-    [onTabChange]
+    [onTabChange],
   );
 
   return (
     <div className="border-b border-border mb-6">
-      <div className="flex flex-wrap gap-2">
+      <nav className="flex gap-0 overflow-x-auto" aria-label="Provider tabs">
         {PROVIDER_TABS_CONFIG.map((tabConfig) => {
           const isActive = tabConfig.id === activeTab;
           return (
-            <StepPill
+            <button
               key={tabConfig.id}
-              active={isActive}
-              done={false}
-              label={t(tabConfig.key) || tabConfig.fallback}
-              icon={tabConfig.icon}
+              type="button"
               onClick={() => handleTabChange(tabConfig.id)}
-              className={`flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
+              aria-selected={isActive}
+              role="tab"
+              className={[
+                "flex items-center gap-2 px-4 py-3 text-sm font-medium whitespace-nowrap",
+                "border-b-2 -mb-px transition-colors",
                 isActive
-                  ? "border-primary/50 bg-primary/10 text-primary"
-                  : "border-border bg-bg-subtle text-text-muted"}
-              `}
-            />
+                  ? "border-primary text-text-main"
+                  : "border-transparent text-text-muted hover:text-text-main hover:border-border",
+              ].join(" ")}
+            >
+              <span className="material-symbols-outlined text-[16px]">{tabConfig.icon}</span>
+              {tabConfig.fallback}
+            </button>
           );
         })}
-      </div>
+      </nav>
     </div>
   );
 }

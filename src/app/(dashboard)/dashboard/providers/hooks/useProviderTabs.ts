@@ -1,4 +1,9 @@
-export type ProviderTab = "apikey" | "oauth" | "free" | "compatible" | "all";
+export type ProviderTab =
+  | "all-providers"
+  | "connected"
+  | "unconnected"
+  | "manage-models"
+  | "reseller-api";
 
 export type ProviderTabsConfig = Array<{
   id: ProviderTab;
@@ -7,89 +12,71 @@ export type ProviderTabsConfig = Array<{
   descriptionKey: string;
   descriptionFallback: string;
   icon: string;
-  colorClass: string;
 }>;
 
 export const PROVIDER_TABS_CONFIG: ProviderTabsConfig = [
   {
-    id: "apikey",
-    key: "apiKeyProvidersTab",
-    fallback: "API Key",
-    descriptionKey: "apiKeyProvidersTabDesc",
-    descriptionFallback:
-      "Connect providers like OpenAI, Anthropic, Gemini, Groq and more with an API key.",
-    icon: "key",
-    colorClass: "bg-amber-500",
-  },
-  {
-    id: "oauth",
-    key: "oauthProvidersTab",
-    fallback: "OAuth",
-    descriptionKey: "oauthProvidersTabDesc",
-    descriptionFallback:
-      "OAuth and IDE providers (Cursor, Kiro, Claude, etc.) authenticated via browser.",
-    icon: "account_circle",
-    colorClass: "bg-blue-500",
-  },
-  {
-    id: "free",
-    key: "freeProvidersTab",
-    fallback: "Free & No-Auth",
-    descriptionKey: "freeProvidersTabDesc",
-    descriptionFallback:
-      "Providers with free tiers or local/no-auth access.",
-    icon: "star",
-    colorClass: "bg-green-500",
-  },
-  {
-    id: "compatible",
-    key: "compatibleProvidersTab",
-    fallback: "Compatible Gateways",
-    descriptionKey: "compatibleProvidersTabDesc",
-    descriptionFallback:
-      "Custom OpenAI, Anthropic, Claude Code-compatible and special-use providers.",
-    icon: "hub",
-    colorClass: "bg-orange-500",
-  },
-  {
-    id: "all",
+    id: "all-providers",
     key: "allProvidersTab",
     fallback: "All Providers",
     descriptionKey: "allProvidersTabDesc",
-    descriptionFallback:
-      "Browse every provider and category with full search and filters.",
+    descriptionFallback: "Browse all 370+ supported providers with search and filters.",
     icon: "apps",
-    colorClass: "bg-primary",
+  },
+  {
+    id: "connected",
+    key: "connectedProvidersTab",
+    fallback: "Connected",
+    descriptionKey: "connectedProvidersTabDesc",
+    descriptionFallback: "Providers with active credentials or API keys.",
+    icon: "check_circle",
+  },
+  {
+    id: "unconnected",
+    key: "unconnectedProvidersTab",
+    fallback: "Unconnected",
+    descriptionKey: "unconnectedProvidersTabDesc",
+    descriptionFallback: "Providers not yet configured. Click to connect.",
+    icon: "add_circle",
+  },
+  {
+    id: "manage-models",
+    key: "manageModelsTab",
+    fallback: "Manage Models",
+    descriptionKey: "manageModelsTabDesc",
+    descriptionFallback: "Activate, alias, and test models from connected providers.",
+    icon: "tune",
+  },
+  {
+    id: "reseller-api",
+    key: "resellerApiTab",
+    fallback: "Reseller API",
+    descriptionKey: "resellerApiTabDesc",
+    descriptionFallback: "Control which providers are exposed publicly and manage BYOK.",
+    icon: "storefront",
   },
 ];
 
+/**
+ * Maps a ProviderTab to the underlying provider category strings used for
+ * filtering the provider list. Only relevant for the list-based tabs.
+ */
 export function tabToCategories(tab: ProviderTab): string[] {
-  switch (tab) {
-    case "apikey":
-      return ["apikey"];
-    case "oauth":
-      return ["oauth", "ide"];
-    case "free":
-      return ["free", "no-auth"];
-    case "compatible":
-      return ["compatible", "web", "upstream-proxy", "webfetch", "cloudagent", "local", "search", "audio"];
-    case "all":
-      return [
-        "apikey",
-        "oauth",
-        "ide",
-        "free",
-        "no-auth",
-        "compatible",
-        "web",
-        "upstream-proxy",
-        "webfetch",
-        "cloudagent",
-        "local",
-        "search",
-        "audio",
-      ];
-    default:
-      return [];
-  }
+  // All category-based tabs show the full list; filtering is done by connection status
+  return [
+    "apikey",
+    "oauth",
+    "ide",
+    "free",
+    "no-auth",
+    "compatible",
+    "web",
+    "upstream-proxy",
+    "webfetch",
+    "cloudagent",
+    "local",
+    "search",
+    "audio",
+  ];
 }
+

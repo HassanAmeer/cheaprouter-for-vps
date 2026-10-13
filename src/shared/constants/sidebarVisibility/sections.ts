@@ -5,7 +5,8 @@ import type {
 
 // ─── Item arrays ────────────────────────────────────────────────────────────
 
-const HOME_ITEMS: readonly SidebarItemDefinition[] = [
+// Top standalone items: Home, Users, Usage — no section header
+const TOP_STANDALONE_ITEMS: readonly SidebarItemDefinition[] = [
   {
     id: "home",
     href: "/home",
@@ -14,8 +15,52 @@ const HOME_ITEMS: readonly SidebarItemDefinition[] = [
     icon: "home",
     exact: true,
   },
+  {
+    id: "users",
+    href: "/dashboard/users",
+    i18nKey: "users",
+    labelFallback: "Users",
+    subtitleKey: "usersSubtitle",
+    subtitleFallback: "Reseller users, plans & BYOK keys",
+    icon: "groups",
+  },
+  {
+    id: "usage",
+    href: "/dashboard/usage",
+    i18nKey: "usage",
+    labelFallback: "Usage",
+    subtitleKey: "usageSubtitle",
+    subtitleFallback: "Token & provider consumption",
+    icon: "data_usage",
+  },
 ];
 
+// CheapProxy section: Providers, Combos, API Keys (model-catalog removed)
+const CHEAP_PROXY_ITEMS: readonly SidebarItemDefinition[] = [
+  {
+    id: "providers",
+    href: "/dashboard/providers",
+    i18nKey: "providers",
+    subtitleKey: "providersSubtitle",
+    icon: "dns",
+  },
+  {
+    id: "combos",
+    href: "/dashboard/combos",
+    i18nKey: "combos",
+    subtitleKey: "combosSubtitle",
+    icon: "layers",
+  },
+  {
+    id: "api-manager",
+    href: "/dashboard/api-manager",
+    i18nKey: "apiManager",
+    subtitleKey: "apiManagerSubtitle",
+    icon: "vpn_key",
+  },
+];
+
+// API section: Endpoints + Docs
 const API_NAV_ITEMS: readonly SidebarItemDefinition[] = [
   {
     id: "api-endpoints",
@@ -37,49 +82,8 @@ const API_NAV_ITEMS: readonly SidebarItemDefinition[] = [
   },
 ];
 
-const OMNI_PROXY_ITEMS: readonly SidebarItemDefinition[] = [
-  {
-    id: "api-manager",
-    href: "/dashboard/api-manager",
-    i18nKey: "apiManager",
-    subtitleKey: "apiManagerSubtitle",
-    icon: "vpn_key",
-  },
-  {
-    id: "providers",
-    href: "/dashboard/providers",
-    i18nKey: "providers",
-    subtitleKey: "providersSubtitle",
-    icon: "dns",
-  },
-  {
-    id: "model-catalog",
-    href: "/dashboard/models",
-    i18nKey: "modelCatalog",
-    labelFallback: "Models & Combos",
-    subtitleKey: "modelCatalogSubtitle",
-    subtitleFallback: "Browse models and combos across providers",
-    icon: "view_list",
-  },
-  {
-    id: "combos",
-    href: "/dashboard/combos",
-    i18nKey: "combos",
-    subtitleKey: "combosSubtitle",
-    icon: "layers",
-  },
-];
-
-const COSTS_ITEMS: readonly SidebarItemDefinition[] = [
-  {
-    id: "usage",
-    href: "/dashboard/usage",
-    i18nKey: "usage",
-    labelFallback: "Usage",
-    subtitleKey: "usageSubtitle",
-    subtitleFallback: "Token & provider consumption",
-    icon: "data_usage",
-  },
+// Info section: Costs/Pricing + Free Provider Rankings
+const INFO_ITEMS: readonly SidebarItemDefinition[] = [
   {
     id: "costs-pricing",
     href: "/dashboard/costs/pricing",
@@ -96,6 +100,7 @@ const COSTS_ITEMS: readonly SidebarItemDefinition[] = [
   },
 ];
 
+// Dev Tools section: Logs, Proxy Logs, Console Logs
 const DEVTOOLS_ITEMS: readonly SidebarItemDefinition[] = [
   {
     id: "logs",
@@ -120,7 +125,8 @@ const DEVTOOLS_ITEMS: readonly SidebarItemDefinition[] = [
   },
 ];
 
-const SETTINGS_ITEMS: readonly SidebarItemDefinition[] = [
+// Bottom standalone: Theme — no section header
+const BOTTOM_STANDALONE_ITEMS: readonly SidebarItemDefinition[] = [
   {
     id: "settings-appearance",
     href: "/dashboard/settings/appearance",
@@ -130,64 +136,51 @@ const SETTINGS_ITEMS: readonly SidebarItemDefinition[] = [
   },
 ];
 
-const MULTI_TENANT_ITEMS: readonly SidebarItemDefinition[] = [
-  {
-    id: "users",
-    href: "/dashboard/users",
-    i18nKey: "users",
-    labelFallback: "Users",
-    subtitleKey: "usersSubtitle",
-    subtitleFallback: "Reseller users, plans & BYOK keys",
-    icon: "groups",
-  },
-];
-
 // ─── Sections ────────────────────────────────────────────────────────────────
 
 export const SIDEBAR_SECTIONS: readonly SidebarSectionDefinition[] = [
+  // 1. Top standalone: Home, Users, Usage
   {
-    id: "home",
+    id: "top",
     titleKey: "home",
     titleFallback: "Home",
-    children: HOME_ITEMS,
+    children: TOP_STANDALONE_ITEMS,
     showTitle: false,
   },
+  // 2. CheapProxy: Providers, Combos, API Keys
   {
     id: "cheap-proxy",
     titleKey: "cheapProxySection",
     titleFallback: "CheapProxy",
-    children: OMNI_PROXY_ITEMS,
+    children: CHEAP_PROXY_ITEMS,
   },
+  // 3. API: Endpoints + Docs
   {
-    id: "multi-tenant",
-    titleKey: "multiTenantSection",
-    titleFallback: "Reseller",
-    children: MULTI_TENANT_ITEMS,
+    id: "api",
+    titleKey: "apiSection",
+    titleFallback: "API",
+    children: API_NAV_ITEMS,
   },
+  // 4. Info: Costs + Rankings
   {
-    id: "costs",
+    id: "info",
     titleKey: "costsSection",
     titleFallback: "Info",
-    children: COSTS_ITEMS,
+    children: INFO_ITEMS,
   },
+  // 5. Dev Tools: Logs
   {
     id: "devtools",
     titleKey: "devtoolsSection",
     titleFallback: "Dev Tools",
     children: DEVTOOLS_ITEMS,
   },
+  // 6. Bottom standalone: Theme (no section label)
   {
-    id: "settings",
+    id: "bottom",
     titleKey: "settings",
-    titleFallback: "Setting",
-    children: SETTINGS_ITEMS,
-  },
-  // API navigation (Endpoint catalog + API Docs) — a collapsible "API" group
-  // (label visible) placed at the end of the sidebar.
-  {
-    id: "api",
-    titleKey: "apiSection",
-    titleFallback: "API",
-    children: API_NAV_ITEMS,
+    titleFallback: "Settings",
+    children: BOTTOM_STANDALONE_ITEMS,
+    showTitle: false,
   },
 ] as const;

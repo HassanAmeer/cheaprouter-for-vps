@@ -20,7 +20,6 @@ export const SIDEBAR_ICON_ACCENTS: Partial<Record<SidebarItemId, string>> = {
   "api-endpoints": "#38BDF8",
   "api-docs": "#818CF8",
   providers: "#818CF8",
-  "model-catalog": "#6366F1",
   combos: "#A855F7",
   users: "#14B8A0",
   "costs-pricing": "#FB923C",

@@ -248,7 +248,7 @@ function ProvidersPageContent() {
   const [openRouterProviderStats, setOpenRouterProviderStats] = useState<
     OpenRouterProviderStatsEntry[]
   >([]);
-  const [activeTab, setActiveTab] = useState<ProviderTab>("all");
+  const [activeTab, setActiveTab] = useState<ProviderTab>("all-providers");
   // #4240: media-category (serviceKind) filter — composes with activeTab,
   // search and configured-only. null = no serviceKind filter.
   const [activeServiceKind, setActiveServiceKind] = useState<string | null>(null);
@@ -922,16 +922,6 @@ function ProvidersPageContent() {
         <ProviderTabs
           initialTab={activeTab}
           onTabChange={setActiveTab}
-          displayMode={effectiveProviderDisplayMode}
-          setDisplayMode={setProviderDisplayMode}
-          searchQuery={searchQuery}
-          setSearchQuery={setSearchQuery}
-          modelSearchQuery={modelSearchQuery}
-          setModelSearchQuery={setModelSearchQuery}
-          showFreeOnly={showFreeOnly}
-          setShowFreeOnly={setShowFreeOnly}
-          activeServiceKind={activeServiceKind}
-          setActiveServiceKind={setActiveServiceKind}
         />
 
         <ProviderSummaryCard
