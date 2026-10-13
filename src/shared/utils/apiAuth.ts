@@ -182,7 +182,7 @@ function getSocketPeerAddress(request: RequestLike | Request | null | undefined)
  *   1. The token-stamped real TCP peer (`PEER_IP_HEADER` + `VIA_PROXY_HEADER`,
  *      written by the custom Node server from `req.socket.remoteAddress` after
  *      deleting any client-supplied value, validated against
- *      OMNIROUTE_PEER_STAMP_TOKEN). This is what the policy layer sees on the
+ *      CHEAPROUTE_PEER_STAMP_TOKEN). This is what the policy layer sees on the
  *      ORIGINAL request. A stamp present but failing validation → not loopback.
  *      A loopback socket flagged as a reverse-proxy hop → not loopback.
  *   2. The pipeline's own locality verdict (`AUTHZ_HEADER_PEER_LOCALITY`), which
@@ -214,7 +214,7 @@ export function getRequestPeerLocality(
 ): "loopback" | "lan" | "remote" {
   if (!request || typeof request !== "object") return "remote";
 
-  const stampToken = process.env.OMNIROUTE_PEER_STAMP_TOKEN;
+  const stampToken = process.env.CHEAPROUTE_PEER_STAMP_TOKEN;
 
   const stampedPeer = getHeaderValue(request, PEER_IP_HEADER);
   if (stampedPeer !== null) {

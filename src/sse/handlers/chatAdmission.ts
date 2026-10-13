@@ -11,8 +11,8 @@ import {
   type AdaptiveAdmissionAdmitted,
   type AdaptiveAdmissionFailureOutcome,
   type AdaptiveAdmissionRuntime,
-} from "@omniroute/open-sse/services/admission/runtime.ts";
-import type { PerTargetAdmissionHook } from "@omniroute/open-sse/services/admission/types.ts";
+} from "@cheaproute/open-sse/services/admission/runtime.ts";
+import type { PerTargetAdmissionHook } from "@cheaproute/open-sse/services/admission/types.ts";
 
 /** Single fairness bucket for unauthenticated / keyless traffic. Opaque; never a raw key. */
 export const ANONYMOUS_ADMISSION_TENANT_KEY = "anonymous";

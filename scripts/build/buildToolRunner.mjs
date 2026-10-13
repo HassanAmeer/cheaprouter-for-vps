@@ -1,5 +1,5 @@
 /**
- * OmniRoute — cross-platform spawning of locally installed build tools.
+ * CheapRoute — cross-platform spawning of locally installed build tools.
  *
  * WHY: `node_modules/.bin/<tool>` (no extension) is a POSIX shell script. On
  * Windows the executable shim is `<tool>.cmd`, so `execFileSync(join(ROOT,

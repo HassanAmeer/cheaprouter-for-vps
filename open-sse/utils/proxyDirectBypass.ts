@@ -5,8 +5,8 @@
  *
  *  - loopback, RFC1918, link-local, CGNAT, IPv6 ULA/link-local, and the `.local` / `.lan` /
  *    `.internal` suffixes — the former `isLocalAddress()` from `proxyFetch.ts`, same verdicts.
- *  - operator-listed provider-node hosts (`OMNIROUTE_LOCAL_PROVIDER_NODE_HOSTS`, #14635) —
- *    typically a Docker/Compose service name. A sibling container on OmniRoute's own Docker
+ *  - operator-listed provider-node hosts (`CHEAPROUTE_LOCAL_PROVIDER_NODE_HOSTS`, #14635) —
+ *    typically a Docker/Compose service name. A sibling container on CheapRoute's own Docker
  *    network cannot be reached through an egress proxy.
  */
 import { isConfiguredLocalNodeHostname } from "@/shared/network/localNodeHosts";

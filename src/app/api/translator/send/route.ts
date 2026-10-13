@@ -4,7 +4,7 @@ import {
   buildProviderHeaders,
   detectFormat,
   getTargetFormat,
-} from "@omniroute/open-sse/services/provider.ts";
+} from "@cheaproute/open-sse/services/provider.ts";
 import { getProviderConnections } from "@/lib/db/providers";
 import { isConnectionUnavailableToAuxiliaryActivity } from "@/lib/exclusiveLeaseIsolation";
 import { toJsonErrorPayload } from "@/shared/utils/upstreamError";

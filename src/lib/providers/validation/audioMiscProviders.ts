@@ -2,8 +2,8 @@
 // inworld, kie, aws-polly, bailian-coding-plan, reka, maritalk, nlpcloud, runwayml, nous-research,
 // poe. Extracted from validation.ts (god-file decomposition) — top-level functions with no
 // dispatcher-state captures; behavior is byte-identical to the original inline defs.
-import { getRegistryEntry } from "@omniroute/open-sse/config/providerRegistry.ts";
-import { POE_DEFAULT_BASE_URL } from "@omniroute/open-sse/config/providers/registry/poe/index.ts";
+import { getRegistryEntry } from "@cheaproute/open-sse/config/providerRegistry.ts";
+import { POE_DEFAULT_BASE_URL } from "@cheaproute/open-sse/config/providers/registry/poe/index.ts";
 import { normalizeBaseUrl } from "./urlHelpers";
 import {
   applyCustomUserAgent,
@@ -18,12 +18,12 @@ import {
   buildRunwayApiUrl,
   buildRunwayHeaders,
   normalizeRunwayBaseUrl,
-} from "@omniroute/open-sse/config/runway.ts";
+} from "@cheaproute/open-sse/config/runway.ts";
 import {
   buildMaritalkChatUrl,
   buildMaritalkModelsUrl,
-} from "@omniroute/open-sse/config/maritalk.ts";
-import { signAwsRequest } from "@omniroute/open-sse/utils/awsSigV4.ts";
+} from "@cheaproute/open-sse/config/maritalk.ts";
+import { signAwsRequest } from "@cheaproute/open-sse/utils/awsSigV4.ts";
 import { resolveAlibabaProviderBaseUrl } from "@/shared/constants/alibabaProviderRegions";
 
 export async function validateDeepgramProvider({ apiKey, providerSpecificData = {} }: any) {
@@ -638,7 +638,7 @@ export async function validateNousResearchProvider({ apiKey, providerSpecificDat
         model: modelId,
         messages: [{ role: "user", content: "test" }],
         max_tokens: 1,
-        tags: ["user=omniroute"],
+        tags: ["user=cheaproute"],
       }),
     });
 

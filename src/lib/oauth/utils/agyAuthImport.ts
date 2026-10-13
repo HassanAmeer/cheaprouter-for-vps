@@ -7,8 +7,8 @@ import { AGY_CONFIG } from "@/lib/oauth/constants/oauth";
 import {
   getAntigravityContentHeaders,
   getAntigravityLoadCodeAssistMetadata,
-} from "@omniroute/open-sse/services/antigravityHeaders.ts";
-import { extractCodeAssistOnboardTierId } from "@omniroute/open-sse/services/codeAssistSubscription.ts";
+} from "@cheaproute/open-sse/services/antigravityHeaders.ts";
+import { extractCodeAssistOnboardTierId } from "@cheaproute/open-sse/services/codeAssistSubscription.ts";
 import {
   antigravityDegradedProjectState,
   antigravityPersistStatus,

@@ -55,7 +55,7 @@ function removePayload(bundleRoot, relativePath, summary) {
 }
 
 /**
- * Remove docs that are useful while authoring OmniRoute but are never read by
+ * Remove docs that are useful while authoring CheapRoute but are never read by
  * the packaged desktop runtime. Canonical docs remain untouched; bundleRoot is
  * the disposable Electron staging directory.
  */

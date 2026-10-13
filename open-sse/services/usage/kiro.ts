@@ -27,7 +27,7 @@ import {
 type JsonRecord = Record<string, unknown>;
 
 const CODEWHISPERER_BASE_URL =
-  process.env.OMNIROUTE_CODEWHISPERER_BASE_URL ?? "https://codewhisperer.us-east-1.amazonaws.com";
+  process.env.CHEAPROUTE_CODEWHISPERER_BASE_URL ?? "https://codewhisperer.us-east-1.amazonaws.com";
 
 function isKiroOverageEnabled(data: JsonRecord): boolean {
   const overageConfiguration = toRecord(data.overageConfiguration);

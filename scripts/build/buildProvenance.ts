@@ -84,7 +84,7 @@ export function resolveBuildProvenance(input: BuildProvenanceInput): BuildProven
       reason: "canary-override",
       message:
         `BUILD_SHA ${buildSha} is NOT on the release line — allowed as a canary build ` +
-        "because OMNIROUTE_ALLOW_CANARY_BUILD=1 was set.",
+        "because CHEAPROUTE_ALLOW_CANARY_BUILD=1 was set.",
     };
   }
 
@@ -94,7 +94,7 @@ export function resolveBuildProvenance(input: BuildProvenanceInput): BuildProven
     message:
       `BUILD_SHA ${buildSha} is not an ancestor of the release branch. Shipping it means ` +
       "serving code that never passed the release gates (see #10427). Rebuild from the " +
-      "release tip, or set OMNIROUTE_ALLOW_CANARY_BUILD=1 to record this as a deliberate canary.",
+      "release tip, or set CHEAPROUTE_ALLOW_CANARY_BUILD=1 to record this as a deliberate canary.",
   };
 }
 

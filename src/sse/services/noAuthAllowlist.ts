@@ -1,4 +1,4 @@
-import { SYNTHETIC_NOAUTH_CONNECTION_ID } from "@omniroute/open-sse/services/autoCombo/resilienceCandidateFilter.ts";
+import { SYNTHETIC_NOAUTH_CONNECTION_ID } from "@cheaproute/open-sse/services/autoCombo/resilienceCandidateFilter.ts";
 
 /**
  * #9057 gate for the synthetic keyless connection: allowed when there is no

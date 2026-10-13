@@ -1,9 +1,9 @@
 /**
- * omniroute setup-crush — configure Crush (charmbracelet/crush) for OmniRoute.
+ * cheaproute setup-crush — configure Crush (charmbracelet/crush) for CheapRoute.
  *
  * Crush is a terminal AI agent with a file-based config: ~/.config/crush/crush.json
  * (or ./crush.json). It supports a custom `openai-compat` provider. base_url must
- * include /v1; the api_key may reference an env var (`$OMNIROUTE_API_KEY`) so the
+ * include /v1; the api_key may reference an env var (`$CHEAPROUTE_API_KEY`) so the
  * secret stays out of the file. Remote-aware; curated catalog models.
  */
 
@@ -15,7 +15,7 @@ import { resolveActiveContext } from "../contexts.mjs";
 import { categoriseModel } from "./setup-codex.mjs";
 import { guardHostConfigTarget } from "../utils/config-home-guard.mjs";
 
-const API_KEY_REF = "$OMNIROUTE_API_KEY";
+const API_KEY_REF = "$CHEAPROUTE_API_KEY";
 
 function ensureV1(url) {
   const s = String(url || "").replace(/\/+$/, "");
@@ -28,7 +28,7 @@ export function resolveCrushTarget(opts = {}) {
   if (opts.remote) root = String(opts.remote).replace(/\/+$/, "");
   else {
     try {
-      root = resolveActiveContext(opts.context ?? process.env.OMNIROUTE_CONTEXT)?.baseUrl;
+      root = resolveActiveContext(opts.context ?? process.env.CHEAPROUTE_CONTEXT)?.baseUrl;
     } catch {
       /* none */
     }
@@ -37,13 +37,13 @@ export function resolveCrushTarget(opts = {}) {
   let apiKey = opts.apiKey ?? opts["api-key"];
   if (!apiKey) {
     try {
-      const c = resolveActiveContext(opts.context ?? process.env.OMNIROUTE_CONTEXT);
+      const c = resolveActiveContext(opts.context ?? process.env.CHEAPROUTE_CONTEXT);
       apiKey = c?.accessToken || c?.apiKey;
     } catch {
       /* none */
     }
   }
-  if (!apiKey) apiKey = process.env.OMNIROUTE_API_KEY || "";
+  if (!apiKey) apiKey = process.env.CHEAPROUTE_API_KEY || "";
   return { baseUrl: ensureV1(root), apiKey };
 }
 
@@ -53,7 +53,7 @@ export function buildCrushProvider(modelIds, baseUrl) {
   for (const id of modelIds) {
     const cfg = categoriseModel(id);
     if (!cfg) continue;
-    models.push({ id, name: `OmniRoute: ${id}`, context_window: cfg.ctx });
+    models.push({ id, name: `CheapRoute: ${id}`, context_window: cfg.ctx });
   }
   return {
     type: "openai-compat",
@@ -63,10 +63,10 @@ export function buildCrushProvider(modelIds, baseUrl) {
   };
 }
 
-/** Merge the OmniRoute provider into an existing crush.json (preserve the rest). */
+/** Merge the CheapRoute provider into an existing crush.json (preserve the rest). */
 export function mergeCrushConfig(existing, provider) {
   const cfg = existing && typeof existing === "object" ? { ...existing } : {};
-  cfg.providers = { ...(cfg.providers || {}), omniroute: provider };
+  cfg.providers = { ...(cfg.providers || {}), cheaproute: provider };
   return cfg;
 }
 
@@ -106,13 +106,13 @@ export async function runSetupCrushCommand(opts = {}) {
 
   const guard = await guardHostConfigTarget(configPath, {
     toolLabel: "Crush",
-    hostCommand: "omniroute setup-crush",
+    hostCommand: "cheaproute setup-crush",
     allowContainerWrite: Boolean(opts.allowContainerWrite ?? opts["allow-container-write"]),
     dryRun,
   });
   if (guard !== 0) return guard;
 
-  printHeading("OmniRoute → Crush (openai-compat)");
+  printHeading("CheapRoute → Crush (openai-compat)");
   printInfo(`base_url: ${baseUrl}`);
 
   let ids;
@@ -120,7 +120,7 @@ export async function runSetupCrushCommand(opts = {}) {
     ids = await fetchModelIds(baseUrl, apiKey);
   } catch (e) {
     printError(`Could not fetch models: ${e.message}`);
-    printInfo("Make sure OmniRoute is running and --remote/--api-key are correct.");
+    printInfo("Make sure CheapRoute is running and --remote/--api-key are correct.");
     return 1;
   }
   if (only) ids = ids.filter((id) => only.some((f) => id.includes(f)));
@@ -136,15 +136,15 @@ export async function runSetupCrushCommand(opts = {}) {
   if (dryRun) {
     console.log("\n" + (out.length > 3500 ? out.slice(0, 3500) + "\n… (truncated)" : out));
     printInfo(
-      `[dry-run] ${provider.models.length} model(s) under providers.omniroute → ${configPath}`
+      `[dry-run] ${provider.models.length} model(s) under providers.cheaproute → ${configPath}`
     );
     return 0;
   }
   mkdirSync(join(configPath, ".."), { recursive: true });
   writeFileSync(configPath, out, "utf8");
-  printSuccess(`Wrote ${configPath} (${provider.models.length} models under providers.omniroute)`);
+  printSuccess(`Wrote ${configPath} (${provider.models.length} models under providers.cheaproute)`);
   printInfo(
-    "Provide the key (config references $OMNIROUTE_API_KEY):  export OMNIROUTE_API_KEY=..."
+    "Provide the key (config references $CHEAPROUTE_API_KEY):  export CHEAPROUTE_API_KEY=..."
   );
   printInfo("Then run:  crush");
   return 0;
@@ -153,10 +153,10 @@ export async function runSetupCrushCommand(opts = {}) {
 export function registerSetupCrush(program) {
   program
     .command("setup-crush")
-    .description("Generate the OmniRoute openai-compat provider in ~/.config/crush/crush.json")
-    .option("--port <port>", "Local OmniRoute port (ignored when --remote is set)", "20128")
-    .option("--remote <url>", "Remote OmniRoute URL, e.g. http://192.168.0.15:20128")
-    .option("--api-key <key>", "OmniRoute API key (defaults to OMNIROUTE_API_KEY env var)")
+    .description("Generate the CheapRoute openai-compat provider in ~/.config/crush/crush.json")
+    .option("--port <port>", "Local CheapRoute port (ignored when --remote is set)", "20128")
+    .option("--remote <url>", "Remote CheapRoute URL, e.g. http://192.168.0.15:20128")
+    .option("--api-key <key>", "CheapRoute API key (defaults to CHEAPROUTE_API_KEY env var)")
     .option("--only <patterns>", "Comma-separated substrings — keep only matching model IDs")
     .option("--config-path <path>", "crush.json path (default: ~/.config/crush/crush.json)")
     .option("--dry-run", "Print what would be written without touching the filesystem")

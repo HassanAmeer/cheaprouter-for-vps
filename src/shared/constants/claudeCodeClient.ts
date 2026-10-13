@@ -115,7 +115,7 @@ export function refreshClaudeCodeClientVersion(fetchImpl: FetchLike = fetch): Pr
         const response = await fetchImpl(NPM_CLAUDE_CODE_LATEST_URL, {
           headers: {
             Accept: "application/json",
-            "User-Agent": "OmniRoute-ClaudeCodeVersion/1.0",
+            "User-Agent": "CheapRoute-ClaudeCodeVersion/1.0",
           },
           signal: controller.signal,
         });

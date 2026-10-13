@@ -5,7 +5,7 @@
  */
 export const MAGNIFIC_IMAGE_PROVIDER = {
   id: "magnific",
-  // Official Magnific API (docs.magnific.com). The previous OmniRoute slug
+  // Official Magnific API (docs.magnific.com). The previous CheapRoute slug
   // was `freepik` because Magnific started as Freepik's developer API; keep
   // that id as a legacy alias so old URLs and `freepik/<model>` still resolve.
   alias: "freepik",

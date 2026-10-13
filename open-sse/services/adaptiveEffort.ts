@@ -1,4 +1,4 @@
-// Adaptive reasoning effort — the OmniRoute-side counterpart of Hermes'
+// Adaptive reasoning effort — the CheapRoute-side counterpart of Hermes'
 // `effort: "auto"` (NousResearch/hermes-agent#109044). One implementation at
 // the gateway covers every harness (Claude Code, Cursor, Codex, opencode,
 // Hermes) because the full request body passes through here before any
@@ -19,8 +19,8 @@
 //
 // Priority (highest first), all off-by-default:
 // 1. Explicit client reasoning field of any shape — always wins; no-op.
-// 2. `X-OmniRoute-Effort: auto` request header (per-request opt-in; mirrors
-//    the #6023/#6024/#6025 `X-OmniRoute-Mode`/`-Budget` controls pattern).
+// 2. `X-CheapRoute-Effort: auto` request header (per-request opt-in; mirrors
+//    the #6023/#6024/#6025 `X-CheapRoute-Mode`/`-Budget` controls pattern).
 // 3. `ModelSpec.defaultReasoningEffort: "auto"` (per-model opt-in, #6879).
 import { estimateMessageTokens } from "./specificityRules";
 

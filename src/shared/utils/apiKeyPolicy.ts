@@ -15,13 +15,13 @@ import { isDashboardSessionAuthenticated } from "./apiAuth";
 import { resolveComboForModel } from "@/lib/db/modelComboMappings";
 import { checkBudget } from "@/domain/costRules";
 import { checkKeyQuota } from "@/domain/keyQuota";
-import { checkTokenLimits } from "@omniroute/open-sse/services/tokenLimitCounter.ts";
+import { checkTokenLimits } from "@cheaproute/open-sse/services/tokenLimitCounter.ts";
 import {
   errorResponse,
   buildErrorBody,
   sanitizeErrorMessage,
-} from "@omniroute/open-sse/utils/error.ts";
-import { HTTP_STATUS } from "@omniroute/open-sse/config/constants.ts";
+} from "@cheaproute/open-sse/utils/error.ts";
+import { HTTP_STATUS } from "@cheaproute/open-sse/config/constants.ts";
 import * as log from "@/sse/utils/logger";
 import { checkRateLimit, RateLimitRule } from "./rateLimiter";
 import {
@@ -480,13 +480,13 @@ export interface EnforceApiKeyPolicyOptions {
  */
 /** Header carrying the id of the API key a dashboard playground request wants to
  *  test the policy for (never the key secret). */
-const PLAYGROUND_KEY_ID_HEADER = "x-omniroute-playground-key-id";
+const PLAYGROUND_KEY_ID_HEADER = "x-cheaproute-playground-key-id";
 
 /**
  * Dashboard playground support. An authenticated admin session may test a
  * specific API key's policy (allowed_models, budget, …) WITHOUT putting the key
  * secret on the wire: the browser sends only the key id via
- * `x-omniroute-playground-key-id` and we resolve the secret server-side.
+ * `x-cheaproute-playground-key-id` and we resolve the secret server-side.
  *
  * Security: honored ONLY for authenticated dashboard sessions, and only as a
  * fallback when no bearer key was presented — so it can never bypass auth or

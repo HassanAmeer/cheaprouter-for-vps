@@ -1,7 +1,7 @@
 /**
  * radar.ts — Radar client local DB module
  *
- * Provides local cache + settings storage for the OmniRoute Radar client.
+ * Provides local cache + settings storage for the CheapRoute Radar client.
  * Nothing here talks to the network (that's the sync layer).
  *
  * Tables (migration 136):

@@ -14,7 +14,7 @@ import { saveCliToolLastConfigured, deleteCliToolLastConfigured } from "@/lib/db
 import { cliModelConfigSchema } from "@/shared/validation/schemas";
 import { isValidationFailure, validateBody } from "@/shared/validation/helpers";
 import { resolveApiKey } from "@/shared/services/apiKeyResolver";
-import { sanitizeErrorMessage } from "@omniroute/open-sse/utils/error.ts";
+import { sanitizeErrorMessage } from "@cheaproute/open-sse/utils/error.ts";
 
 const TOOL_ID = "smelt";
 
@@ -24,14 +24,14 @@ const getSmeltConfigPath = (): string =>
 const getSmeltDir = () => path.dirname(getSmeltConfigPath());
 
 /**
- * Check if the config file contains OmniRoute settings.
+ * Check if the config file contains CheapRoute settings.
  */
-const hasOmniRouteConfig = (settings: Record<string, unknown> | null): boolean => {
+const hasCheapRouteConfig = (settings: Record<string, unknown> | null): boolean => {
   if (!settings) return false;
   return (
     typeof settings.baseUrl === "string" &&
     settings.baseUrl.length > 0 &&
-    settings._managedBy === "omniroute"
+    settings._managedBy === "cheaproute"
   );
 };
 
@@ -80,7 +80,7 @@ export async function GET(request: Request) {
       runtimeMode: runtime.runtimeMode,
       reason: runtime.reason,
       config,
-      hasOmniRoute: hasOmniRouteConfig(config),
+      hasCheapRoute: hasCheapRouteConfig(config),
       configPath: getSmeltConfigPath(),
     });
   } catch (err) {
@@ -91,7 +91,7 @@ export async function GET(request: Request) {
   }
 }
 
-// POST — write OmniRoute settings to Smelt config.json
+// POST — write CheapRoute settings to Smelt config.json
 export async function POST(request: Request) {
   const authError = await requireCliToolsAuth(request);
   if (authError) return authError;
@@ -140,14 +140,14 @@ export async function POST(request: Request) {
       /* No existing config */
     }
 
-    // Merge OmniRoute settings (smelt uses OpenAI-compatible config)
+    // Merge CheapRoute settings (smelt uses OpenAI-compatible config)
     const normalizedBaseUrl = baseUrl.endsWith("/v1") ? baseUrl : `${baseUrl}/v1`;
     const updated: Record<string, unknown> = {
       ...existing,
       baseUrl: normalizedBaseUrl,
       apiKey,
       model,
-      _managedBy: "omniroute",
+      _managedBy: "cheaproute",
     };
 
     await fs.writeFile(configPath, JSON.stringify(updated, null, 2), "utf-8");
@@ -172,7 +172,7 @@ export async function POST(request: Request) {
   }
 }
 
-// DELETE — remove OmniRoute settings from Smelt config
+// DELETE — remove CheapRoute settings from Smelt config
 export async function DELETE(request: Request) {
   const authError = await requireCliToolsAuth(request);
   if (authError) return authError;
@@ -200,7 +200,7 @@ export async function DELETE(request: Request) {
       throw err;
     }
 
-    // Remove OmniRoute-managed fields
+    // Remove CheapRoute-managed fields
     delete existing.baseUrl;
     delete existing.apiKey;
     delete existing.model;
@@ -219,7 +219,7 @@ export async function DELETE(request: Request) {
       /* non-critical */
     }
 
-    return NextResponse.json({ success: true, message: "Smelt OmniRoute settings removed" });
+    return NextResponse.json({ success: true, message: "Smelt CheapRoute settings removed" });
   } catch (err) {
     return NextResponse.json(
       { error: { message: sanitizeErrorMessage(err) } },

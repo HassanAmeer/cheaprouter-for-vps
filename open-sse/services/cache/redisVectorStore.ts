@@ -48,7 +48,7 @@ export class RedisVectorStore implements IVectorStore {
 
   constructor(options?: RedisVectorStoreOptions) {
     this.redisUrl = options?.redisUrl;
-    this.prefix = options?.keyPrefix ?? "omniroute:semcache:";
+    this.prefix = options?.keyPrefix ?? "cheaproute:semcache:";
     if (options?.client) {
       this.client = options.client;
     }

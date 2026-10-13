@@ -121,9 +121,9 @@ export async function notifyTrayReady(port, token) {
 // `npm install systray2` (up to 120s) — a fixed 60s deadline killed healthy workers (#15464).
 export const DEFAULT_TRAY_READY_TIMEOUT_MS = 240_000;
 
-/** Resolves the readiness deadline from OMNIROUTE_TRAY_READY_TIMEOUT_MS, else the default. */
+/** Resolves the readiness deadline from CHEAPROUTE_TRAY_READY_TIMEOUT_MS, else the default. */
 export function resolveTrayReadyTimeoutMs(env = process.env) {
-  const parsed = Number(env.OMNIROUTE_TRAY_READY_TIMEOUT_MS);
+  const parsed = Number(env.CHEAPROUTE_TRAY_READY_TIMEOUT_MS);
   return Number.isFinite(parsed) && parsed > 0 ? parsed : DEFAULT_TRAY_READY_TIMEOUT_MS;
 }
 
@@ -134,7 +134,7 @@ export async function startDetachedTray(
 ) {
   const token = randomBytes(32).toString("hex");
   const readiness = await createTrayReadinessServer(token);
-  const label = `com.omniroute.tray.${process.pid}.${Date.now()}`;
+  const label = `com.cheaproute.tray.${process.pid}.${Date.now()}`;
   const workerArgs = buildTrayWorkerArgs({
     port,
     maxRestarts,

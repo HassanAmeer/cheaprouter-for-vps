@@ -2,7 +2,7 @@ import { getCodexRequestDefaults } from "../../src/lib/providers/requestDefaults
 import { getProviderConnections } from "../../src/lib/db/providers.ts";
 import { providerLacksModelListing } from "../../src/lib/providers/modelListingCapability.ts";
 import { AI_PROVIDERS, NOAUTH_PROVIDERS } from "../../src/shared/constants/providers.ts";
-import { omniRouteFetch } from "./internalFetch.ts";
+import { cheapRouteFetch } from "./internalFetch.ts";
 
 type JsonRecord = Record<string, unknown>;
 type McpCatalogStatus = "available" | "degraded" | "unavailable";
@@ -303,11 +303,11 @@ export async function getMcpModelsCatalog(
   } = {}
 ): Promise<McpCatalogResponse> {
   // #15159 M-06: a static import of the shared hop. This used to be
-  // `import("./server.ts").then((m) => m.omniRouteFetch(path))` — a workaround for the hop
+  // `import("./server.ts").then((m) => m.cheapRouteFetch(path))` — a workaround for the hop
   // living inside the file that registers these tools, which closed the
   // `server.ts -> catalog.ts` edge in the dependency graph (cycle 194). The hop is now a
   // leaf module, so the round-trip through server.ts is unnecessary.
-  const fetchJson = deps.fetchJson ?? omniRouteFetch;
+  const fetchJson = deps.fetchJson ?? cheapRouteFetch;
   const listProviderConnections = deps.listProviderConnections ?? getProviderConnections;
   const aliasMap = buildProviderAliasMap();
   const normalizeProviderId = (value: string) => aliasMap[value] || value;

@@ -13,7 +13,7 @@
  *
  * Deterministic and API-free (no network, no upstream credentials). The DATA_DIR is redirected to
  * a temp dir before importing, because the request-logger module opens the SQLite database on
- * import — the benchmark must never touch the operator's real ~/.omniroute store.
+ * import — the benchmark must never touch the operator's real ~/.cheaproute store.
  *
  * Node only — NOT bun. We need `--expose-gc` and V8 heap accounting; measuring "V8 heap" under a
  * different engine would report a number that has nothing to do with the production runtime.
@@ -31,7 +31,7 @@ import fs from "node:fs";
 
 // Must happen BEFORE the dynamic imports below: open-sse/utils/requestLogger.ts transitively
 // opens the SQLite store at import time, and the benchmark must stay hermetic.
-const TMP_DATA_DIR = fs.mkdtempSync(path.join(os.tmpdir(), "omniroute-heapbench-"));
+const TMP_DATA_DIR = fs.mkdtempSync(path.join(os.tmpdir(), "cheaproute-heapbench-"));
 process.env.DATA_DIR = TMP_DATA_DIR;
 
 // open-sse/utils/requestLogger.ts imports @/lib/usage/usageHistory, so merely importing the

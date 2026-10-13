@@ -19,8 +19,8 @@
  * @module shared/utils/clientApiRouteAuth
  */
 
-import { errorResponse } from "@omniroute/open-sse/utils/error.ts";
-import { HTTP_STATUS } from "@omniroute/open-sse/config/constants.ts";
+import { errorResponse } from "@cheaproute/open-sse/utils/error.ts";
+import { HTTP_STATUS } from "@cheaproute/open-sse/config/constants.ts";
 import { extractApiKey, isValidApiKey } from "@/sse/services/auth";
 import { isRequireApiKeyEnabled } from "@/shared/utils/featureFlags";
 import { isDashboardSessionAuthenticated } from "@/shared/utils/apiAuth";

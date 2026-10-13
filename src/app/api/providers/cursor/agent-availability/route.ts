@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getCachedCursorAgentAvailability } from "@/lib/cursor/renewal";
-import { sanitizeErrorMessage } from "@omniroute/open-sse/utils/error";
+import { sanitizeErrorMessage } from "@cheaproute/open-sse/utils/error";
 
 /**
  * GET /api/providers/cursor/agent-availability

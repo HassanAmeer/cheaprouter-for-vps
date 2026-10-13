@@ -1,6 +1,6 @@
 /**
  * UcExecutor — UC (uncensored.com) un-metered "persona" chat as an
- * OpenAI-compatible OmniRoute provider.
+ * OpenAI-compatible CheapRoute provider.
  *
  * UC is a consumer subscription app with no public API on the persona path. This
  * executor reproduces the web app's own persona WebSocket turn:
@@ -20,7 +20,7 @@
  * use, translator/webTools.ts) and parsed back into tool_calls.
  *
  * Egress + TLS: this executor opens no raw socket of its own beyond the `ws`
- * client and the ambient patched `fetch` (token mint); OmniRoute's per-connection
+ * client and the ambient patched `fetch` (token mint); CheapRoute's per-connection
  * proxy + TLS overlay therefore apply automatically. UC does not require a
  * special TLS fingerprint, but the deployment routes it through the same egress
  * chokepoint as every other provider.
@@ -405,7 +405,7 @@ export class UcExecutor extends BaseExecutor {
   /**
    * Convert a failed/soft-errored UC turn into an error Response, or null when
    * the turn is a usable answer. A soft-error apology (short transient capacity
-   * message returned AS the answer) is surfaced as a retryable 502 so OmniRoute
+   * message returned AS the answer) is surfaced as a retryable 502 so CheapRoute
    * can fall back instead of handing the user a bogus reply.
    */
   private turnErrorResponse(turn: UcTurnResult, url: string): ReturnType<typeof wrap> | null {

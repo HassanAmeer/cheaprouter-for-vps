@@ -484,7 +484,7 @@ export function resolveRequestedModel(
 // ─── Request encoder ───────────────────────────────────────────────────────
 
 /**
- * OpenAI tool shape (subset OmniRoute receives from clients). Cursor's
+ * OpenAI tool shape (subset CheapRoute receives from clients). Cursor's
  * AgentRunRequest carries declared tools as McpToolDefinition entries; the
  * model uses these to know what's invocable, then emits ExecServerMessage
  * mcp_args when it wants to call one (Phase 5 surfaces those as OpenAI
@@ -553,7 +553,7 @@ export function openAIToolsToMcpDefs(tools: OpenAITool[]): McpToolDefinition[] {
         name,
         description: fn?.description ?? flat.description ?? "",
         inputSchemaBytes: jsonSchemaToProtobufValue(params),
-        providerIdentifier: OMNIROUTE_MCP_SERVER_IDENTIFIER,
+        providerIdentifier: CHEAPROUTE_MCP_SERVER_IDENTIFIER,
         toolName: name,
       },
     ];
@@ -1167,8 +1167,8 @@ for (const field of EXTRA_EXEC_SERVER_FIELDS) {
 // McpStateExecArgs.server_identifiers
 const MSA_SERVER_IDENTIFIERS = 1;
 
-/** The MCP server name OmniRoute declares to Cursor for the client's tools. */
-export const OMNIROUTE_MCP_SERVER_IDENTIFIER = "omniroute";
+/** The MCP server name CheapRoute declares to Cursor for the client's tools. */
+export const CHEAPROUTE_MCP_SERVER_IDENTIFIER = "cheaproute";
 
 /**
  * Field numbers that carry an event variant. The envelope also contains the id
@@ -1260,7 +1260,7 @@ export function encodeRequestContextResponse(
       encodeMessage(RCS_MCP_META_TOOL_OPTIONS, [
         encodeBoolField(MMTO_ENABLED, true),
         encodeMessage(MMTO_DESCRIPTORS, [
-          encodeMcpDescriptor(OMNIROUTE_MCP_SERVER_IDENTIFIER, tools),
+          encodeMcpDescriptor(CHEAPROUTE_MCP_SERVER_IDENTIFIER, tools),
         ]),
       ])
     );
@@ -1278,7 +1278,7 @@ export function encodeRequestContextResponse(
 // RequestContext.tools — field 7, verified against the Cursor Agent CLI's own
 // schema (agent.v1.RequestContext). Field 2 is `rules`: sending the tool set
 // there meant the model never saw the declared MCP namespace at all
-// ("Omniroute namespace is unavailable" in its reasoning) and fell back to
+// ("Cheaproute namespace is unavailable" in its reasoning) and fell back to
 // Cursor's built-in tools.
 const RCS_TOOLS = 7;
 // RequestContext.mcp_meta_tool_options — McpMetaToolOptions{1: enabled,
@@ -1326,7 +1326,7 @@ const MCP_SERVER_STATUS_READY = "ready";
 
 /**
  * Answer the blocking MCP state handshake (ExecServerMessage.mcp_state_exec_args,
- * field 36) by declaring OmniRoute as one MCP server exposing the client's tools.
+ * field 36) by declaring CheapRoute as one MCP server exposing the client's tools.
  *
  * Until this is answered Cursor emits nothing but heartbeats, and if the server
  * entry is missing the model reports the namespace as unavailable and silently

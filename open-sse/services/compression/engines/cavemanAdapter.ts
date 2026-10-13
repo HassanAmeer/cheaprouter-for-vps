@@ -203,7 +203,7 @@ const LITE_SCHEMA: EngineConfigField[] = [
     type: "boolean",
     label: "Proactively truncate long tool results",
     description:
-      "Truncates long tool results during Lite compression. The Maximum tool-result length field (or OMNIROUTE_LITE_MAX_TOOL_LENGTH when that field is unset) sets the cap. Emergency overflow protection may still trim content when the context exceeds the model budget.",
+      "Truncates long tool results during Lite compression. The Maximum tool-result length field (or CHEAPROUTE_LITE_MAX_TOOL_LENGTH when that field is unset) sets the cap. Emergency overflow protection may still trim content when the context exceeds the model budget.",
     defaultValue: true,
   },
   {
@@ -211,7 +211,7 @@ const LITE_SCHEMA: EngineConfigField[] = [
     type: "number",
     label: "Maximum tool-result length",
     description:
-      "Character cap for proactive tool-result truncation. Default 2000. Override with OMNIROUTE_LITE_MAX_TOOL_LENGTH when this field is unset.",
+      "Character cap for proactive tool-result truncation. Default 2000. Override with CHEAPROUTE_LITE_MAX_TOOL_LENGTH when this field is unset.",
     defaultValue: 2000,
     min: 256,
     max: 1_000_000,

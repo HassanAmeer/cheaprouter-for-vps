@@ -40,7 +40,7 @@ describe("MCP Dynamic Runtime Schema Plumbing", () => {
     )._registeredTools;
     expect(registeredTools).toBeTruthy();
 
-    const webSearchTool = registeredTools["omniroute_web_search"];
+    const webSearchTool = registeredTools["cheaproute_web_search"];
     expect(webSearchTool).toBeTruthy();
 
     const parsedWithUnblocked = webSearchTool.inputSchema.safeParse({

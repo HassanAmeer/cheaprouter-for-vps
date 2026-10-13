@@ -1,6 +1,6 @@
-import { PROVIDER_ERROR_TYPES } from "@omniroute/open-sse/services/errorClassifier.ts";
-import { isCreditsExhausted } from "@omniroute/open-sse/services/accountFallback.ts";
-import { takeMistralAmbiguous401SoftStrike } from "@omniroute/open-sse/services/accountFallback/mistralAmbiguousAuth.ts";
+import { PROVIDER_ERROR_TYPES } from "@cheaproute/open-sse/services/errorClassifier.ts";
+import { isCreditsExhausted } from "@cheaproute/open-sse/services/accountFallback.ts";
+import { takeMistralAmbiguous401SoftStrike } from "@cheaproute/open-sse/services/accountFallback/mistralAmbiguousAuth.ts";
 import { resolveProviderId, WEB_COOKIE_PROVIDERS } from "@/shared/constants/providers";
 
 // #8200: cookie-auth providers (perplexity-web, grok-web, ...) use a rotating browser

@@ -1,6 +1,6 @@
 import { CORS_HEADERS } from "@/shared/utils/cors";
 import { buildClientRawRequest, handleChat } from "@/sse/handlers/chat";
-import { initTranslators } from "@omniroute/open-sse/translator/index.ts";
+import { initTranslators } from "@cheaproute/open-sse/translator/index.ts";
 import { createInjectionGuard } from "@/middleware/promptInjectionGuard";
 import { asTextCompletionResponse } from "./textCompletionTransform.ts";
 import {
@@ -90,7 +90,7 @@ async function postHandler(request: Request) {
         // #3571 — translate the chat-pipeline response back to the legacy
         // text-completion shape so OpenAI Completion clients (e.g. TabbyML) work.
         // Thread `body.model` so response `body.model` echoes the caller's
-        // requested identifier, matching the `x-omniroute-model` header, and
+        // requested identifier, matching the `x-cheaproute-model` header, and
         // echo the compression header on the way out.
         return withCompressionHeaderEcho(
           await asTextCompletionResponse(

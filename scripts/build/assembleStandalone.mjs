@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /**
- * assembleStandalone.mjs - Shared standalone bundle assembler for OmniRoute.
+ * assembleStandalone.mjs - Shared standalone bundle assembler for CheapRoute.
  *
  * Task 0.1 Inventory: Copy/sync operations across the three build scripts
  * -----------------------------------------------------------------------
@@ -34,7 +34,7 @@
  * --- npm-UNIQUE ---
  * MITM typecheck + bundle -> app/src/mitm/                    -               Y           -    UNIQUE (prepublish)
  * MCP server esbuild -> dist/open-sse/mcp-server/server.js    -               Y           -    UNIQUE (prepublish)
- * CLI esbuild -> bin/omniroute.mjs                            -               Y           -    UNIQUE (prepublish)
+ * CLI esbuild -> bin/cheaproute.mjs                            -               Y           -    UNIQUE (prepublish)
  * sidecar/doc copies (.env.example, docs/, sync-env, etc.)    -               Y           -    UNIQUE (prepublish)
  * prune + validate (pack-artifact-policy)                      -               Y           -    UNIQUE (prepublish)
  * data/ dir creation                                           -               Y           -    UNIQUE (prepublish)
@@ -172,7 +172,7 @@ export const EXTRA_MODULE_ENTRIES = [
     // silently falls back to synchronous in-process execution — 600k-token
     // agent histories then materialize in the main-thread V8 heap and trip
     // the resourcePressure guard (503 resource_pressure). Diagnosed
-    // 2026-09-25 on omniroute:3.8.51-local. Dep closure included
+    // 2026-09-25 on cheaproute:3.8.51-local. Dep closure included
     // (gpt-tokenizer, regexp-tree, ip-address, smart-buffer, buffer-crc32).
     label: "compression worker external: uuid",
     src: ["node_modules", "uuid"],
@@ -186,9 +186,9 @@ export const EXTRA_MODULE_ENTRIES = [
   },
   {
     // compression worker runtime external — see uuid entry for background.
-    label: "compression worker external: omniglyph",
-    src: ["node_modules", "omniglyph"],
-    dest: ["node_modules", "omniglyph"],
+    label: "compression worker external: cheapglyph",
+    src: ["node_modules", "cheapglyph"],
+    dest: ["node_modules", "cheapglyph"],
   },
   {
     // compression worker runtime external — see uuid entry for background.
@@ -272,7 +272,7 @@ export const EXTRA_MODULE_ENTRIES = [
     // so the main server bundle is fine — Next's server compiler inlines the
     // small pure-JS package directly into the compiled route chunk instead of
     // leaving it as an external node_modules dependency. bin/cli/settings-
-    // store.mjs (the `omniroute reset-password` / bin/reset-password.mjs
+    // store.mjs (the `cheaproute reset-password` / bin/reset-password.mjs
     // CLI, used to recover a lost dashboard password) is a separate,
     // unbundled entrypoint that does a plain runtime `import bcrypt from
     // "bcryptjs"` and needs the real package physically present in
@@ -420,7 +420,7 @@ export const EXTRA_MODULE_ENTRIES = [
     // resolved at module-link time. Next.js's standalone output-file tracer (nft)
     // sometimes emits a hollow dist/node_modules/undici/ (package.json only), which
     // SHADOWS the fully-populated sibling node_modules/undici and crashes
-    // `omniroute --mcp` at startup. See #7701.
+    // `cheaproute --mcp` at startup. See #7701.
     label: "undici (MCP server static import — #7701)",
     src: ["node_modules", "undici"],
     dest: ["node_modules", "undici"],
@@ -429,7 +429,7 @@ export const EXTRA_MODULE_ENTRIES = [
     // Turbopack's standalone tracer can emit a hollow node_modules/ws/ directory
     // for the externalized `ws` package (no package.json / index.js), which then
     // shadows the real install at runtime and crashes instrumentation with:
-    // "Cannot find package '<bundle>/node_modules/ws/index.js'" (#OmniRoute v3.8.50 live bug).
+    // "Cannot find package '<bundle>/node_modules/ws/index.js'" (#CheapRoute v3.8.50 live bug).
     // Overlay the full source package so the bundled server resolves the real entrypoint.
     label: "ws (externalized runtime package shadow fix)",
     src: ["node_modules", "ws"],
@@ -716,11 +716,11 @@ function stampServiceWorkerBuildId(resolvedOutDir) {
   const swDest = path.join(resolvedOutDir, "public", "sw.js");
   if (!fsSync.existsSync(swDest)) return;
   const buildId =
-    process.env.OMNIROUTE_SW_BUILD_ID || process.env.SOURCE_VERSION || String(Date.now());
+    process.env.CHEAPROUTE_SW_BUILD_ID || process.env.SOURCE_VERSION || String(Date.now());
   let sw = fsSync.readFileSync(swDest, "utf8");
   sw = sw.replace(
-    /^const CACHE_NAME = "omniroute-pwa-v3";$/m,
-    `const CACHE_NAME = "omniroute-pwa-v3-${buildId}"; // build ${buildId}`
+    /^const CACHE_NAME = "cheaproute-pwa-v3";$/m,
+    `const CACHE_NAME = "cheaproute-pwa-v3-${buildId}"; // build ${buildId}`
   );
   fsSync.writeFileSync(swDest, sw);
 }

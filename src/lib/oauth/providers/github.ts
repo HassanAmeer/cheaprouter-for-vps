@@ -1,4 +1,4 @@
-import { getGitHubCopilotChatUserAgent } from "@omniroute/open-sse/config/providerHeaderProfiles.ts";
+import { getGitHubCopilotChatUserAgent } from "@cheaproute/open-sse/config/providerHeaderProfiles.ts";
 import { GITHUB_CONFIG } from "../constants/oauth";
 
 export const github = {

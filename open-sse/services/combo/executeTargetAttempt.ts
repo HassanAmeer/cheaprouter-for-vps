@@ -353,8 +353,8 @@ export async function executeTargetAttempt(opts: {
     // Success — validate response quality before returning
     if (result.ok) {
       const selectedConnectionId =
-        result.headers?.get("X-OmniRoute-Selected-Connection-Id") ||
-        result.headers?.get("x-omniroute-selected-connection-id") ||
+        result.headers?.get("X-CheapRoute-Selected-Connection-Id") ||
+        result.headers?.get("x-cheaproute-selected-connection-id") ||
         undefined;
       const effectiveConnectionId = selectedConnectionId || target.connectionId || "";
 
@@ -1005,7 +1005,7 @@ export async function executeTargetAttempt(opts: {
     // next target is on the same provider, don't mark it failed (a different model may still
     // succeed) — #8376: EXCEPT a proxy-unreachable failure, which poisons every model alike.
     // G-02: when fallbackResult.skipProviderBreaker is set (embedded service supervisor outage
-    // signalled via X-Omni-Fallback-Hint: connection_cooldown) apply cooldown only — never trip.
+    // signalled via X-Cheap-Fallback-Hint: connection_cooldown) apply cooldown only — never trip.
     const nextTarget = state.orderedTargets[i + 1];
     const sameProviderNext =
       typeof nextTarget?.provider === "string" && nextTarget.provider === provider;

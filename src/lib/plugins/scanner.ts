@@ -1,7 +1,7 @@
 /**
  * Plugin scanner — discovers plugins from the filesystem.
  *
- * Scans the plugin directory (`OMNIROUTE_PLUGINS_DIR`, else ~/.omniroute/plugins/) for
+ * Scans the plugin directory (`CHEAPROUTE_PLUGINS_DIR`, else ~/.cheaproute/plugins/) for
  * subdirectories containing plugin.json manifests.
  * Returns validated manifests with directory paths.
  *
@@ -25,18 +25,18 @@ export interface DiscoveredPlugin {
 /**
  * Resolve the plugin scan directory, in order:
  *
- *  1. `OMNIROUTE_PLUGINS_DIR` — explicit override, used verbatim. Point it at the
+ *  1. `CHEAPROUTE_PLUGINS_DIR` — explicit override, used verbatim. Point it at the
  *     bind-mounted directory in Docker/K8s so discovery stops depending on `HOME`.
- *  2. `<HOME|USERPROFILE>/.omniroute/plugins` — the historical default.
- *  3. `/tmp/.omniroute/plugins` — last-resort fallback for a process with no home
+ *  2. `<HOME|USERPROFILE>/.cheaproute/plugins` — the historical default.
+ *  3. `/tmp/.cheaproute/plugins` — last-resort fallback for a process with no home
  *     (an image that never exports `HOME`); the silent failure mode of #11827.
  *
- * A blank or whitespace-only override counts as unset, so an empty `- OMNIROUTE_PLUGINS_DIR=`
+ * A blank or whitespace-only override counts as unset, so an empty `- CHEAPROUTE_PLUGINS_DIR=`
  * in a compose file cannot send the scanner to a nameless path.
  *
  * This is also the root `PluginManager` installs into, so an override moves discovery
- * and installation together. Not to be confused with `OMNIROUTE_PLUGIN_PATH`, which is
- * read only by the CLI command-plugin loader (`bin/cli/plugins.mjs`, `omniroute-cmd-*`
+ * and installation together. Not to be confused with `CHEAPROUTE_PLUGIN_PATH`, which is
+ * read only by the CLI command-plugin loader (`bin/cli/plugins.mjs`, `cheaproute-cmd-*`
  * packages) and has no effect on this runtime scanner.
  *
  * Called once per process, by the `PluginManager` singleton constructor — hence the
@@ -44,14 +44,14 @@ export interface DiscoveredPlugin {
  * scanning the wrong directory.
  */
 export function getDefaultPluginDir(): string {
-  const override = process.env.OMNIROUTE_PLUGINS_DIR?.trim();
+  const override = process.env.CHEAPROUTE_PLUGINS_DIR?.trim();
   if (override) {
-    log.info("scanner.dir_resolved", { dir: override, source: "OMNIROUTE_PLUGINS_DIR" });
+    log.info("scanner.dir_resolved", { dir: override, source: "CHEAPROUTE_PLUGINS_DIR" });
     return override;
   }
 
   const home = process.env.HOME || process.env.USERPROFILE;
-  const dir = join(home || "/tmp", ".omniroute", "plugins");
+  const dir = join(home || "/tmp", ".cheaproute", "plugins");
   log.info("scanner.dir_resolved", { dir, source: home ? "home" : "no-home-fallback" });
   return dir;
 }

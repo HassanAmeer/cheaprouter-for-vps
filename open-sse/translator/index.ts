@@ -857,7 +857,7 @@ export function translateRequest(
   // as `store`. When the destination stays in Chat Completions shape (no
   // such re-conversion happens), nothing else consumes the marker, and it
   // was leaking verbatim into the real upstream request body — e.g. OpenAI
-  // itself rejects it with "Unknown parameter: '_omnirouteResponsesStore'".
+  // itself rejects it with "Unknown parameter: '_cheaprouteResponsesStore'".
   // Always drop it here: any handler that still needs the client's original
   // `store` value would have already read the marker before this point.
   if (RESPONSES_STORE_MARKER in result) {

@@ -472,7 +472,7 @@ const CATALOG_SEARXNG_DEFAULT_URL = "http://localhost:8888/search";
 
 /**
  * Catalog default SearXNG URL is a desktop convenience. In Docker/K8s nothing
- * listens on :8888, and OMNIROUTE_ALLOW_PRIVATE_PROVIDER_URLS (needed for
+ * listens on :8888, and CHEAPROUTE_ALLOW_PRIVATE_PROVIDER_URLS (needed for
  * ClusterIP providers) lets ProxyFetch attempt it, producing ECONNREFUSED and
  * a 502 that then burns the next fallback's quota. Skip unless the operator
  * overrode baseUrl.

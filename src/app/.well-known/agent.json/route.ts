@@ -1,7 +1,7 @@
 /**
  * Agent Card Endpoint — /.well-known/agent.json
  *
- * Serves the OmniRoute A2A Agent Card for discovery by other agents.
+ * Serves the CheapRoute A2A Agent Card for discovery by other agents.
  * Conforms to A2A Protocol v0.3.
  *
  * The Agent Card is dynamically generated to include the current version
@@ -18,16 +18,16 @@ import { getBaseUrl } from "@/lib/wellKnown";
 /**
  * GET /.well-known/agent.json
  *
- * Returns the OmniRoute Agent Card that describes this gateway's
+ * Returns the CheapRoute Agent Card that describes this gateway's
  * capabilities as an A2A agent.
  */
 export async function GET(request?: NextRequest) {
-  // Conductor PRD RF2: fleet skills from the OmniConductor hub (cached ~60s; [] when
+  // Conductor PRD RF2: fleet skills from the CheapConductor hub (cached ~60s; [] when
   // the hub is unset/offline — the card stays valid without the fleet section).
   const fleetSkills = await getFleetSkills();
   const baseUrl = getBaseUrl(request);
   const agentCard = {
-    name: "OmniRoute AI 网关",
+    name: "CheapRoute AI 网关",
     description:
       "智能 AI 路由网关，支持 36+ 个提供者、智能回退、配额跟踪、" +
       "格式转换和自动管理组合。根据成本、延迟、配额可用性" +
@@ -96,7 +96,7 @@ export async function GET(request?: NextRequest) {
         id: "list-capabilities",
         name: "列出能力",
         description:
-          "返回 42 个 OmniRoute 代理技能的完整目录（22 API + 20 CLI）" +
+          "返回 42 个 CheapRoute 代理技能的完整目录（22 API + 20 CLI）" +
           "以及 SKILL.md 文档的原始 URL。",
         tags: ["discovery", "capabilities"],
         examples: ["你能做什么？", "列出你的技能", "展示能力"],

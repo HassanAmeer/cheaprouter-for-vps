@@ -115,7 +115,7 @@ export type RadarOffer = z.infer<typeof RadarOfferSchema>;
 
 export const RadarOffersFeedSchema = z
   .object({
-    feed: z.literal("omniroute-radar-offers"),
+    feed: z.literal("cheaproute-radar-offers"),
     schemaVersion: z.literal(1),
     version: z.string().regex(/^\d{4}\.\d{2}\.\d{2}\.\d+$/),
     generatedAt: z.string().datetime(),

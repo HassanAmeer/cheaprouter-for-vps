@@ -1,7 +1,7 @@
 /**
  * API-key identities that exist at runtime without a row in `api_keys`.
  *
- * The deployment-time environment key (`OMNIROUTE_API_KEY` / `ROUTER_API_KEY`)
+ * The deployment-time environment key (`CHEAPROUTE_API_KEY` / `ROUTER_API_KEY`)
  * is authenticated without ever being persisted: `getApiKeyMetadata()`
  * synthesizes its metadata and tags it with {@link SYNTHETIC_ENV_API_KEY_ID},
  * so downstream emitters (audit log, budgets, cost history, usage history)

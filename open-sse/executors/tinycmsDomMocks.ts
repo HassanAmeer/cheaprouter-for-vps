@@ -7,7 +7,7 @@
 // `global.window` into unrelated tests or Next.js SSR. Call `setupDomMocks()`
 // (or the with-* wrappers) around WASM init / payload generation.
 //
-// Why this is load-bearing for the OmniRoute process:
+// Why this is load-bearing for the CheapRoute process:
 // Next.js SSR uses `typeof window !== "undefined"` as a browser check and then
 // `getLocationOrigin()` does `const { protocol, hostname, port } = window.location`.
 // The previous shim did `g.window = g` (alias window to the Node global) without
@@ -100,7 +100,7 @@ export function setupDomMocks(): DomMockRestore {
   const hadDocument = "document" in g;
   const hadGlobalLocation = "location" in g;
   const existingWindow = isRecord(g.window) ? g.window : undefined;
-  // Historical toxic alias from older OmniRoute builds: `g.window = g`.
+  // Historical toxic alias from older CheapRoute builds: `g.window = g`.
   // Never keep that alias — Next SSR treats any `window` as a browser and
   // then destructures `window.location`.
   const windowWasGlobalAlias = g.window === g;

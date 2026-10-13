@@ -55,7 +55,7 @@ export async function handleComfyUIImageGeneration({ model, provider, providerCo
     },
     "9": {
       class_type: "SaveImage",
-      inputs: { filename_prefix: "omniroute", images: ["8", 0] },
+      inputs: { filename_prefix: "cheaproute", images: ["8", 0] },
     },
   };
 

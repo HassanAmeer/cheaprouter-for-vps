@@ -4,9 +4,9 @@ import { resolveDataDir } from "./data-dir.mjs";
 import { writePrivateFileAtomic } from "./private-file.mjs";
 
 const CONFIG_VERSION = 1;
-const KEYCHAIN_SERVICE = "omniroute-cli";
+const KEYCHAIN_SERVICE = "cheaproute-cli";
 const KEYCHAIN_DISABLED = /^(1|true|yes|on)$/i.test(
-  String(process.env.OMNIROUTE_CONTEXT_KEYCHAIN_DISABLED || "")
+  String(process.env.CHEAPROUTE_CONTEXT_KEYCHAIN_DISABLED || "")
 );
 
 // `keytar` is optional and native. Keeping it behind a small interface lets
@@ -279,10 +279,10 @@ export async function setContextKeychainBackendForTests(backend) {
  * Resolve the active context for a CLI invocation.
  *
  * Canonical schema is `{ currentContext, contexts }` (written by
- * `omniroute contexts ...`). For backward compatibility we also read the legacy
+ * `cheaproute contexts ...`). For backward compatibility we also read the legacy
  * `{ activeProfile, profiles }` shape and a bare top-level `baseUrl` — older
  * configs and `api.mjs::getBaseUrl` used those before remote-mode unified the
- * store. `overrideName` (from `--context`/`OMNIROUTE_CONTEXT`) wins when set.
+ * store. `overrideName` (from `--context`/`CHEAPROUTE_CONTEXT`) wins when set.
  *
  * A context may carry `{ baseUrl, accessToken?, apiKey?, scope?, description? }`.
  * `accessToken` is the scoped CLI access token (preferred); `apiKey` is the

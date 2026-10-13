@@ -3,7 +3,7 @@ import { z } from "zod";
 import { CORS_HEADERS, handleCorsOptions } from "@/shared/utils/cors";
 import { enforceApiKeyPolicy } from "@/shared/utils/apiKeyPolicy";
 import { extractApiKey, isValidApiKey } from "@/sse/services/auth";
-import { buildErrorBody } from "@omniroute/open-sse/utils/error";
+import { buildErrorBody } from "@cheaproute/open-sse/utils/error";
 
 import {
   isVideoBridgeDrilldownRemoteAccessEnabled,

@@ -2,7 +2,7 @@
  * MCP HTTP Transport Layer — session-aware handlers for SSE and Streamable HTTP.
  *
  * Runs the MCP server **inside** the Next.js process so it can be toggled
- * from the dashboard without requiring `omniroute --mcp`.
+ * from the dashboard without requiring `cheaproute --mcp`.
  *
  * Transport modes:
  *   - SSE:             GET /api/mcp/sse (event stream)  +  POST /api/mcp/sse (messages)
@@ -140,7 +140,7 @@ async function isInitializeRequest(request: Request): Promise<boolean> {
  * Resolve the caller's per-key scopes (#7895) and hand the request to the
  * transport with `authInfo` populated, so `extra.authInfo.scopes` reaching
  * tool handlers reflects the real `api_keys.scopes` row instead of the
- * `OMNIROUTE_MCP_SCOPES` env fallback. When no per-key auth can be resolved
+ * `CHEAPROUTE_MCP_SCOPES` env fallback. When no per-key auth can be resolved
  * (no key, invalid key, stdio has no `Request` at all), `authInfo` stays
  * `undefined` and `scopeEnforcement.ts` falls through to its existing
  * meta/env chain unchanged.

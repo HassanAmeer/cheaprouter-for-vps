@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import pino from "pino";
 
-import { buildErrorBody } from "@omniroute/open-sse/utils/error.ts";
+import { buildErrorBody } from "@cheaproute/open-sse/utils/error.ts";
 
 import { getProviderMetrics, type ProviderMetricRow } from "@/lib/db/callLogStats";
 import { foldMetricRowsByFamily } from "@/lib/providerFamilyAgg";

@@ -101,7 +101,7 @@ export async function resolveCursorAgentUrl(
   if (!accessToken) throw new Error("Cursor access token is required");
   const cacheKey =
     `${credentials.connectionId || "anonymous"}:` +
-    createHmac("sha256", "omniroute-cursor-agent-url-cache-v1").update(accessToken).digest("hex");
+    createHmac("sha256", "cheaproute-cursor-agent-url-cache-v1").update(accessToken).digest("hex");
   const now = Date.now();
   let urls = cursorAgentUrlCache.get(cacheKey);
   if (!urls || urls.expiresAt <= now) {

@@ -27,7 +27,7 @@
  *   usage, not from tokenizer density.
  * - State is in-memory only: a restart returns to factor 1.0 and re-learns.
  *   Worst case is the current behavior, never worse.
- * - `OMNIROUTE_ESTIMATOR_CALIBRATION=off|0|false` disables recording and
+ * - `CHEAPROUTE_ESTIMATOR_CALIBRATION=off|0|false` disables recording and
  *   application entirely.
  */
 
@@ -49,7 +49,7 @@ type CalibrationBucket = {
 const buckets = new Map<string, CalibrationBucket>();
 
 function calibrationDisabled(): boolean {
-  const value = process.env.OMNIROUTE_ESTIMATOR_CALIBRATION;
+  const value = process.env.CHEAPROUTE_ESTIMATOR_CALIBRATION;
   return value === "off" || value === "0" || value === "false";
 }
 

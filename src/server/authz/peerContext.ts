@@ -26,7 +26,7 @@ export function requestPeerAddress(ctx: PolicyContext): string | null {
   // null → isLoopbackRequest/isPrivateLanRequest return false → fail closed.
   const stamped = resolveStampedPeer(
     ctx.request.headers?.get?.(PEER_IP_HEADER) ?? null,
-    process.env.OMNIROUTE_PEER_STAMP_TOKEN
+    process.env.CHEAPROUTE_PEER_STAMP_TOKEN
   );
   if (stamped) return stamped;
   // Non-proxy callers (tests / direct Node) may carry a real socket peer.
@@ -44,7 +44,7 @@ export function requestPeerAddress(ctx: PolicyContext): string | null {
 export function isViaProxyRequest(ctx: PolicyContext): boolean {
   return resolveStampedViaProxy(
     ctx.request.headers?.get?.(VIA_PROXY_HEADER) ?? null,
-    process.env.OMNIROUTE_PEER_STAMP_TOKEN
+    process.env.CHEAPROUTE_PEER_STAMP_TOKEN
   );
 }
 
@@ -67,7 +67,7 @@ export function isPrivateLanRequest(ctx: PolicyContext): boolean {
 
 /** Strictly-loopback machine-token check (constant-time). */
 export function hasValidLoopbackCliToken(ctx: PolicyContext): boolean {
-  if (process.env.OMNIROUTE_DISABLE_CLI_TOKEN === "true") return false;
+  if (process.env.CHEAPROUTE_DISABLE_CLI_TOKEN === "true") return false;
   if (!isLoopbackRequest(ctx)) return false;
   const headers = ctx.request.headers;
   const provided = headers.get(CLI_TOKEN_HEADER);

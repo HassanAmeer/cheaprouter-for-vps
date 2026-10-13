@@ -156,7 +156,7 @@ function isPendingRequestClearedError(error: unknown): boolean {
 /**
  * A client disconnect — the caller aborted the request or closed the SSE
  * connection — is NOT a provider failure. It surfaces either as an
- * AbortError/ResponseAborted, or, when OmniRoute then tries to enqueue another
+ * AbortError/ResponseAborted, or, when CheapRoute then tries to enqueue another
  * chunk into the now-closed response stream, as a "Controller is already closed"
  * TypeError. Treating any of these as an upstream error wrongly cools down the
  * account/connection, so the stream error path uses this to skip the provider
@@ -443,7 +443,7 @@ export function createStreamController({
     const handleClientAbort = () => {
       const reason = clientAbortSignal.reason;
       if (isDeadlineAbortReason(reason)) {
-        // An AbortSignal can represent an OmniRoute-owned deadline as well as
+        // An AbortSignal can represent an CheapRoute-owned deadline as well as
         // a caller disconnect. Preserve deadline failures as 504; classifying
         // them as client disconnects writes a misleading 499 to the call log.
         abortController.abort(reason);
@@ -988,7 +988,7 @@ export function pipeWithDisconnect(
   // but response.in_progress pings indefinitely, relayed byte-for-byte to
   // the client, until the CLIENT's own idle timeout eventually gave up --
   // sometimes 120s, sometimes 900s depending on the calling task, always
-  // slower and less informative than OmniRoute failing this attempt itself
+  // slower and less informative than CheapRoute failing this attempt itself
   // with a clear error the client's own retry/fallback logic can react to
   // immediately. Armed at stream start, never re-armed by lifecycle-only
   // bytes (unlike armStall above), restarted by reasoning-progress frames

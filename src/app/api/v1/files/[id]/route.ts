@@ -7,7 +7,7 @@ import {
   resolveEffectiveApiKeyId,
 } from "@/app/api/v1/_helpers/apiKeyScope";
 import { enforceApiKeyPolicy } from "@/shared/utils/apiKeyPolicy";
-import { buildErrorBody } from "@omniroute/open-sse/utils/error";
+import { buildErrorBody } from "@cheaproute/open-sse/utils/error";
 
 export async function OPTIONS() {
   return handleCorsOptions();

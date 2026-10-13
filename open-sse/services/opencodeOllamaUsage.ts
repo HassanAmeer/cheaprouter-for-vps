@@ -14,7 +14,7 @@ type UsageQuota = {
 };
 
 const OLLAMA_CLOUD_USAGE_URL =
-  process.env.OMNIROUTE_OLLAMA_CLOUD_USAGE_URL ?? "https://ollama.com/settings";
+  process.env.CHEAPROUTE_OLLAMA_CLOUD_USAGE_URL ?? "https://ollama.com/settings";
 const OLLAMA_CLOUD_SESSION_COOKIE = "__Secure-session";
 
 type OllamaUsageWindow = { usagePercent: number; resetAt: string | null };
@@ -53,7 +53,7 @@ function getProviderSpecificString(data: JsonRecord | undefined, keys: string[])
 }
 function resolveOllamaCloudConfig(providerSpecificData?: JsonRecord): OllamaCloudConfig {
   const cookie =
-    process.env.OMNIROUTE_OLLAMA_USAGE_COOKIE?.trim() ||
+    process.env.CHEAPROUTE_OLLAMA_USAGE_COOKIE?.trim() ||
     process.env.OLLAMA_USAGE_COOKIE?.trim() ||
     process.env.OLLAMA_CLOUD_USAGE_COOKIE?.trim() ||
     getProviderSpecificString(providerSpecificData, [

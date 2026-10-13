@@ -1,9 +1,9 @@
 import { clearHealthCheckLogCache } from "@/lib/tokenHealthCheck";
-import { setCustomBannedSignals } from "@omniroute/open-sse/services/accountFallback.ts";
+import { setCustomBannedSignals } from "@cheaproute/open-sse/services/accountFallback.ts";
 import {
   setOperatorProviderErrorRules,
   type OperatorProviderErrorRule,
-} from "@omniroute/open-sse/config/providerErrorRules.ts";
+} from "@cheaproute/open-sse/config/providerErrorRules.ts";
 import { isAutomatedTestProcess } from "@/shared/utils/testProcess";
 
 type JsonRecord = Record<string, unknown>;
@@ -94,7 +94,7 @@ let lastAppliedSnapshot: RuntimeSettingsSnapshot | null = null;
 // bundle evaluates the route guard (#13995), the same class of defect
 // previously fixed via globalThis in systemPrompt.ts (#2470) and
 // modelDeprecation.ts (#5777).
-const AUTHZ_BYPASS_GLOBAL_KEY = "__omniroute_authzBypass_config__";
+const AUTHZ_BYPASS_GLOBAL_KEY = "__cheaproute_authzBypass_config__";
 const _authzBypassStore = globalThis as unknown as Record<string, AuthzBypassSnapshot | undefined>;
 
 // Initialised to the default so cold-boot requests (before any
@@ -312,7 +312,7 @@ function getPreviousSnapshot(): RuntimeSettingsSnapshot {
 
 async function applyPayloadRulesSection(payloadRules: unknown) {
   const { clearPayloadRulesConfigOverride, setPayloadRulesConfig } =
-    await import("@omniroute/open-sse/services/payloadRules.ts");
+    await import("@cheaproute/open-sse/services/payloadRules.ts");
 
   if (payloadRules === null || payloadRules === undefined) {
     clearPayloadRulesConfigOverride();
@@ -323,13 +323,13 @@ async function applyPayloadRulesSection(payloadRules: unknown) {
 }
 
 async function applyModelAliasesSection(modelAliases: Record<string, string>) {
-  const { setCustomAliases } = await import("@omniroute/open-sse/services/modelDeprecation.ts");
+  const { setCustomAliases } = await import("@cheaproute/open-sse/services/modelDeprecation.ts");
   setCustomAliases(modelAliases);
 }
 
 async function applyBackgroundDegradationSection(backgroundDegradation: JsonRecord | null) {
   const { getDefaultDegradationMap, getDefaultDetectionPatterns, setBackgroundDegradationConfig } =
-    await import("@omniroute/open-sse/services/backgroundTaskDetector.ts");
+    await import("@cheaproute/open-sse/services/backgroundTaskDetector.ts");
 
   if (!backgroundDegradation) {
     setBackgroundDegradationConfig({
@@ -355,7 +355,7 @@ async function applyBackgroundDegradationSection(backgroundDegradation: JsonReco
 }
 
 async function applyCliCompatProvidersSection(cliCompatProviders: string[]) {
-  const { setCliCompatProviders } = await import("@omniroute/open-sse/config/cliFingerprints");
+  const { setCliCompatProviders } = await import("@cheaproute/open-sse/config/cliFingerprints");
   setCliCompatProviders(cliCompatProviders);
 }
 
@@ -366,7 +366,7 @@ async function applyCacheControlSection() {
 
 async function applyUsageTrackingSection(newBuffer: number | null) {
   const { invalidateBufferTokensCache, setBufferTokensCache } =
-    await import("@omniroute/open-sse/utils/usageTracking.ts");
+    await import("@cheaproute/open-sse/utils/usageTracking.ts");
   if (typeof newBuffer === "number" && newBuffer >= 0) {
     // Set the value directly so the first request after a settings save gets the
     // correct count synchronously — no race window back to DEFAULT (2000).
@@ -378,7 +378,7 @@ async function applyUsageTrackingSection(newBuffer: number | null) {
 
 async function applyThoughtSignatureSection(mode: string) {
   const { setGeminiThoughtSignatureMode } =
-    await import("@omniroute/open-sse/services/geminiThoughtSignatureStore.ts");
+    await import("@cheaproute/open-sse/services/geminiThoughtSignatureStore.ts");
   setGeminiThoughtSignatureMode(mode);
 }
 
@@ -399,7 +399,7 @@ async function applyCorsOriginsSection(corsOrigins: string) {
  */
 async function applyCcBridgeTransformsSection(ccBridgeTransforms: unknown) {
   const { setSystemTransformsConfig } =
-    await import("@omniroute/open-sse/services/systemTransforms.ts");
+    await import("@cheaproute/open-sse/services/systemTransforms.ts");
   if (ccBridgeTransforms && typeof ccBridgeTransforms === "object") {
     setSystemTransformsConfig(ccBridgeTransforms);
   }
@@ -415,7 +415,7 @@ function applyAuthzBypassSection(snapshot: AuthzBypassSnapshot) {
 
 async function applySystemTransformsSection(systemTransforms: unknown) {
   const { setSystemTransformsConfig, resetSystemTransformsConfig } =
-    await import("@omniroute/open-sse/services/systemTransforms.ts");
+    await import("@cheaproute/open-sse/services/systemTransforms.ts");
 
   if (
     systemTransforms === null ||
@@ -430,7 +430,7 @@ async function applySystemTransformsSection(systemTransforms: unknown) {
 }
 
 async function applySystemPromptSection(systemPrompt: unknown) {
-  const { setSystemPromptConfig } = await import("@omniroute/open-sse/services/systemPrompt.ts");
+  const { setSystemPromptConfig } = await import("@cheaproute/open-sse/services/systemPrompt.ts");
 
   if (systemPrompt && typeof systemPrompt === "object") {
     setSystemPromptConfig(systemPrompt as Record<string, unknown>);
@@ -456,8 +456,8 @@ async function applyModelsDevSyncSection(
     isModelsDevSyncEnvForcedOn,
   } = await import("@/lib/modelsDevSync");
   const skipBackgroundSyncInTests =
-    (isAutomatedTestProcess() && process.env.OMNIROUTE_ENABLE_RUNTIME_BACKGROUND_TASKS !== "1") ||
-    isTruthyEnvFlag(process.env.OMNIROUTE_DISABLE_BACKGROUND_SERVICES);
+    (isAutomatedTestProcess() && process.env.CHEAPROUTE_ENABLE_RUNTIME_BACKGROUND_TASKS !== "1") ||
+    isTruthyEnvFlag(process.env.CHEAPROUTE_DISABLE_BACKGROUND_SERVICES);
 
   if (skipBackgroundSyncInTests || isModelsDevSyncEnvDisabled()) {
     stopPeriodicSync();

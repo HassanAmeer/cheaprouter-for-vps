@@ -1,8 +1,8 @@
 /**
- * Opt-in iframe embedding for OmniRoute's HTML pages (#10273).
+ * Opt-in iframe embedding for CheapRoute's HTML pages (#10273).
  *
- * OmniRoute ships `frame-ancestors 'none'` + `X-Frame-Options: DENY` on every route, which
- * is the right default for a proxy that holds provider credentials. The OmniCopilot VS Code
+ * CheapRoute ships `frame-ancestors 'none'` + `X-Frame-Options: DENY` on every route, which
+ * is the right default for a proxy that holds provider credentials. The CheapCopilot VS Code
  * extension, however, renders the dashboard inside the built-in Simple Browser — an iframe
  * whose ancestor is a `vscode-webview:` document — so the strict default paints a blank tab.
  *
@@ -18,8 +18,8 @@
  * Hard-Rule-15/17 process-spawning and proxy surfaces and never need framing.
  *
  * Build-time by design: Next.js resolves `headers()` when the config loads, matching the
- * existing env-driven knobs in `next.config.mjs` (`OMNIROUTE_BASE_PATH`,
- * `OMNIROUTE_BUILD_PROFILE`, …). Changing the value requires a rebuild.
+ * existing env-driven knobs in `next.config.mjs` (`CHEAPROUTE_BASE_PATH`,
+ * `CHEAPROUTE_BUILD_PROFILE`, …). Changing the value requires a rebuild.
  */
 
 export const DASHBOARD_EMBED_ENV = "DASHBOARD_ALLOW_EMBED";
@@ -27,7 +27,7 @@ export const DASHBOARD_EMBED_ENV = "DASHBOARD_ALLOW_EMBED";
 /** Ancestor allow-list per supported embed mode. Adding a mode here is the only extension point. */
 export const EMBED_FRAME_ANCESTORS = Object.freeze({
   // `vscode-webview:` is the scheme VS Code assigns to webview/Simple Browser documents.
-  // `'self'` keeps OmniRoute's own same-origin frames (e.g. the G-10 9Router embed) working.
+  // `'self'` keeps CheapRoute's own same-origin frames (e.g. the G-10 9Router embed) working.
   vscode: "'self' vscode-webview:",
 });
 
@@ -109,7 +109,7 @@ export function relaxFrameAncestors(contentSecurityPolicy, mode) {
 }
 
 /**
- * Build the `headers()` rules carrying OmniRoute's baseline security headers.
+ * Build the `headers()` rules carrying CheapRoute's baseline security headers.
  *
  * With embedding off this returns the single catch-all rule the config has always had, so a
  * default build is unchanged. With embedding on it returns two complementary rules: the API

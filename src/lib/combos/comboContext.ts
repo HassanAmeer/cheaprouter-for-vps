@@ -9,9 +9,9 @@
  * catalog's `minKnownNumber` semantics that excludes unsourced models.
  */
 
-import { resolveNestedComboTargets } from "@omniroute/open-sse/services/combo";
+import { resolveNestedComboTargets } from "@cheaproute/open-sse/services/combo";
 import { getCanonicalModelMetadata } from "@/lib/modelMetadataRegistry";
-import { getSourcedTokenLimit } from "@omniroute/open-sse/services/contextManager";
+import { getSourcedTokenLimit } from "@cheaproute/open-sse/services/contextManager";
 import { buildAliasMaps, getComboTargetModelId } from "@/app/api/v1/models/catalogProviderMaps";
 
 /* ─── helpers ───────────────────────────────────────────────── */

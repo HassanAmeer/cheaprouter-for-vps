@@ -2,7 +2,7 @@
   {
     "bucket": "A",
     "match": "failed to load external module playwright",
-    "text": "That error means the Playwright install shipped with OmniRoute is broken, not that you misconfigured anything. Reinstall with npm i -g omniroute and run npx playwright install chromium on the same host. See open-sse/executors/gemini-web.ts."
+    "text": "That error means the Playwright install shipped with CheapRoute is broken, not that you misconfigured anything. Reinstall with npm i -g cheaproute and run npx playwright install chromium on the same host. See open-sse/executors/gemini-web.ts."
   },
   {
     "bucket": "A",
@@ -12,17 +12,17 @@
   {
     "bucket": "A",
     "match": "what does endpoints do",
-    "text": "Endpoints are the OpenAI-compatible surface OmniRoute exposes. You point any client at base http://localhost:20128/v1 with your API key and it behaves like a normal provider. For opencode there is a dedicated guide at docs/frameworks/OPENCODE.md."
+    "text": "Endpoints are the OpenAI-compatible surface CheapRoute exposes. You point any client at base http://localhost:20128/v1 with your API key and it behaves like a normal provider. For opencode there is a dedicated guide at docs/frameworks/OPENCODE.md."
   },
   {
     "bucket": "A",
-    "match": "setup omniroute in opencode",
-    "text": "You don't need /connect. Run 'omniroute config opencode --base-url http://localhost:20128 --api-key YOUR_KEY' and point opencode at it. The most common bug is ending with /v1/v1, so keep a single /v1. See docs/frameworks/OPENCODE.md."
+    "match": "setup cheaproute in opencode",
+    "text": "You don't need /connect. Run 'cheaproute config opencode --base-url http://localhost:20128 --api-key YOUR_KEY' and point opencode at it. The most common bug is ending with /v1/v1, so keep a single /v1. See docs/frameworks/OPENCODE.md."
   },
   {
     "bucket": "A",
     "match": "best way to integrate jules",
-    "text": "Use the Cloud Agents API: POST /api/v1/agents/tasks with providerId jules and OmniRoute spins a remote agent for that task. Selection is manual per task and control is via REST or the dashboard. See docs/frameworks/CLOUD_AGENT.md."
+    "text": "Use the Cloud Agents API: POST /api/v1/agents/tasks with providerId jules and CheapRoute spins a remote agent for that task. Selection is manual per task and control is via REST or the dashboard. See docs/frameworks/CLOUD_AGENT.md."
   },
   {
     "bucket": "A",
@@ -32,7 +32,7 @@
   {
     "bucket": "A",
     "match": "handle everything from claude",
-    "text": "Not quite. Cloud agents are controlled through the REST API and the dashboard, not through Claude Code or MCP. So keep them as separate tooling that talks to OmniRoute. See docs/frameworks/CLOUD_AGENT.md."
+    "text": "Not quite. Cloud agents are controlled through the REST API and the dashboard, not through Claude Code or MCP. So keep them as separate tooling that talks to CheapRoute. See docs/frameworks/CLOUD_AGENT.md."
   },
   {
     "bucket": "A",
@@ -42,17 +42,17 @@
   {
     "bucket": "A",
     "match": "use this on termux",
-    "text": "In Termux run 'pkg install nodejs' and then 'npx -y omniroute' to start the server. Your phone browser opens the dashboard over localhost afterwards. Walkthrough at docs/guides/TERMUX_GUIDE.md."
+    "text": "In Termux run 'pkg install nodejs' and then 'npx -y cheaproute' to start the server. Your phone browser opens the dashboard over localhost afterwards. Walkthrough at docs/guides/TERMUX_GUIDE.md."
   },
   {
     "bucket": "A",
     "match": "run the entire thing im on android",
-    "text": "You run everything in Termux with no root: pkg install nodejs, then npx -y omniroute starts the server. The dashboard opens in your phone's browser and all of it stays on the device."
+    "text": "You run everything in Termux with no root: pkg install nodejs, then npx -y cheaproute starts the server. The dashboard opens in your phone's browser and all of it stays on the device."
   },
   {
     "bucket": "A",
-    "match": "i dont have omniroute",
-    "text": "Quick start: npm i -g omniroute on any machine with Node. Start it, open http://localhost:20128, and the auto model already answers so you don't even need an API key to try it."
+    "match": "i dont have cheaproute",
+    "text": "Quick start: npm i -g cheaproute on any machine with Node. Start it, open http://localhost:20128, and the auto model already answers so you don't even need an API key to try it."
   },
   {
     "bucket": "A",
@@ -82,12 +82,12 @@
   {
     "bucket": "A",
     "match": "github are down",
-    "text": "You don't need GitHub to run OmniRoute. It installs straight from npm and you host it anywhere you want, a VPS, Docker, or Fly. GitHub matters only if you build from source."
+    "text": "You don't need GitHub to run CheapRoute. It installs straight from npm and you host it anywhere you want, a VPS, Docker, or Fly. GitHub matters only if you build from source."
   },
   {
     "bucket": "A",
     "match": "2000 models is there a better way",
-    "text": "With that many models, Auto-Combo is the way: set the model to auto, auto/coding, auto/fast or auto/cheap and OmniRoute scores every option per request. The 14-factor scorer is in docs/routing/AUTO-COMBO.md."
+    "text": "With that many models, Auto-Combo is the way: set the model to auto, auto/coding, auto/fast or auto/cheap and CheapRoute scores every option per request. The 14-factor scorer is in docs/routing/AUTO-COMBO.md."
   },
   {
     "bucket": "A",
@@ -112,12 +112,12 @@
   {
     "bucket": "A",
     "match": "with claude desktop app",
-    "text": "Two ways: Claude Code pointed at OmniRoute via ANTHROPIC_BASE_URL plus setup-claude, or the Claude Desktop app as an MCP client via omniroute --mcp. Both are in docs/guides/CLAUDE-CODE-CONFIGURATION.md."
+    "text": "Two ways: Claude Code pointed at CheapRoute via ANTHROPIC_BASE_URL plus setup-claude, or the Claude Desktop app as an MCP client via cheaproute --mcp. Both are in docs/guides/CLAUDE-CODE-CONFIGURATION.md."
   },
   {
     "bucket": "A",
     "match": "retrying in 30s",
-    "text": "That is a 429 rate limit from the provider, so retrying is expected. OmniRoute applies the cooldown and can fall back to another key or model automatically, so you don't need to touch anything."
+    "text": "That is a 429 rate limit from the provider, so retrying is expected. CheapRoute applies the cooldown and can fall back to another key or model automatically, so you don't need to touch anything."
   },
   {
     "bucket": "A",
@@ -171,12 +171,12 @@
   },
   {
     "bucket": "B",
-    "match": "official omniroute doesn't support",
+    "match": "official cheaproute doesn't support",
     "text": "I don't know this one yet - I've flagged it for someone who does, they'll get back to you soon :)"
   },
   {
     "bucket": "B",
-    "match": "set limits in omniroute for a provider",
+    "match": "set limits in cheaproute for a provider",
     "text": "I don't know this one yet - I've flagged it for someone who does, they'll get back to you soon :)"
   },
   {
@@ -202,11 +202,11 @@
   {
     "bucket": "C",
     "match": "no such tool available: bash",
-    "text": "Here I only help with OmniRoute questions :)"
+    "text": "Here I only help with CheapRoute questions :)"
   },
   {
     "bucket": "C",
     "match": "interupt the code",
-    "text": "Here I only help with OmniRoute questions :)"
+    "text": "Here I only help with CheapRoute questions :)"
   }
 ]

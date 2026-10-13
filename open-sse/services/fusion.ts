@@ -15,7 +15,7 @@
  * comes from this synthesis step.
  *
  * Ported from upstream decolua/9router (Daniil Schovkunov), adapted JS → TS and
- * wired through OmniRoute's existing combo schema (combo.config.judgeModel /
+ * wired through CheapRoute's existing combo schema (combo.config.judgeModel /
  * combo.config.fusionTuning).
  */
 import { errorResponse, sanitizeErrorMessage } from "../utils/error.ts";
@@ -30,7 +30,7 @@ export const FUSION_DEFAULTS = {
   panelHardTimeoutMs: 90000, // absolute cap so one hung model can't stall forever
   // Hard cap on panel size (issue #1905). Every panel member is fanned out in
   // parallel and its full response text buffered in memory simultaneously —
-  // with the runtime heap capped (Dockerfile OMNIROUTE_MEMORY_MB, default
+  // with the runtime heap capped (Dockerfile CHEAPROUTE_MEMORY_MB, default
   // 1024MB), a large panel (reported: ~73 models) with sizable concurrent
   // responses can exceed the heap ceiling and OOM-crash the whole process.
   // Reject oversized panels up front with a clean 400 instead.

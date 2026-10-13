@@ -68,7 +68,7 @@ type ProxyConfigObject = {
 export function isUpstreamHttp2Enabled(
   env: Record<string, string | undefined> = process.env
 ): boolean {
-  const raw = (env.OMNIROUTE_UPSTREAM_HTTP2_ENABLED ?? "").trim().toLowerCase();
+  const raw = (env.CHEAPROUTE_UPSTREAM_HTTP2_ENABLED ?? "").trim().toLowerCase();
   return !["false", "0", "no", "off"].includes(raw);
 }
 
@@ -125,13 +125,13 @@ function getDispatcherOptions(
 export function getProxyDispatcherConnectionLimit(
   env: Record<string, string | undefined> = process.env
 ): number {
-  const raw = env.OMNIROUTE_PROXY_DISPATCHER_CONNECTIONS;
+  const raw = env.CHEAPROUTE_PROXY_DISPATCHER_CONNECTIONS;
   if (raw == null || raw.trim() === "") return DEFAULT_PROXY_DISPATCHER_CONNECTIONS;
 
   const parsed = Number(raw);
   if (!Number.isFinite(parsed) || parsed < 1) {
     console.warn(
-      `[ProxyDispatcher] Invalid OMNIROUTE_PROXY_DISPATCHER_CONNECTIONS="${raw}". Using default ${DEFAULT_PROXY_DISPATCHER_CONNECTIONS}.`
+      `[ProxyDispatcher] Invalid CHEAPROUTE_PROXY_DISPATCHER_CONNECTIONS="${raw}". Using default ${DEFAULT_PROXY_DISPATCHER_CONNECTIONS}.`
     );
     return DEFAULT_PROXY_DISPATCHER_CONNECTIONS;
   }
@@ -171,13 +171,13 @@ function getProxyDispatcherOptions(env: Record<string, string | undefined> = pro
 export function getDefaultDispatcherConnectionLimit(
   env: Record<string, string | undefined> = process.env
 ): number {
-  const raw = env.OMNIROUTE_DIRECT_DISPATCHER_CONNECTIONS;
+  const raw = env.CHEAPROUTE_DIRECT_DISPATCHER_CONNECTIONS;
   if (raw == null || raw.trim() === "") return DEFAULT_PROXY_DISPATCHER_CONNECTIONS;
 
   const parsed = Number(raw);
   if (!Number.isFinite(parsed) || parsed < 1) {
     console.warn(
-      `[ProxyDispatcher] Invalid OMNIROUTE_DIRECT_DISPATCHER_CONNECTIONS="${raw}". Using default ${DEFAULT_PROXY_DISPATCHER_CONNECTIONS}.`
+      `[ProxyDispatcher] Invalid CHEAPROUTE_DIRECT_DISPATCHER_CONNECTIONS="${raw}". Using default ${DEFAULT_PROXY_DISPATCHER_CONNECTIONS}.`
     );
     return DEFAULT_PROXY_DISPATCHER_CONNECTIONS;
   }
@@ -575,7 +575,7 @@ function buildProxyDispatcher(
     uri: cleanUri,
     // undici 8.6+ forwards plain-HTTP requests through the proxy as an origin
     // request (GET http://host/…) instead of a CONNECT tunnel; upstream proxies
-    // that only speak CONNECT then reject it (501). OmniRoute tunnels ALL proxied
+    // that only speak CONNECT then reject it (501). CheapRoute tunnels ALL proxied
     // traffic (HTTP + HTTPS) via CONNECT, so force tunneling. Unknown option on
     // undici <8.6 → silently ignored (that version already tunneled by default).
     proxyTunnel: true,

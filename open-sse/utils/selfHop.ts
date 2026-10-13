@@ -2,7 +2,7 @@
 // public admission slot. The token lives only in this process.
 import { randomBytes, timingSafeEqual } from "node:crypto";
 
-export const SELF_HOP_HEADER = "x-omniroute-self-hop";
+export const SELF_HOP_HEADER = "x-cheaproute-self-hop";
 
 let token: string | null = null;
 

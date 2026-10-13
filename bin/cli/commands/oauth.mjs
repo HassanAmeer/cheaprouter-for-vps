@@ -20,7 +20,7 @@ const PROVIDERS_WITH_OAUTH = [
   { id: "copilot", name: "GitHub Copilot", flow: "device" },
 ];
 
-// The user-facing provider id (the one shown by `omniroute oauth providers`)
+// The user-facing provider id (the one shown by `cheaproute oauth providers`)
 // is NOT always the backend OAuth provider key the server's /api/oauth/[provider]/...
 // route expects. `claude-code` is the CLI-facing alias for Anthropic's Claude
 // OAuth, which the server registers under the key `claude` (see
@@ -87,7 +87,7 @@ function printLoopbackRedirectWarning(providerId, redirectUri) {
   );
   if (providerId === "antigravity") {
     process.stdout.write(
-      "Tip: `omniroute login antigravity` captures the code automatically and\n" +
+      "Tip: `cheaproute login antigravity` captures the code automatically and\n" +
         "avoids that error page entirely.\n"
     );
   }
@@ -536,7 +536,7 @@ export async function runOAuthStart(opts, cmd) {
   const def = PROVIDERS_WITH_OAUTH.find((p) => p.id === opts.provider);
   if (!def) {
     process.stderr.write(
-      `Unknown OAuth provider: ${opts.provider}\nRun: omniroute oauth providers\n`
+      `Unknown OAuth provider: ${opts.provider}\nRun: cheaproute oauth providers\n`
     );
     process.exit(2);
   }

@@ -106,7 +106,7 @@ function endpointBlockLines(op: OpenapiPath, usesDashboardSession: boolean): str
     lines.push("");
   }
 
-  // Minimal curl example. Only omni-auth establishes and consumes a dashboard
+  // Minimal curl example. Only cheap-auth establishes and consumes a dashboard
   // session; generic API skills use independently usable Bearer examples.
   lines.push("```bash");
   lines.push(...buildApiOperationExample(op, usesDashboardSession));
@@ -126,7 +126,7 @@ function markdownAnchor(value: string): string {
 function buildApiDocuments(skill: AgentSkill, sources: BuildSources): ApiSkillDocuments {
   const areaMap = sources.openapi.areas;
   const ops = areaMap.get(skill.area as Parameters<typeof areaMap.get>[0]) ?? [];
-  const usesDashboardSession = skill.id === "omni-auth";
+  const usesDashboardSession = skill.id === "cheap-auth";
 
   const lines: string[] = [];
 
@@ -206,8 +206,8 @@ function buildCliBody(skill: AgentSkill, sources: BuildSources): string {
 
   lines.push("## Quick install\n");
   lines.push("```bash");
-  lines.push("npm install -g omniroute   # or: npx omniroute");
-  lines.push("omniroute --version");
+  lines.push("npm install -g cheaproute   # or: npx cheaproute");
+  lines.push("cheaproute --version");
   lines.push("```");
   lines.push("");
 
@@ -234,7 +234,7 @@ function buildCliBody(skill: AgentSkill, sources: BuildSources): string {
 
       lines.push("**Example:**\n");
       lines.push("```bash");
-      lines.push(`omniroute ${CLI_PREVIEW_EXAMPLES[cmd.name] ?? cmd.name}`);
+      lines.push(`cheaproute ${CLI_PREVIEW_EXAMPLES[cmd.name] ?? cmd.name}`);
       lines.push("```");
       lines.push("");
     }

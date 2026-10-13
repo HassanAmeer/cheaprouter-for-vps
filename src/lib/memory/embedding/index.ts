@@ -1,13 +1,13 @@
 import {
   EMBEDDING_PROVIDERS,
   getEmbeddingDimension,
-} from "@omniroute/open-sse/config/embeddingRegistry.ts";
+} from "@cheaproute/open-sse/config/embeddingRegistry.ts";
 import { getProviderCredentials } from "@/sse/services/auth";
 import type { MemorySettingsExtended } from "@/shared/schemas/memory";
 import {
   getEmbeddingProvider,
   deriveEmbeddingProviderForChatProvider,
-} from "@omniroute/open-sse/config/embeddingRegistry.ts";
+} from "@cheaproute/open-sse/config/embeddingRegistry.ts";
 import type {
   EmbeddingResolution,
   EmbeddingResult,
@@ -378,7 +378,7 @@ export async function listEmbeddingProviders(): Promise<EmbeddingProviderListing
   // derivable /embeddings endpoint. They appear with an empty model catalog —
   // the UI offers free-text input for the model id. Curated + local nodes win.
   try {
-    const { REGISTRY } = await import("@omniroute/open-sse/config/providerRegistry.ts");
+    const { REGISTRY } = await import("@cheaproute/open-sse/config/providerRegistry.ts");
     const chatRegistry = REGISTRY as Record<string, { baseUrl?: string } | undefined>;
     // Cheap sync pass first: which providers CAN derive an endpoint at all.
     const derivable: string[] = [];

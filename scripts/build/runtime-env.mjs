@@ -7,9 +7,9 @@ export function parsePort(value, fallback) {
 
 /**
  * Resolve the V8 heap ceiling (MB) for the server process from
- * `OMNIROUTE_MEMORY_MB`, mirroring `omniroute serve`. Clamped to [64, 16384];
+ * `CHEAPROUTE_MEMORY_MB`, mirroring `cheaproute serve`. Clamped to [64, 16384];
  * invalid/unset → fallback (512). The standalone launcher uses this so
- * OMNIROUTE_MEMORY_MB can override the Docker image's NODE_OPTIONS fallback
+ * CHEAPROUTE_MEMORY_MB can override the Docker image's NODE_OPTIONS fallback
  * without clobbering any other runtime flags (#2939).
  * @param {string | number | undefined | null} value
  * @param {number} [fallback]
@@ -21,12 +21,12 @@ export function resolveMaxOldSpaceMb(value, fallback = 512) {
 
 /**
  * Derive a sane DEFAULT V8 heap ceiling (MB) from the host's physical RAM, used
- * when `OMNIROUTE_MEMORY_MB` is unset. A fixed 512MB default crashed boxes with
+ * when `CHEAPROUTE_MEMORY_MB` is unset. A fixed 512MB default crashed boxes with
  * plenty of RAM under load (65 providers / 2600 models → "Ineffective
  * mark-compacts near heap limit ~500MB"); see #5172 / #5160 / #5152. Targets
  * ~35% of total RAM, clamped to [512, 4096]. Invalid/zero totalmem → 512.
  * Pass the result as the `fallback` of {@link resolveMaxOldSpaceMb} so an
- * explicit OMNIROUTE_MEMORY_MB override always wins.
+ * explicit CHEAPROUTE_MEMORY_MB override always wins.
  * @param {number | undefined | null} totalmemBytes — typically `os.totalmem()`
  */
 export function calibrateHeapFallbackMb(totalmemBytes) {
@@ -40,7 +40,7 @@ const MAX_OLD_SPACE_FLAG = "--max-old-space-size";
 
 /**
  * True when the caller already pinned the V8 heap via NODE_OPTIONS
- * (`--max-old-space-size=…`). Used to decide whether `omniroute serve` may
+ * (`--max-old-space-size=…`). Used to decide whether `cheaproute serve` may
  * append/inject the calibrated default — a user-set value must always win.
  * @param {NodeJS.ProcessEnv | Record<string, string | undefined>} [env]
  */
@@ -58,53 +58,53 @@ export function parseNodeOptionsHeapMb(nodeOptions) {
 }
 
 /**
- * True when OMNIROUTE_MEMORY_MB is an explicit in-range integer (not the
+ * True when CHEAPROUTE_MEMORY_MB is an explicit in-range integer (not the
  * unset/invalid fallback). Docker images set this; Compose may also set
  * NODE_OPTIONS — #10353 needs to know both knobs were intentionally present.
  */
-export function envHasExplicitOmnirouteMemoryMb(env) {
+export function envHasExplicitCheaprouteMemoryMb(env) {
   const sourceEnv = arguments.length === 0 ? process.env : env;
-  const parsed = Number.parseInt(String(sourceEnv?.OMNIROUTE_MEMORY_MB ?? ""), 10);
+  const parsed = Number.parseInt(String(sourceEnv?.CHEAPROUTE_MEMORY_MB ?? ""), 10);
   return Number.isFinite(parsed) && parsed >= 64 && parsed <= 16384;
 }
 
 /**
  * Docker `run-standalone.mjs` appends `--max-old-space-size` from
- * OMNIROUTE_MEMORY_MB. V8 last-flag semantics mean that appended value wins
+ * CHEAPROUTE_MEMORY_MB. V8 last-flag semantics mean that appended value wins
  * over an earlier NODE_OPTIONS heap. Warn once when both are set and disagree
  * so env dumps stop looking like NODE_OPTIONS is in effect (#10353).
  *
  * @returns {boolean} true when a warn was emitted
  */
-export function warnConflictingHeapLimits(env, omnirouteMb, log = console.warn) {
+export function warnConflictingHeapLimits(env, cheaprouteMb, log = console.warn) {
   const nodeMb = parseNodeOptionsHeapMb(env?.NODE_OPTIONS);
-  if (nodeMb == null || !envHasExplicitOmnirouteMemoryMb(env)) return false;
-  if (nodeMb === omnirouteMb) return false;
+  if (nodeMb == null || !envHasExplicitCheaprouteMemoryMb(env)) return false;
+  if (nodeMb === cheaprouteMb) return false;
   log(
-    `[omniroute] heap limit conflict: OMNIROUTE_MEMORY_MB=${omnirouteMb} disagrees with NODE_OPTIONS --max-old-space-size=${nodeMb}. ` +
-      `run-standalone.mjs / Docker appends OMNIROUTE_MEMORY_MB last, so the effective V8 heap is ${omnirouteMb} MB. ` +
-      `Set only OMNIROUTE_MEMORY_MB (recommended) or make both values match.`
+    `[cheaproute] heap limit conflict: CHEAPROUTE_MEMORY_MB=${cheaprouteMb} disagrees with NODE_OPTIONS --max-old-space-size=${nodeMb}. ` +
+      `run-standalone.mjs / Docker appends CHEAPROUTE_MEMORY_MB last, so the effective V8 heap is ${cheaprouteMb} MB. ` +
+      `Set only CHEAPROUTE_MEMORY_MB (recommended) or make both values match.`
   );
   return true;
 }
 
 /**
  * NODE_OPTIONS string for Docker / run-standalone.mjs.
- * Explicit OMNIROUTE_MEMORY_MB always appends (wins). Otherwise keep an
+ * Explicit CHEAPROUTE_MEMORY_MB always appends (wins). Otherwise keep an
  * existing NODE_OPTIONS heap flag (#5238). Otherwise append the fallback.
  */
-export function buildStandaloneNodeOptions(env = process.env, omnirouteMb) {
+export function buildStandaloneNodeOptions(env = process.env, cheaprouteMb) {
   const existing = String(env?.NODE_OPTIONS || "").trim();
-  if (envHasExplicitOmnirouteMemoryMb(env)) {
-    return `${existing} ${MAX_OLD_SPACE_FLAG}=${omnirouteMb}`.trim();
+  if (envHasExplicitCheaprouteMemoryMb(env)) {
+    return `${existing} ${MAX_OLD_SPACE_FLAG}=${cheaprouteMb}`.trim();
   }
   if (existing.includes(MAX_OLD_SPACE_FLAG)) return existing;
-  return `${existing} ${MAX_OLD_SPACE_FLAG}=${omnirouteMb}`.trim();
+  return `${existing} ${MAX_OLD_SPACE_FLAG}=${cheaprouteMb}`.trim();
 }
 
 /**
  * Assemble the NODE_OPTIONS string for the spawned server, preserving any flags
- * the user already exported. #5238: `omniroute serve` used to UNCONDITIONALLY
+ * the user already exported. #5238: `cheaproute serve` used to UNCONDITIONALLY
  * overwrite NODE_OPTIONS with the calibrated `--max-old-space-size`, silently
  * discarding a user-set `NODE_OPTIONS=--max-old-space-size=8192` (reporter set
  * 8192 and still OOM'd at ~505MB). Mirrors the Electron (electron/main.js) and
@@ -170,11 +170,11 @@ export function withRuntimePortEnv(env, runtimePorts) {
 
   return {
     ...env,
-    OMNIROUTE_PORT: String(basePort),
+    CHEAPROUTE_PORT: String(basePort),
     PORT: String(dashboardPort),
     DASHBOARD_PORT: String(dashboardPort),
     API_PORT: String(apiPort),
-    HOSTNAME: env.OMNIROUTE_HOSTNAME || "0.0.0.0",
+    HOSTNAME: env.CHEAPROUTE_HOSTNAME || "0.0.0.0",
   };
 }
 

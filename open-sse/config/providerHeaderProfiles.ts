@@ -85,7 +85,7 @@ export function resolveGitHubCopilotCliVersion(
       const response = await fetchImpl(NPM_GITHUB_COPILOT_LATEST_URL, {
         headers: {
           Accept: "application/json",
-          "User-Agent": "OmniRoute-CopilotVersion/1.0",
+          "User-Agent": "CheapRoute-CopilotVersion/1.0",
         },
         signal: controller.signal,
       });
@@ -166,7 +166,7 @@ export function resolveCopilotIntegrationIdOverride(): string | null {
 // call (verified identical across all captured requests) — a per-call random id
 // would itself be an anti-fingerprint tell. We mint one per process and cache
 // it (env-overridable via GITHUB_COPILOT_MACHINE_ID), which keeps it stable for
-// the lifetime of a running OmniRoute instance, matching "one CLI install".
+// the lifetime of a running CheapRoute instance, matching "one CLI install".
 let _copilotMachineId: string | null = null;
 export function getGitHubCopilotMachineId(): string {
   const override = (process?.env?.GITHUB_COPILOT_MACHINE_ID || "").trim();
@@ -315,7 +315,7 @@ export function refreshQwenCliVersion(fetchImpl: NpmFetchLike = fetch): Promise<
   return refreshNpmDottedTriple({
     url: NPM_QWEN_CODE_LATEST_URL,
     pin: QWEN_CLI_VERSION,
-    userAgent: "OmniRoute-QwenCodeVersion/1.0",
+    userAgent: "CheapRoute-QwenCodeVersion/1.0",
     timeoutMs: QWEN_CLI_VERSION_FETCH_TIMEOUT_MS,
     ttlMs: QWEN_CLI_VERSION_CACHE_TTL_MS,
     readCache: () => qwenVersionCache,
@@ -355,7 +355,7 @@ export function refreshCodeBuddyCnUserAgent(fetchImpl: NpmFetchLike = fetch): Pr
   return refreshNpmDottedTriple({
     url: NPM_CODEBUDDY_LATEST_URL,
     pin: pinVersion,
-    userAgent: "OmniRoute-CodeBuddyVersion/1.0",
+    userAgent: "CheapRoute-CodeBuddyVersion/1.0",
     timeoutMs: CODEBUDDY_CN_VERSION_FETCH_TIMEOUT_MS,
     ttlMs: CODEBUDDY_CN_VERSION_CACHE_TTL_MS,
     readCache: () => codeBuddyVersionCache,

@@ -90,7 +90,7 @@ const STRIP_RULES: StripRule[] = [
   // independent live-endpoint reports hitting the same Ark endpoint for both
   // kimi-k2.5 and kimi-k2.7-code (NousResearch/hermes-agent#51773,
   // MoonshotAI/kimi-cli#1124), and by upstream decolua/9router#2460. Scoped to
-  // OmniRoute's actual volcengine Kimi id (not a broad /kimi/i regex) so it
+  // CheapRoute's actual volcengine Kimi id (not a broad /kimi/i regex) so it
   // never clamps an unrelated future Kimi listing whose Ark cap may differ.
   {
     provider: "volcengine",
@@ -111,7 +111,7 @@ const STRIP_RULES: StripRule[] = [
   { provider: "glm", match: /^glm-4\.6v$/i, clampToModelMaxOutput: true },
   // Azure gpt-4o-mini deployments cap completion tokens at 16384 and 400 on
   // anything larger: "max_tokens is too large: 32000. This model supports at
-  // most 16384 completion tokens". OmniRoute's own tool-calling floor
+  // most 16384 completion tokens". CheapRoute's own tool-calling floor
   // (DEFAULT_MIN_TOKENS = 32000, applied by adjustMaxTokens) raises even a tiny
   // explicit max_tokens to 32000 whenever tools are present, so every agentic
   // client trips this on its first turn. PROVIDER_MAX_TOKENS is not the right

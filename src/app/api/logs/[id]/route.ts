@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { sanitizeErrorMessage } from "@omniroute/open-sse/utils/errorSanitization.ts";
+import { sanitizeErrorMessage } from "@cheaproute/open-sse/utils/errorSanitization.ts";
 import { requireManagementAuth } from "@/lib/api/requireManagementAuth";
 import { sanitizeErrorFramesFromLogChunks } from "@/lib/logPayloads";
 import { getCallLogById } from "@/lib/usageDb";

@@ -450,7 +450,7 @@ export function getSyncedCapabilities(provider?: string, modelId?: string): Capa
  * Required because models.dev has historically stored capability rows under the
  * alias side of an alias pair (e.g. "opencode-zen") while the catalog & combo
  * targets reference the canonical id (e.g. "opencode"). Without this fallback,
- * combos whose targets use the canonical id (e.g. "Opencode FREE Omni" → all
+ * combos whose targets use the canonical id (e.g. "Opencode FREE Cheap" → all
  * `opencode/...` models) end up with `context_length: null` in the catalog.
  */
 const SYNCED_CAPABILITY_FALLBACK_ALIASES: Record<string, string[]> = {

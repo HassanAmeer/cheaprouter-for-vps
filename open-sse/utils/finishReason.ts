@@ -24,7 +24,7 @@ const SAFETY_FINISH_REASONS = new Set([
 // OpenAI client keys its whole turn lifecycle off this field, and an unrecognized
 // value reads as a provider fault that failed the turn.
 //
-// Live incident: `oh-my-pi` (omp) driving `omniroute/paper-stack`, whose
+// Live incident: `oh-my-pi` (omp) driving `cheaproute/paper-stack`, whose
 // `zenmux-free/openai/gpt-5.6-luna` leg returns Anthropic-style stop reasons,
 // ended every turn with `stopReason: "error"` /
 // `Provider finish_reason: end_turn` even though the text had streamed

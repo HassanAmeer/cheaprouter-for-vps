@@ -6,7 +6,7 @@ import {
   isAllRateLimitedCredentials,
   rateLimitedProviderResponse,
 } from "@/app/api/v1/_shared/rateLimit";
-import { buildErrorBody, sanitizeErrorMessage } from "@omniroute/open-sse/utils/error.ts";
+import { buildErrorBody, sanitizeErrorMessage } from "@cheaproute/open-sse/utils/error.ts";
 import { CORS_HEADERS, handleCorsOptions } from "@/shared/utils/cors";
 
 const FISH_AUDIO_API_BASE = "https://api.fish.audio";

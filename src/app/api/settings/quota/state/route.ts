@@ -13,7 +13,7 @@
 
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { buildErrorBody } from "@omniroute/open-sse/utils/error";
+import { buildErrorBody } from "@cheaproute/open-sse/utils/error";
 import { requireManagementAuth } from "@/lib/api/requireManagementAuth";
 import { CORS_HEADERS, handleCorsOptions } from "@/shared/utils/cors";
 import { getQuotaAnalyticsSummary } from "@/lib/quota/quotaAnalytics";

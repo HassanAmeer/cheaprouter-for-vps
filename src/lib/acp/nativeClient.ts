@@ -12,7 +12,7 @@ export class NativeAcpClient {
     const input = Readable.toWeb(child.stdout) as ReadableStream<Uint8Array>;
     const output = Writable.toWeb(child.stdin) as WritableStream<Uint8Array>;
     const app = acp
-      .client({ name: "omniroute" })
+      .client({ name: "cheaproute" })
       .onRequest(acp.methods.client.session.requestPermission, () => ({
         outcome: { outcome: "cancelled" },
       }))

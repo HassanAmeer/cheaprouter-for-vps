@@ -5,23 +5,23 @@ import { compressionPreviewConfigSchema } from "@/shared/validation/compressionC
 import {
   applyCompression,
   applyCompressionAsync,
-} from "@omniroute/open-sse/services/compression/strategySelector";
+} from "@cheaproute/open-sse/services/compression/strategySelector";
 import type {
   CompressionConfig,
   CompressionMode,
-} from "@omniroute/open-sse/services/compression/types";
+} from "@cheaproute/open-sse/services/compression/types";
 import {
   buildCompressionPreviewDiff,
   type HeatmapMode,
-} from "@omniroute/open-sse/services/compression/diffHelper";
-import { sanitizeErrorMessage } from "@omniroute/open-sse/utils/error";
+} from "@cheaproute/open-sse/services/compression/diffHelper";
+import { sanitizeErrorMessage } from "@cheaproute/open-sse/utils/error";
 import { countTextTokens } from "@/shared/utils/tiktokenCounter";
 import {
   ensureEngineBreakdown,
   reconcileSingleEngineTokens,
-} from "@omniroute/open-sse/services/compression/engineBreakdown";
-import { summarizeEncoderCandidates } from "@omniroute/open-sse/services/compression/engines/headroom/encoderComparison";
-import { DEFAULT_MIN_ROWS } from "@omniroute/open-sse/services/compression/engines/headroom/smartcrusher";
+} from "@cheaproute/open-sse/services/compression/engineBreakdown";
+import { summarizeEncoderCandidates } from "@cheaproute/open-sse/services/compression/engines/headroom/encoderComparison";
+import { DEFAULT_MIN_ROWS } from "@cheaproute/open-sse/services/compression/engines/headroom/smartcrusher";
 
 export const PreviewCompressionConfigSchema = compressionPreviewConfigSchema;
 
@@ -257,12 +257,12 @@ export async function POST(req: Request) {
 
   try {
     const start = Date.now();
-    // #14983 made fuzzy dedup run only for callers that advertise omniroute_ccr_retrieve
+    // #14983 made fuzzy dedup run only for callers that advertise cheaproute_ccr_retrieve
     // (its marker is otherwise unresolvable). The studio is a dry run with no real caller, so
     // with the fuzzy toggle on it simulates a CCR-capable one (same as the compression
     // benchmark harness) — without this the toggle is a silent no-op.
     const requestBody = fuzzyDedup?.enabled
-      ? { messages, tools: [{ type: "function", function: { name: "omniroute_ccr_retrieve" } }] }
+      ? { messages, tools: [{ type: "function", function: { name: "cheaproute_ccr_retrieve" } }] }
       : { messages };
     const result = await dispatchCompression(requestBody as Record<string, unknown>, {
       engineId,

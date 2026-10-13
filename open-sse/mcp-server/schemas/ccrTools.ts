@@ -56,7 +56,7 @@ export const ccrStoreOutput = z.union([
 ]);
 
 export const ccrStoreTool: McpToolDefinition<typeof ccrStoreInput, typeof ccrStoreOutput> = {
-  name: "omniroute_ccr_store",
+  name: "cheaproute_ccr_store",
   description:
     "Store verbatim content in the caller-isolated in-memory CCR store and return a ccr:// reference plus the compatible CCR marker. Entries expire automatically and are not persisted across restarts.",
   inputSchema: ccrStoreInput,
@@ -94,7 +94,7 @@ export const ccrRetrieveOutput = z.union([
 
 export const ccrRetrieveTool: McpToolDefinition<typeof ccrRetrieveInput, typeof ccrRetrieveOutput> =
   {
-    name: "omniroute_ccr_retrieve",
+    name: "cheaproute_ccr_retrieve",
     description:
       "Retrieve caller-owned CCR content by hash. Full MCP responses are capped at 256 KiB; use head, tail, lines, grep, or stats for larger blocks.",
     inputSchema: ccrRetrieveInput,
@@ -115,7 +115,7 @@ export const ccrInspectOutput = z.union([
   }),
 ]);
 export const ccrInspectTool: McpToolDefinition<typeof ccrInspectInput, typeof ccrInspectOutput> = {
-  name: "omniroute_ccr_inspect",
+  name: "cheaproute_ccr_inspect",
   description: "Inspect metadata for a caller-owned CCR block without returning its content.",
   inputSchema: ccrInspectInput,
   outputSchema: ccrInspectOutput,
@@ -137,7 +137,7 @@ export const ccrListOutput = z.object({
   hasMore: z.boolean(),
 });
 export const ccrListTool: McpToolDefinition<typeof ccrListInput, typeof ccrListOutput> = {
-  name: "omniroute_ccr_list",
+  name: "cheaproute_ccr_list",
   description: "List paginated metadata for CCR blocks owned by the current caller.",
   inputSchema: ccrListInput,
   outputSchema: ccrListOutput,
@@ -150,7 +150,7 @@ export const ccrListTool: McpToolDefinition<typeof ccrListInput, typeof ccrListO
 export const ccrDeleteInput = z.object({ hash: ccrHash });
 export const ccrDeleteOutput = z.object({ deleted: z.boolean() });
 export const ccrDeleteTool: McpToolDefinition<typeof ccrDeleteInput, typeof ccrDeleteOutput> = {
-  name: "omniroute_ccr_delete",
+  name: "cheaproute_ccr_delete",
   description: "Delete a caller-owned block from the in-memory CCR store.",
   inputSchema: ccrDeleteInput,
   outputSchema: ccrDeleteOutput,
@@ -181,7 +181,7 @@ export const ccrStatsOutput = z.object({
   }),
 });
 export const ccrStatsTool: McpToolDefinition<typeof ccrStatsInput, typeof ccrStatsOutput> = {
-  name: "omniroute_ccr_stats",
+  name: "cheaproute_ccr_stats",
   description:
     "Return caller-scoped CCR entry and byte usage, lifecycle counters, and in-memory store limits.",
   inputSchema: ccrStatsInput,

@@ -170,7 +170,7 @@ const QUOTA_FAMILY_LOCKOUT_STATUSES: ReadonlySet<number> = new Set([402, 403, 40
 
 /**
  * A 5xx — a transport failure (`terminated`, EHOSTUNREACH, connect timeout), an
- * upstream server error, or OmniRoute's own synthesized 502 from quality
+ * upstream server error, or CheapRoute's own synthesized 502 from quality
  * validation — says something about one model endpoint at that moment, not about
  * the account's quota family. Locking the family on it let a single empty stream
  * on one `gpt-5.6-*` model remove every `gpt-5*` model of the codex connection

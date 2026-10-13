@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /**
- * OmniRoute CLI entry point.
+ * CheapRoute CLI entry point.
  *
  * Special bypasses (handled before Commander):
  *   --version / -V (alone)    Fast-path: print the version and exit, skipping the
@@ -44,7 +44,7 @@ const ROOT = join(__dirname, "..");
 // polyfill import, env-file loading, or Commander's command registration (~70
 // modules — DB, providers, OAuth, etc.) run. None of that work is needed to answer
 // "what version is this" — mirrors upstream 9router PR #2414 (fast-path help/version
-// ahead of expensive self-heal hooks), adapted to OmniRoute's Commander CLI where the
+// ahead of expensive self-heal hooks), adapted to CheapRoute's Commander CLI where the
 // equivalent expensive work is eager command registration rather than npm-install-based
 // runtime self-healing. `--help` is intentionally NOT fast-pathed here: its output is
 // generated dynamically from every registered subcommand, so skipping registration
@@ -75,7 +75,7 @@ if (shouldProvisionStorageKey(process.argv)) {
         `  ${runtimeWarning}\n` +
         `  Supported runtimes: ${nodeSupport.supportedDisplay}\n` +
         `  Recommended: Node.js ${nodeSupport.recommendedVersion}\n` +
-        `  If you installed OmniRoute globally, run \`node -v\` and confirm \`omniroute\` is not resolving to\n` +
+        `  If you installed CheapRoute globally, run \`node -v\` and confirm \`cheaproute\` is not resolving to\n` +
         `  a stale/distro-packaged \`nodejs\` binary (e.g. /usr/bin/node) instead of the version you expect —\n` +
         `  that mismatch is the most common cause even when package.json's engines range is correct.`
     );
@@ -102,8 +102,8 @@ if (process.argv.includes("--mcp")) {
 await import("tsx/esm");
 await import("../open-sse/utils/setupPolyfill.ts");
 
-// #7791: tsx's tsconfig-path resolution does not apply when OmniRoute is
-// installed globally (files live under node_modules/omniroute/), so bare
+// #7791: tsx's tsconfig-path resolution does not apply when CheapRoute is
+// installed globally (files live under node_modules/cheaproute/), so bare
 // `@/...` specifiers (declared in tsconfig.json paths as `@/* → ./src/*`)
 // fail with ERR_MODULE_NOT_FOUND. Register an ESM resolve hook that maps
 // `@/...` to absolute file URLs under <ROOT>/src/. Safe no-op in dev checkout
@@ -150,14 +150,14 @@ function loadEnvFile() {
   // Hermetic commands (real CLI smokes, migrations, recovery probes) may point
   // DATA_DIR at an isolated tree. Do not silently mix the user's default
   // credential env into that process when isolation is explicitly requested.
-  if (process.env.OMNIROUTE_CLI_SKIP_DEFAULT_DATA_ENV !== "1") {
+  if (process.env.CHEAPROUTE_CLI_SKIP_DEFAULT_DATA_ENV !== "1") {
     addEnvPath(join(getDefaultDataDir(), ".env"));
   }
 
   addEnvPath(join(process.cwd(), ".env"));
   // Skip the repo-checkout .env when explicitly requested (used by isolation tests
   // that need a deterministic environment without the development repo's defaults).
-  if (process.env.OMNIROUTE_CLI_SKIP_REPO_ENV !== "1") {
+  if (process.env.CHEAPROUTE_CLI_SKIP_REPO_ENV !== "1") {
     addEnvPath(join(ROOT, ".env"));
   }
 
@@ -231,11 +231,11 @@ loadEnvFile();
 
 // Generate STORAGE_ENCRYPTION_KEY if not set (persisted to DATA_DIR or getDefaultDataDir()/.env)
 // This ensures the key survives across upgrades and is not regenerated on each install.
-// See: https://github.com/diegosouzapw/OmniRoute/issues/1622
+// See: https://github.com/diegosouzapw/CheapRoute/issues/1622
 //
 // Only provision for commands that actually touch encrypted storage. Purely
 // informational invocations (`--version`, `--help`, `help`) must not create a
-// key or write ~/.omniroute/.env — running a read-only command should never
+// key or write ~/.cheaproute/.env — running a read-only command should never
 // mutate the data dir.
 if (shouldProvisionStorageKey(process.argv)) {
   const { randomBytes } = await import("node:crypto");
@@ -250,7 +250,7 @@ if (shouldProvisionStorageKey(process.argv)) {
   if (!process.env.STORAGE_ENCRYPTION_KEY) {
     // Persist the key into DATA_DIR when set — that's the directory mounted as a volume in
     // Docker (where storage.sqlite lives), so the key survives `docker down` / `docker pull`.
-    // Writing only to ~/.omniroute (the container home, not a volume) silently lost the key on
+    // Writing only to ~/.cheaproute (the container home, not a volume) silently lost the key on
     // container recreation, leaving the persisted encrypted DB undecryptable (regression of #1622).
     const dataDir = process.env.DATA_DIR || getDefaultDataDir();
     const envPath = join(dataDir, ".env");
@@ -299,7 +299,7 @@ if (shouldProvisionStorageKey(process.argv)) {
 {
   const langIdx = process.argv.findIndex((a) => a === "--lang");
   const langArg = langIdx >= 0 ? process.argv[langIdx + 1] : null;
-  const langEnv = process.env.OMNIROUTE_LANG;
+  const langEnv = process.env.CHEAPROUTE_LANG;
   const chosen = langArg || langEnv;
   if (chosen) {
     const { setLocale } = await import(pathToFileURL(join(ROOT, "bin", "cli", "i18n.mjs")).href);
@@ -314,7 +314,7 @@ const _notifier = updateNotifier
   : null;
 process.on("exit", () => {
   if (!_notifier || !_notifier.update) return;
-  if (process.env.OMNIROUTE_NO_UPDATE_NOTIFIER) return;
+  if (process.env.CHEAPROUTE_NO_UPDATE_NOTIFIER) return;
   if (process.env.CI) return;
   if (process.argv.includes("--quiet") || process.argv.includes("-q")) return;
   const outputIdx = process.argv.indexOf("--output");
@@ -335,7 +335,7 @@ process.on("exit", () => {
       isGlobal: true,
       message:
         `Update available: ${_notifier.update.current} → ${_notifier.update.latest}\n` +
-        "Run `npm install -g omniroute` or `omniroute update --apply`",
+        "Run `npm install -g cheaproute` or `cheaproute update --apply`",
     });
   }
 });

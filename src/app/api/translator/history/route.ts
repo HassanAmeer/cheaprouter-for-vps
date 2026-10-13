@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getTranslationEvents } from "@/lib/translatorEvents";
-import { sanitizeErrorMessage } from "@omniroute/open-sse/utils/error";
+import { sanitizeErrorMessage } from "@cheaproute/open-sse/utils/error";
 
 /**
  * GET /api/translator/history

@@ -13,7 +13,7 @@
 
 import { RadarFeedSchema, RadarTierSchema, type RadarFeed, type RadarTier } from "./feedSchema";
 import { verifyFeedBytes } from "./verify";
-import { sanitizeErrorMessage } from "@omniroute/open-sse/utils/error";
+import { sanitizeErrorMessage } from "@cheaproute/open-sse/utils/error";
 import { isFeatureFlagEnabled } from "@/shared/utils/featureFlags";
 
 // ---------------------------------------------------------------------------
@@ -24,7 +24,7 @@ import { isFeatureFlagEnabled } from "@/shared/utils/featureFlags";
  * Default feed base URL.  Forks and self-hosters point this at their own
  * signed feed with the `RADAR_FEED_URL` env var (see docs/frameworks/RADAR.md).
  */
-const DEFAULT_FEED_BASE_URL = "https://radar.omniroute.online";
+const DEFAULT_FEED_BASE_URL = "https://radar.cheaproute.online";
 
 const SYNC_TIMEOUT_MS = 30_000;
 
@@ -82,7 +82,7 @@ export interface SyncDeps {
 // ---------------------------------------------------------------------------
 
 /**
- * Parse & validate the `x-omniroute-feed-tier` response header.
+ * Parse & validate the `x-cheaproute-feed-tier` response header.
  *
  * This header is the AUTHORITATIVE source for which tier was actually
  * served to this caller — the server decides per-request based on the
@@ -198,7 +198,7 @@ export async function syncRadar(deps: SyncDeps = {}): Promise<SyncStatus> {
     const baseUrl = (process.env.RADAR_FEED_URL || DEFAULT_FEED_BASE_URL).replace(/\/+$/, "");
     const url = `${baseUrl}/v1/catalog/latest`;
 
-    const headers: Record<string, string> = { "x-omniroute-radar-schema": "2" };
+    const headers: Record<string, string> = { "x-cheaproute-radar-schema": "2" };
     if (settings.supporterKey) {
       headers["Authorization"] = `Bearer ${settings.supporterKey}`;
     }
@@ -260,7 +260,7 @@ export async function syncRadar(deps: SyncDeps = {}): Promise<SyncStatus> {
       rawBytes = buffered;
     }
 
-    const signature = res.headers.get("x-omniroute-feed-signature") ?? "";
+    const signature = res.headers.get("x-cheaproute-feed-signature") ?? "";
 
     // Step 5: Verify signature
     const sigValid = verifyFeedBytes(rawBytes, signature);
@@ -280,7 +280,7 @@ export async function syncRadar(deps: SyncDeps = {}): Promise<SyncStatus> {
     // Step 7: Resolve the served tier before the version floor. A single-use
     // supporter key deliberately transitions from live to community after its
     // first catalog pull, and the community snapshot can be older.
-    const servedTier = parseServedTierHeader(res.headers.get("x-omniroute-feed-tier")) ?? feed.tier;
+    const servedTier = parseServedTierHeader(res.headers.get("x-cheaproute-feed-tier")) ?? feed.tier;
 
     // Step 8: Version floor. Same/older versions are rejected within a tier,
     // but a verified live -> community transition must replace the privileged

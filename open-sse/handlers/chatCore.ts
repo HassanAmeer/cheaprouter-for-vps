@@ -96,7 +96,7 @@ import { checkResourcePressureGuard } from "../utils/resourcePressure.ts";
 import { normalizeHeaders } from "../utils/headers.ts";
 import { resolveChatCoreRequestFormat } from "./chatCore/requestFormat.ts";
 import { resolveChatCoreTargetFormat } from "./chatCore/targetFormat.ts";
-import { resolveOmniGlyphTransport } from "../services/compression/imageTransportPolicy.ts";
+import { resolveCheapGlyphTransport } from "../services/compression/imageTransportPolicy.ts";
 import { stripStore, usesClaudeBridge } from "./chatCore/agentRouterProtocol.ts";
 import { normalizeClaudeToolsForDispatch } from "./chatCore/claudeToolDefaults.ts";
 import {
@@ -165,7 +165,7 @@ import {
   detectMalformedNonStream,
   describeMalformedNonStream,
 } from "../utils/diagnostics.ts";
-import { checkTokenLimits } from "@omniroute/open-sse/services/tokenLimitCounter.ts";
+import { checkTokenLimits } from "@cheaproute/open-sse/services/tokenLimitCounter.ts";
 import {
   COOLDOWN_MS,
   HTTP_STATUS,
@@ -404,7 +404,7 @@ async function handleChatCoreInner({
   forcedConnectionId = null, // #14116: caller's pinned/requested connection, vs credentials.connectionId below
   previousResponseResumed = undefined, // rehydrated-continuation flag from chat.ts; noted below, no semantics.
 }) {
-  delete (body as Record<string, unknown>)._omniroutePreviousResponseResumed;
+  delete (body as Record<string, unknown>)._cheaproutePreviousResponseResumed;
   const {
     model: originModel,
     resolvedThinkingEffort,
@@ -423,7 +423,7 @@ async function handleChatCoreInner({
     buildExecutorClientHeaders(clientRawRequest?.headers, userAgent, { provider, body });
   // Keep the selected rule across format conversion, retries and refreshed credentials.
   // Each combo leg gets its own execution context; nothing is written to shared accounts.
-  const reasoningRuleDirective = body?._omnirouteReasoningRule;
+  const reasoningRuleDirective = body?._cheaprouteReasoningRule;
   // #12150 P1b: true iff the video-bridge guardrail rendered >=1 transcript
   // cue into a replaced part of this request. Gates both request- and
   // response-derived Memory extraction
@@ -465,7 +465,7 @@ async function handleChatCoreInner({
       comboName: comboName || undefined,
     });
   });
-  const traceEnabled = process.env.OMNIROUTE_TRACE === "true" || process.env.DEBUG === "true";
+  const traceEnabled = process.env.CHEAPROUTE_TRACE === "true" || process.env.DEBUG === "true";
   // Stage trace extracted to chatCore/stageTrace.ts (#3501); bind the per-request inputs once so the
   // call sites stay byte-identical.
   const trace = (label: string, extra?: Record<string, unknown>) =>
@@ -836,7 +836,7 @@ async function handleChatCoreInner({
   // Capture client tool names BEFORE fallback injection so the owner-provenance
   // merge can distinguish tools the client already declared from synthetic tools
   // added by the fallback preparer. Without this, a client function named
-  // `omniroute_web_search` (colliding with the fallback tool name) would be
+  // `cheaproute_web_search` (colliding with the fallback tool name) would be
   // marked server-owned even though the client owns it.
   const preConversionClientToolNames: string[] = (
     Array.isArray((body as Record<string, unknown>).tools)
@@ -885,7 +885,7 @@ async function handleChatCoreInner({
     }
     log?.info?.(
       "TOOLS",
-      `Converted ${webSearchFallbackPlan.convertedToolCount} web_search tool(s) to OmniRoute fallback for ${provider}`
+      `Converted ${webSearchFallbackPlan.convertedToolCount} web_search tool(s) to CheapRoute fallback for ${provider}`
     );
   }
   // #7339: interceptFetch (Phase 3-4 of #3384) — same per-model rule + native-bypass
@@ -903,7 +903,7 @@ async function handleChatCoreInner({
     body = bodyWithWebFetchFallback as typeof body;
     log?.info?.(
       "TOOLS",
-      `Converted ${webFetchFallbackPlan.convertedToolCount} web_fetch tool(s) to OmniRoute fallback for ${provider}`
+      `Converted ${webFetchFallbackPlan.convertedToolCount} web_fetch tool(s) to CheapRoute fallback for ${provider}`
     );
   }
   const noLogEnabled = apiKeyInfo?.noLog === true;
@@ -965,10 +965,10 @@ async function handleChatCoreInner({
   // header — never synthesized from the internal per-request skillRequestId.
   const explicitSessionIdHeader =
     (clientRawRequest?.headers && typeof clientRawRequest.headers.get === "function"
-      ? clientRawRequest.headers.get("x-omniroute-session-id")
+      ? clientRawRequest.headers.get("x-cheaproute-session-id")
       : getHeaderValueCaseInsensitive(
           clientRawRequest?.headers ?? null,
-          "x-omniroute-session-id"
+          "x-cheaproute-session-id"
         )) || null;
   const pipelineSessionId = explicitSessionIdHeader || skillRequestId;
   const reasoningReplaySessionKey = sessionAffinityKey || explicitSessionIdHeader;
@@ -1009,7 +1009,7 @@ async function handleChatCoreInner({
       modelPinned,
       // Resolved conversationId (open-sse/services/conversationTracker.ts) wins when
       // present — it's populated for every request now, not just ones where the
-      // client explicitly sent x-omniroute-session-id. The raw header remains a
+      // client explicitly sent x-cheaproute-session-id. The raw header remains a
       // fallback for any caller that somehow bypassed conversationId resolution.
       sessionTag: conversationId || explicitSessionIdHeader,
       // #12150 P1b surface 1: undefined for every non-video request (byte-identical
@@ -1068,7 +1068,7 @@ async function handleChatCoreInner({
     .join(" ");
 
   // Explicit per-request opt-in/out for the `</think>` close marker
-  // (#5312 / #5245): `x-omniroute-thinking-marker: off` suppresses it for
+  // (#5312 / #5245): `x-cheaproute-thinking-marker: off` suppresses it for
   // reasoning_content-native clients (e.g. Cursor's OpenAI path) that the UA
   // allowlist does not cover; absent the header, the UA policy applies.
   const thinkingMarkerHeader = getHeaderValueCaseInsensitive(
@@ -1079,7 +1079,7 @@ async function handleChatCoreInner({
   const explicitStreamAlias = resolveExplicitStreamAlias(body);
 
   // Remove non-standard non-stream aliases before provider translation/execution.
-  // They are accepted for compatibility at the OmniRoute API boundary only.
+  // They are accepted for compatibility at the CheapRoute API boundary only.
   if (body && typeof body === "object") {
     const b = body as Record<string, unknown>;
     if (explicitStreamAlias !== undefined) {
@@ -1153,12 +1153,12 @@ async function handleChatCoreInner({
   logClientRawRequestRedacted(reqLogger, clientRawRequest, videoBridgeObserved);
   const reasoningRouteDecision =
     body && typeof body === "object"
-      ? (body as Record<string, unknown>)._omnirouteReasoningRouteTrace
+      ? (body as Record<string, unknown>)._cheaprouteReasoningRouteTrace
       : null;
   if (reasoningRouteDecision) {
     reqLogger.logRouteDecision(reasoningRouteDecision);
     body = { ...(body as Record<string, unknown>) };
-    delete (body as Record<string, unknown>)._omnirouteReasoningRouteTrace;
+    delete (body as Record<string, unknown>)._cheaprouteReasoningRouteTrace;
   }
 
   log?.debug?.("FORMAT", `${sourceFormat} → ${targetFormat} | stream=${stream}`);
@@ -1175,7 +1175,7 @@ async function handleChatCoreInner({
             ? "claude"
             : undefined
       ) as Record<string, unknown>),
-      _omnirouteReasoningRule: reasoningRuleDirective,
+      _cheaprouteReasoningRule: reasoningRuleDirective,
     };
   }
 
@@ -1246,7 +1246,7 @@ async function handleChatCoreInner({
 
   body = sanitizeChatRequestBody(body, sourceFormat, targetFormat);
   // Per-request opt-out: clients that manage their own context send
-  // `x-omniroute-no-memory: true` to skip memory+skills injection (a null owner
+  // `x-cheaproute-no-memory: true` to skip memory+skills injection (a null owner
   // disables both branches in injectMemoryAndSkills). See PRD-2026-06-19-no-memory-header.
   const memoryOwnerId = isNoMemoryRequested(clientRawRequest?.headers ?? null)
     ? null
@@ -1287,7 +1287,7 @@ async function handleChatCoreInner({
   let cavemanOutputModeIntensity: string | null = null;
   let preCompressionBody: typeof body | null = null;
   let compressionResponseMeta: string | null = null;
-  // OmniGlyph 1.3.x has native OpenAI Chat/Responses transformers. When the
+  // CheapGlyph 1.3.x has native OpenAI Chat/Responses transformers. When the
   // inbound protocol differs from the provider wire, defer only that engine to
   // the post-translation body; the text engines still run in their legacy lane.
   let runPostTranslationCompression:
@@ -1327,7 +1327,7 @@ async function handleChatCoreInner({
     );
     // A per-key opt-out is a request-scoped hard kill for prompt compression. It
     // deliberately does not disable the independent reactive context-fit safety
-    // passes, matching the existing x-omniroute-compression: off contract.
+    // passes, matching the existing x-cheaproute-compression: off contract.
     const apiKeyCompressionEnabled = apiKeyInfo?.compressionEnabled !== false;
     let promptCompressionEnabled =
       compressionSettingsResult.enabled && !compressionExcluded && apiKeyCompressionEnabled;
@@ -1523,7 +1523,7 @@ async function handleChatCoreInner({
       // Phase 3: per-request override. Unknown values fall through in the resolver (never error).
       const compressionHeader = resolveCompressionHeader(clientRawRequest?.headers ?? null);
       if (compressionHeader) {
-        log?.debug?.("COMPRESSION", `x-omniroute-compression header: ${compressionHeader}`);
+        log?.debug?.("COMPRESSION", `x-cheaproute-compression header: ${compressionHeader}`);
       }
       const connectionCacheOverride = resolveConnectionCacheOverride(
         credentials?.providerSpecificData
@@ -1693,10 +1693,10 @@ async function handleChatCoreInner({
           // models, which is intentionally NOT `false` so the gate still preserves images.
           supportsVision: getResolvedModelCapabilities({ provider, model: effectiveModel })
             .supportsVision,
-          // OmniGlyph uses a measured provider/image-fidelity allowlist. Direct HTTP
+          // CheapGlyph uses a measured provider/image-fidelity allowlist. Direct HTTP
           // alone is not proof that a route preserves PNG bytes and dimensions.
-          ...resolveOmniGlyphTransport(provider),
-          // Sem o provider, a contabilidade do OmniGlyph cai para `unknown` e
+          ...resolveCheapGlyphTransport(provider),
+          // Sem o provider, a contabilidade do CheapGlyph cai para `unknown` e
           // recusa deduzir a semântica de cache (Anthropic usa buckets disjuntos,
           // OpenAI reporta cached como subconjunto do input).
           provider,
@@ -1732,15 +1732,15 @@ async function handleChatCoreInner({
         };
         const runCompression = (input: Record<string, unknown>) =>
           applyCompressionAsync(input, mode, compressionOptions);
-        const omniglyphSelected =
-          mode === "omniglyph" ||
+        const cheapglyphSelected =
+          mode === "cheapglyph" ||
           (mode === "stacked" &&
             Array.isArray(compressionConfig.stackedPipeline) &&
             compressionConfig.stackedPipeline.some((step) =>
-              typeof step === "string" ? step === "omniglyph" : step.engine === "omniglyph"
+              typeof step === "string" ? step === "cheapglyph" : step.engine === "cheapglyph"
             ));
         if (
-          omniglyphSelected &&
+          cheapglyphSelected &&
           (targetFormat === FORMATS.CLAUDE ||
             targetFormat === FORMATS.OPENAI ||
             targetFormat === FORMATS.OPENAI_RESPONSES) &&
@@ -1757,10 +1757,10 @@ async function handleChatCoreInner({
           const { applyLiveZoneCompression } = await import("../services/compression/liveZone.ts");
           const explicitSessionId =
             clientRawRequest?.headers && typeof clientRawRequest.headers.get === "function"
-              ? clientRawRequest.headers.get("x-omniroute-session-id")
+              ? clientRawRequest.headers.get("x-cheaproute-session-id")
               : getHeaderValueCaseInsensitive(
                   clientRawRequest?.headers ?? null,
-                  "x-omniroute-session-id"
+                  "x-cheaproute-session-id"
                 );
           const liveZoneSessionId =
             explicitSessionId ||
@@ -2598,7 +2598,7 @@ async function handleChatCoreInner({
     return result;
   }
 
-  // The latest OmniGlyph release has protocol-native OpenAI transforms. Run
+  // The latest CheapGlyph release has protocol-native OpenAI transforms. Run
   // the deferred stage only after translation so Chat/Responses receives the
   // exact provider wire shape (and so a source→target conversion never embeds
   // Anthropic image blocks into an OpenAI request, or vice versa).
@@ -2608,7 +2608,7 @@ async function handleChatCoreInner({
     for (const [key, value] of Object.entries(postInput)) {
       // Translators keep response-side aliases in Maps under private keys. They
       // are not JSON request fields and would otherwise be stringified to `{}`
-      // by the OmniGlyph library wrapper; restore them after the wire transform.
+      // by the CheapGlyph library wrapper; restore them after the wire transform.
       if (key.startsWith("_") && value instanceof Map) {
         transientFields.set(key, value);
         delete postInput[key];
@@ -2654,7 +2654,7 @@ async function handleChatCoreInner({
         }
         log?.info?.(
           "COMPRESSION",
-          `Post-translation OmniGlyph applied (${sourceFormat} → ${targetFormat})`
+          `Post-translation CheapGlyph applied (${sourceFormat} → ${targetFormat})`
         );
       }
     } catch (error) {
@@ -2662,7 +2662,7 @@ async function handleChatCoreInner({
       // must never turn an otherwise valid translated request into a 500.
       log?.warn?.(
         "COMPRESSION",
-        "Post-translation OmniGlyph skipped: " +
+        "Post-translation CheapGlyph skipped: " +
           (error instanceof Error ? error.message : String(error))
       );
     }

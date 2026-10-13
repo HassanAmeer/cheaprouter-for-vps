@@ -156,27 +156,27 @@ export default function HomePageClient({ machineId: _machineId }: HomePageClient
     if (platform === "darwin") {
       return {
         label: t("downloadDmg"),
-        url: `https://github.com/diegosouzapw/OmniRoute/releases/download/v${cleanLatest}/OmniRoute-${cleanLatest}.dmg`,
+        url: `https://github.com/diegosouzapw/CheapRoute/releases/download/v${cleanLatest}/CheapRoute-${cleanLatest}.dmg`,
         desc: t("downloadDmgDescription", { version: installedVersion }),
       };
     }
     if (platform === "win32") {
       return {
         label: t("downloadExe"),
-        url: `https://github.com/diegosouzapw/OmniRoute/releases/download/v${cleanLatest}/OmniRoute.Setup.${cleanLatest}.exe`,
+        url: `https://github.com/diegosouzapw/CheapRoute/releases/download/v${cleanLatest}/CheapRoute.Setup.${cleanLatest}.exe`,
         desc: t("downloadExeDescription", { version: installedVersion }),
       };
     }
     if (platform === "linux") {
       return {
         label: t("downloadAppImage"),
-        url: `https://github.com/diegosouzapw/OmniRoute/releases/download/v${cleanLatest}/OmniRoute-${cleanLatest}.AppImage`,
+        url: `https://github.com/diegosouzapw/CheapRoute/releases/download/v${cleanLatest}/CheapRoute-${cleanLatest}.AppImage`,
         desc: t("downloadAppImageDescription", { version: installedVersion }),
       };
     }
     return {
       label: t("downloadUpdate"),
-      url: `https://github.com/diegosouzapw/OmniRoute/releases/tag/v${cleanLatest}`,
+      url: `https://github.com/diegosouzapw/CheapRoute/releases/tag/v${cleanLatest}`,
       desc: t("downloadUpdateDescription", { version: installedVersion }),
     };
   }, [platform, t, latestVersion, installedVersion]);
@@ -1035,7 +1035,7 @@ export default function HomePageClient({ machineId: _machineId }: HomePageClient
                       variant="secondary"
                       onClick={() =>
                         openExternal(
-                          `https://github.com/diegosouzapw/OmniRoute/releases/tag/v${versionInfo.latest}`
+                          `https://github.com/diegosouzapw/CheapRoute/releases/tag/v${versionInfo.latest}`
                         )
                       }
                       className="font-semibold text-xs py-1"

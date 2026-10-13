@@ -11,7 +11,7 @@ import { randomUUID } from "node:crypto";
  *
  * Our custom servers DO have the real `req.socket.remoteAddress`. They stamp it
  * into PEER_IP_HEADER as `<token>|<ip>`, where <token> is a per-process secret
- * (OMNIROUTE_PEER_STAMP_TOKEN). Any client-supplied value of PEER_IP_HEADER is
+ * (CHEAPROUTE_PEER_STAMP_TOKEN). Any client-supplied value of PEER_IP_HEADER is
  * deleted first, so a remote caller cannot pre-populate it. The middleware
  * (src/server/authz/policies/management.ts → resolveStampedPeer) trusts the IP
  * ONLY when the token matches this process's secret; otherwise it fails closed.
@@ -19,12 +19,12 @@ import { randomUUID } from "node:crypto";
  * Keep PEER_IP_HEADER in sync with PEER_IP_HEADER in
  * src/server/authz/headers.ts (the TS side cannot import this .mjs).
  */
-export const PEER_IP_HEADER = "x-omniroute-peer-ip";
+export const PEER_IP_HEADER = "x-cheaproute-peer-ip";
 
 /**
  * Companion header to PEER_IP_HEADER: `<token>|1` when the inbound TCP request
  * came from a peer that may be a reverse proxy (this host, a private-network
- * address, a Cloudflare edge or an address named in OMNIROUTE_TRUSTED_PROXIES)
+ * address, a Cloudflare edge or an address named in CHEAPROUTE_TRUSTED_PROXIES)
  * and carried a forwarding header (see `hasProxyHopHeader`), or arrived
  * from a Cloudflare edge IP with `cf-connecting-ip`; `<token>|0` otherwise.
  * Required so the middleware can tell that a loopback socket is the
@@ -37,7 +37,7 @@ export const PEER_IP_HEADER = "x-omniroute-peer-ip";
  * Keep VIA_PROXY_HEADER in sync with VIA_PROXY_HEADER in
  * src/server/authz/headers.ts (the TS side cannot import this .mjs).
  */
-export const VIA_PROXY_HEADER = "x-omniroute-via-proxy";
+export const VIA_PROXY_HEADER = "x-cheaproute-via-proxy";
 
 /**
  * The address the IP allow/deny list should judge, as `<token>|<ip>`: the TCP
@@ -48,7 +48,7 @@ export const VIA_PROXY_HEADER = "x-omniroute-via-proxy";
  * Keep CLIENT_IP_HEADER in sync with CLIENT_IP_HEADER in
  * src/server/authz/headers.ts (the TS side cannot import this .mjs).
  */
-export const CLIENT_IP_HEADER = "x-omniroute-client-ip";
+export const CLIENT_IP_HEADER = "x-cheaproute-client-ip";
 
 /**
  * Cloudflare IPv4 ranges used to authenticate the `cf-connecting-ip` header.
@@ -106,8 +106,8 @@ const CLOUDFLARE_IPV6_CIDRS = [
 /** Generate (once) and return the per-process stamp token, persisting it in env
  *  so the middleware running in the same process reads the identical value. */
 export function ensurePeerStampToken() {
-  process.env.OMNIROUTE_PEER_STAMP_TOKEN ||= randomUUID();
-  return process.env.OMNIROUTE_PEER_STAMP_TOKEN;
+  process.env.CHEAPROUTE_PEER_STAMP_TOKEN ||= randomUUID();
+  return process.env.CHEAPROUTE_PEER_STAMP_TOKEN;
 }
 
 /** Convert an IPv4 address string to an unsigned 32-bit integer. */
@@ -241,9 +241,9 @@ function normalizeIp(value) {
 let configuredProxiesSource;
 let configuredProxies = [];
 
-/** Addresses and CIDR ranges the operator names in OMNIROUTE_TRUSTED_PROXIES. */
+/** Addresses and CIDR ranges the operator names in CHEAPROUTE_TRUSTED_PROXIES. */
 function getConfiguredProxies() {
-  const source = process.env.OMNIROUTE_TRUSTED_PROXIES || "";
+  const source = process.env.CHEAPROUTE_TRUSTED_PROXIES || "";
   if (source === configuredProxiesSource) return configuredProxies;
   configuredProxiesSource = source;
   configuredProxies = [];
@@ -270,7 +270,7 @@ function isConfiguredProxy(ip) {
 /**
  * True when a forwarding header from this TCP peer may be believed: the peer is this host, a
  * private-network proxy, a Cloudflare edge, or an address the operator lists in
- * OMNIROUTE_TRUSTED_PROXIES (a proxy on any other public address has to be named there). A
+ * CHEAPROUTE_TRUSTED_PROXIES (a proxy on any other public address has to be named there). A
  * client on any other address can write those headers itself, so they say nothing about who
  * it is.
  */
@@ -385,7 +385,7 @@ function isPrivateRelayPeer(ip) {
  *
  *   loopback peer  a local client or a proxy on this host: its own forwarding headers are passed
  *                  on, all of them, since any one of them marks the call as proxied.
- *   trusted proxy  a Cloudflare edge, or a private-network peer when OMNIROUTE_TRUST_PROXY is
+ *   trusted proxy  a Cloudflare edge, or a private-network peer when CHEAPROUTE_TRUST_PROXY is
  *                  `private` / `lan`: its headers are passed on with its own address appended to
  *                  the X-Forwarded-For chain.
  *   anyone else    what it wrote is dropped and it is reported by the address of its connection.
@@ -402,7 +402,7 @@ export function relayForwardingHeaders(remoteAddress, requestHeaders = {}) {
   }
   if (peer === "::1" || peer.startsWith("127.")) return own;
 
-  const trustMode = (process.env.OMNIROUTE_TRUST_PROXY || "").trim().toLowerCase();
+  const trustMode = (process.env.CHEAPROUTE_TRUST_PROXY || "").trim().toLowerCase();
   const trustsPrivate = trustMode === "private" || trustMode === "lan";
   if (peer && (isCloudflareIP(peer) || (trustsPrivate && isPrivateRelayPeer(peer)))) {
     const chain = [own["x-forwarded-for"], peer].filter(Boolean).join(", ");

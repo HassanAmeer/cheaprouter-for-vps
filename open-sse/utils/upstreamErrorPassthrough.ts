@@ -9,7 +9,7 @@ import {
  * Claude Code matches upstream error wording to auto-disable capabilities
  * (thinking / output_config) for the rest of the conversation. This path keeps
  * the wording and JSON shape required for that recovery after applying the
- * canonical recursive sanitizer. OmniRoute-generated errors MUST keep using
+ * canonical recursive sanitizer. CheapRoute-generated errors MUST keep using
  * buildErrorBody() (Hard Rule #12).
  */
 const PASSTHROUGH_MIN = 400;
@@ -18,7 +18,7 @@ const PASSTHROUGH_MAX = 499;
 // echoes; keep those sanitized. 400/404/408/413/422/429 carry the capability and
 // quota wording the client needs.
 const EXCLUDED_STATUSES = new Set([401, 403, 407]);
-const INTERNAL_LEAK_RE = /\sat\s\/|node_modules|omniroute\//i;
+const INTERNAL_LEAK_RE = /\sat\s\/|node_modules|cheaproute\//i;
 // #10898-sec / secret-in-error hardening: some providers echo the offending
 // request (including an Authorization header or api key) inside a 400/422/429
 // validation body. If the body carries a credential pattern, REFUSE passthrough

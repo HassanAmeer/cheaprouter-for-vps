@@ -4,7 +4,7 @@
  * Claude Code's gateway model discovery only lists models whose id begins with
  * `claude` or `anthropic` — any other provider prefix (`kimi/…`, `gemini-cli/…`,
  * combo names, etc.) is invisible to it even when the underlying model is fully
- * routable through OmniRoute. To make every enabled model reachable from Claude
+ * routable through CheapRoute. To make every enabled model reachable from Claude
  * Code without renaming anything in the real catalog, this module synthesizes a
  * mirror entry for each eligible model:
  *
@@ -94,7 +94,7 @@ export function appendCcDiscoveryAliases<T extends CcDiscoveryCatalogEntry>(
       // root must stay the full name verbatim — only real provider-qualified ids get
       // the "/" stripped down to the bare model name.
       root: isCombo ? id : bareModelName(id),
-      display_name: `${label} (OmniRoute)`,
+      display_name: `${label} (CheapRoute)`,
     } as T);
   }
 

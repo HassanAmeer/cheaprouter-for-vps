@@ -1,7 +1,7 @@
 /**
  * MaxAI doc-RAG — inline document parts → /app/upload_document → doc_list.
  *
- * OmniRoute delivers attached documents INLINE in the chat request as base64
+ * CheapRoute delivers attached documents INLINE in the chat request as base64
  * `file_data` content parts (OpenAI `{type:"file",file:{filename,file_data}}` /
  * Responses `{type:"input_file",file_data}` / Claude `{type:"document",source}`).
  * MaxAI's `/gpt/cwc/chat` cannot take binary docs inline; instead it references
@@ -86,7 +86,7 @@ export function parseInlineDataUrl(dataUrl: unknown): { mimeType: string; bytes:
 
 /**
  * Extract inline documents from the CURRENT (last user) turn of an OpenAI
- * messages[] array. Recognizes the three OmniRoute-delivered shapes:
+ * messages[] array. Recognizes the three CheapRoute-delivered shapes:
  *   OpenAI Chat:  {type:"file", file:{filename, file_data|data}}
  *   Responses:    {type:"input_file", filename, file_data}
  *   Claude:       {type:"document", source:{type:"base64", media_type, data}}

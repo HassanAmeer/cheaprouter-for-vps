@@ -90,7 +90,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Invalid password payload" }, { status: 400 });
     }
     const settings = await getCachedSettings();
-    const trustedPeerIp = process.env.OMNIROUTE_PEER_STAMP_TOKEN
+    const trustedPeerIp = process.env.CHEAPROUTE_PEER_STAMP_TOKEN
       ? request.headers.get(AUTHZ_HEADER_TRUSTED_PEER_IP)
       : null;
     const clientIp = trustedPeerIp || auditContext.ipAddress || null;
@@ -98,8 +98,8 @@ export async function POST(request: NextRequest) {
     const oidcDisabledPassword =
       settings.oidcEnabled === true &&
       (settings.oidcDisablePasswordLogin === true ||
-        isFeatureFlagEnabled("OMNIROUTE_OIDC_DISABLE_PASSWORD_LOGIN") ||
-        process.env.OMNIROUTE_OIDC_DISABLE_PASSWORD_LOGIN === "true" ||
+        isFeatureFlagEnabled("CHEAPROUTE_OIDC_DISABLE_PASSWORD_LOGIN") ||
+        process.env.CHEAPROUTE_OIDC_DISABLE_PASSWORD_LOGIN === "true" ||
         process.env.OIDC_DISABLE_PASSWORD_LOGIN === "true");
 
     if (oidcDisabledPassword) {
@@ -176,7 +176,7 @@ export async function POST(request: NextRequest) {
     const sourceScope = getLoginSourceScope(request, auditContext.ipAddress);
 
     // #13679 (PR D, item #5): the well-known INITIAL_PASSWORD placeholder shipped
-    // in .env.example / contrib/podman/omniroute.container / docker deploy
+    // in .env.example / contrib/podman/cheaproute.container / docker deploy
     // manifests is a public, guessable credential. Anyone who knows it (i.e.
     // everyone) can otherwise sign in from anywhere the dashboard is reachable.
     // `ensurePersistentManagementPasswordHash()` already warns loudly on boot,

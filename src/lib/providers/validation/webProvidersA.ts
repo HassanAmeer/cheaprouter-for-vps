@@ -128,7 +128,7 @@ export async function validateDeepSeekWebProvider({ apiKey }: any) {
     // DeepSeek's web endpoint can report auth rejection as HTTP 200 with an
     // application-level error envelope. Code 40003 is the observed
     // "Authorization Failed" signal. Preserve the real HTTP behavior while
-    // returning an auth-classifiable status to OmniRoute's connection-test
+    // returning an auth-classifiable status to CheapRoute's connection-test
     // layer so it is not collapsed into a generic upstream_error.
     if (Number(json?.code) === 40003) {
       return {
@@ -204,7 +204,7 @@ export async function validateGrokWebProvider({ apiKey, providerSpecificData = {
     // cf_clearance to JA3/JA4 + HTTP/2 SETTINGS, so plain Node fetch always
     // gets "Request rejected by anti-bot rules." regardless of cookies (#3180).
     const { tlsFetchGrok, TlsClientUnavailableError, isCloudflareChallenge } =
-      await import("@omniroute/open-sse/services/grokTlsClient.ts");
+      await import("@cheaproute/open-sse/services/grokTlsClient.ts");
 
     // Generate the same Cloudflare-bypass headers the GrokWebExecutor uses.
     const randomHex = (n: number) => {
@@ -410,7 +410,7 @@ export async function validatePerplexityWebProvider({ apiKey, providerSpecificDa
     // VPS/datacenter IPs even with a valid cookie. Use the Firefox-fingerprinted
     // TLS client so the validator's verdict reflects the cookie, not the IP (issue #2459).
     const { tlsFetchPerplexity, isCloudflareChallenge, TlsClientUnavailableError } =
-      await import("@omniroute/open-sse/services/perplexityTlsClient.ts");
+      await import("@cheaproute/open-sse/services/perplexityTlsClient.ts");
 
     let response: { status: number; text: string | null };
     try {

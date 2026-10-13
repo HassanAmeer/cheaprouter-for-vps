@@ -1,13 +1,13 @@
 import { z } from "zod";
-import { handleSearch } from "@omniroute/open-sse/handlers/search.ts";
+import { handleSearch } from "@cheaproute/open-sse/handlers/search.ts";
 import { getProviderCredentialsWithQuotaPreflight } from "@/sse/services/auth";
 import {
   getSearchProvider,
   selectProvider,
   type SearchProviderConfig,
-} from "@omniroute/open-sse/config/searchRegistry.ts";
-import { buildErrorBody, errorResponse } from "@omniroute/open-sse/utils/error.ts";
-import { HTTP_STATUS } from "@omniroute/open-sse/config/constants.ts";
+} from "@cheaproute/open-sse/config/searchRegistry.ts";
+import { buildErrorBody, errorResponse } from "@cheaproute/open-sse/utils/error.ts";
+import { HTTP_STATUS } from "@cheaproute/open-sse/config/constants.ts";
 import * as log from "@/sse/utils/logger";
 import { toJsonErrorPayload } from "@/shared/utils/upstreamError";
 import { enforceApiKeyPolicy } from "@/shared/utils/apiKeyPolicy";

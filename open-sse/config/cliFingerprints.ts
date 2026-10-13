@@ -4,7 +4,7 @@
  * Defines per-provider "fingerprints" that control the exact ordering of HTTP headers
  * and JSON body fields to match the native CLI tools exactly.
  *
- * When `cliCompatMode` is enabled for a provider, OmniRoute reorders outgoing requests
+ * When `cliCompatMode` is enabled for a provider, CheapRoute reorders outgoing requests
  * to be indistinguishable from the real CLI binary, reducing account flagging risk.
  *
  * Header order and body field order were captured via mitmproxy traffic analysis.
@@ -262,7 +262,7 @@ export function orderHeaders(
 }
 
 /**
- * Internal request-body markers that are NOT `_omniroute*`-prefixed and must be
+ * Internal request-body markers that are NOT `_cheaproute*`-prefixed and must be
  * removed key-by-key. Everything else is caught by INTERNAL_BODY_FIELD_PREFIX.
  */
 /**
@@ -282,21 +282,21 @@ export const EXECUTOR_CONSUMED_BODY_FIELDS: readonly string[] = [
 const INTERNAL_BODY_FIELDS: readonly string[] = [...EXECUTOR_CONSUMED_BODY_FIELDS];
 
 /**
- * Every omniroute-owned internal marker uses this prefix, so the strip is
+ * Every cheaproute-owned internal marker uses this prefix, so the strip is
  * prefix-based rather than an allowlist. An allowlist silently leaks each newly
  * added marker to the upstream, where strict gateways reject the whole request
- * (observed live: `[400]: _omnirouteSkipContextRelay: Extra inputs are not
+ * (observed live: `[400]: _cheaprouteSkipContextRelay: Extra inputs are not
  * permitted` on a claude hop, from the context/universal-handoff markers set in
  * `open-sse/services/contextHandoff.ts`). Markers are consumed by routing before
  * dispatch, so removing them at this chokepoint is always safe.
  *
- * Deliberately narrow: only omniroute-owned prefixes are ours. A caller-sent
+ * Deliberately narrow: only cheaproute-owned prefixes are ours. A caller-sent
  * field that merely starts with `_` is client payload and passes through.
  */
-const INTERNAL_BODY_FIELD_PREFIX = "_omniroute";
+const INTERNAL_BODY_FIELD_PREFIX = "_cheaproute";
 
 /**
- * Remove omniroute-internal markers from a request body before it is serialized
+ * Remove cheaproute-internal markers from a request body before it is serialized
  * for an upstream. Mutates and returns the same object.
  */
 export function stripInternalBodyFields(

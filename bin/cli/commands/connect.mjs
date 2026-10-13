@@ -4,9 +4,9 @@ import { createPrompt, printSuccess, printError, printInfo } from "../io.mjs";
 import { t } from "../i18n.mjs";
 
 /**
- * `omniroute connect <host>` — remote mode.
+ * `cheaproute connect <host>` — remote mode.
  *
- * Logs into a remote OmniRoute server and saves the result as the active context
+ * Logs into a remote CheapRoute server and saves the result as the active context
  * so every subsequent command targets that server. Two flows:
  *   - password: prompts for the management password → POST /api/cli/connect →
  *     server mints a scoped access token (default scope: admin).
@@ -50,7 +50,7 @@ async function readErrorMessage(res) {
 export async function runConnectCommand(host, opts = {}) {
   const baseUrl = normalizeBaseUrl(host, opts.port || "20128");
   if (!baseUrl) {
-    printError("A host is required, e.g. omniroute connect 192.168.0.15");
+    printError("A host is required, e.g. cheaproute connect 192.168.0.15");
     return 2;
   }
   const name = opts.name || hostLabel(host);
@@ -106,14 +106,14 @@ export async function runConnectCommand(host, opts = {}) {
     baseUrl,
     accessToken,
     scope,
-    description: `Remote OmniRoute (${host})`,
+    description: `Remote CheapRoute (${host})`,
   };
   cfg.currentContext = name;
   await saveContextsSecure(cfg);
 
   printSuccess(`Connected to ${baseUrl} — context '${name}' (scope: ${scope})`);
   printInfo("All commands now target this server.");
-  printInfo("Switch back to local with: omniroute contexts use default");
+  printInfo("Switch back to local with: cheaproute contexts use default");
   return 0;
 }
 
@@ -121,7 +121,7 @@ export function registerConnect(program) {
   program
     .command("connect <host>")
     .description(
-      t("connect.description") || "Connect to a remote OmniRoute server and enter remote mode"
+      t("connect.description") || "Connect to a remote CheapRoute server and enter remote mode"
     )
     .option("--port <port>", "Server port when the host has none", "20128")
     .option("--key <token>", "Use a pre-generated scoped access token (skips the password prompt)")

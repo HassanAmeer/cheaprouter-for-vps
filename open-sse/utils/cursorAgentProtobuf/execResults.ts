@@ -207,7 +207,7 @@ export function encodeExecShellStreamRejected(
 }
 
 /**
- * ListMcpResourcesExecResult{success} — the exec is blocking, and OmniRoute
+ * ListMcpResourcesExecResult{success} — the exec is blocking, and CheapRoute
  * exposes no MCP *resources* (only tools), so an empty success lets the turn
  * finish instead of waiting out the safety timeout. Reported by @QuangBlue.
  */

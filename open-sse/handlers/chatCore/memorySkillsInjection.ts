@@ -176,7 +176,7 @@ export async function injectMemoryAndSkills({
     // executed by the gateway's tool-call interception, which runs only on the
     // non-stream path. Stream clients (opencode etc.) execute tools client-side,
     // so for them these tools would be announced but never executed; they should
-    // use the MCP memory tools (omniroute_memory_*) instead.
+    // use the MCP memory tools (cheaproute_memory_*) instead.
     const existingTools = Array.isArray(body.tools) ? body.tools : [];
     const existingToolNames = new Set(
       existingTools.flatMap((tool) => {

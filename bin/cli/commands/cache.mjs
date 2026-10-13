@@ -42,7 +42,7 @@ export async function runCacheStatusCommand(opts = {}) {
     if (!res.ok) {
       const hint =
         res.status === 401 || res.status === 403
-          ? " (authentication required: run `omniroute auth login` or set OMNIROUTE_API_KEY)"
+          ? " (authentication required: run `cheaproute auth login` or set CHEAPROUTE_API_KEY)"
           : "";
       console.log(`Cache stats not available (HTTP ${res.status})${hint}.`);
       return 0;

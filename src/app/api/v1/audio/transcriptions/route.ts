@@ -1,6 +1,6 @@
 // Allow large audio/video file uploads — 5min for processing large files (up to 2GB)
 export const maxDuration = 300;
-import { handleAudioTranscription } from "@omniroute/open-sse/handlers/audioTranscription.ts";
+import { handleAudioTranscription } from "@cheaproute/open-sse/handlers/audioTranscription.ts";
 import {
   getProviderCredentialsWithQuotaPreflight,
   clearRecoveredProviderState,
@@ -13,21 +13,21 @@ import {
   listAlternateAudioModelIds,
   missingAudioProviderCredentialsMessage,
   AUDIO_TRANSCRIPTION_PROVIDERS,
-} from "@omniroute/open-sse/config/audioRegistry.ts";
+} from "@cheaproute/open-sse/config/audioRegistry.ts";
 import { resolveDynamicAudioProviders } from "@/app/api/v1/_shared/audioProviderNodes";
-import { errorResponse } from "@omniroute/open-sse/utils/error.ts";
-import { HTTP_STATUS } from "@omniroute/open-sse/config/constants.ts";
+import { errorResponse } from "@cheaproute/open-sse/utils/error.ts";
+import { HTTP_STATUS } from "@cheaproute/open-sse/config/constants.ts";
 import { enforceApiKeyPolicy } from "@/shared/utils/apiKeyPolicy";
 import {
   isAllRateLimitedCredentials,
   rateLimitedProviderResponse,
 } from "@/app/api/v1/_shared/rateLimit";
-import { attachOmniRouteMetaToResponse } from "@/domain/omnirouteResponseMeta";
+import { attachCheapRouteMetaToResponse } from "@/domain/cheaprouteResponseMeta";
 import { generateRequestId } from "@/shared/utils/requestId";
 import { getComboByName, getCombos } from "@/lib/db/combos";
 import { getDatabaseSettings } from "@/lib/db/databaseSettings";
-import { handleComboChat } from "@omniroute/open-sse/services/combo.ts";
-import { log } from "@omniroute/open-sse/utils/logger.ts";
+import { handleComboChat } from "@cheaproute/open-sse/services/combo.ts";
+import { log } from "@cheaproute/open-sse/utils/logger.ts";
 import { saveCallLog } from "@/lib/usageDb";
 
 /**
@@ -175,7 +175,7 @@ async function transcribeWithModel(
     // No per-second pricing rule exists yet for transcription duration → cost 0
     // (ADD-only headers, body intact). The upstream usage is still persisted on
     // the call_logs row below so it is auditable ahead of that pricing rule.
-    response = attachOmniRouteMetaToResponse(response, {
+    response = attachCheapRouteMetaToResponse(response, {
       provider,
       model: resolvedModel,
       costUsd: 0,

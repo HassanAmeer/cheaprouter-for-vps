@@ -1,4 +1,4 @@
-import type { ProviderPluginManifestEntry } from "@omniroute/open-sse/config/providerPluginManifest.ts";
+import type { ProviderPluginManifestEntry } from "@cheaproute/open-sse/config/providerPluginManifest.ts";
 
 export const SERVICE_BACKEND_PLUGIN_IDS = ["9router", "cliproxyapi"] as const;
 

@@ -2,7 +2,7 @@
  * Unit tests for MCP Essential Tools (Phase 1)
  *
  * Tests the essential tool handlers via the tool handler functions.
- * The omniroute_web_search tests use InMemoryTransport + Client to exercise
+ * The cheaproute_web_search tests use InMemoryTransport + Client to exercise
  * the actual registered handler (not mockFetch directly).
  */
 
@@ -23,15 +23,15 @@ describe("MCP Essential Tools", () => {
 
   describe("Tool schema validation", () => {
     it("should have exactly 14 essential tools (including Radar catalog + x_search)", () => {
-      // 13 -> 14: #10985 shipped omniroute_x_search as a phase-1 tool.
+      // 13 -> 14: #10985 shipped cheaproute_x_search as a phase-1 tool.
       const schemas = MCP_ESSENTIAL_TOOLS;
       expect(schemas).toHaveLength(14);
     });
 
-    it("all tools should have omniroute_ prefix", () => {
+    it("all tools should have cheaproute_ prefix", () => {
       const schemas = MCP_ESSENTIAL_TOOLS;
       for (const schema of schemas) {
-        expect(schema.name).toMatch(/^omniroute_/);
+        expect(schema.name).toMatch(/^cheaproute_/);
       }
     });
   });
@@ -144,7 +144,7 @@ describe("MCP Essential Tools", () => {
   });
 });
 
-// ── omniroute_web_search: handler dispatch tests ──────────────────────────────
+// ── cheaproute_web_search: handler dispatch tests ──────────────────────────────
 // These tests use InMemoryTransport + Client to exercise the actual registered
 // handler (not mockFetch directly), ensuring real handler coverage.
 
@@ -152,7 +152,7 @@ vi.mock("../audit.ts", () => ({
   logToolCall: vi.fn().mockResolvedValue(undefined),
 }));
 
-describe("omniroute_web_search handler (via MCP dispatch)", () => {
+describe("cheaproute_web_search handler (via MCP dispatch)", () => {
   let client: Client;
 
   beforeEach(async () => {
@@ -171,7 +171,7 @@ describe("omniroute_web_search handler (via MCP dispatch)", () => {
 
   it("should appear in tools/list after registration", async () => {
     const { tools } = await client.listTools();
-    const webSearch = tools.find((t) => t.name === "omniroute_web_search");
+    const webSearch = tools.find((t) => t.name === "cheaproute_web_search");
     expect(webSearch).toBeDefined();
     expect(webSearch?.description).toContain("web search");
   });
@@ -198,7 +198,7 @@ describe("omniroute_web_search handler (via MCP dispatch)", () => {
     });
 
     const result = await client.callTool({
-      name: "omniroute_web_search",
+      name: "cheaproute_web_search",
       arguments: { query: "typescript best practices" },
     });
 
@@ -224,7 +224,7 @@ describe("omniroute_web_search handler (via MCP dispatch)", () => {
     });
 
     await client.callTool({
-      name: "omniroute_web_search",
+      name: "cheaproute_web_search",
       arguments: {
         query: "react hooks tutorial",
         max_results: 10,
@@ -259,7 +259,7 @@ describe("omniroute_web_search handler (via MCP dispatch)", () => {
     });
 
     await client.callTool({
-      name: "omniroute_web_search",
+      name: "cheaproute_web_search",
       arguments: { query: "test query" },
     });
 
@@ -276,7 +276,7 @@ describe("omniroute_web_search handler (via MCP dispatch)", () => {
     });
 
     const result = await client.callTool({
-      name: "omniroute_web_search",
+      name: "cheaproute_web_search",
       arguments: { query: "test" },
     });
 
@@ -289,7 +289,7 @@ describe("omniroute_web_search handler (via MCP dispatch)", () => {
     mockFetch.mockRejectedValueOnce(new DOMException("signal timed out", "TimeoutError"));
 
     const result = await client.callTool({
-      name: "omniroute_web_search",
+      name: "cheaproute_web_search",
       arguments: { query: "test" },
     });
 
@@ -297,7 +297,7 @@ describe("omniroute_web_search handler (via MCP dispatch)", () => {
   });
 });
 
-describe("omniroute_x_search handler (via MCP dispatch)", () => {
+describe("cheaproute_x_search handler (via MCP dispatch)", () => {
   let client: Client;
 
   beforeEach(async () => {
@@ -316,7 +316,7 @@ describe("omniroute_x_search handler (via MCP dispatch)", () => {
 
   it("should appear in tools/list after registration", async () => {
     const { tools } = await client.listTools();
-    const xSearch = tools.find((t) => t.name === "omniroute_x_search");
+    const xSearch = tools.find((t) => t.name === "cheaproute_x_search");
     expect(xSearch).toBeDefined();
     expect(xSearch?.description).toMatch(/X \(Twitter\)/i);
   });
@@ -342,7 +342,7 @@ describe("omniroute_x_search handler (via MCP dispatch)", () => {
     });
 
     const result = await client.callTool({
-      name: "omniroute_x_search",
+      name: "cheaproute_x_search",
       arguments: { query: "SuperGrok", max_results: 5 },
     });
 
@@ -380,7 +380,7 @@ describe("omniroute_x_search handler (via MCP dispatch)", () => {
     });
 
     const result = await client.callTool({
-      name: "omniroute_x_search",
+      name: "cheaproute_x_search",
       arguments: { query: "agents sdk", max_results: 5, provider: "xquik-search" },
     });
 
@@ -392,13 +392,13 @@ describe("omniroute_x_search handler (via MCP dispatch)", () => {
   });
 });
 
-// ── omniroute_get_health: handler dispatch tests ──────────────────────────────
+// ── cheaproute_get_health: handler dispatch tests ──────────────────────────────
 // These tests use InMemoryTransport + Client to exercise the actual registered
 // handler (not mockFetch directly), so they catch the real bug the original
 // mock-only tests above (lines 39-56) could never catch: process.uptime()
 // returns a *number*, and a naive toString() guard silently discards it.
 
-describe("omniroute_get_health handler (via MCP dispatch)", () => {
+describe("cheaproute_get_health handler (via MCP dispatch)", () => {
   let client: Client;
 
   beforeEach(async () => {
@@ -451,7 +451,7 @@ describe("omniroute_get_health handler (via MCP dispatch)", () => {
       rateLimits: { limits: [] },
     });
 
-    const result = await client.callTool({ name: "omniroute_get_health", arguments: {} });
+    const result = await client.callTool({ name: "cheaproute_get_health", arguments: {} });
 
     expect(result.isError).toBeFalsy();
     const content = result.content as Array<{ type: string; text: string }>;
@@ -467,7 +467,7 @@ describe("omniroute_get_health handler (via MCP dispatch)", () => {
       rateLimitsError: new Error("connect ECONNREFUSED 127.0.0.1:20128"),
     });
 
-    const result = await client.callTool({ name: "omniroute_get_health", arguments: {} });
+    const result = await client.callTool({ name: "cheaproute_get_health", arguments: {} });
 
     expect(result.isError).toBeFalsy();
     const content = result.content as Array<{ type: string; text: string }>;
@@ -489,7 +489,7 @@ describe("omniroute_get_health handler (via MCP dispatch)", () => {
       rateLimits: { limits: [] },
     });
 
-    const result = await client.callTool({ name: "omniroute_get_health", arguments: {} });
+    const result = await client.callTool({ name: "cheaproute_get_health", arguments: {} });
 
     const content = result.content as Array<{ type: string; text: string }>;
     const data = JSON.parse(content[0].text);
@@ -523,7 +523,7 @@ describe("omniroute_get_health handler (via MCP dispatch)", () => {
       rateLimits: { limits: [] },
     });
 
-    const result = await client.callTool({ name: "omniroute_get_health", arguments: {} });
+    const result = await client.callTool({ name: "cheaproute_get_health", arguments: {} });
 
     expect(result.isError).toBeFalsy();
     const content = result.content as Array<{ type: string; text: string }>;
@@ -558,7 +558,7 @@ describe("omniroute_get_health handler (via MCP dispatch)", () => {
       rateLimits: {},
     });
 
-    const result = await client.callTool({ name: "omniroute_get_health", arguments: {} });
+    const result = await client.callTool({ name: "cheaproute_get_health", arguments: {} });
 
     const content = result.content as Array<{ type: string; text: string }>;
     const data = JSON.parse(content[0].text);
@@ -588,7 +588,7 @@ describe("omniroute_get_health handler (via MCP dispatch)", () => {
       rateLimits: {},
     });
 
-    const result = await client.callTool({ name: "omniroute_get_health", arguments: {} });
+    const result = await client.callTool({ name: "cheaproute_get_health", arguments: {} });
 
     const content = result.content as Array<{ type: string; text: string }>;
     const data = JSON.parse(content[0].text);
@@ -605,7 +605,7 @@ describe("omniroute_get_health handler (via MCP dispatch)", () => {
       rateLimits: { limits: [] },
     });
 
-    const result = await client.callTool({ name: "omniroute_get_health", arguments: {} });
+    const result = await client.callTool({ name: "cheaproute_get_health", arguments: {} });
 
     const content = result.content as Array<{ type: string; text: string }>;
     const data = JSON.parse(content[0].text);

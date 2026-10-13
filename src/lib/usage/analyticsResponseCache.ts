@@ -13,8 +13,8 @@
  * computation.
  *
  * Tuning:
- *   OMNIROUTE_ANALYTICS_CACHE_TTL_MS          (default 60000; 0 disables)
- *   OMNIROUTE_ANALYTICS_CACHE_MIN_COMPUTE_MS  (default 1000)
+ *   CHEAPROUTE_ANALYTICS_CACHE_TTL_MS          (default 60000; 0 disables)
+ *   CHEAPROUTE_ANALYTICS_CACHE_MIN_COMPUTE_MS  (default 1000)
  */
 
 type CachedBody = {
@@ -39,12 +39,12 @@ function readNonNegativeInt(raw: string | undefined, fallback: number): number {
 }
 
 export function getAnalyticsCacheTtlMs(): number {
-  return readNonNegativeInt(process.env.OMNIROUTE_ANALYTICS_CACHE_TTL_MS, DEFAULT_TTL_MS);
+  return readNonNegativeInt(process.env.CHEAPROUTE_ANALYTICS_CACHE_TTL_MS, DEFAULT_TTL_MS);
 }
 
 export function getAnalyticsCacheMinComputeMs(): number {
   return readNonNegativeInt(
-    process.env.OMNIROUTE_ANALYTICS_CACHE_MIN_COMPUTE_MS,
+    process.env.CHEAPROUTE_ANALYTICS_CACHE_MIN_COMPUTE_MS,
     DEFAULT_MIN_COMPUTE_MS
   );
 }

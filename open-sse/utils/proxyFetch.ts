@@ -70,15 +70,15 @@ const RELAY_RETRY_AGENT = new Agent({
 
 // A hung relay must fail BEFORE the client/agent timeout (typically 30s) so the
 // caller sees a relay-specific failure instead of a generic upstream timeout.
-// Overridable via OMNIROUTE_RELAY_FETCH_TIMEOUT_MS (capped at 29s so the
+// Overridable via CHEAPROUTE_RELAY_FETCH_TIMEOUT_MS (capped at 29s so the
 // relay-specific timeout always fires first).
 function readRelayFetchTimeoutMs(): number {
-  const raw = process.env.OMNIROUTE_RELAY_FETCH_TIMEOUT_MS;
+  const raw = process.env.CHEAPROUTE_RELAY_FETCH_TIMEOUT_MS;
   if (raw == null || raw.trim() === "") return 25_000;
   const parsed = Number(raw);
   if (!Number.isFinite(parsed) || parsed < 1) {
     console.warn(
-      `[ProxyFetch] Invalid OMNIROUTE_RELAY_FETCH_TIMEOUT_MS="${raw}". Using default 25000.`
+      `[ProxyFetch] Invalid CHEAPROUTE_RELAY_FETCH_TIMEOUT_MS="${raw}". Using default 25000.`
     );
     return 25_000;
   }
@@ -87,8 +87,8 @@ function readRelayFetchTimeoutMs(): number {
 const RELAY_FETCH_TIMEOUT_MS = readRelayFetchTimeoutMs();
 
 // Shared retry backoff for the direct / relay / proxy retry-once paths.
-// Overridable via OMNIROUTE_RETRY_BACKOFF_MS (0 = retry immediately).
-const RETRY_BACKOFF_MS = Math.max(Number(process.env.OMNIROUTE_RETRY_BACKOFF_MS) || 10, 0);
+// Overridable via CHEAPROUTE_RETRY_BACKOFF_MS (0 = retry immediately).
+const RETRY_BACKOFF_MS = Math.max(Number(process.env.CHEAPROUTE_RETRY_BACKOFF_MS) || 10, 0);
 
 function isTlsFingerprintEnabled() {
   return process.env.ENABLE_TLS_FINGERPRINT === "true";
@@ -199,7 +199,7 @@ export type AppliedProxySink = {
    */
   reselectPoolMember?: () => Promise<unknown>;
 };
-const APPLIED_PROXY_CONTEXT_KEY = Symbol.for("omniroute.proxyFetch.applied-context");
+const APPLIED_PROXY_CONTEXT_KEY = Symbol.for("cheaproute.proxyFetch.applied-context");
 type AppliedProxyStore = typeof globalThis & {
   [APPLIED_PROXY_CONTEXT_KEY]?: AsyncLocalStorage<AppliedProxySink>;
 };
@@ -439,8 +439,8 @@ type PatchState = {
 };
 
 const isCloud = typeof caches !== "undefined" && typeof caches === "object";
-const PATCH_STATE_KEY = Symbol.for("omniroute.proxyFetch.state");
-const DIRECT_PROXY_CONTEXT = Symbol.for("omniroute.proxyFetch.direct-context");
+const PATCH_STATE_KEY = Symbol.for("cheaproute.proxyFetch.state");
+const DIRECT_PROXY_CONTEXT = Symbol.for("cheaproute.proxyFetch.direct-context");
 
 function getPatchState(): PatchState {
   const scopedGlobal = globalThis as typeof globalThis & {
@@ -704,7 +704,7 @@ export async function runWithProxyContext(
       // #9158: this fires on EVERY proxied request (innermost context wins).
       // Gate it behind the same env flag as the relay routing log so request
       // traffic doesn't spam stdout at production log levels.
-      if (process.env.OMNIROUTE_PROXY_FETCH_DEBUG === "true") {
+      if (process.env.CHEAPROUTE_PROXY_FETCH_DEBUG === "true") {
         console.log(
           `[ProxyFetch] Applied request proxy context: ${proxyUrlForLogs(resolvedProxyUrl)}`
         );
@@ -783,7 +783,7 @@ export function hasAmbientProxyContext(): boolean {
  * as a generic "Internal server error"). Data-plane chat keeps strict pinning via
  * runWithProxyContext so per-account egress-IP isolation is preserved.
  *
- * This remains disabled unless OMNIROUTE_CONTROL_PLANE_PROXY_DIRECT_FALLBACK is enabled
+ * This remains disabled unless CHEAPROUTE_CONTROL_PLANE_PROXY_DIRECT_FALLBACK is enabled
  * from Feature Flags or the environment.
  */
 export async function runWithProxyContextOrDirect(proxyConfig, fn) {
@@ -1075,7 +1075,7 @@ async function patchedFetchUnrecorded(
     // Pass host through proxyUrlForLogs so the same redaction policy applies
     // to relay routing logs (the rest of this module already follows that rule).
     const hostForLogs = proxyUrlForLogs(vc.host ? `https://${vc.host}` : "");
-    if (process.env.OMNIROUTE_PROXY_FETCH_DEBUG === "true") {
+    if (process.env.CHEAPROUTE_PROXY_FETCH_DEBUG === "true") {
       console.debug(`[ProxyFetch] Routing via ${vc.type || "edge"} relay: ${hostForLogs}`);
     }
 
@@ -1142,7 +1142,7 @@ async function patchedFetchUnrecorded(
           msg.includes("UND_ERR");
         if (attempt === 0 && maxRelayAttempts > 1 && isTransportFailure) {
           lastRelayError = relayError;
-          // #9158: fixed OMNIROUTE_RETRY_BACKOFF_MS backoff — the retry uses a
+          // #9158: fixed CHEAPROUTE_RETRY_BACKOFF_MS backoff — the retry uses a
           // FRESH no-keep-alive RELAY_RETRY_AGENT (connections: 1, keepAliveTimeout:
           // 1ms) instead of reusing the pooled agent, so a stale pooled socket
           // that the relay half-closed is guaranteed a clean TCP handshake.
@@ -1236,7 +1236,7 @@ async function patchedFetchUnrecorded(
         msg.includes("UND_ERR");
       if (attempt === 0 && maxProxyAttempts > 1 && isTransportFailure) {
         lastProxyError = error;
-        // #9158: fixed OMNIROUTE_RETRY_BACKOFF_MS backoff — the retry uses a
+        // #9158: fixed CHEAPROUTE_RETRY_BACKOFF_MS backoff — the retry uses a
         // fresh no-keep-alive dispatcher (getProxyRetryDispatcher), so the old
         // random jitter was pure latency on every recovered request with no
         // herd risk (per-host pool).

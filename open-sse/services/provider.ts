@@ -154,7 +154,7 @@ export function detectFormatFromUrl(body, requestUrl) {
   try {
     // Supplying a base URL keeps relative client endpoints (for example,
     // `/v1/messages`) valid while preserving pathname-only detection.
-    pathname = new URL(rawUrl || "/", "http://omniroute.local").pathname;
+    pathname = new URL(rawUrl || "/", "http://cheaproute.local").pathname;
   } catch {
     // Fall back to the raw value; detectFormatFromEndpoint is intentionally
     // safe for unknown or malformed paths.

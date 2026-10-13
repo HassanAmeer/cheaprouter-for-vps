@@ -6,7 +6,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 // Skip CloudSyncStatus entirely (it polls /api/sync/cloud + uses next/navigation's
 // useRouter, which we don't otherwise need to mock for this component).
-process.env.NEXT_PUBLIC_OMNIROUTE_E2E_MODE = "1";
+process.env.NEXT_PUBLIC_CHEAPROUTE_E2E_MODE = "1";
 
 vi.mock("next-intl", () => ({
   useTranslations: () => {

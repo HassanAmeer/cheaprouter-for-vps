@@ -34,7 +34,7 @@ function probeWindowsBinary(command) {
 }
 
 /** OpenAI/Codex env keys stripped from the child so a stale OpenAI key/base-url
- *  in the shell can't shadow the omniroute provider (defense-in-depth). Mirrors
+ *  in the shell can't shadow the cheaproute provider (defense-in-depth). Mirrors
  *  free-claude-code's codex adapter. NOTE: this does NOT silence codex's
  *  `refresh_token` log noise — that comes from a stored OpenAI session in
  *  ~/.codex/auth.json, not the env; it is cosmetic and does not block requests. */
@@ -48,7 +48,7 @@ const STRIPPED_CODEX_ENV_KEYS = [
 ];
 
 /** Placeholder so codex's `env_key` is always satisfied when the backend is open. */
-const NO_AUTH_SENTINEL = "omniroute-no-auth";
+const NO_AUTH_SENTINEL = "cheaproute-no-auth";
 
 // On Windows the `codex` binary is an npm `.cmd` shim that `spawn` cannot resolve
 // without a shell (bare "codex" → ENOENT). Mirror the qodercli Windows fix (#6263):
@@ -79,7 +79,7 @@ export async function resolveCodexSpawn(platform, opts = {}) {
  * DEP0190 warning). That mangles every launch-codex invocation on Windows, not
  * just the ones with a multi-word user argument: the injected `-c` provider
  * flags carry TOML values whose quotes cmd.exe strips
- * (`model_providers.omniroute.name="OmniRoute"` arrives unquoted and no longer
+ * (`model_providers.cheaproute.name="CheapRoute"` arrives unquoted and no longer
  * parses as TOML). Quote the args ourselves on that path; off Windows there is
  * no shell, so argv is passed through untouched. Same fix as `launch` (#8837).
  *
@@ -105,7 +105,7 @@ function tomlAssign(key, value) {
 }
 
 /**
- * Resolve the OmniRoute root base URL + auth for codex, honouring (in order):
+ * Resolve the CheapRoute root base URL + auth for codex, honouring (in order):
  * explicit flags → active context (remote mode) → localhost:<port>.
  * @returns {{ baseUrl:string, authToken:string|undefined }}
  */
@@ -117,7 +117,7 @@ export function resolveCodexTarget(opts = {}) {
   } else {
     let fromCtx;
     try {
-      fromCtx = resolveActiveContext(opts.context ?? process.env.OMNIROUTE_CONTEXT)?.baseUrl;
+      fromCtx = resolveActiveContext(opts.context ?? process.env.CHEAPROUTE_CONTEXT)?.baseUrl;
     } catch {
       /* no context */
     }
@@ -129,17 +129,17 @@ export function resolveCodexTarget(opts = {}) {
   let authToken = opts.apiKey ?? opts["api-key"];
   if (!authToken) {
     try {
-      const ctx = resolveActiveContext(opts.context ?? process.env.OMNIROUTE_CONTEXT);
+      const ctx = resolveActiveContext(opts.context ?? process.env.CHEAPROUTE_CONTEXT);
       authToken = ctx?.accessToken || ctx?.apiKey || undefined;
     } catch {
       /* no context auth */
     }
   }
-  if (!authToken) authToken = process.env.OMNIROUTE_API_KEY;
+  if (!authToken) authToken = process.env.CHEAPROUTE_API_KEY;
   return { baseUrl, authToken };
 }
 
-/** Health-check an OmniRoute root URL before launching Codex. */
+/** Health-check an CheapRoute root URL before launching Codex. */
 async function healthCheck(baseUrl, timeoutMs = 3000) {
   try {
     const res = await fetch(`${baseUrl}/api/monitoring/health`, {
@@ -153,7 +153,7 @@ async function healthCheck(baseUrl, timeoutMs = 3000) {
 
 /**
  * Build the env for the Codex child: strip stale OpenAI/Codex creds, then set
- * OMNIROUTE_API_KEY (the provider env_key) to the resolved token or a sentinel.
+ * CHEAPROUTE_API_KEY (the provider env_key) to the resolved token or a sentinel.
  * @param {Record<string,string>} baseEnv
  * @param {string|undefined} authToken
  * @returns {Record<string,string>}
@@ -161,30 +161,30 @@ async function healthCheck(baseUrl, timeoutMs = 3000) {
 export function buildCodexEnv(baseEnv, authToken, options = {}) {
   const env = buildSafeCliLaunchEnv(baseEnv, { inheritEnv: Boolean(options.inheritEnv) });
   for (const key of STRIPPED_CODEX_ENV_KEYS) delete env[key];
-  env.OMNIROUTE_API_KEY = (authToken && String(authToken).trim()) || NO_AUTH_SENTINEL;
+  env.CHEAPROUTE_API_KEY = (authToken && String(authToken).trim()) || NO_AUTH_SENTINEL;
   return env;
 }
 
 /**
- * Codex `-c` flags that define the `omniroute` provider inline, so launch works
+ * Codex `-c` flags that define the `cheaproute` provider inline, so launch works
  * WITHOUT a pre-existing ~/.codex/config.toml. Mirrors free-claude-code.
- * @param {string} baseUrl  OmniRoute root URL (no /v1)
+ * @param {string} baseUrl  CheapRoute root URL (no /v1)
  * @returns {string[]}
  */
 export function buildCodexProviderArgs(baseUrl, model) {
   const args = [
     "-c",
-    tomlAssign("model_provider", "omniroute"),
+    tomlAssign("model_provider", "cheaproute"),
     "-c",
-    tomlAssign("model_providers.omniroute.name", "OmniRoute"),
+    tomlAssign("model_providers.cheaproute.name", "CheapRoute"),
     "-c",
-    tomlAssign("model_providers.omniroute.base_url", `${baseUrl}/v1`),
+    tomlAssign("model_providers.cheaproute.base_url", `${baseUrl}/v1`),
     "-c",
-    tomlAssign("model_providers.omniroute.env_key", "OMNIROUTE_API_KEY"),
+    tomlAssign("model_providers.cheaproute.env_key", "CHEAPROUTE_API_KEY"),
     "-c",
-    tomlAssign("model_providers.omniroute.wire_api", "responses"),
+    tomlAssign("model_providers.cheaproute.wire_api", "responses"),
     "-c",
-    tomlAssign("model_providers.omniroute.requires_openai_auth", false),
+    tomlAssign("model_providers.cheaproute.requires_openai_auth", false),
   ];
 
   if (model) {
@@ -209,7 +209,7 @@ export async function runLaunchCodexCommand(opts = {}, codexArgs = []) {
     console.error(
       (
         t("launch.notRunning") ||
-        "OmniRoute is not reachable at {port}. Start it with 'omniroute serve'."
+        "CheapRoute is not reachable at {port}. Start it with 'cheaproute serve'."
       ).replace("{port}", baseUrl)
     );
     return 1;
@@ -257,7 +257,7 @@ export async function runLaunchCodexCommand(opts = {}, codexArgs = []) {
           // The child may have already exited; its close event will settle.
         }
         const configuredTimeout = Number(
-          opts.signalTimeoutMs ?? process.env.OMNIROUTE_CHILD_SIGNAL_TIMEOUT_MS
+          opts.signalTimeoutMs ?? process.env.CHEAPROUTE_CHILD_SIGNAL_TIMEOUT_MS
         );
         const timeoutMs =
           Number.isFinite(configuredTimeout) && configuredTimeout > 0 ? configuredTimeout : 5000;
@@ -293,18 +293,18 @@ export function registerLaunchCodex(program) {
   program
     .command("launch-codex")
     .description(
-      t("launchCodex.description") || "Launch Codex CLI pointed at OmniRoute (local or remote VPS)"
+      t("launchCodex.description") || "Launch Codex CLI pointed at CheapRoute (local or remote VPS)"
     )
-    .option("--port <port>", "Local OmniRoute port (ignored when --remote is set)", "20128")
+    .option("--port <port>", "Local CheapRoute port (ignored when --remote is set)", "20128")
     .option(
       "--remote <url>",
-      "Remote OmniRoute base URL, e.g. http://192.168.0.15:20128 (overrides --port + context)"
+      "Remote CheapRoute base URL, e.g. http://192.168.0.15:20128 (overrides --port + context)"
     )
     .option("--profile <name>", "Codex profile to activate (passed as --profile <name>)")
     .option("-p, --p <name>", "Alias for --profile")
     .option(
       "--api-key <key>",
-      "OmniRoute API key (overrides OMNIROUTE_API_KEY env var for this invocation)"
+      "CheapRoute API key (overrides CHEAPROUTE_API_KEY env var for this invocation)"
     )
     .option(
       "--inherit-env",

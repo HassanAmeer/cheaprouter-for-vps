@@ -1,8 +1,8 @@
 import {
   createCodexAccountPool,
   getCodexParentAccountDiagnostic,
-} from "@omniroute/open-sse/services/codexAccount/index.ts";
-import type { AdaptiveAdmissionPublicSnapshot } from "@omniroute/open-sse/services/admission/runtime.ts";
+} from "@cheaproute/open-sse/services/codexAccount/index.ts";
+import type { AdaptiveAdmissionPublicSnapshot } from "@cheaproute/open-sse/services/admission/runtime.ts";
 import type { PerConnectionAdmissionController } from "@/shared/middleware/chatBodyAdmission";
 import type { WalMaintenanceState } from "@/lib/db/walMaintenance";
 

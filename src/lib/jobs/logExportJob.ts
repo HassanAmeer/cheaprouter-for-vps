@@ -7,7 +7,7 @@ export const LOG_EXPORT_JOB_ID = "log_export";
 const DEFAULT_CRON = "0 * * * *";
 
 function getCron(): string {
-  const raw = process.env.OMNIROUTE_LOG_EXPORT_CRON?.trim();
+  const raw = process.env.CHEAPROUTE_LOG_EXPORT_CRON?.trim();
   return raw && raw.length > 0 ? raw : DEFAULT_CRON;
 }
 

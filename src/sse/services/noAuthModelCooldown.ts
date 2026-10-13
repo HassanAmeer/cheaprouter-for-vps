@@ -1,5 +1,5 @@
-import { formatRetryAfter } from "@omniroute/open-sse/services/accountFallback.ts";
-import { getOpencodeFreeTierSkipRemainingMs } from "@omniroute/open-sse/services/opencodeFreeTierSkip.ts";
+import { formatRetryAfter } from "@cheaproute/open-sse/services/accountFallback.ts";
+import { getOpencodeFreeTierSkipRemainingMs } from "@cheaproute/open-sse/services/opencodeFreeTierSkip.ts";
 import * as log from "../utils/logger";
 
 interface ActiveModelLockout {

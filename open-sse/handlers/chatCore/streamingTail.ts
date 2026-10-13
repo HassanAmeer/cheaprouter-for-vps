@@ -683,7 +683,7 @@ export async function runStreamingTail(deps: StreamingTailDeps) {
       handleStreamFailure,
       copilotCompatibleReasoning,
       // Suppress the `</think>` close marker for clients that render it verbatim
-      // (e.g. OpenCode by UA; any client via `x-omniroute-thinking-marker: off`);
+      // (e.g. OpenCode by UA; any client via `x-cheaproute-thinking-marker: off`);
       // preserved for Claude Code / Cursor and unknown clients by default (#5245 /
       // #5312). Responses API clients always suppress it (structured reasoning
       // items make the marker meaningless); otherwise the header wins over the

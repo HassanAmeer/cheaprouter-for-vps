@@ -4,9 +4,9 @@ import {
   SYNTX_FALLBACK_MODELS,
   discoverSyntxModels,
   type SyntxCatalogModel,
-} from "@omniroute/open-sse/services/syntxModels.ts";
-import { looksLikeJwt, resolveSyntxToken } from "@omniroute/open-sse/services/syntxAuth.ts";
-import { sanitizeErrorMessage } from "@omniroute/open-sse/utils/error";
+} from "@cheaproute/open-sse/services/syntxModels.ts";
+import { looksLikeJwt, resolveSyntxToken } from "@cheaproute/open-sse/services/syntxAuth.ts";
+import { sanitizeErrorMessage } from "@cheaproute/open-sse/utils/error";
 
 interface DiscoveryWarnings {
   cacheWarning?: string;

@@ -91,7 +91,7 @@ async function fetchCodexReleaseTag(fetchImpl: FetchLike): Promise<string | null
     const response = await fetchImpl(CODEX_RELEASE_URL, {
       headers: {
         Accept: "application/json",
-        "User-Agent": "OmniRoute-CodexVersion/1.0",
+        "User-Agent": "CheapRoute-CodexVersion/1.0",
       },
       signal: controller.signal,
     });
@@ -256,7 +256,7 @@ export function resetCodexClientVersionCacheForTests(): void {
 }
 
 /**
- * Extract the Codex client version the CALLER actually reported, so OmniRoute
+ * Extract the Codex client version the CALLER actually reported, so CheapRoute
  * forwards it upstream instead of substituting a pinned default. The official
  * CLI sends it in User-Agent, e.g.
  *   codex_cli_rs/0.154.0 (Mac OS 26.6.2; arm64) ...

@@ -16,15 +16,15 @@
  * retryable skip rather than a terminal failure.
  */
 import { getComboByName, getCombos } from "@/lib/db/combos";
-import { resolveComboTargets } from "@omniroute/open-sse/services/combo.ts";
-import { getVideoProvider } from "@omniroute/open-sse/config/videoRegistry.ts";
-import { resolveVideoCredentialProvider } from "@omniroute/open-sse/handlers/videoGeneration/googleFlow.ts";
+import { resolveComboTargets } from "@cheaproute/open-sse/services/combo.ts";
+import { getVideoProvider } from "@cheaproute/open-sse/config/videoRegistry.ts";
+import { resolveVideoCredentialProvider } from "@cheaproute/open-sse/handlers/videoGeneration/googleFlow.ts";
 import {
   getProviderCredentialsWithQuotaPreflight,
   clearRecoveredProviderState,
 } from "@/sse/services/auth";
 import { isAllRateLimitedCredentials } from "@/app/api/v1/_shared/rateLimit";
-import { handleVideoGeneration } from "@omniroute/open-sse/handlers/videoGeneration.ts";
+import { handleVideoGeneration } from "@cheaproute/open-sse/handlers/videoGeneration.ts";
 import {
   isMediaGenerationFailure,
   promptRequiredResponse,
@@ -38,8 +38,8 @@ import {
 } from "@/app/api/v1/_shared/videoModelResolution";
 import type { VideoModelTarget } from "@/app/api/v1/_shared/videoModelResolution";
 import { toJsonErrorPayload } from "@/shared/utils/upstreamError";
-import { HTTP_STATUS } from "@omniroute/open-sse/config/constants.ts";
-import { errorResponse } from "@omniroute/open-sse/utils/error.ts";
+import { HTTP_STATUS } from "@cheaproute/open-sse/config/constants.ts";
+import { errorResponse } from "@cheaproute/open-sse/utils/error.ts";
 import * as logger from "@/sse/utils/logger";
 
 /**

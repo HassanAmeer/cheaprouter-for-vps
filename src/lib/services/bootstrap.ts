@@ -1,7 +1,7 @@
 import { getVersionManagerTool } from "@/lib/db/versionManager";
 import { getSettings } from "@/lib/db/settings";
 import { markAllUnavailable } from "@/lib/db/serviceModels";
-import { resolveDedicatedCliproxyapiApiKey } from "@omniroute/open-sse/handlers/chatCore/cliproxyapiCredentials";
+import { resolveDedicatedCliproxyapiApiKey } from "@cheaproute/open-sse/handlers/chatCore/cliproxyapiCredentials";
 import { registerSupervisor, getSupervisor } from "./registry";
 import { ServiceSupervisor } from "./ServiceSupervisor";
 import { resolveSpawnArgs as nineRouterSpawnArgs } from "./installers/ninerouter";

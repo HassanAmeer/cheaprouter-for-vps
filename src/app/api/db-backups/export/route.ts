@@ -4,7 +4,7 @@ import fs from "fs";
 import os from "os";
 import { getDbInstance, SQLITE_FILE } from "@/lib/db/core";
 import { isAuthRequired, isAuthenticated } from "@/shared/utils/apiAuth";
-import { sanitizeErrorMessage } from "@omniroute/open-sse/utils/error";
+import { sanitizeErrorMessage } from "@cheaproute/open-sse/utils/error";
 
 /**
  * GET /api/db-backups/export — Download the current database as a .sqlite file.
@@ -26,11 +26,11 @@ export async function GET(request: Request) {
     }
 
     const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
-    const exportFilename = `omniroute-backup-${timestamp}.sqlite`;
+    const exportFilename = `cheaproute-backup-${timestamp}.sqlite`;
     // Use mkdtempSync (exclusive creation, random suffix) instead of a
     // deterministic timestamp path — a predictable path lets a local
     // attacker pre-place a symlink and redirect the write (TOCTOU).
-    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "omniroute-backup-"));
+    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "cheaproute-backup-"));
     const tmpPath = path.join(tmpDir, "backup.sqlite");
 
     // Use native SQLite backup API for a consistent snapshot

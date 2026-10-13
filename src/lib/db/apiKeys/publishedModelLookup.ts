@@ -1,6 +1,6 @@
-import { splitSyncedEffortSuffix } from "@omniroute/open-sse/services/model.ts";
-import { getLearnedReasoningEffortForModel } from "@omniroute/open-sse/services/learnedReasoningEffortCaps.ts";
-import { isSkippedEffortProvider } from "@omniroute/open-sse/utils/syncedEffortVariants.ts";
+import { splitSyncedEffortSuffix } from "@cheaproute/open-sse/services/model.ts";
+import { getLearnedReasoningEffortForModel } from "@cheaproute/open-sse/services/learnedReasoningEffortCaps.ts";
+import { isSkippedEffortProvider } from "@cheaproute/open-sse/utils/syncedEffortVariants.ts";
 import { resolveProviderId } from "@/shared/constants/providers";
 import { isReservedProviderPrefix } from "@/shared/constants/reservedProviderPrefixes";
 import { checkKeyModelAccess } from "../apiKeyGroups";

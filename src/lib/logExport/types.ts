@@ -67,7 +67,7 @@ export interface LogExportRecord {
   pipelineRouteDecision: string | null;
   /** Raw request exactly as the client sent it, before normalisation. */
   pipelineClientRequest: string | null;
-  /** Request after translation into OmniRoute's internal OpenAI shape. */
+  /** Request after translation into CheapRoute's internal OpenAI shape. */
   pipelineOpenaiRequest: string | null;
   /** Request as actually sent upstream, in the provider's own dialect. */
   pipelineProviderRequest: string | null;

@@ -21,7 +21,7 @@
  * when to schedule it, so importing this module in tests never spawns a timer.
  */
 
-import { cooldownUntilMs } from "@omniroute/open-sse/services/accountFallback.ts";
+import { cooldownUntilMs } from "@cheaproute/open-sse/services/accountFallback.ts";
 import { isAutomatedTestProcess } from "@/shared/utils/testProcess";
 
 /**
@@ -332,15 +332,15 @@ const RECOVERY_LOG_PREFIX = "[ConnectionRecovery]";
 const TRUE_ENV_VALUES = new Set(["1", "true", "yes", "on"]);
 
 declare global {
-  var __omnirouteConnRecovery:
+  var __cheaprouteConnRecovery:
     { initialized: boolean; interval: ReturnType<typeof setInterval> | null } | undefined;
 }
 
 function getRecoveryState() {
-  if (!globalThis.__omnirouteConnRecovery) {
-    globalThis.__omnirouteConnRecovery = { initialized: false, interval: null };
+  if (!globalThis.__cheaprouteConnRecovery) {
+    globalThis.__cheaprouteConnRecovery = { initialized: false, interval: null };
   }
-  return globalThis.__omnirouteConnRecovery;
+  return globalThis.__cheaprouteConnRecovery;
 }
 
 function isEnvFlagEnabled(name: string): boolean {
@@ -354,20 +354,20 @@ function isBuildProcess(): boolean {
 
 function isRecoverySchedulerDisabled(): boolean {
   return (
-    isEnvFlagEnabled("OMNIROUTE_DISABLE_CONNECTION_RECOVERY") ||
-    isEnvFlagEnabled("OMNIROUTE_DISABLE_BACKGROUND_SERVICES") ||
+    isEnvFlagEnabled("CHEAPROUTE_DISABLE_CONNECTION_RECOVERY") ||
+    isEnvFlagEnabled("CHEAPROUTE_DISABLE_BACKGROUND_SERVICES") ||
     isBuildProcess() ||
     isAutomatedTestProcess()
   );
 }
 
 /**
- * Resolve the tick interval (ms) from OMNIROUTE_CONNECTION_RECOVERY_INTERVAL_MS,
+ * Resolve the tick interval (ms) from CHEAPROUTE_CONNECTION_RECOVERY_INTERVAL_MS,
  * falling back to the 60s default and clamping to a small floor.
  */
 export function resolveConnectionRecoveryIntervalMs(
   rawValue: string | undefined = typeof process !== "undefined"
-    ? process.env.OMNIROUTE_CONNECTION_RECOVERY_INTERVAL_MS
+    ? process.env.CHEAPROUTE_CONNECTION_RECOVERY_INTERVAL_MS
     : undefined
 ): number {
   if (!rawValue) return DEFAULT_TICK_MS;

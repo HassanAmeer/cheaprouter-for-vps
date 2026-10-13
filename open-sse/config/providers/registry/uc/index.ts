@@ -10,7 +10,7 @@ import { UC_REGISTRY_MODELS } from "../../../../executors/uc/catalog.ts";
  *
  * authType `none`: the persona path uses NO API key. The durable credential
  * (`__client` cookie + Clerk session id + account uid + cookie jar) is minted by
- * OmniRoute's own browserless email-code login and stored in
+ * CheapRoute's own browserless email-code login and stored in
  * providerSpecificData; the executor reads it from there and mints per-connect
  * tokens, so there is no bearer/api-key on the connection.
  *

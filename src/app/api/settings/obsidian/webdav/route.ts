@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { isAuthenticated } from "@/shared/utils/apiAuth";
 import { requireManagementAuth } from "@/lib/api/requireManagementAuth";
-import { buildErrorBody } from "@omniroute/open-sse/utils/error";
+import { buildErrorBody } from "@cheaproute/open-sse/utils/error";
 import {
   getObsidianSyncStatus,
   enableObsidianVaultSync,

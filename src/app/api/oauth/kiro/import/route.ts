@@ -12,14 +12,14 @@ import { syncToCloud } from "@/lib/cloudSync";
 import { kiroImportSchema } from "@/shared/validation/schemas";
 import { isValidationFailure, validateBody } from "@/shared/validation/helpers";
 import { requireManagementAuth } from "@/lib/api/requireManagementAuth";
-import { runWithProxyContext } from "@omniroute/open-sse/utils/proxyFetch.ts";
-import { sanitizeErrorMessage } from "@omniroute/open-sse/utils/error";
+import { runWithProxyContext } from "@cheaproute/open-sse/utils/proxyFetch.ts";
+import { sanitizeErrorMessage } from "@cheaproute/open-sse/utils/error";
 import { findKiroConnectionByIdentity } from "@/lib/oauth/kiroConnectionIdentity";
 import {
   emailFromExternalIdpToken,
   isExternalIdpAuthMethod,
   normalizeScope,
-} from "@omniroute/open-sse/services/kiroExternalIdp.ts";
+} from "@cheaproute/open-sse/services/kiroExternalIdp.ts";
 
 /**
  * Build the user-facing error message for a failed Kiro/Amazon-Q token import.

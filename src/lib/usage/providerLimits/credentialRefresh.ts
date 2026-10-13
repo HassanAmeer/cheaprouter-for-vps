@@ -1,10 +1,10 @@
 import { updateProviderConnection } from "@/lib/db/providers";
-import type { BaseExecutor } from "@omniroute/open-sse/executors/base";
-import { isUnrecoverableRefreshError } from "@omniroute/open-sse/services/tokenRefresh/shared.ts";
+import type { BaseExecutor } from "@cheaproute/open-sse/executors/base";
+import { isUnrecoverableRefreshError } from "@cheaproute/open-sse/services/tokenRefresh/shared.ts";
 import {
   rotationGroupFor,
   serializeRefresh,
-} from "@omniroute/open-sse/services/refreshSerializer.ts";
+} from "@cheaproute/open-sse/services/refreshSerializer.ts";
 
 type JsonRecord = Record<string, unknown>;
 

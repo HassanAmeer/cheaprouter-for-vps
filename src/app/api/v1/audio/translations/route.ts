@@ -1,6 +1,6 @@
 // Allow large audio/video file uploads — 5min for processing large files (up to 2GB)
 export const maxDuration = 300;
-import { handleAudioTranslation } from "@omniroute/open-sse/handlers/audioTranslation.ts";
+import { handleAudioTranslation } from "@cheaproute/open-sse/handlers/audioTranslation.ts";
 import {
   getProviderCredentialsWithQuotaPreflight,
   clearRecoveredProviderState,
@@ -8,21 +8,21 @@ import {
 import {
   parseTranslationModel,
   getTranslationProvider,
-} from "@omniroute/open-sse/config/audioRegistry.ts";
+} from "@cheaproute/open-sse/config/audioRegistry.ts";
 import { resolveDynamicAudioProviders } from "@/app/api/v1/_shared/audioProviderNodes";
-import { errorResponse } from "@omniroute/open-sse/utils/error.ts";
-import { HTTP_STATUS } from "@omniroute/open-sse/config/constants.ts";
+import { errorResponse } from "@cheaproute/open-sse/utils/error.ts";
+import { HTTP_STATUS } from "@cheaproute/open-sse/config/constants.ts";
 import { enforceApiKeyPolicy } from "@/shared/utils/apiKeyPolicy";
 import {
   isAllRateLimitedCredentials,
   rateLimitedProviderResponse,
 } from "@/app/api/v1/_shared/rateLimit";
-import { attachOmniRouteMetaToResponse } from "@/domain/omnirouteResponseMeta";
+import { attachCheapRouteMetaToResponse } from "@/domain/cheaprouteResponseMeta";
 import { generateRequestId } from "@/shared/utils/requestId";
 import { getComboByName, getCombos } from "@/lib/db/combos";
 import { getDatabaseSettings } from "@/lib/db/databaseSettings";
-import { handleComboChat } from "@omniroute/open-sse/services/combo.ts";
-import { log } from "@omniroute/open-sse/utils/logger.ts";
+import { handleComboChat } from "@cheaproute/open-sse/services/combo.ts";
+import { log } from "@cheaproute/open-sse/utils/logger.ts";
 import { saveCallLog } from "@/lib/usageDb";
 
 /**
@@ -112,7 +112,7 @@ async function translateWithModel(
     await clearRecoveredProviderState(credentials);
     // No text body / playback duration available from the multipart upload, so
     // per-second pricing cannot be applied → cost 0 (ADD-only headers, body intact).
-    response = attachOmniRouteMetaToResponse(response, {
+    response = attachCheapRouteMetaToResponse(response, {
       provider,
       model: resolvedModel,
       costUsd: 0,

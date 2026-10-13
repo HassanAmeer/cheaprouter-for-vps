@@ -9,20 +9,20 @@
  * #9239
  */
 import { getComboByName, getCombos } from "@/lib/db/combos";
-import { resolveComboTargets } from "@omniroute/open-sse/services/combo.ts";
-import { getImageModelEntry, parseImageModel } from "@omniroute/open-sse/config/imageRegistry.ts";
+import { resolveComboTargets } from "@cheaproute/open-sse/services/combo.ts";
+import { getImageModelEntry, parseImageModel } from "@cheaproute/open-sse/config/imageRegistry.ts";
 import {
   getProviderCredentialsWithQuotaPreflight,
   clearRecoveredProviderState,
 } from "@/sse/services/auth";
 import { isAllRateLimitedCredentials } from "@/app/api/v1/_shared/rateLimit";
-import { handleImageGeneration } from "@omniroute/open-sse/handlers/imageGeneration.ts";
-import { attachOmniRouteMetaHeaders } from "@/domain/omnirouteResponseMeta";
+import { handleImageGeneration } from "@cheaproute/open-sse/handlers/imageGeneration.ts";
+import { attachCheapRouteMetaHeaders } from "@/domain/cheaprouteResponseMeta";
 import { generateRequestId } from "@/shared/utils/requestId";
 import { calculateModalCost } from "@/lib/usage/costCalculator";
 import { toJsonErrorPayload } from "@/shared/utils/upstreamError";
-import { HTTP_STATUS } from "@omniroute/open-sse/config/constants.ts";
-import { errorResponse } from "@omniroute/open-sse/utils/error.ts";
+import { HTTP_STATUS } from "@cheaproute/open-sse/config/constants.ts";
+import { errorResponse } from "@cheaproute/open-sse/utils/error.ts";
 import * as logger from "@/sse/utils/logger";
 
 /**
@@ -252,7 +252,7 @@ export async function executeImageCombo(
     const costUsd = await calculateModalCost("image", selectedProvider, selectedModel, { n });
 
     const headers = new Headers({ "Content-Type": "application/json" });
-    attachOmniRouteMetaHeaders(headers, {
+    attachCheapRouteMetaHeaders(headers, {
       provider: selectedProvider,
       model: selectedModel,
       costUsd,

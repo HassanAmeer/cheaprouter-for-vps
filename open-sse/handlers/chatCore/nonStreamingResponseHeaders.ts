@@ -3,13 +3,13 @@
  * decomposition, #3501).
  *
  * Extracted from handleChatCore's non-streaming success path: build the response header map for a
- * cache-MISS JSON response — the static Content-Type + cache marker, the OmniRoute meta headers
+ * cache-MISS JSON response — the static Content-Type + cache marker, the CheapRoute meta headers
  * (provider/model/latency/usage/cost/request-id), and the optional compression header. Pure builder
  * (returns a fresh map; only mutates the map it owns). Behaviour is byte-identical to the previous
  * inline block, including `latencyMs: now - startTime`.
  */
-import { OMNIROUTE_RESPONSE_HEADERS } from "@/shared/constants/headers";
-import { attachOmniRouteMetaHeaders as defaultAttachMeta } from "@/domain/omnirouteResponseMeta";
+import { CHEAPROUTE_RESPONSE_HEADERS } from "@/shared/constants/headers";
+import { attachCheapRouteMetaHeaders as defaultAttachMeta } from "@/domain/cheaprouteResponseMeta";
 
 export function buildNonStreamingResponseHeaders(
   args: {
@@ -23,16 +23,16 @@ export function buildNonStreamingResponseHeaders(
     comboStrategy?: string | null | undefined;
     fallbackAttempts?: number;
   },
-  deps: { attachOmniRouteMetaHeaders: typeof defaultAttachMeta; now: () => number } = {
-    attachOmniRouteMetaHeaders: defaultAttachMeta,
+  deps: { attachCheapRouteMetaHeaders: typeof defaultAttachMeta; now: () => number } = {
+    attachCheapRouteMetaHeaders: defaultAttachMeta,
     now: Date.now,
   }
 ): Record<string, string> {
   const responseHeaders: Record<string, string> = {
     "Content-Type": "application/json",
-    [OMNIROUTE_RESPONSE_HEADERS.cache]: "MISS",
+    [CHEAPROUTE_RESPONSE_HEADERS.cache]: "MISS",
   };
-  deps.attachOmniRouteMetaHeaders(responseHeaders, {
+  deps.attachCheapRouteMetaHeaders(responseHeaders, {
     provider: args.provider,
     model: args.model,
     cacheHit: false,
@@ -44,7 +44,7 @@ export function buildNonStreamingResponseHeaders(
     ...(args.fallbackAttempts !== undefined ? { fallbackAttempts: args.fallbackAttempts } : {}),
   });
   if (args.compressionResponseMeta) {
-    responseHeaders[OMNIROUTE_RESPONSE_HEADERS.compression] = args.compressionResponseMeta;
+    responseHeaders[CHEAPROUTE_RESPONSE_HEADERS.compression] = args.compressionResponseMeta;
   }
   return responseHeaders;
 }

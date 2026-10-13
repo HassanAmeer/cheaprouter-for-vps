@@ -6,9 +6,9 @@ import {
 } from "@/lib/db/models";
 import type { VertexModelMetadataProvenance } from "@/lib/providerModels/vertexModelMetadata";
 import { CANONICAL_EFFORT_VALUES } from "@/shared/reasoning/effortStandardization";
-import { isObsoleteKiroModelAlias } from "@omniroute/open-sse/services/kiroModels.ts";
-import { filterSelectableModels } from "@omniroute/open-sse/services/modelLifecycle.ts";
-import { getEmbeddingProvider } from "@omniroute/open-sse/config/embeddingRegistry.ts";
+import { isObsoleteKiroModelAlias } from "@cheaproute/open-sse/services/kiroModels.ts";
+import { filterSelectableModels } from "@cheaproute/open-sse/services/modelLifecycle.ts";
+import { getEmbeddingProvider } from "@cheaproute/open-sse/config/embeddingRegistry.ts";
 import { hasPayloadFreeEvidence } from "@/shared/utils/payloadFreeEvidence";
 
 type JsonRecord = Record<string, unknown>;
@@ -83,7 +83,7 @@ export function detectVisionInput(record: JsonRecord): boolean {
 }
 
 // #7694: nested `reasoning.supported_efforts` shape some OpenAI-compatible upstreams
-// expose (as opposed to the flat `supportedThinkingEfforts` field OmniRoute's own
+// expose (as opposed to the flat `supportedThinkingEfforts` field CheapRoute's own
 // import format already emits). Hard Rule #7 — validate the untrusted upstream
 // payload with Zod before it is trusted/stored; a malformed shape degrades to
 // `undefined` instead of throwing, so one bad record never fails the whole sync.
@@ -176,7 +176,7 @@ function vendorRouteSharedEfforts(record: JsonRecord): string[] | undefined {
   return perVendor.reduce((acc, efforts) => acc.filter((effort) => efforts.includes(effort)));
 }
 
-// Maps common upstream synonyms onto OmniRoute's canonical effort vocabulary
+// Maps common upstream synonyms onto CheapRoute's canonical effort vocabulary
 // (`src/shared/reasoning/effortStandardization.ts`). Values already in
 // `CANONICAL_EFFORT_VALUES`, and any unrecognized provider-native tier (e.g.
 // Codex's own "ultra"), pass through unchanged — only known synonyms are mapped.
@@ -250,7 +250,7 @@ function parseEffortList(rawList: unknown): string[] | undefined {
  * `detectSupportedThinkingEfforts` applies to the tier list). Returns `undefined`
  * (never throws) when the field is absent or malformed.
  *
- * A flat top-level `defaultThinkingEffort` (OmniRoute's own import format, and
+ * A flat top-level `defaultThinkingEffort` (CheapRoute's own import format, and
  * kimi-style upstreams) stays authoritative — the nested shape is a fallback.
  */
 export function detectDefaultThinkingEffort(record: JsonRecord): string | undefined {
@@ -348,7 +348,7 @@ export function detectSupportedThinkingEfforts(record: JsonRecord): string[] | u
   }
 
   // #9160: fall back to `capabilities.effort_tiers` before the legacy fields.
-  // OmniRoute's own catalog surfaces effort tiers inside `capabilities.effort_tiers`,
+  // CheapRoute's own catalog surfaces effort tiers inside `capabilities.effort_tiers`,
   // which the existing `parseEffortList` already handles (string arrays).
   const capabilitiesRecord = asRecord(record.capabilities);
   const capabilitiesParsed = effortListSchema.safeParse(capabilitiesRecord.effort_tiers);

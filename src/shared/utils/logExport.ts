@@ -14,10 +14,10 @@ export const LOG_EXPORT_DEFAULT_ROWS = 10_000;
 export const LOG_EXPORT_MAX_ROWS = 50_000;
 
 export const LOG_EXPORT_HEADERS = {
-  count: "X-OmniRoute-Export-Count",
-  capped: "X-OmniRoute-Export-Capped",
-  limit: "X-OmniRoute-Export-Limit",
-  totalAvailable: "X-OmniRoute-Export-Total-Available",
+  count: "X-CheapRoute-Export-Count",
+  capped: "X-CheapRoute-Export-Capped",
+  limit: "X-CheapRoute-Export-Limit",
+  totalAvailable: "X-CheapRoute-Export-Total-Available",
 } as const;
 
 export interface LogExportTruncation {

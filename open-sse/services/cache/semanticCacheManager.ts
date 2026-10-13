@@ -1,7 +1,7 @@
 /**
  * Semantic Cache Manager
  *
- * Orchestrates OmniRoute's dual-layer caching architecture:
+ * Orchestrates CheapRoute's dual-layer caching architecture:
  *   - Layer 1: Deterministic SHA-256 direct-hash lookup (0-latency exact replay)
  *   - Layer 2: Vector embedding similarity search (cosine threshold fuzzy match)
  *
@@ -203,7 +203,7 @@ export class SemanticCacheManager {
   }
 
   private isBypassed(headers: unknown, body: Record<string, unknown>): boolean {
-    const noCacheHeader = getHeader(headers, "x-omniroute-no-cache");
+    const noCacheHeader = getHeader(headers, "x-cheaproute-no-cache");
     if (noCacheHeader && noCacheHeader.toLowerCase() === "true") {
       return true;
     }
@@ -241,12 +241,12 @@ export class SemanticCacheManager {
       return { hit: false, bypassed: true };
     }
 
-    const cacheKey = getHeader(params.headers, "x-omniroute-cache-key");
+    const cacheKey = getHeader(params.headers, "x-cheaproute-cache-key");
     const cacheTypeHeader = (
-      getHeader(params.headers, "x-omniroute-cache-type") || "both"
+      getHeader(params.headers, "x-cheaproute-cache-type") || "both"
     ).toLowerCase() as SemanticCacheType;
 
-    const thresholdHeader = getHeader(params.headers, "x-omniroute-cache-threshold");
+    const thresholdHeader = getHeader(params.headers, "x-cheaproute-cache-threshold");
     const threshold =
       thresholdHeader !== null && Number.isFinite(Number(thresholdHeader))
         ? Math.max(0, Math.min(1, Number(thresholdHeader)))
@@ -351,12 +351,12 @@ export class SemanticCacheManager {
     if (!this.config.enabled) return;
 
     // Check no-store header
-    const noStore = getHeader(params.headers, "x-omniroute-cache-no-store");
+    const noStore = getHeader(params.headers, "x-cheaproute-cache-no-store");
     if (noStore && noStore.toLowerCase() === "true") return;
 
     if (this.isBypassed(params.headers, params.body)) return;
 
-    const cacheKey = getHeader(params.headers, "x-omniroute-cache-key");
+    const cacheKey = getHeader(params.headers, "x-cheaproute-cache-key");
     const conv = params.body.messages ?? params.body.input;
     const temp = typeof params.body.temperature === "number" ? params.body.temperature : 0;
     const topP = typeof params.body.top_p === "number" ? params.body.top_p : 1;
@@ -381,10 +381,10 @@ export class SemanticCacheManager {
       historyDepth: this.config.conversationHistoryDepth,
     });
 
-    // Custom TTL from header or config. #14484 F1: x-omniroute-cache-ttl is caller-supplied
+    // Custom TTL from header or config. #14484 F1: x-cheaproute-cache-ttl is caller-supplied
     // and was previously unbounded, letting a client pin a poisoned entry far past the
     // configured cache lifetime; cap it at this.config.ttlMs.
-    const ttlHeader = getHeader(params.headers, "x-omniroute-cache-ttl");
+    const ttlHeader = getHeader(params.headers, "x-cheaproute-cache-ttl");
     let effectiveTtl = this.config.ttlMs;
     if (ttlHeader) {
       const parsed = Number(ttlHeader);

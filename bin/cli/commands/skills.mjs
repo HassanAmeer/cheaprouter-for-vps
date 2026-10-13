@@ -107,7 +107,7 @@ export async function runSkillsInstall(opts, cmd) {
 }
 
 export async function runSkillsEnable(id, opts, cmd) {
-  await mcpCallTool("omniroute_skills_enable", { skillId: id, enabled: true });
+  await mcpCallTool("cheaproute_skills_enable", { skillId: id, enabled: true });
   process.stdout.write(`Enabled: ${id}\n`);
 }
 
@@ -116,7 +116,7 @@ export async function runSkillsDisable(id, opts, cmd) {
     const ok = await confirm(`Disable ${id}?`);
     if (!ok) return;
   }
-  await mcpCallTool("omniroute_skills_enable", { skillId: id, enabled: false });
+  await mcpCallTool("cheaproute_skills_enable", { skillId: id, enabled: false });
   process.stdout.write(`Disabled: ${id}\n`);
 }
 
@@ -141,7 +141,7 @@ export async function runSkillsExecute(id, opts, cmd) {
       ? JSON.parse(readFileSync(opts.inputFile, "utf8"))
       : {};
   const data = await mcpCallTool(
-    "omniroute_skills_execute",
+    "cheaproute_skills_execute",
     { skillId: id, input },
     { timeout: opts.timeout ?? 30000 },
   );

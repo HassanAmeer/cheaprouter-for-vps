@@ -12,7 +12,7 @@
  *  - `record()` only enqueues into a bounded buffer (O(1), never I/O). A single
  *    background flush timer drains the buffer asynchronously. Under overload the
  *    oldest events are dropped (never backpressure the data plane).
- *  - Disabled unless `OMNIROUTE_OTEL_ENDPOINT` (or `OTEL_EXPORTER_OTLP_ENDPOINT`)
+ *  - Disabled unless `CHEAPROUTE_OTEL_ENDPOINT` (or `OTEL_EXPORTER_OTLP_ENDPOINT`)
  *    is set — normal lightweight deployments run with zero OTel code executing.
  *  - No secrets/prompts are ever serialized; only RoutingEvent metadata.
  */
@@ -28,7 +28,7 @@ export interface OtlpHttpsExporterConfig {
 
 /** Resolve whether OTLP export is configured. */
 export function isRoutingOtelEnabled(env: NodeJS.ProcessEnv = process.env): boolean {
-  const endpoint = (env.OMNIROUTE_OTEL_ENDPOINT ?? env.OTEL_EXPORTER_OTLP_ENDPOINT ?? "").trim();
+  const endpoint = (env.CHEAPROUTE_OTEL_ENDPOINT ?? env.OTEL_EXPORTER_OTLP_ENDPOINT ?? "").trim();
   return endpoint.length > 0;
 }
 
@@ -75,7 +75,7 @@ export class OtlpHttpsEventSink {
   constructor(private readonly config: OtlpHttpsExporterConfig) {
     this.endpoint = config.endpoint.replace(/\/+$/, "") + "/v1/traces";
     this.maxBatchSize = config.maxBatchSize ?? 64;
-    this.serviceName = config.serviceName ?? "omniroute";
+    this.serviceName = config.serviceName ?? "cheaproute";
     this.start();
   }
 
@@ -164,12 +164,12 @@ export function buildOtlpTracesPayload(events: RoutingEventLike[], serviceName: 
       resource: {
         attributes: [
           { key: "service.name", value: { stringValue: serviceName } },
-          { key: "telemetry.sdk.name", value: { stringValue: "omniroute-routing" } },
+          { key: "telemetry.sdk.name", value: { stringValue: "cheaproute-routing" } },
         ],
       },
       scopeSpans: [
         {
-          scope: { name: "omniroute.routing" },
+          scope: { name: "cheaproute.routing" },
           spans: events.map(toSpan),
         },
       ],
@@ -204,16 +204,16 @@ function toSpan(event: RoutingEventLike): OtelSpan {
     attr("gen_ai.usage.output_tokens", event.outputTokens ?? 0),
     attr("gen_ai.completion.finish_reason", event.finishReason ?? "unknown"),
     attr("gen_ai.request.temperature", 0),
-    attr("omniroute.routing.outcome", event.outcome),
-    attr("omniroute.routing.status", event.status ?? 0),
-    attr("omniroute.routing.ttft_ms", event.ttftMs ?? -1),
-    attr("omniroute.routing.itl_ms", event.itlMs ?? -1),
-    attr("omniroute.routing.retries", event.retries ?? 0),
-    attr("omniroute.routing.fallback_used", event.fallbackUsed ? 1 : 0),
+    attr("cheaproute.routing.outcome", event.outcome),
+    attr("cheaproute.routing.status", event.status ?? 0),
+    attr("cheaproute.routing.ttft_ms", event.ttftMs ?? -1),
+    attr("cheaproute.routing.itl_ms", event.itlMs ?? -1),
+    attr("cheaproute.routing.retries", event.retries ?? 0),
+    attr("cheaproute.routing.fallback_used", event.fallbackUsed ? 1 : 0),
     attr("gen_ai.client.token.usage.input_tokens", event.inputTokens ?? 0),
     attr("gen_ai.client.token.usage.output_tokens", event.outputTokens ?? 0),
   ];
-  if (event.connectionId) attributes.push(attr("omniroute.connection_id", event.connectionId));
+  if (event.connectionId) attributes.push(attr("cheaproute.connection_id", event.connectionId));
 
   return {
     traceId,

@@ -217,10 +217,10 @@ try {
     const provenance = resolveBuildProvenance({
       buildSha: readBuildSha(process.cwd()),
       isAncestorOfRelease: makeGitAncestryProbe(
-        process.env.OMNIROUTE_RELEASE_REF || "origin/main",
+        process.env.CHEAPROUTE_RELEASE_REF || "origin/main",
         process.cwd()
       ),
-      allowOverride: process.env.OMNIROUTE_ALLOW_CANARY_BUILD === "1",
+      allowOverride: process.env.CHEAPROUTE_ALLOW_CANARY_BUILD === "1",
     });
     console.log(`\n[provenance] ${provenance.message}`);
     if (!provenance.ok) {

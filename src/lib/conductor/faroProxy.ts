@@ -1,5 +1,5 @@
 /**
- * Server-side proxy to Faro, the OmniConductor spokesperson (Conductor PRD RF4).
+ * Server-side proxy to Faro, the CheapConductor spokesperson (Conductor PRD RF4).
  *
  * Faro's `/ask` requires a valid hub credential (Bearer) — that token lives only
  * in server env, so the browser talks to our /api/conductor/ask route, never to

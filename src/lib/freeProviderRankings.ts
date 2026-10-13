@@ -10,7 +10,7 @@
 
 import { NOAUTH_PROVIDERS, OAUTH_PROVIDERS, APIKEY_PROVIDERS } from "@/shared/constants/providers";
 import { providerHasFreeModels } from "@/shared/utils/freeModels";
-import { REGISTRY } from "@omniroute/open-sse/config/providerRegistry";
+import { REGISTRY } from "@cheaproute/open-sse/config/providerRegistry";
 import { listModelIntelligence } from "./db/modelIntelligence";
 import { getProviderConnections } from "./db/providers";
 import { getProviderUsageSince, type ProviderUsageRow } from "./db/callLogStats";

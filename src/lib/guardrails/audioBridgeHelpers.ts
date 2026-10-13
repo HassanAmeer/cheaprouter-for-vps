@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 
-import { AUDIO_TRANSCRIPTION_PROVIDERS } from "@omniroute/open-sse/config/audioRegistry.ts";
-import { detectMediaParts } from "@omniroute/open-sse/utils/mediaParts";
+import { AUDIO_TRANSCRIPTION_PROVIDERS } from "@cheaproute/open-sse/config/audioRegistry.ts";
+import { detectMediaParts } from "@cheaproute/open-sse/utils/mediaParts";
 
 import { getRuntimePorts } from "@/lib/runtime/ports";
 import { fetchRemoteImage } from "@/shared/network/remoteImageFetch";
@@ -204,7 +204,7 @@ async function resolveAudioBytes(
   return { bytes: Buffer.from(part.ref, "base64") };
 }
 
-/** Build the exact multipart body OmniRoute's own transcription route expects. */
+/** Build the exact multipart body CheapRoute's own transcription route expects. */
 function buildTranscriptionMultipartBody(
   bytes: Buffer,
   format: string,
@@ -216,7 +216,7 @@ function buildTranscriptionMultipartBody(
   // open-sse tsconfig, and this body is passed straight to fetch() below (#11654).
 ): { body: Buffer<ArrayBuffer>; boundary: string } {
   const fileName = `audio.${format.replace(/[^a-z0-9]/g, "") || "wav"}`;
-  const boundary = `----OmniRouteAudioBridge${randomUUID().replace(/-/g, "")}`;
+  const boundary = `----CheapRouteAudioBridge${randomUUID().replace(/-/g, "")}`;
   const CRLF = "\r\n";
   const extraFieldParts = Object.entries(extraFields).map(([name, value]) =>
     Buffer.from(
@@ -244,7 +244,7 @@ function buildTranscriptionMultipartBody(
 }
 
 /**
- * Send one audio part through OmniRoute's existing multipart transcription
+ * Send one audio part through CheapRoute's existing multipart transcription
  * route (the one Audio Bridge transcription boundary) and return the parsed
  * JSON response. `extraFields` lets callers request provider extras (e.g.
  * `response_format=verbose_json`) without duplicating this HTTP client.
@@ -315,7 +315,7 @@ async function sendAudioTranscriptionRequest(
   }
 }
 
-/** Send one audio part through OmniRoute's existing multipart transcription route. */
+/** Send one audio part through CheapRoute's existing multipart transcription route. */
 export async function callAudioTranscription(
   part: AudioPart,
   config: AudioTranscriptionConfig,

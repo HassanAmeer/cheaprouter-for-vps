@@ -43,7 +43,7 @@ const FAILED_ERROR_MAX_LEN = 200;
 // ── State (globalThis singleton) ──────────────────────────────────────────
 
 declare global {
-  var __omnirouteCredentialCache:
+  var __cheaprouteCredentialCache:
     | {
         initialized: boolean;
         cache: Map<string, CredentialCacheEntry>;
@@ -52,13 +52,13 @@ declare global {
 }
 
 function getCacheState() {
-  if (!globalThis.__omnirouteCredentialCache) {
-    globalThis.__omnirouteCredentialCache = {
+  if (!globalThis.__cheaprouteCredentialCache) {
+    globalThis.__cheaprouteCredentialCache = {
       initialized: false,
       cache: new Map(),
     };
   }
-  return globalThis.__omnirouteCredentialCache;
+  return globalThis.__cheaprouteCredentialCache;
 }
 
 // ── Public API ────────────────────────────────────────────────────────────
@@ -275,7 +275,7 @@ export function getCredentialHealthSummary(): CredentialHealthSummary {
 
 /** Test-only: drop every cached credential-health row. */
 export function __test_resetCredentialHealthCache(): void {
-  globalThis.__omnirouteCredentialCache = {
+  globalThis.__cheaprouteCredentialCache = {
     initialized: false,
     cache: new Map(),
   };

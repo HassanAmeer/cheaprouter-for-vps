@@ -55,7 +55,7 @@ export const DEFAULT_ERROR_MESSAGES: Record<number, string> = {
 };
 
 // Exponential backoff config for rate limits.
-// Preserve OmniRoute's existing 2-minute cap to avoid changing runtime behavior.
+// Preserve CheapRoute's existing 2-minute cap to avoid changing runtime behavior.
 export const BACKOFF_CONFIG = {
   base: 1000,
   max: 2 * 60 * 1000,
@@ -257,7 +257,7 @@ export interface ServiceSupervisorCooldown {
 }
 
 /**
- * G-02: detect embedded service supervisor failures (X-Omni-Fallback-Hint: connection_cooldown).
+ * G-02: detect embedded service supervisor failures (X-Cheap-Fallback-Hint: connection_cooldown).
  * These are NOT upstream AI provider failures — they are local supervisor state changes. Returns
  * a short 5s connection-cooldown decision (no provider circuit-breaker trip), or null when the
  * status/header don't match.
@@ -271,7 +271,7 @@ export function serviceSupervisorCooldown(
     typeof (headers as Headers).get === "function"
       ? (headers as Headers).get("x-omni-fallback-hint")
       : (headers as Record<string, string>)["x-omni-fallback-hint"] ||
-        (headers as Record<string, string>)["X-Omni-Fallback-Hint"];
+        (headers as Record<string, string>)["X-Cheap-Fallback-Hint"];
   if (typeof hintValue !== "string" || hintValue.toLowerCase() !== "connection_cooldown") {
     return null;
   }

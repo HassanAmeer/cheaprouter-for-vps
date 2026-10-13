@@ -1,6 +1,6 @@
 // Request-local execution metadata, not a provider credential or a wire field.
 // Symbol keys survive credential object spreads but cannot be supplied through JSON.
-const FORCED_EFFORT = Symbol.for("omniroute.forcedReasoningEffort");
+const FORCED_EFFORT = Symbol.for("cheaproute.forcedReasoningEffort");
 const EFFORTS = new Set(["none", "low", "medium", "high", "xhigh", "max", "ultra"]);
 
 export function withReasoningRuleContext<T>(credentials: T, directive: unknown): T {

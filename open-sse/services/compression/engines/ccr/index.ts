@@ -672,7 +672,7 @@ export function getCcrStoreStats(principalId?: string, now = Date.now()): CcrSto
 // ─── MCP tool handler (pure function) ────────────────────────────────────────
 
 /**
- * Handler for the `omniroute_ccr_retrieve` MCP tool.
+ * Handler for the `cheaproute_ccr_retrieve` MCP tool.
  *
  * The `callerId` parameter must be the authenticated principal id derived from
  * the MCP `extra` context (see compressionTools.ts). Only the principal that
@@ -730,7 +730,7 @@ export function buildCcrReference(
  * #7746 guard: how many leading characters of the original block to keep in front
  * of the marker. `maybeCcrReplace` treats an entire message/part as ONE candidate
  * block (see module docstring), so a bare marker alone would silently discard the
- * ENTIRE prompt for any caller that cannot resolve `omniroute_ccr_retrieve`
+ * ENTIRE prompt for any caller that cannot resolve `cheaproute_ccr_retrieve`
  * (every plain OpenAI-compatible client — it is only ever exposed as an MCP tool).
  * Keeping a short, human-readable preamble means the model still sees the start
  * of the user's intent even when the marker itself is unreachable, while the full
@@ -802,8 +802,8 @@ function processMessages(
 
     // H-fix1: skip tool outputs (OpenAI `role:"tool"` and Anthropic user
     // messages whose content is exclusively `tool_result` parts). When
-    // OmniRoute is used as a chat-completion PROVIDER, the upstream LLM has no
-    // way to call `omniroute_ccr_retrieve` and expand markers — replacing tool
+    // CheapRoute is used as a chat-completion PROVIDER, the upstream LLM has no
+    // way to call `cheaproute_ccr_retrieve` and expand markers — replacing tool
     // outputs with `[CCR retrieve hash=…]` placeholders therefore breaks the agent
     // loop. Preserve tool outputs verbatim so the LLM can keep reasoning.
     if (msg.role === "tool") return { ...msg };
@@ -912,7 +912,7 @@ export const ccrEngine: CompressionEngine = {
   description:
     "Replaces large blocks of text with content-addressed retrieve markers " +
     "`[CCR retrieve hash=<24hex> chars=N]`. The original block is stored and " +
-    "retrievable via the `omniroute_ccr_retrieve` MCP tool (H4). " +
+    "retrievable via the `cheaproute_ccr_retrieve` MCP tool (H4). " +
     "Store is principal-scoped: only the storing principal can retrieve their blocks.",
   icon: "archive",
   targets: ["messages"],
@@ -940,7 +940,7 @@ export const ccrEngine: CompressionEngine = {
     }
 
     // #7746 follow-up: only callers whose tools[] proves they can reach
-    // omniroute_ccr_retrieve may have content replaced at all. For everyone
+    // cheaproute_ccr_retrieve may have content replaced at all. For everyone
     // else (plain OpenAI-compatible clients — the marker is an MCP-only
     // contract) replacement would strand the original text behind a hash the
     // model has no way to resolve. Skip the whole engine for them. The check
@@ -991,7 +991,7 @@ export const ccrEngine: CompressionEngine = {
       return { body, compressed: false, stats: null };
     }
 
-    // #8033: teach MCP-capable callers the marker → omniroute_ccr_retrieve contract
+    // #8033: teach MCP-capable callers the marker → cheaproute_ccr_retrieve contract
     // (once per session; never told to non-MCP callers who cannot reach the tool).
     const messagesWithProtocol = injectCcrProtocolInstruction(newMessages, body);
 

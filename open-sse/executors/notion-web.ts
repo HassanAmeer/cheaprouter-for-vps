@@ -509,7 +509,7 @@ async function sendNotionInferenceRequest(opts: {
       body: JSON.stringify(reqBody),
       signal: signal ?? undefined,
       // Inference can take a while (tool-autoload + LLM first token).
-      timeoutMs: Number.parseInt(process.env.OMNIROUTE_NOTION_TLS_TIMEOUT_MS || "", 10) || 180_000,
+      timeoutMs: Number.parseInt(process.env.CHEAPROUTE_NOTION_TLS_TIMEOUT_MS || "", 10) || 180_000,
     });
     status = tlsRes.status;
     rawText = tlsRes.text ?? "";

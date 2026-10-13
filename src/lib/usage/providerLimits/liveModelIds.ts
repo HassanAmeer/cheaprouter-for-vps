@@ -2,7 +2,7 @@
  * Per-provider snapshot of the model ids reported by live discovery.
  *
  * The static catalogs in `open-sse/config` (ANTIGRAVITY_PUBLIC_MODELS / AGY_PUBLIC_MODELS)
- * are a cold-start fallback, not an allowlist: a tier Google ships between two OmniRoute
+ * are a cold-start fallback, not an allowlist: a tier Google ships between two CheapRoute
  * releases is legitimate the moment a connection's discovery sync reports it. Quota
  * normalization has sync entry points, so async callers refresh the snapshot first and the
  * sync ones read it afterwards. An empty snapshot degrades to the static lists — never to

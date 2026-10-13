@@ -4,9 +4,9 @@ import {
   TWINMIND_FALLBACK_MODELS,
   discoverTwinmindModels,
   type TwinmindCatalogModel,
-} from "@omniroute/open-sse/services/twinmindModels.ts";
-import { ensureTwinmindAccessToken } from "@omniroute/open-sse/services/twinmindAuth.ts";
-import { sanitizeErrorMessage } from "@omniroute/open-sse/utils/error";
+} from "@cheaproute/open-sse/services/twinmindModels.ts";
+import { ensureTwinmindAccessToken } from "@cheaproute/open-sse/services/twinmindAuth.ts";
+import { sanitizeErrorMessage } from "@cheaproute/open-sse/utils/error";
 
 interface DiscoveryWarnings {
   cacheWarning?: string;

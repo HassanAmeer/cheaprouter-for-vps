@@ -796,7 +796,7 @@ function wrapInCloudCodeEnvelope(model, cloudCodeRequest, credentials = null) {
 
   if (!projectId) {
     console.warn(
-      `[OmniRoute] Antigravity account is missing projectId. ` +
+      `[CheapRoute] Antigravity account is missing projectId. ` +
         `Attempting request with empty project — reconnect OAuth to resolve.`
     );
     projectId = "";

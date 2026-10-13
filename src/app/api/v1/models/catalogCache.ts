@@ -18,7 +18,7 @@ import { after } from "next/server";
 
 import { getModelCatalogCacheVersion } from "@/lib/db/readCache";
 import { extractApiKey } from "@/sse/services/auth";
-import { buildErrorBody } from "@omniroute/open-sse/utils/error";
+import { buildErrorBody } from "@cheaproute/open-sse/utils/error";
 
 import { catalogPageCacheKey, catalogStringResponse, parseCatalogPage } from "./catalogPagination";
 import { isCodexModelCatalogClient } from "./catalogRequest";
@@ -28,7 +28,7 @@ export function fingerprintCatalogAuthKey(apiKey: string): string {
   if (!apiKey) return "";
   // Memo-map cache key fingerprint, not a password/credential hash — keyed with a fixed
   // context label so it reads as a domain-separated digest rather than a bare password hash.
-  return createHmac("sha256", "omniroute-catalog-cache-fingerprint-v1")
+  return createHmac("sha256", "cheaproute-catalog-cache-fingerprint-v1")
     .update(apiKey)
     .digest("hex")
     .slice(0, 16);
@@ -367,7 +367,7 @@ async function awaitCatalogInFlight(
       return catalogStringResponse(
         lastGood.body,
         mergeCatalogHeaders(corsHeaders, lastGood.headers, diagnosticHeaders, {
-          "x-omniroute-catalog": "last-good",
+          "x-cheaproute-catalog": "last-good",
         }),
         lastGood.status
       );
@@ -387,7 +387,7 @@ async function awaitCatalogInFlight(
     return catalogStringResponse(
       body,
       mergeCatalogHeaders(corsHeaders, diagnosticHeaders, {
-        "x-omniroute-catalog": "build-timeout",
+        "x-cheaproute-catalog": "build-timeout",
         "Retry-After": String(retryAfterSec),
       }),
       503

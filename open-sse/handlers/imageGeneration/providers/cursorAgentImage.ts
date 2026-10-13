@@ -2,7 +2,7 @@
  * Cursor Agent image generation — OpenAI `/v1/images/generations` backed by the
  * Cursor Agent CLI's native `generateImage` tool (real diffusion, not SVG).
  *
- * Why CLI (not AgentService/Run): OmniRoute's Cursor chat executor talks to
+ * Why CLI (not AgentService/Run): CheapRoute's Cursor chat executor talks to
  * `agent.v1.AgentService/Run` over protobuf and **rejects** built-in tools
  * (shell/write/…). Image generation is a Cursor-native client tool that the
  * `agent` binary executes locally against the seat. Spawning the CLI with a
@@ -86,7 +86,7 @@ export function buildCursorAgentImagePrompt(userPrompt: string, outPath: string,
   ].join(" ");
 }
 
-/** Strip OmniRoute `account::token` composites the same way CursorExecutor does. */
+/** Strip CheapRoute `account::token` composites the same way CursorExecutor does. */
 export function normalizeCursorSeatToken(raw: string): string {
   const trimmed = raw.trim();
   if (!trimmed) return trimmed;
@@ -376,7 +376,7 @@ export async function handleCursorAgentImageGeneration({
   // lookup, prompt validation, and the `agent` binary spawn itself must never
   // run for a non-loopback/non-LAN caller. A leaked API key tunneled from the
   // public internet must not be able to trigger a child-process spawn on the
-  // OmniRoute host.
+  // CheapRoute host.
   if (!peerLocality || !SPAWN_ALLOWED_LOCALITIES.has(peerLocality)) {
     return saveImageErrorResult({
       provider,
@@ -384,7 +384,7 @@ export async function handleCursorAgentImageGeneration({
       status: 403,
       startTime,
       error:
-        "Cursor Agent image generation spawns a local process and is only available from localhost or the private LAN OmniRoute runs on.",
+        "Cursor Agent image generation spawns a local process and is only available from localhost or the private LAN CheapRoute runs on.",
     });
   }
 

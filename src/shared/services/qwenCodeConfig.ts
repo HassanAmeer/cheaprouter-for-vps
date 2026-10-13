@@ -1,6 +1,6 @@
 type JsonRecord = Record<string, unknown>;
 
-export const QWEN_CODE_ENV_KEY = "OMNIROUTE_API_KEY";
+export const QWEN_CODE_ENV_KEY = "CHEAPROUTE_API_KEY";
 
 const LEGACY_ENV_KEYS = new Set(["OPENAI_API_KEY", "ANTHROPIC_API_KEY", "GEMINI_API_KEY"]);
 
@@ -18,16 +18,16 @@ export const normalizeQwenCodeBaseUrl = (value: unknown): string => {
 };
 
 /**
- * Identifies only entries owned by OmniRoute. Generic custom endpoints are not
+ * Identifies only entries owned by CheapRoute. Generic custom endpoints are not
  * considered managed: users can keep any other OpenAI-compatible provider.
  */
 export const isManagedQwenCodeModel = (value: unknown): boolean => {
   if (!isRecord(value)) return false;
-  if (value.envKey === QWEN_CODE_ENV_KEY || value.id === "omniroute") return true;
+  if (value.envKey === QWEN_CODE_ENV_KEY || value.id === "cheaproute") return true;
 
   return (
     typeof value.name === "string" &&
-    value.name.endsWith(" (OmniRoute)") &&
+    value.name.endsWith(" (CheapRoute)") &&
     typeof value.envKey === "string" &&
     LEGACY_ENV_KEYS.has(value.envKey)
   );
@@ -97,7 +97,7 @@ export const buildQwenCodeModel = ({
 };
 
 /**
- * Merge one OmniRoute model into Qwen Code's current V4 settings contract.
+ * Merge one CheapRoute model into Qwen Code's current V4 settings contract.
  * `modelProviders.openai` is a bare ModelConfig[] array. Other settings and
  * user-owned provider entries are preserved.
  */
@@ -141,12 +141,12 @@ export const mergeQwenCodeSettings = (
     baseUrl: modelEntry.baseUrl,
   };
 
-  if (next.selectedProvider === "omniroute") delete next.selectedProvider;
+  if (next.selectedProvider === "cheaproute") delete next.selectedProvider;
 
   return next;
 };
 
-export const findOmniRouteQwenCodeModel = (settings: unknown): JsonRecord | undefined => {
+export const findCheapRouteQwenCodeModel = (settings: unknown): JsonRecord | undefined => {
   if (!isRecord(settings)) return undefined;
   const providers = settings.modelProviders;
   if (Array.isArray(providers))
@@ -162,10 +162,10 @@ export const findOmniRouteQwenCodeModel = (settings: unknown): JsonRecord | unde
   return undefined;
 };
 
-export const hasOmniRouteQwenCodeConfig = (settings: unknown): boolean =>
-  findOmniRouteQwenCodeModel(settings) !== undefined;
+export const hasCheapRouteQwenCodeConfig = (settings: unknown): boolean =>
+  findCheapRouteQwenCodeModel(settings) !== undefined;
 
-/** Remove only OmniRoute-owned Qwen Code entries and selection state. */
+/** Remove only CheapRoute-owned Qwen Code entries and selection state. */
 export const removeQwenCodeSettings = (existing: unknown): JsonRecord => {
   const next = cloneRecord(existing);
   const originalProviders = next.modelProviders;
@@ -226,12 +226,12 @@ export const removeQwenCodeSettings = (existing: unknown): JsonRecord => {
     else next.security = security;
   }
 
-  if (next.selectedProvider === "omniroute") delete next.selectedProvider;
+  if (next.selectedProvider === "cheaproute") delete next.selectedProvider;
   removeEmptyObject(next, "modelProviders");
   return next;
 };
 
-const OWNED_ENV_LINE = /^\s*(?:export\s+)?OMNIROUTE_API_KEY\s*=/;
+const OWNED_ENV_LINE = /^\s*(?:export\s+)?CHEAPROUTE_API_KEY\s*=/;
 
 export const mergeQwenCodeEnv = (existing: unknown, apiKey: unknown): string => {
   const lines = String(existing || "")
@@ -239,7 +239,7 @@ export const mergeQwenCodeEnv = (existing: unknown, apiKey: unknown): string => 
     .filter((line) => !OWNED_ENV_LINE.test(line));
 
   while (lines.length > 0 && lines.at(-1) === "") lines.pop();
-  lines.push(`${QWEN_CODE_ENV_KEY}=${JSON.stringify(String(apiKey || "sk_omniroute"))}`);
+  lines.push(`${QWEN_CODE_ENV_KEY}=${JSON.stringify(String(apiKey || "sk_cheaproute"))}`);
   return `${lines.join("\n")}\n`;
 };
 

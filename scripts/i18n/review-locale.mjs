@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * OmniRoute — locale review pass. Sends the leaves a locale changed since a git ref to the
+ * CheapRoute — locale review pass. Sends the leaves a locale changed since a git ref to the
  * translation backend with a *reviewer* prompt (native speaker, dashboard context, keep
  * placeholders/ICU/markup) and applies only the corrections it returns. Produces a markdown
  * report so the operator can read what was changed.
@@ -128,7 +128,7 @@ export function parseReviewResponse(text, ids) {
 }
 
 const REVIEW_SYSTEM = (english, native) =>
-  `You are a senior ${english} (${native}) localization reviewer for a developer-facing dashboard (an LLM proxy/router called OmniRoute). You receive a JSON object mapping ids to {en, current}. For every id, answer "OK" when the current translation is correct, natural and complete, or return the corrected ${english} string. Rules: keep every placeholder ({name}, {count, plural, …}), ICU syntax, HTML/markdown, product names (OmniRoute, Claude, Codex, MCP, A2A) and technical identifiers exactly as in the English; do not translate code; prefer the terminology already used in "current" when it is fine. Reply with ONLY a JSON object {id: "OK" | "corrected string"}.`;
+  `You are a senior ${english} (${native}) localization reviewer for a developer-facing dashboard (an LLM proxy/router called CheapRoute). You receive a JSON object mapping ids to {en, current}. For every id, answer "OK" when the current translation is correct, natural and complete, or return the corrected ${english} string. Rules: keep every placeholder ({name}, {count, plural, …}), ICU syntax, HTML/markdown, product names (CheapRoute, Claude, Codex, MCP, A2A) and technical identifiers exactly as in the English; do not translate code; prefer the terminology already used in "current" when it is fine. Reply with ONLY a JSON object {id: "OK" | "corrected string"}.`;
 
 function parseArgs(argv) {
   const o = { locale: null, since: null, dryRun: false, batchSize: 30 };

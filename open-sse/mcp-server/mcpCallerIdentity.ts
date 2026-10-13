@@ -7,12 +7,12 @@
  * resolve the SAME id or the block is not found. On the MCP HTTP transports
  * (SSE / Streamable HTTP) the raw key lives in `httpAuthContext`'s
  * AsyncLocalStorage (set by `withMcpHttpAuthContext`), NOT in the tool handler's
- * `extra.authInfo` (OmniRoute authenticates with API keys, not OAuth client ids —
+ * `extra.authInfo` (CheapRoute authenticates with API keys, not OAuth client ids —
  * so `extra.authInfo.clientId` is never populated and the caller resolved to
  * "anonymous", producing a cross-principal store-key miss).
  *
- * On stdio transport (`omniroute --mcp`) there is no HTTP context, so we fall
- * back to the OMNIROUTE_API_KEY / ROUTER_API_KEY environment variable.
+ * On stdio transport (`cheaproute --mcp`) there is no HTTP context, so we fall
+ * back to the CHEAPROUTE_API_KEY / ROUTER_API_KEY environment variable.
  *
  * Resolving through the same `getApiKeyMetadata` lookup keeps cross-tenant IDOR
  * isolation intact: a different key → a different id → a miss; no key → undefined
@@ -51,7 +51,7 @@ export async function resolvePrincipalFromHeaders(
  * `httpAuthContext`. Returns `undefined` off the HTTP transport (stdio) or when the
  * request carries no API key.
  *
- * Falls back to OMNIROUTE_API_KEY / ROUTER_API_KEY env vars for stdio transport
+ * Falls back to CHEAPROUTE_API_KEY / ROUTER_API_KEY env vars for stdio transport
  * where there is no HTTP context. The env var resolves through the same
  * `getApiKeyMetadata()` lookup that storage (chatCore) uses, so the principal
  * matches. Both storage and retrieval get `{id: "env-key"}` when the env var
@@ -67,7 +67,7 @@ export async function resolveMcpCallerApiKeyId(): Promise<string | undefined> {
 }
 
 /**
- * Resolve the principal id from the OMNIROUTE_API_KEY (or ROUTER_API_KEY) env var.
+ * Resolve the principal id from the CHEAPROUTE_API_KEY (or ROUTER_API_KEY) env var.
  * Used when the MCP server runs on stdio transport and there's no HTTP context.
  * Uses the same getApiKeyMetadata() lookup as storage (chatCore.ts:1336).
  *
@@ -77,7 +77,7 @@ export async function resolveMcpCallerApiKeyId(): Promise<string | undefined> {
  * store key matches.
  */
 async function resolvePrincipalFromEnv(): Promise<string | undefined> {
-  const rawKey = process.env.OMNIROUTE_API_KEY || process.env.ROUTER_API_KEY;
+  const rawKey = process.env.CHEAPROUTE_API_KEY || process.env.ROUTER_API_KEY;
   if (!rawKey) return undefined;
   try {
     const meta = await getApiKeyMetadata(rawKey);

@@ -6,7 +6,7 @@ import path from "node:path";
 import next from "next";
 import { bootstrapEnv } from "../build/bootstrap-env.mjs";
 import { resolveRuntimePorts, withRuntimePortEnv } from "../build/runtime-env.mjs";
-import { createOmnirouteWsBridge } from "./v1-ws-bridge.mjs";
+import { createCheaprouteWsBridge } from "./v1-ws-bridge.mjs";
 import { createResponsesWsProxy } from "./responses-ws-proxy.mjs";
 import { createNextUpgradeRelay } from "./next-upgrade-relay.mjs";
 import { ensurePeerStampToken, stampPeerIp } from "./peer-stamp.mjs";
@@ -41,7 +41,7 @@ if (fs.existsSync(rootAppDir) && fs.statSync(rootAppDir).isDirectory()) {
   console.error(`A root-level 'app/' directory was found at: ${rootAppDir}`);
   console.error("This conflicts with the 'src/app/' directory on Windows environments.");
   console.error("Next.js will serve 404s for all pages because it prefers the root 'app/' folder.");
-  console.error("Please rename or delete the root 'app/' directory before starting OmniRoute.\n");
+  console.error("Please rename or delete the root 'app/' directory before starting CheapRoute.\n");
   process.exit(1);
 }
 
@@ -77,16 +77,16 @@ for (const [key, value] of Object.entries(mergedEnv)) {
 // (401s everywhere). An existing empty var is falsy to every consumer AND wins over
 // dotenv's no-override load, mirroring run-next-playwright.mjs's open-mode overrides.
 // Gated on the test-only env var so production boots are untouched.
-if (process.env.OMNIROUTE_E2E_BOOTSTRAP_MODE === "open") {
+if (process.env.CHEAPROUTE_E2E_BOOTSTRAP_MODE === "open") {
   process.env.INITIAL_PASSWORD = "";
-  process.env.OMNIROUTE_E2E_PASSWORD = "";
-  process.env.OMNIROUTE_API_KEY = "";
+  process.env.CHEAPROUTE_E2E_PASSWORD = "";
+  process.env.CHEAPROUTE_API_KEY = "";
 }
 
 // systemd sd_notify (Type=notify / WatchdogSec=): this process owns the
 // watchdog pings — if its event loop blocks (freeze), the pings stop and
 // systemd kills the service. No-op outside systemd (no NOTIFY_SOCKET).
-// Created AFTER .env is merged so the OMNIROUTE_DISABLE_SD_NOTIFY opt-out
+// Created AFTER .env is merged so the CHEAPROUTE_DISABLE_SD_NOTIFY opt-out
 // documented in .env is honored on this path too.
 const systemdNotifier = createSystemdNotifier();
 
@@ -99,7 +99,7 @@ const systemdNotifier = createSystemdNotifier();
 // '@'` on the `@import "tailwindcss"` line. Force NODE_ENV to track the run
 // mode, exactly like the `next` CLI does.
 process.env.NODE_ENV = dev ? "development" : "production";
-process.env.OMNIROUTE_INTERNAL_SCHEME = "http";
+process.env.CHEAPROUTE_INTERNAL_SCHEME = "http";
 
 const { dashboardPort } = runtimePorts;
 const hostname = process.env.HOST || "0.0.0.0";
@@ -108,14 +108,14 @@ const hostname = process.env.HOST || "0.0.0.0";
 // anonymous /v1 without re-deriving it. The standalone/Docker entrypoint
 // (scripts/dev/run-standalone.mjs -> Next's own server.js) uses HOSTNAME
 // instead, which the guard falls back to. #13695
-process.env.OMNIROUTE_BOUND_HOST = hostname;
+process.env.CHEAPROUTE_BOUND_HOST = hostname;
 // Turbopack by default in dev (matches the Next 16 CLI default and the production
-// build default in build-next-isolated.mjs); OMNIROUTE_USE_TURBOPACK=0 is the
+// build default in build-next-isolated.mjs); CHEAPROUTE_USE_TURBOPACK=0 is the
 // webpack escape hatch. Under Bun, Turbopack native V8 bindings are unavailable,
 // so Bun automatically disables Turbopack and uses Webpack.
 const isBun = Boolean(process.versions.bun);
-const useTurbopack = dev && mergedEnv.OMNIROUTE_USE_TURBOPACK !== "0" && !isBun;
-process.env.OMNIROUTE_WS_BRIDGE_SECRET ||= randomUUID();
+const useTurbopack = dev && mergedEnv.CHEAPROUTE_USE_TURBOPACK !== "0" && !isBun;
+process.env.CHEAPROUTE_WS_BRIDGE_SECRET ||= randomUUID();
 // Per-process secret used to prove the trusted peer-IP stamp came from this
 // server (read by the authz middleware in the same process). See peer-stamp.mjs.
 ensurePeerStampToken();
@@ -150,7 +150,7 @@ function createNextApp() {
 // The custom HTTP server owns process exit. Application instrumentation still
 // registers its cleanup function, but must not install a competing signal
 // listener that can race this runner's async server/Next teardown.
-globalThis.__omnirouteCustomServerOwnsShutdown = true;
+globalThis.__cheaprouteCustomServerOwnsShutdown = true;
 
 let nextApp = createNextApp();
 
@@ -194,9 +194,9 @@ async function start() {
   const upgradeHandler = nextApp.getUpgradeHandler();
   const responsesWsProxy = createResponsesWsProxy({
     baseUrl: `http://127.0.0.1:${dashboardPort}`,
-    bridgeSecret: process.env.OMNIROUTE_WS_BRIDGE_SECRET,
+    bridgeSecret: process.env.CHEAPROUTE_WS_BRIDGE_SECRET,
   });
-  const wsBridge = createOmnirouteWsBridge({
+  const wsBridge = createCheaprouteWsBridge({
     baseUrl: `http://127.0.0.1:${dashboardPort}`,
   });
 
@@ -258,7 +258,7 @@ async function start() {
       server.closeIdleConnections?.();
       server.closeAllConnections?.();
       await new Promise((resolve) => server.close(resolve));
-      await globalThis.__omnirouteRequestShutdown?.(signal);
+      await globalThis.__cheaprouteRequestShutdown?.(signal);
       await nextApp.close();
     } catch (error) {
       console.error("[SHUTDOWN] Failed during signal:", signal, error);

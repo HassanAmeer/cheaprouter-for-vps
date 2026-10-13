@@ -1,5 +1,5 @@
 import { homedir } from "os";
-import { sanitizeErrorMessage } from "@omniroute/open-sse/utils/error";
+import { sanitizeErrorMessage } from "@cheaproute/open-sse/utils/error";
 import { createKeyedMutex } from "@/shared/utils/keyedMutex";
 import { resolveCursorAgentBinary, runCursorAgent } from "@/lib/providerModels/cursorAgent";
 import { tryAgentAuth, tryIdeAuth } from "@/lib/cursor/tokenExtractor";

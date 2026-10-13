@@ -86,7 +86,7 @@ export const FEATURE_FLAG_DEFINITIONS: FeatureFlagDefinition[] = [
     key: "OUTBOUND_SSRF_GUARD_ENABLED",
     label: "SSRF Guard",
     description:
-      "Legacy alias: a value saved on this flag's dashboard toggle is read before the environment; false, 0, no, or off in either turns the outbound URL guard's host checks off like OMNIROUTE_ALLOW_PRIVATE_PROVIDER_URLS",
+      "Legacy alias: a value saved on this flag's dashboard toggle is read before the environment; false, 0, no, or off in either turns the outbound URL guard's host checks off like CHEAPROUTE_ALLOW_PRIVATE_PROVIDER_URLS",
     descriptionI18nKey: "featureFlagOutboundSsrfGuardEnabledDescription",
     category: "security",
     defaultValue: "true",
@@ -121,7 +121,7 @@ export const FEATURE_FLAG_DEFINITIONS: FeatureFlagDefinition[] = [
     warningLevel: "info",
   },
   {
-    key: "OMNIROUTE_OIDC_DISABLE_PASSWORD_LOGIN",
+    key: "CHEAPROUTE_OIDC_DISABLE_PASSWORD_LOGIN",
     label: "Disable Password Login With OIDC",
     description:
       "When OIDC is enabled, disable password login so users can only authenticate via OIDC Single Sign-On. When disabled (default), both password login and OIDC are available.",
@@ -181,11 +181,11 @@ export const FEATURE_FLAG_DEFINITIONS: FeatureFlagDefinition[] = [
     warningLevel: "caution",
   },
   {
-    key: "OMNIROUTE_CONTROL_PLANE_PROXY_DIRECT_FALLBACK",
+    key: "CHEAPROUTE_CONTROL_PLANE_PROXY_DIRECT_FALLBACK",
     label: "Control-Plane Proxy Direct Fallback",
     description:
       "Allow OAuth and provider validation flows to bypass a pinned proxy and connect directly when proxy reachability pre-checks fail. Off by default because this can change account egress IP.",
-    descriptionI18nKey: "featureFlagOmnirouteControlPlaneProxyDirectFallbackDescription",
+    descriptionI18nKey: "featureFlagCheaprouteControlPlaneProxyDirectFallbackDescription",
     category: "network",
     defaultValue: "false",
     type: "boolean",
@@ -372,11 +372,11 @@ export const FEATURE_FLAG_DEFINITIONS: FeatureFlagDefinition[] = [
     warningLevel: "danger",
   },
   {
-    key: "OMNIROUTE_ALLOW_PRIVATE_PROVIDER_URLS",
+    key: "CHEAPROUTE_ALLOW_PRIVATE_PROVIDER_URLS",
     label: "Allow Private Provider URLs",
     description:
       "Turns off the outbound URL guard's host checks, cloud-metadata block included, on provider URL validation, model discovery, provider-node base URLs, and the proxy-fallback test, and allows private webhook targets. Local and LAN URLs already pass on the validation, discovery, and provider-node paths by default; the proxy-fallback test and webhook targets check only this flag",
-    descriptionI18nKey: "featureFlagOmnirouteAllowPrivateProviderUrlsDescription",
+    descriptionI18nKey: "featureFlagCheaprouteAllowPrivateProviderUrlsDescription",
     category: "network",
     defaultValue: "false",
     type: "boolean",
@@ -384,11 +384,11 @@ export const FEATURE_FLAG_DEFINITIONS: FeatureFlagDefinition[] = [
     warningLevel: "caution",
   },
   {
-    key: "OMNIROUTE_ALLOW_LOCAL_PROVIDER_URLS",
+    key: "CHEAPROUTE_ALLOW_LOCAL_PROVIDER_URLS",
     label: "Allow Local Provider URLs",
     description:
-      "Allow provider URLs on local/private addresses (127.0.0.1, localhost, LAN). On by default (OmniRoute is local-first): the guard then blocks cloud-metadata endpoints (all of 169.254.0.0/16 plus the known metadata hostnames). Disable for strict public-only blocking: private and loopback hosts are blocked too",
-    descriptionI18nKey: "featureFlagOmnirouteAllowLocalProviderUrlsDescription",
+      "Allow provider URLs on local/private addresses (127.0.0.1, localhost, LAN). On by default (CheapRoute is local-first): the guard then blocks cloud-metadata endpoints (all of 169.254.0.0/16 plus the known metadata hostnames). Disable for strict public-only blocking: private and loopback hosts are blocked too",
+    descriptionI18nKey: "featureFlagCheaprouteAllowLocalProviderUrlsDescription",
     category: "network",
     defaultValue: "true",
     type: "boolean",
@@ -435,7 +435,7 @@ export const FEATURE_FLAG_DEFINITIONS: FeatureFlagDefinition[] = [
     key: "DISABLE_CONTEXT_WINDOW_CHECKS",
     label: "Disable Context Window Checks",
     description:
-      "Skip OmniRoute's local context-window and max-input-token check for direct single-model requests. Upstream providers remain responsible for enforcing their actual limits. Off by default.",
+      "Skip CheapRoute's local context-window and max-input-token check for direct single-model requests. Upstream providers remain responsible for enforcing their actual limits. Off by default.",
     descriptionI18nKey: "featureFlagDisableContextWindowChecksDescription",
     category: "policies",
     defaultValue: "false",
@@ -471,7 +471,7 @@ export const FEATURE_FLAG_DEFINITIONS: FeatureFlagDefinition[] = [
     key: "RADAR_ENABLED",
     label: "Radar",
     description:
-      "Enable the OmniRoute Radar module (catalog feed screens and sync). Off by default; enabling only unlocks the UI — data sync remains a separate opt-in.",
+      "Enable the CheapRoute Radar module (catalog feed screens and sync). Off by default; enabling only unlocks the UI — data sync remains a separate opt-in.",
     descriptionI18nKey: "featureFlagRadarEnabledDescription",
     category: "policies",
     defaultValue: "false",
@@ -518,10 +518,10 @@ export const FEATURE_FLAG_DEFINITIONS: FeatureFlagDefinition[] = [
     warningLevel: "info",
   },
   {
-    key: "OMNIROUTE_MCP_ENFORCE_SCOPES",
+    key: "CHEAPROUTE_MCP_ENFORCE_SCOPES",
     label: "MCP Enforce Scopes",
     description: "Enforce scope restrictions on MCP tool access",
-    descriptionI18nKey: "featureFlagOmnirouteMcpEnforceScopesDescription",
+    descriptionI18nKey: "featureFlagCheaprouteMcpEnforceScopesDescription",
     category: "runtime",
     // Ships off: the gate rejects a caller that sends no scopes at all, so turning it on
     // is an operator decision (.env.example has shipped `=false` since the gate landed).
@@ -531,10 +531,10 @@ export const FEATURE_FLAG_DEFINITIONS: FeatureFlagDefinition[] = [
     warningLevel: "caution",
   },
   {
-    key: "OMNIROUTE_MCP_COMPRESS_DESCRIPTIONS",
+    key: "CHEAPROUTE_MCP_COMPRESS_DESCRIPTIONS",
     label: "MCP Compress Descriptions",
     description: "Compress MCP tool descriptions to reduce token usage",
-    descriptionI18nKey: "featureFlagOmnirouteMcpCompressDescriptionsDescription",
+    descriptionI18nKey: "featureFlagCheaprouteMcpCompressDescriptionsDescription",
     category: "runtime",
     defaultValue: "false",
     type: "boolean",
@@ -542,10 +542,10 @@ export const FEATURE_FLAG_DEFINITIONS: FeatureFlagDefinition[] = [
     warningLevel: "info",
   },
   {
-    key: "OMNIROUTE_ENABLE_RUNTIME_BACKGROUND_TASKS",
+    key: "CHEAPROUTE_ENABLE_RUNTIME_BACKGROUND_TASKS",
     label: "Runtime Background Tasks",
     description: "Enable background task processing at runtime",
-    descriptionI18nKey: "featureFlagOmnirouteEnableRuntimeBackgroundTasksDescription",
+    descriptionI18nKey: "featureFlagCheaprouteEnableRuntimeBackgroundTasksDescription",
     category: "runtime",
     defaultValue: "false",
     type: "boolean",
@@ -553,10 +553,10 @@ export const FEATURE_FLAG_DEFINITIONS: FeatureFlagDefinition[] = [
     warningLevel: "info",
   },
   {
-    key: "OMNIROUTE_DISABLE_BACKGROUND_SERVICES",
+    key: "CHEAPROUTE_DISABLE_BACKGROUND_SERVICES",
     label: "Disable Background Services",
     description: "Disable all background services (quota refresh, sync, etc)",
-    descriptionI18nKey: "featureFlagOmnirouteDisableBackgroundServicesDescription",
+    descriptionI18nKey: "featureFlagCheaprouteDisableBackgroundServicesDescription",
     category: "runtime",
     defaultValue: "false",
     type: "boolean",
@@ -564,10 +564,10 @@ export const FEATURE_FLAG_DEFINITIONS: FeatureFlagDefinition[] = [
     warningLevel: "caution",
   },
   {
-    key: "OMNIROUTE_RTK_TRUST_PROJECT_FILTERS",
+    key: "CHEAPROUTE_RTK_TRUST_PROJECT_FILTERS",
     label: "RTK Trust Project Filters",
     description: "Trust project-level filters from RTK without validation",
-    descriptionI18nKey: "featureFlagOmnirouteRtkTrustProjectFiltersDescription",
+    descriptionI18nKey: "featureFlagCheaprouteRtkTrustProjectFiltersDescription",
     category: "runtime",
     defaultValue: "false",
     type: "boolean",
@@ -575,11 +575,11 @@ export const FEATURE_FLAG_DEFINITIONS: FeatureFlagDefinition[] = [
     warningLevel: "caution",
   },
   {
-    key: "OMNIROUTE_ENABLE_LIVE_WS",
+    key: "CHEAPROUTE_ENABLE_LIVE_WS",
     label: "Live Dashboard WebSocket",
     description:
       "Start the real-time dashboard WebSocket server on import (port 20132, loopback-bound by default). Default: enabled. Set to '0' or 'false' to disable. LAN exposure requires LIVE_WS_HOST=0.0.0.0 + LIVE_WS_ALLOWED_ORIGINS.",
-    descriptionI18nKey: "featureFlagOmnirouteEnableLiveWsDescription",
+    descriptionI18nKey: "featureFlagCheaprouteEnableLiveWsDescription",
     category: "runtime",
     defaultValue: "true",
     type: "boolean",
@@ -587,11 +587,11 @@ export const FEATURE_FLAG_DEFINITIONS: FeatureFlagDefinition[] = [
     warningLevel: "info",
   },
   {
-    key: "OMNIROUTE_CODEX_WS_ENABLED",
+    key: "CHEAPROUTE_CODEX_WS_ENABLED",
     label: "Codex Responses WebSocket",
     description:
       "Allow Codex to use the Responses-over-WebSocket transport (the codex CLI WS endpoint and codexTransport=websocket). When off, Codex falls back to HTTP Responses.",
-    descriptionI18nKey: "featureFlagOmnirouteCodexWsEnabledDescription",
+    descriptionI18nKey: "featureFlagCheaprouteCodexWsEnabledDescription",
     category: "runtime",
     defaultValue: "true",
     type: "boolean",
@@ -599,11 +599,11 @@ export const FEATURE_FLAG_DEFINITIONS: FeatureFlagDefinition[] = [
     warningLevel: "info",
   },
   {
-    key: "OMNIROUTE_CODEX_APP_SERVER_ENABLED",
+    key: "CHEAPROUTE_CODEX_APP_SERVER_ENABLED",
     label: "Codex App-Server Transport",
     description:
       "Allow Codex to use the local app-server WebSocket JSON-RPC transport (codexTransport=app-server). When off, connections opted into app-server fall back to Codex's other transports.",
-    descriptionI18nKey: "featureFlagOmnirouteCodexAppServerEnabledDescription",
+    descriptionI18nKey: "featureFlagCheaprouteCodexAppServerEnabledDescription",
     category: "runtime",
     defaultValue: "true",
     type: "boolean",
@@ -611,10 +611,10 @@ export const FEATURE_FLAG_DEFINITIONS: FeatureFlagDefinition[] = [
     warningLevel: "info",
   },
   {
-    key: "OMNIROUTE_EMERGENCY_FALLBACK",
+    key: "CHEAPROUTE_EMERGENCY_FALLBACK",
     label: "Emergency Fallback",
     description: "Route budget-exhausted requests to the emergency free fallback provider/model.",
-    descriptionI18nKey: "featureFlagOmnirouteEmergencyFallbackDescription",
+    descriptionI18nKey: "featureFlagCheaprouteEmergencyFallbackDescription",
     category: "runtime",
     defaultValue: "true",
     type: "boolean",
@@ -730,11 +730,11 @@ export const FEATURE_FLAG_DEFINITIONS: FeatureFlagDefinition[] = [
     warningLevel: "info",
   },
   {
-    key: "OMNIROUTE_DISABLE_THINKING_LEVEL_VARIANTS",
+    key: "CHEAPROUTE_DISABLE_THINKING_LEVEL_VARIANTS",
     label: "Disable Thinking Level Variants",
     description:
       "Disable the generation of thinking level variants (e.g. -low, -medium, -high) in the /v1/models catalog.",
-    descriptionI18nKey: "featureFlagOmnirouteDisableThinkingLevelVariantsDescription",
+    descriptionI18nKey: "featureFlagCheaprouteDisableThinkingLevelVariantsDescription",
     category: "runtime",
     defaultValue: "false",
     type: "boolean",
@@ -742,10 +742,10 @@ export const FEATURE_FLAG_DEFINITIONS: FeatureFlagDefinition[] = [
     warningLevel: "info",
   },
   {
-    key: "OMNIROUTE_CHAT_VIRTUAL_LANES",
+    key: "CHEAPROUTE_CHAT_VIRTUAL_LANES",
     label: "Adaptive Virtual Admission Lanes",
     description:
-      "Enable per-tenant adaptive virtual admission lanes for provider dispatch (#9654): one tenant's burst no longer 503s another. The OMNIROUTE_CHAT_VIRTUAL_LANES env var wins over this dashboard override; changes take effect at server restart.",
+      "Enable per-tenant adaptive virtual admission lanes for provider dispatch (#9654): one tenant's burst no longer 503s another. The CHEAPROUTE_CHAT_VIRTUAL_LANES env var wins over this dashboard override; changes take effect at server restart.",
     descriptionI18nKey: "featureFlagChatVirtualLanesEnabledDescription",
     category: "runtime",
     defaultValue: "false",
@@ -854,7 +854,7 @@ export const FEATURE_FLAG_DEFINITIONS: FeatureFlagDefinition[] = [
     key: "BATCH_AND_FILE_AUTO_CLEANUP_ENABLED",
     label: "Batch & File Auto-Cleanup",
     description:
-      "Let the automatic cleanup sweep delete terminal (completed/failed/cancelled/expired) Batch API jobs older than OMNIROUTE_BATCH_RETENTION_DAYS, along with their per-line checkpoints, and clear the BLOB content of uploaded files past their own expires_at. Off by default: every existing install keeps this data exactly as before until an operator opts in. The operator-triggered DELETE /api/v1/batches/delete-completed route is unaffected either way -- it is a separate, unconditional public API contract.",
+      "Let the automatic cleanup sweep delete terminal (completed/failed/cancelled/expired) Batch API jobs older than CHEAPROUTE_BATCH_RETENTION_DAYS, along with their per-line checkpoints, and clear the BLOB content of uploaded files past their own expires_at. Off by default: every existing install keeps this data exactly as before until an operator opts in. The operator-triggered DELETE /api/v1/batches/delete-completed route is unaffected either way -- it is a separate, unconditional public API contract.",
     descriptionI18nKey: "featureFlagBatchAndFileAutoCleanupEnabledDescription",
     category: "runtime",
     defaultValue: "false",
@@ -911,11 +911,11 @@ export const FEATURE_FLAG_DEFINITIONS: FeatureFlagDefinition[] = [
     warningLevel: "info",
   },
   {
-    key: "OMNIROUTE_AUTO_SYNC_CODEX_PROFILES",
+    key: "CHEAPROUTE_AUTO_SYNC_CODEX_PROFILES",
     label: "Auto-Sync Codex Profiles",
     description:
       "After a provider model sync, automatically (re)write ~/.codex/*.config.toml profile files from the live catalog. Never changes the active/default Codex config. Off by default.",
-    descriptionI18nKey: "featureFlagOmnirouteAutoSyncCodexProfilesDescription",
+    descriptionI18nKey: "featureFlagCheaprouteAutoSyncCodexProfilesDescription",
     category: "cli",
     defaultValue: "false",
     type: "boolean",
@@ -923,11 +923,11 @@ export const FEATURE_FLAG_DEFINITIONS: FeatureFlagDefinition[] = [
     warningLevel: "caution",
   },
   {
-    key: "OMNIROUTE_AUTO_SYNC_CLAUDE_PROFILES",
+    key: "CHEAPROUTE_AUTO_SYNC_CLAUDE_PROFILES",
     label: "Auto-Sync Claude Code Profiles",
     description:
       "After a provider model sync, automatically (re)write ~/.claude/profiles/'<name>'/settings.json Claude Code profiles from the live catalog. Never changes the active/default Claude config. Off by default.",
-    descriptionI18nKey: "featureFlagOmnirouteAutoSyncClaudeProfilesDescription",
+    descriptionI18nKey: "featureFlagCheaprouteAutoSyncClaudeProfilesDescription",
     category: "cli",
     defaultValue: "false",
     type: "boolean",
@@ -937,10 +937,10 @@ export const FEATURE_FLAG_DEFINITIONS: FeatureFlagDefinition[] = [
 
   // ──────────────── Health (3) ────────────────
   {
-    key: "OMNIROUTE_DISABLE_LOCAL_HEALTHCHECK",
+    key: "CHEAPROUTE_DISABLE_LOCAL_HEALTHCHECK",
     label: "Disable Local Health Check",
     description: "Disable the local instance health check endpoint",
-    descriptionI18nKey: "featureFlagOmnirouteDisableLocalHealthcheckDescription",
+    descriptionI18nKey: "featureFlagCheaprouteDisableLocalHealthcheckDescription",
     category: "health",
     defaultValue: "false",
     type: "boolean",
@@ -948,10 +948,10 @@ export const FEATURE_FLAG_DEFINITIONS: FeatureFlagDefinition[] = [
     warningLevel: "info",
   },
   {
-    key: "OMNIROUTE_DISABLE_TOKEN_HEALTHCHECK",
+    key: "CHEAPROUTE_DISABLE_TOKEN_HEALTHCHECK",
     label: "Disable Token Health Check",
     description: "Disable the token validation health check",
-    descriptionI18nKey: "featureFlagOmnirouteDisableTokenHealthcheckDescription",
+    descriptionI18nKey: "featureFlagCheaprouteDisableTokenHealthcheckDescription",
     category: "health",
     defaultValue: "false",
     type: "boolean",

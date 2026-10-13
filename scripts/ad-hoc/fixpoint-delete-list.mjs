@@ -15,7 +15,7 @@ function isEntryRel(rel) {
   if (/\.d\.ts$/.test(rel)) return true;
   if (rel.startsWith("bin/")) return true;
   if (/\.test\.(tsx?|jsx?)$/.test(b) || /\.spec\.(tsx?|jsx?)$/.test(b)) return true;
-  if (rel.startsWith("@omniroute/")) return true;
+  if (rel.startsWith("@cheaproute/")) return true;
   return false;
 }
 

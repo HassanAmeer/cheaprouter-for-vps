@@ -30,7 +30,7 @@ function cachedMatchPattern(pattern: string, value: string): boolean {
 
 export interface RtkFilterLoadDiagnostic {
   source: "project" | "global" | "builtin";
-  format?: "omniroute-json" | "rtk-toml-v1";
+  format?: "cheaproute-json" | "rtk-toml-v1";
   path?: string;
   level: "warning" | "error";
   message: string;
@@ -40,7 +40,7 @@ interface FilterSource {
   source: "project" | "global" | "builtin";
   path: string;
   trusted: boolean;
-  format: "omniroute-json" | "rtk-toml-v1";
+  format: "cheaproute-json" | "rtk-toml-v1";
 }
 
 interface RtkFilterLoadOptions {
@@ -63,7 +63,7 @@ function getModuleDir(): string {
       dir = parent;
     }
   }
-  return path.join(os.homedir(), ".omniroute");
+  return path.join(os.homedir(), ".cheaproute");
 }
 
 function getFiltersDir(): string {
@@ -80,7 +80,7 @@ function getFiltersDir(): string {
 }
 
 function getDataDir(): string {
-  return process.env.DATA_DIR || path.join(os.homedir(), ".omniroute");
+  return process.env.DATA_DIR || path.join(os.homedir(), ".cheaproute");
 }
 
 function sha256(value: string): string {
@@ -92,7 +92,7 @@ function projectFiltersTrusted(
   trustProjectFilters = false
 ): boolean | "changed" {
   if (trustProjectFilters) return true;
-  if (process.env.OMNIROUTE_RTK_TRUST_PROJECT_FILTERS === "1") return true;
+  if (process.env.CHEAPROUTE_RTK_TRUST_PROJECT_FILTERS === "1") return true;
   const trustPath = path.join(path.dirname(filtersPath), "trust.json");
   if (!fs.existsSync(trustPath)) return false;
   try {
@@ -128,7 +128,7 @@ function collectFilterSources(options: RtkFilterLoadOptions = {}): FilterSource[
 function collectProjectFilterSources(sources: FilterSource[], options: RtkFilterLoadOptions): void {
   const projectCandidates = [
     { path: path.join(process.cwd(), ".rtk", "filters.toml"), format: "rtk-toml-v1" as const },
-    { path: path.join(process.cwd(), ".rtk", "filters.json"), format: "omniroute-json" as const },
+    { path: path.join(process.cwd(), ".rtk", "filters.json"), format: "cheaproute-json" as const },
   ];
   for (const candidate of projectCandidates) {
     if (!fs.existsSync(candidate.path)) continue;
@@ -153,7 +153,7 @@ function collectProjectFilterSources(sources: FilterSource[], options: RtkFilter
 function collectGlobalFilterSources(sources: FilterSource[]): void {
   const globalCandidates = [
     { path: path.join(getDataDir(), "rtk", "filters.toml"), format: "rtk-toml-v1" as const },
-    { path: path.join(getDataDir(), "rtk", "filters.json"), format: "omniroute-json" as const },
+    { path: path.join(getDataDir(), "rtk", "filters.json"), format: "cheaproute-json" as const },
   ];
   for (const candidate of globalCandidates) {
     if (fs.existsSync(candidate.path)) {
@@ -182,7 +182,7 @@ function collectBuiltinFilterSources(sources: FilterSource[]): void {
         source: "builtin",
         path: path.join(builtinDir, file),
         trusted: true,
-        format: "omniroute-json",
+        format: "cheaproute-json",
       });
     }
   }
@@ -246,7 +246,7 @@ export function loadRtkFilters(options: RtkFilterLoadOptions = {}): RtkFilterDef
     getDataDir(),
     options.customFiltersEnabled === false ? "builtin-only" : "custom",
     options.trustProjectFilters === true ? "trusted-project" : "trust-file",
-    process.env.OMNIROUTE_RTK_TRUST_PROJECT_FILTERS === "1" ? "env-trust" : "env-normal",
+    process.env.CHEAPROUTE_RTK_TRUST_PROJECT_FILTERS === "1" ? "env-trust" : "env-normal",
   ].join("|");
   if (cache && cacheKey === currentCacheKey && !options.refresh) return cache;
   diagnostics = [];
@@ -256,12 +256,12 @@ export function loadRtkFilters(options: RtkFilterLoadOptions = {}): RtkFilterDef
   }
 
   const sourceRank = { project: 3, global: 2, builtin: 1 } as const;
-  const formatRank = { "rtk-toml-v1": 2, "omniroute-json": 1 } as const;
+  const formatRank = { "rtk-toml-v1": 2, "cheaproute-json": 1 } as const;
   const sorted = filters.sort(
     (a, b) =>
       sourceRank[b.source ?? "builtin"] - sourceRank[a.source ?? "builtin"] ||
-      formatRank[b.sourceFormat ?? "omniroute-json"] -
-        formatRank[a.sourceFormat ?? "omniroute-json"] ||
+      formatRank[b.sourceFormat ?? "cheaproute-json"] -
+        formatRank[a.sourceFormat ?? "cheaproute-json"] ||
       b.priority - a.priority ||
       a.id.localeCompare(b.id)
   );

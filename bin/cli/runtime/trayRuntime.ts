@@ -4,7 +4,7 @@ import { homedir } from "node:os";
 import { execSync } from "node:child_process";
 import { pathToFileURL } from "node:url";
 
-const RUNTIME_DIR = join(homedir(), ".omniroute", "runtime");
+const RUNTIME_DIR = join(homedir(), ".cheaproute", "runtime");
 // systray2 is a maintained fork with prebuilt binaries — installed lazily at runtime,
 // not in dependencies, to avoid npm install overhead for users who don't use --tray.
 //
@@ -63,7 +63,7 @@ export async function loadSystray(): Promise<(new (...args: unknown[]) => unknow
     } catch (err) {
       // Surface failures to stderr instead of staying silent — anyone hitting
       // a tray problem otherwise has zero diagnostic. (PR #1080)
-      console.warn(`[omniroute] tray runtime install failed: ${(err as Error).message}`);
+      console.warn(`[cheaproute] tray runtime install failed: ${(err as Error).message}`);
       return null;
     }
   }
@@ -74,7 +74,7 @@ export async function loadSystray(): Promise<(new (...args: unknown[]) => unknow
     const mod = await import(systrayModuleSpecifier(RUNTIME_DIR));
     return (mod.default ?? mod.SysTray ?? mod) as (new (...args: unknown[]) => unknown) | null;
   } catch (err) {
-    console.warn(`[omniroute] tray runtime import failed: ${(err as Error).message}`);
+    console.warn(`[cheaproute] tray runtime import failed: ${(err as Error).message}`);
     return null;
   }
 }
@@ -83,7 +83,7 @@ function ensureRuntimeDir(): void {
   if (!existsSync(RUNTIME_DIR)) mkdirSync(RUNTIME_DIR, { recursive: true });
   const pkg = join(RUNTIME_DIR, "package.json");
   if (!existsSync(pkg)) {
-    writeFileSync(pkg, JSON.stringify({ name: "omniroute-runtime", private: true }), "utf-8");
+    writeFileSync(pkg, JSON.stringify({ name: "cheaproute-runtime", private: true }), "utf-8");
   }
 }
 

@@ -8,11 +8,11 @@ import {
   type ProviderConnectionView,
 } from "@/lib/usage/resilienceExplain";
 import { getCircuitBreaker } from "@/shared/utils/circuitBreaker";
-import { buildAutoCandidates } from "@omniroute/open-sse/services/combo.ts";
-import { parseAutoConfig } from "@omniroute/open-sse/services/combo/autoConfig.ts";
-import { resolveComboTargets } from "@omniroute/open-sse/services/combo/comboStructure.ts";
-import { evaluateAutoCandidates } from "@omniroute/open-sse/services/combo/resolveAutoStrategy.ts";
-import type { AutoProviderCandidate, ComboLike } from "@omniroute/open-sse/services/combo/types.ts";
+import { buildAutoCandidates } from "@cheaproute/open-sse/services/combo.ts";
+import { parseAutoConfig } from "@cheaproute/open-sse/services/combo/autoConfig.ts";
+import { resolveComboTargets } from "@cheaproute/open-sse/services/combo/comboStructure.ts";
+import { evaluateAutoCandidates } from "@cheaproute/open-sse/services/combo/resolveAutoStrategy.ts";
+import type { AutoProviderCandidate, ComboLike } from "@cheaproute/open-sse/services/combo/types.ts";
 import {
   calculateFactors,
   calculateScore,
@@ -22,9 +22,9 @@ import {
   type ScoringFactors,
   type ScoringWeights,
   validateWeights,
-} from "@omniroute/open-sse/services/autoCombo/scoring.ts";
-import { getModePack } from "@omniroute/open-sse/services/autoCombo/modePacks.ts";
-import { getTaskFitness } from "@omniroute/open-sse/services/autoCombo/taskFitness.ts";
+} from "@cheaproute/open-sse/services/autoCombo/scoring.ts";
+import { getModePack } from "@cheaproute/open-sse/services/autoCombo/modePacks.ts";
+import { getTaskFitness } from "@cheaproute/open-sse/services/autoCombo/taskFitness.ts";
 import type {
   ComboAutopilotCombo,
   ComboAutopilotReport,

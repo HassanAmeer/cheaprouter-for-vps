@@ -7,7 +7,7 @@
  * package while compiling /health (D8 + D25).
  */
 
-import { sanitizeErrorMessage } from "@omniroute/open-sse/utils/error.ts";
+import { sanitizeErrorMessage } from "@cheaproute/open-sse/utils/error.ts";
 import type { EmbeddingResult, EmbeddingError } from "./types";
 
 const TRANSFORMERS_MODEL = process.env.MEMORY_TRANSFORMERS_MODEL || "Xenova/all-MiniLM-L6-v2";

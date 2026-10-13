@@ -1,4 +1,4 @@
-import { buildErrorBody } from "@omniroute/open-sse/utils/error";
+import { buildErrorBody } from "@cheaproute/open-sse/utils/error";
 import { type NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { requireManagementAuth } from "@/lib/api/requireManagementAuth";

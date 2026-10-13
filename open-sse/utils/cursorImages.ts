@@ -5,7 +5,7 @@
  * URLs) into decoded, JPEG-prepped bytes ready for SelectedImage
  * `blobIdWithData` encoding (see cursorAgentProtobuf.ts).
  *
- * Security (OmniRoute hard rules):
+ * Security (CheapRoute hard rules):
  *  - SSRF: remote fetches go through the repo's canonical outbound guard
  *    (`parseAndValidatePublicUrl`), which rejects non-http(s) schemes,
  *    embedded credentials, localhost, link-local, private/CGNAT ranges, and

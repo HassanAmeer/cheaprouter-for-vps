@@ -9,7 +9,7 @@ export const dynamic = "force-dynamic";
 export default async function HomePage() {
   // Settings failures degrade to defaults here (display-only) — see loadHomeSettings (#14060).
   const [settings, machineId] = await Promise.all([loadHomeSettings(), getMachineId()]);
-  const isBootstrapped = process.env.OMNIROUTE_BOOTSTRAPPED === "true";
+  const isBootstrapped = process.env.CHEAPROUTE_BOOTSTRAPPED === "true";
   return (
     <>
       {isBootstrapped && <BootstrapBanner />}

@@ -258,7 +258,7 @@ base_probe_ready() {
 # owns a genuine red even though the gate was already failing, and that is precisely
 # the case a bare "it was red before" waves through.
 # Also counted (2026-10-06): the i18n drift gate lists `  - docs/x.md (source-changed)`
-# and the agent-skills dry-run lists bare slugs under GENERATED (`    + omni-auth`); neither
+# and the agent-skills dry-run lists bare slugs under GENERATED (`    + cheap-auth`); neither
 # prints a marker, so a base-red there was UNCLASSIFIABLE although a diff of the two
 # sorted line sets is exactly the discriminator. A red with none of these stays fail-closed.
 GATE_ERROR_RE='^[[:space:]]*(✗|✖|×|FAIL|✘)|error TS[0-9]+|^[[:space:]]*- [^[:space:]]+\.md \([a-z-]+\)|^[[:space:]]*\+ [a-z0-9][a-z0-9_-]*$'

@@ -3,7 +3,7 @@ export const dynamic = "force-dynamic";
 import { clearMemoryCache, getMemoryCacheStats } from "@/lib/semanticCache";
 import { isAuthenticated, isCacheScopedKey } from "@/shared/utils/apiAuth";
 import { CACHE_READ_SCOPE, CACHE_WRITE_SCOPE } from "@/shared/constants/managementScopes";
-import { sanitizeErrorMessage } from "@omniroute/open-sse/utils/error.ts";
+import { sanitizeErrorMessage } from "@cheaproute/open-sse/utils/error.ts";
 
 export async function GET(req: NextRequest) {
   if (!(await isAuthenticated(req)) && !(await isCacheScopedKey(req, CACHE_READ_SCOPE))) {

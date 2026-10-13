@@ -1,7 +1,7 @@
 /**
  * Deterministic routing strategies (M2 — RIC-740, D3 可审计路由).
  *
- * The OmniRoute differentiator vs NotDiamond/Martian "predict 黑盒路线": every
+ * The CheapRoute differentiator vs NotDiamond/Martian "predict 黑盒路线": every
  * routing decision is a deterministic, explainable rule — never a learned model.
  * This module is the strategy engine for the self-hosted gateway entry
  * (`selfHostedEntry.ts`, RIC-738): it turns a declarative `strategy:` config
@@ -405,7 +405,7 @@ export class DeterministicRoutingEngine {
 // ── Declarative config parsing ──────────────────────────────────────────────
 //
 // The `strategy:` block lives next to `providers:` in the same YAML document
-// (or a separate `OMNIROUTE_SELF_HOSTED_STRATEGY` env). It is pure data —
+// (or a separate `CHEAPROUTE_SELF_HOSTED_STRATEGY` env). It is pure data —
 // one rule per line — so operators express routing policy without code.
 
 function asStringList(value: unknown, field: string): string[] {
@@ -561,9 +561,9 @@ export function parseSelfHostedRoutingConfig(source: string): {
 }
 
 /** Env var holding the inline YAML `strategy:` document (runtime-only). */
-export const STRATEGY_ENV = "OMNIROUTE_SELF_HOSTED_STRATEGY";
+export const STRATEGY_ENV = "CHEAPROUTE_SELF_HOSTED_STRATEGY";
 /** Env var pointing at a YAML file with the `strategy:` document. */
-export const STRATEGY_FILE_ENV = "OMNIROUTE_SELF_HOSTED_STRATEGY_FILE";
+export const STRATEGY_FILE_ENV = "CHEAPROUTE_SELF_HOSTED_STRATEGY_FILE";
 
 /** Load the strategy config from an optional env block. `null` = none set. */
 export function loadStrategyConfigFromEnv(

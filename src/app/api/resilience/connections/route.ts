@@ -5,19 +5,19 @@ import { getRawProviderConnections, getProviderConnectionsCount } from "@/lib/db
 import { getAllCircuitBreakerStatuses } from "@/shared/utils/circuitBreaker";
 import { resolveProviderId } from "@/shared/constants/providers";
 import { TERMINAL_CONNECTION_STATUSES } from "@/lib/quota/connectionRecovery";
-import { sanitizeErrorMessage, buildErrorBody } from "@omniroute/open-sse/utils/error";
+import { sanitizeErrorMessage, buildErrorBody } from "@cheaproute/open-sse/utils/error";
 import {
   getAllModelLockouts,
   cooldownUntilMs,
   type ModelLockoutInfo,
-} from "@omniroute/open-sse/services/accountFallback";
+} from "@cheaproute/open-sse/services/accountFallback";
 import type {
   ResilienceConnectionsResponse,
   ConnectionState,
   BreakerWithHistory,
   RotationAccountState,
 } from "@/types/resilience";
-import { readRotationSnapshot } from "@omniroute/open-sse/services/rotationAttribution";
+import { readRotationSnapshot } from "@cheaproute/open-sse/services/rotationAttribution";
 import { isRotationAttributionEnabled } from "@/shared/utils/featureFlags";
 
 // Explicit column whitelist -- getRawProviderConnections() DEFAULTS TO SELECT *,

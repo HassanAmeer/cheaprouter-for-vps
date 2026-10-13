@@ -102,7 +102,7 @@ interface RunDbHealthCheckOptions {
   expectedSchemaVersion?: string;
   /**
    * Skip `PRAGMA quick_check` during this run.
-   * Set via env var `OMNIROUTE_SKIP_DB_HEALTHCHECK=1`.
+   * Set via env var `CHEAPROUTE_SKIP_DB_HEALTHCHECK=1`.
    * On slow storage (HDD under I/O contention) quick_check can block the
    * Node.js event loop for minutes. The DB is implicitly validated by
    * opening it, applying the schema, and running migrations — if corruption
@@ -540,7 +540,7 @@ export function runDbHealthCheck(
   // does a full page-by-page scan that can take minutes on a fragmented WAL,
   // causing 7+ minute boot times. quick_check still catches corruption but
   // skips deep index verification, reducing I/O to seconds.
-  // Skip entirely when skipIntegrityCheck is set (env OMNIROUTE_SKIP_DB_HEALTHCHECK=1).
+  // Skip entirely when skipIntegrityCheck is set (env CHEAPROUTE_SKIP_DB_HEALTHCHECK=1).
   if (!options.skipIntegrityCheck) {
     const integrityCheck = db.pragma("quick_check") as Array<{ quick_check?: string }>;
     if (integrityCheck[0]?.quick_check !== "ok") {

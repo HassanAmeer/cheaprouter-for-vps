@@ -41,8 +41,8 @@ const staticRe = /(?:import|export)\s+[^;]*?\sfrom\s*['"]([^'"]+)['"]|import\s*\
 function resolveToFile(fromFile, spec) {
   let base;
   if (spec.startsWith("@/")) base = path.join(root, "src", spec.slice(2));
-  else if (spec === "@omniroute/open-sse") base = path.join(root, "open-sse", "index.ts");
-  else if (spec.startsWith("@omniroute/open-sse/")) base = path.join(root, "open-sse", spec.slice("@omniroute/open-sse/".length));
+  else if (spec === "@cheaproute/open-sse") base = path.join(root, "open-sse", "index.ts");
+  else if (spec.startsWith("@cheaproute/open-sse/")) base = path.join(root, "open-sse", spec.slice("@cheaproute/open-sse/".length));
   else if (spec.startsWith(".")) base = path.resolve(path.dirname(fromFile), spec);
   else return null; // bare package
   const cands = [base];
@@ -89,7 +89,7 @@ const orphans = [];
 for (const f of files) {
   if (referenced.has(f)) continue;
   const rel = path.relative(root, f);
-  if (rel.startsWith("@omniroute/")) continue; // foreign packages, out of scope
+  if (rel.startsWith("@cheaproute/")) continue; // foreign packages, out of scope
   const entry = isEntryRel(rel);
   if (entry) continue;
   orphans.push(rel);

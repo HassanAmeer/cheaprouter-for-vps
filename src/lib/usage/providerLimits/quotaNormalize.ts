@@ -1,8 +1,8 @@
 import {
   isUserCallableAntigravityModelId,
   toClientAntigravityModelId,
-} from "@omniroute/open-sse/config/antigravityModelAliases.ts";
-import { isDiscoverableAgyModelId } from "@omniroute/open-sse/config/agyModels.ts";
+} from "@cheaproute/open-sse/config/antigravityModelAliases.ts";
+import { isDiscoverableAgyModelId } from "@cheaproute/open-sse/config/agyModels.ts";
 
 type JsonRecord = Record<string, unknown>;
 
@@ -25,7 +25,7 @@ const ANTIGRAVITY_FAMILY_QUOTA_KEYS = new Set([
  *
  * `liveModelIds` is the provider's live discovery catalog when the caller has it: a model
  * the connection actually reports is always allowed, so a tier Google ships between two
- * OmniRoute releases keeps its quota instead of being dropped. The static catalogs stay as
+ * CheapRoute releases keeps its quota instead of being dropped. The static catalogs stay as
  * the fallback for cold start / logged-out / discovery-failure.
  */
 export function isUsageQuotaKeyAllowed(

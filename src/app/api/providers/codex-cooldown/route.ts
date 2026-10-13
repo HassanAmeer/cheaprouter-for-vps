@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { requireManagementAuth } from "@/lib/api/requireManagementAuth";
 import { clearCodexAccountCooldown } from "@/lib/db/providers/codexAccountRecovery";
-import { sanitizeErrorMessage } from "@omniroute/open-sse/utils/error.ts";
+import { sanitizeErrorMessage } from "@cheaproute/open-sse/utils/error.ts";
 
 const schema = z.object({ connectionId: z.string().trim().min(1).max(256) }).strict();
 

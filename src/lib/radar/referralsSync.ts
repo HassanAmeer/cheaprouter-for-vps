@@ -21,7 +21,7 @@
 import { RadarReferralsFeedSchema, type RadarReferralsFeed } from "./referralsFeedSchema";
 import { RadarTierSchema, type RadarTier } from "./feedSchema";
 import { verifyFeedBytes } from "./verify";
-import { sanitizeErrorMessage } from "@omniroute/open-sse/utils/error";
+import { sanitizeErrorMessage } from "@cheaproute/open-sse/utils/error";
 import { isFeatureFlagEnabled } from "@/shared/utils/featureFlags";
 import type { RadarSettingsSnapshot } from "./sync";
 
@@ -33,7 +33,7 @@ import type { RadarSettingsSnapshot } from "./sync";
  * Default feed base URL — same default/override convention as `sync.ts`
  * (`RADAR_FEED_URL` env var points forks/self-hosters at their own server).
  */
-const DEFAULT_FEED_BASE_URL = "https://radar.omniroute.online";
+const DEFAULT_FEED_BASE_URL = "https://radar.cheaproute.online";
 
 const SYNC_TIMEOUT_MS = 30_000;
 
@@ -92,7 +92,7 @@ export interface ReferralsSyncDeps {
 // ---------------------------------------------------------------------------
 
 /**
- * Parse & validate the `x-omniroute-feed-tier` response header.
+ * Parse & validate the `x-cheaproute-feed-tier` response header.
  *
  * Unlike the catalog feed, the referrals feed body carries no `tier` field
  * at all (there is only ever one signed artifact per `generatedAt`, and the
@@ -243,7 +243,7 @@ export async function syncRadarReferrals(
       rawBytes = buffered;
     }
 
-    const signature = res.headers.get("x-omniroute-feed-signature") ?? "";
+    const signature = res.headers.get("x-cheaproute-feed-signature") ?? "";
 
     // Step 5: Verify signature — same pinned Ed25519 key(s) as the catalog feed.
     const sigValid = verifyFeedBytes(rawBytes, signature);
@@ -282,7 +282,7 @@ export async function syncRadarReferrals(
     // for this feed, so the header is the only source; absent/garbage header
     // degrades to the least-privileged "community" default.
     const servedTier =
-      parseServedTierHeader(res.headers.get("x-omniroute-feed-tier")) ?? "community";
+      parseServedTierHeader(res.headers.get("x-cheaproute-feed-tier")) ?? "community";
 
     // Step 9: Cache the result
     const cacheEntry: RadarReferralsCacheEntry = {

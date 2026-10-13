@@ -3,7 +3,7 @@ import { resolveProxyForConnection } from "@/lib/db/settings";
 import { proxyAssignmentSchema } from "@/shared/validation/schemas";
 import { isValidationFailure, validateBody } from "@/shared/validation/helpers";
 import { createErrorResponse, createErrorResponseFromUnknown } from "@/lib/api/errorResponse";
-import { clearDispatcherCache } from "@omniroute/open-sse/utils/proxyDispatcher";
+import { clearDispatcherCache } from "@cheaproute/open-sse/utils/proxyDispatcher";
 import { requireManagementAuth } from "@/lib/api/requireManagementAuth";
 
 export async function GET(request: Request) {

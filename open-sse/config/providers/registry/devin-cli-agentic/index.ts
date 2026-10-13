@@ -8,7 +8,7 @@ export const devin_cli_agenticProvider: RegistryEntry = {
   executor: "devin-cli-agentic",
   baseUrl: "devin://acp/stdio",
   // Authentication is owned exclusively by the official Devin CLI inside its
-  // isolated volume. OmniRoute must not import or persist a host credential.
+  // isolated volume. CheapRoute must not import or persist a host credential.
   authType: "none",
   authHeader: "none",
   defaultContextLength: 200000,

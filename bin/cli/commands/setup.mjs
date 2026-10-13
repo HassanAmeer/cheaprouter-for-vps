@@ -1,7 +1,7 @@
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { dirname, resolve } from "node:path";
 import { createPrompt, printHeading, printInfo, printSuccess } from "../io.mjs";
-import { openOmniRouteDb } from "../sqlite.mjs";
+import { openCheapRouteDb } from "../sqlite.mjs";
 import { getSettings, hashManagementPassword, updateSettings } from "../settings-store.mjs";
 import { testProviderApiKey } from "../provider-test.mjs";
 import { updateProviderTestResult, upsertApiKeyProviderConnection } from "../provider-store.mjs";
@@ -85,7 +85,7 @@ async function resolveProviderInput(opts, prompt, nonInteractive) {
   }
 
   if (!apiKey) {
-    throw new Error("Provider API key is required. Pass --api-key or OMNIROUTE_API_KEY.");
+    throw new Error("Provider API key is required. Pass --api-key or CHEAPROUTE_API_KEY.");
   }
 
   if (!name) {
@@ -136,12 +136,12 @@ async function setupProvider(db, opts, prompt, nonInteractive) {
 /**
  * Merge the `setup` subcommand options with the program-level ones.
  *
- * The program declares a global `--api-key` (the OmniRoute *server* key, see
+ * The program declares a global `--api-key` (the CheapRoute *server* key, see
  * bin/cli/program.mjs) and `setup` declares its own `--api-key` (the *provider*
  * key). Commander binds the value to the program-level option, so the
  * subcommand's `opts.apiKey` is always `undefined` and `--add-provider` failed
  * with "Provider API key is required" even when `--api-key` was passed. Falling
- * back to the global value also makes `OMNIROUTE_API_KEY` work, which the error
+ * back to the global value also makes `CHEAPROUTE_API_KEY` work, which the error
  * message already told users to use.
  *
  * @param {Record<string, unknown>} opts Subcommand options.
@@ -176,7 +176,7 @@ export function registerSetup(program) {
       if (exitCode !== 0) process.exit(exitCode);
     });
 
-  // Wire up `omniroute setup opencode` subcommand. Kept inside registerSetup
+  // Wire up `cheaproute setup opencode` subcommand. Kept inside registerSetup
   // so it always travels with the parent command (avoids a separate register
   // call in the registry that would silently break if the parent renames).
   registerSetupOpenCode(program.commands.find((c) => c.name() === "setup"));
@@ -203,8 +203,8 @@ export async function runSetupCommand(opts = {}) {
   const prompt = createPrompt();
 
   try {
-    printHeading("OmniRoute Setup");
-    const { db, dbPath } = await openOmniRouteDb();
+    printHeading("CheapRoute Setup");
+    const { db, dbPath } = await openCheapRouteDb();
     printInfo(`Database: ${dbPath}`);
 
     const before = getSettings(db);

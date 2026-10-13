@@ -7,7 +7,7 @@ import {
 import { requireManagementAuth } from "@/lib/api/requireManagementAuth";
 import { updateParamFilterConfigSchema } from "@/shared/validation/schemas";
 import { isValidationFailure, validateBody } from "@/shared/validation/helpers";
-import { buildErrorBody, sanitizeErrorMessage } from "@omniroute/open-sse/utils/error";
+import { buildErrorBody, sanitizeErrorMessage } from "@cheaproute/open-sse/utils/error";
 
 /**
  * GET /api/providers/[id]/param-filters

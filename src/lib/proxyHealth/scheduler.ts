@@ -37,7 +37,7 @@ import {
   createProxyDispatcher,
   clearDispatcherCache,
   proxyConfigToUrl,
-} from "@omniroute/open-sse/utils/proxyDispatcher";
+} from "@cheaproute/open-sse/utils/proxyDispatcher";
 import { fetch as undiciFetch } from "undici";
 import {
   applyCrossProbeEvidence,
@@ -61,7 +61,7 @@ import {
   noteProxyRefusal,
   proxyEgressKey,
   type ProxyRefusalKind,
-} from "@omniroute/open-sse/utils/proxyRefusalMemory";
+} from "@cheaproute/open-sse/utils/proxyRefusalMemory";
 import { deleteSweepVerdict, recordSweepVerdict, toSweepVerdict } from "./sweepVerdict.ts";
 import {
   deleteBlockedHistory,
@@ -447,7 +447,7 @@ function isBuildProcess(): boolean {
 }
 
 function isBackgroundServicesDisabled(): boolean {
-  const raw = process.env.OMNIROUTE_DISABLE_BACKGROUND_SERVICES;
+  const raw = process.env.CHEAPROUTE_DISABLE_BACKGROUND_SERVICES;
   if (!raw) return false;
   return ["1", "true", "yes", "on"].includes(raw.trim().toLowerCase());
 }
@@ -519,7 +519,7 @@ async function testOneProxy(proxy: {
       method,
       signal: controller.signal,
       dispatcher,
-      headers: { "User-Agent": "OmniRoute/1.0" },
+      headers: { "User-Agent": "CheapRoute/1.0" },
     });
     return { outcome: classifyProbeStatus(resp.status), status: resp.status, target };
   } catch (error) {

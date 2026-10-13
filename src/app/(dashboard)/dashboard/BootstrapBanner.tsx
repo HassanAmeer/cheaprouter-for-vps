@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useTranslations } from "next-intl";
 
 /**
- * Shown when OmniRoute was started with auto-generated secrets (zero-config mode).
+ * Shown when CheapRoute was started with auto-generated secrets (zero-config mode).
  * The banner is dismissable and persists only for the current session.
  */
 export default function BootstrapBanner() {
@@ -16,8 +16,8 @@ export default function BootstrapBanner() {
   // Determine default data dir hint based on platform hint from user-agent
   const dataDir =
     typeof navigator !== "undefined" && navigator.platform?.startsWith("Win")
-      ? "%APPDATA%\\omniroute\\server.env"
-      : "~/.omniroute/server.env";
+      ? "%APPDATA%\\cheaproute\\server.env"
+      : "~/.cheaproute/server.env";
 
   return (
     <div

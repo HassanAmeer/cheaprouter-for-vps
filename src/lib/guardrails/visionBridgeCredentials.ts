@@ -7,7 +7,7 @@
 
 import { resolveProviderId } from "@/shared/constants/providers";
 import { isNoAuthProviderKey } from "@/shared/utils/noAuthProviders";
-import { SYNTHETIC_NOAUTH_CONNECTION_ID } from "@omniroute/open-sse/services/autoCombo/resilienceCandidateFilter.ts";
+import { SYNTHETIC_NOAUTH_CONNECTION_ID } from "@cheaproute/open-sse/services/autoCombo/resilienceCandidateFilter.ts";
 
 /**
  * True when a provider connection can actually authenticate upstream.

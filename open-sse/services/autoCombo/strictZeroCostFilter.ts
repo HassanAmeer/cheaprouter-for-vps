@@ -53,7 +53,7 @@ import {
   FREE_MODEL_BUDGETS,
   grantsFreeAccess,
   type FreeModelBudget,
-} from "@omniroute/open-sse/config/freeModelCatalog.ts";
+} from "@cheaproute/open-sse/config/freeModelCatalog.ts";
 import { recordAutoExclusion } from "./autoEvaluationTrace";
 import { SYNTHETIC_NOAUTH_CONNECTION_ID } from "./resilienceCandidateFilter";
 

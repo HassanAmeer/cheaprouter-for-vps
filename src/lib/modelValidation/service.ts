@@ -6,7 +6,7 @@ import { createProofRunner, type ProofRunner } from "./runner";
 import { createValidationPluginFence } from "./pluginFence";
 import { withPluginExecutionGuard } from "../plugins/executionGuard";
 
-const TOOL_NAME = "omniroute_validation_echo";
+const TOOL_NAME = "cheaproute_validation_echo";
 const activeConnections = new Set<string>();
 
 function toolRequest(nonce: string) {

@@ -3,7 +3,7 @@ import {
   isSafeElevenLabsVoiceId,
   proxyElevenLabsRequest,
 } from "@/app/api/v1/_shared/elevenLabsProxy";
-import { buildErrorBody } from "@omniroute/open-sse/utils/error.ts";
+import { buildErrorBody } from "@cheaproute/open-sse/utils/error.ts";
 import { CORS_HEADERS } from "@/shared/utils/cors";
 
 export async function OPTIONS() {

@@ -1,4 +1,4 @@
-import { isRetiredGitHubCopilotModelId } from "@omniroute/open-sse/config/providers/registry/github/retiredModels.ts";
+import { isRetiredGitHubCopilotModelId } from "@cheaproute/open-sse/config/providers/registry/github/retiredModels.ts";
 import type { VertexModelMetadataProvenance } from "@/lib/providerModels/vertexModelMetadata";
 
 import { asRecord, toNonEmptyString } from "./shared";

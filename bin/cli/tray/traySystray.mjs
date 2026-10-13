@@ -15,7 +15,7 @@ export function isTraySupported() {
 }
 
 // systray2 is NOT a static dependency — it is lazily installed into
-// ~/.omniroute/runtime by trayRuntime.ts (loadSystray). The previous inline
+// ~/.cheaproute/runtime by trayRuntime.ts (loadSystray). The previous inline
 // loader called `require("module")`, which throws `ReferenceError: require is
 // not defined` in this ESM file (package "type":"module"); the throw was
 // silently swallowed, so the tray never appeared on macOS/Linux with no error
@@ -45,14 +45,14 @@ export async function initSystrayUnix(
 
   const autostartEnabled = isAutostartEnabled();
   const items = [
-    { title: `OmniRoute  •  port ${port}`, tooltip: "Server running", enabled: false },
+    { title: `CheapRoute  •  port ${port}`, tooltip: "Server running", enabled: false },
     { title: "Open Dashboard", enabled: true },
     { title: "Show Logs", enabled: true },
     {
       title: autostartEnabled ? "✓ Auto-start (click to disable)" : "Enable Auto-start",
       enabled: true,
     },
-    { title: "Quit OmniRoute", enabled: true },
+    { title: "Quit CheapRoute", enabled: true },
   ];
 
   let tray;
@@ -65,7 +65,7 @@ export async function initSystrayUnix(
         // (the icon looked "missing" even when the tray loaded). (PR #1080)
         isTemplateIcon: false,
         title: "",
-        tooltip: `OmniRoute — port ${port}`,
+        tooltip: `CheapRoute — port ${port}`,
         items,
       },
       debug: false,

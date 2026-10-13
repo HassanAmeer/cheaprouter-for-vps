@@ -6,8 +6,8 @@
  * `/oauth/refresh_access_token` (web-app chunk 86042, `refreshAccessToken`). That
  * endpoint carries the SAME per-request `X-Authorization` signature as every other
  * MaxAI call (see ./signing.ts) — it is NOT a browser-only OAuth hop. A residential
- * Firefox-TLS client (wreq-js firefox_150, the OmniRoute egress overlay) passes the
- * TLS gate, so OmniRoute mints fresh access tokens itself with no browser.
+ * Firefox-TLS client (wreq-js firefox_150, the CheapRoute egress overlay) passes the
+ * TLS gate, so CheapRoute mints fresh access tokens itself with no browser.
  *
  * The refresh token is minted out-of-band, once, by the browser Google-OAuth flow
  * (see maxaiBrowserLogin) and only needs re-minting when it itself expires (~yearly).

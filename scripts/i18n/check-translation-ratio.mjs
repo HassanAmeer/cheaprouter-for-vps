@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * OmniRoute — real-translation ratio gate (ratchet).
+ * CheapRoute — real-translation ratio gate (ratchet).
  *
  * `check-ui-keys-coverage.mjs` measures key parity and `__MISSING__:` markers;
  * a leaf copied verbatim from en.json (what `fill-missing-from-en.mjs` and

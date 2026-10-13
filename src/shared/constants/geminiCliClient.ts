@@ -93,7 +93,7 @@ export function refreshGeminiCliClientVersion(fetchImpl: FetchLike = fetch): Pro
         const response = await fetchImpl(NPM_GEMINI_CLI_LATEST_URL, {
           headers: {
             Accept: "application/json",
-            "User-Agent": "OmniRoute-GeminiCliVersion/1.0",
+            "User-Agent": "CheapRoute-GeminiCliVersion/1.0",
           },
           signal: controller.signal,
         });

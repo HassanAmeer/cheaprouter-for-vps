@@ -5,7 +5,7 @@ import { readFileSync } from "node:fs";
  *
  * The app-server is a locally-running `codex app-server` process reachable over a
  * single WebSocket speaking JSON-RPC 2.0. It self-manages OpenAI auth + model
- * routing; the ONLY credential OmniRoute presents is the capability token, sent as
+ * routing; the ONLY credential CheapRoute presents is the capability token, sent as
  * `Authorization: Bearer <hex>` on the WS handshake.
  */
 export interface CodexAppServerConfig {
@@ -18,7 +18,7 @@ export interface CodexAppServerConfig {
   /**
    * Optional codex approval policy override (AskForApproval). Defaults to "never"
    * in the executor so codex runs non-interactively and never blocks the turn on
-   * its own approval — the harness that consumes OmniRoute owns execution policy.
+   * its own approval — the harness that consumes CheapRoute owns execution policy.
    */
   approvalPolicy?: string;
   /**
@@ -66,7 +66,7 @@ function resolveTokenWithSource(
 ): { value: string; source: ConfigSource } | null {
   const inlinePsd = firstString(psd?.codexAppServerToken);
   if (inlinePsd) return { value: inlinePsd, source: "psd" };
-  const inlineEnv = firstString(process.env.OMNIROUTE_CODEX_APPSERVER_WS_TOKEN);
+  const inlineEnv = firstString(process.env.CHEAPROUTE_CODEX_APPSERVER_WS_TOKEN);
   if (inlineEnv) return { value: inlineEnv, source: "env" };
 
   const filePsd = firstString(psd?.codexAppServerTokenFile);
@@ -74,7 +74,7 @@ function resolveTokenWithSource(
     const contents = readTokenFile(filePsd);
     if (contents) return { value: contents, source: "psd" };
   }
-  const fileEnv = firstString(process.env.OMNIROUTE_CODEX_APPSERVER_WS_TOKEN_FILE);
+  const fileEnv = firstString(process.env.CHEAPROUTE_CODEX_APPSERVER_WS_TOKEN_FILE);
   if (fileEnv) {
     const contents = readTokenFile(fileEnv);
     if (contents) return { value: contents, source: "env" };
@@ -156,7 +156,7 @@ export function isLocalAppServerHost(hostname: string): boolean {
  * psd-sourced token may go anywhere: whoever wrote the psd already knows it.
  */
 export function resolveAppServerConfig(psd: ProviderSpecificData): CodexAppServerConfig | null {
-  const urlRes = firstStringWithSource(psd?.codexAppServerUrl, process.env.OMNIROUTE_CODEX_APPSERVER_WS);
+  const urlRes = firstStringWithSource(psd?.codexAppServerUrl, process.env.CHEAPROUTE_CODEX_APPSERVER_WS);
   if (!urlRes || !isWebSocketUrl(urlRes.value)) return null;
 
   const tokenRes = resolveTokenWithSource(psd);
@@ -171,13 +171,13 @@ export function resolveAppServerConfig(psd: ProviderSpecificData): CodexAppServe
   const token = tokenRes.value;
 
   const cwd =
-    firstString(psd?.codexAppServerCwd, process.env.OMNIROUTE_CODEX_APPSERVER_CWD) ?? "/tmp";
+    firstString(psd?.codexAppServerCwd, process.env.CHEAPROUTE_CODEX_APPSERVER_CWD) ?? "/tmp";
 
   const approvalPolicy =
-    firstString(psd?.codexAppServerApprovalPolicy, process.env.OMNIROUTE_CODEX_APPSERVER_APPROVAL) ??
+    firstString(psd?.codexAppServerApprovalPolicy, process.env.CHEAPROUTE_CODEX_APPSERVER_APPROVAL) ??
     undefined;
   const sandbox =
-    firstString(psd?.codexAppServerSandbox, process.env.OMNIROUTE_CODEX_APPSERVER_SANDBOX) ??
+    firstString(psd?.codexAppServerSandbox, process.env.CHEAPROUTE_CODEX_APPSERVER_SANDBOX) ??
     undefined;
 
   return { url, token, cwd, ...(approvalPolicy ? { approvalPolicy } : {}), ...(sandbox ? { sandbox } : {}) };
@@ -191,12 +191,12 @@ export function resolveAppServerConfig(psd: ProviderSpecificData): CodexAppServe
  * - sandbox defaults to "workspace-write" (WAS "danger-full-access"): codex's
  *   own command/file execution is confined to the turn's cwd tree unless the
  *   operator explicitly widens it (providerSpecificData.codexAppServerSandbox /
- *   OMNIROUTE_CODEX_APPSERVER_SANDBOX). With "never" + a permissive sandbox,
+ *   CHEAPROUTE_CODEX_APPSERVER_SANDBOX). With "never" + a permissive sandbox,
  *   codex would run model-decided commands on the host with no gate at all.
  * - autoApprove defaults to false: server→client approval prompts are answered
  *   "denied" unless the operator opts in via
  *   providerSpecificData.codexAppServerAutoApprove ("true"/"1"/"yes") or
- *   OMNIROUTE_CODEX_APPSERVER_AUTO_APPROVE. Harness tool calls are unaffected —
+ *   CHEAPROUTE_CODEX_APPSERVER_AUTO_APPROVE. Harness tool calls are unaffected —
  *   they travel the separate item/tool/call passthrough.
  */
 export function resolveThreadStartPolicy(
@@ -205,7 +205,7 @@ export function resolveThreadStartPolicy(
 ): { approvalPolicy: string; sandbox: string; autoApprove: boolean } {
   const raw = firstString(
     psd?.codexAppServerAutoApprove,
-    process.env.OMNIROUTE_CODEX_APPSERVER_AUTO_APPROVE
+    process.env.CHEAPROUTE_CODEX_APPSERVER_AUTO_APPROVE
   );
   const autoApprove = raw === "true" || raw === "1" || raw === "yes";
   return {

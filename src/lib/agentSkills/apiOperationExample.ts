@@ -1,5 +1,5 @@
 import { buildCliConfigurationExample } from "./cliConfigurationExample";
-import { resolveOmniRouteBaseUrl } from "@/shared/utils/resolveOmniRouteBaseUrl";
+import { resolveCheapRouteBaseUrl } from "@/shared/utils/resolveCheapRouteBaseUrl";
 
 interface Operation {
   path: string;
@@ -7,7 +7,7 @@ interface Operation {
 }
 
 function dashboardExample({ path, method }: Operation): string[] {
-  const baseUrl = resolveOmniRouteBaseUrl();
+  const baseUrl = resolveCheapRouteBaseUrl();
   if (path === "/api/auth/login" && method === "POST") {
     return [
       `curl -X POST ${baseUrl}${path} \\`,
@@ -24,18 +24,18 @@ function dashboardExample({ path, method }: Operation): string[] {
     `CSRF_TOKEN=$(curl -s ${baseUrl}/api/auth/csrf -b cookie.jar | jq -r .token)`,
     `curl -X ${method} ${baseUrl}${path} \\`,
     "  -b cookie.jar \\",
-    `  -H "x-omniroute-csrf: $CSRF_TOKEN"${hasJsonBody ? " \\" : ""}`,
+    `  -H "x-cheaproute-csrf: $CSRF_TOKEN"${hasJsonBody ? " \\" : ""}`,
     ...(hasJsonBody ? ['  -H "Content-Type: application/json" \\', "  -d '{}'"] : []),
   ];
 }
 
 function bearerExample({ path, method }: Operation): string[] {
-  const baseUrl = resolveOmniRouteBaseUrl();
+  const baseUrl = resolveCheapRouteBaseUrl();
   const curlMethod = method === "GET" ? "" : `-X ${method} `;
   const hasJsonBody = ["POST", "PUT", "PATCH"].includes(method);
   return [
     `curl ${curlMethod}${baseUrl}${path} \\`,
-    `  -H "Authorization: Bearer $OMNIROUTE_TOKEN"${hasJsonBody ? " \\" : ""}`,
+    `  -H "Authorization: Bearer $CHEAPROUTE_TOKEN"${hasJsonBody ? " \\" : ""}`,
     ...(hasJsonBody ? ['  -H "Content-Type: application/json" \\', "  -d '{}'"] : []),
   ];
 }

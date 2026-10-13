@@ -10,7 +10,7 @@
  * modalities, limit, cost.
  */
 
-import { muse_codeProvider } from "@omniroute/open-sse/config/providers/registry/muse-code/index.ts";
+import { muse_codeProvider } from "@cheaproute/open-sse/config/providers/registry/muse-code/index.ts";
 
 const MUSECODE_TIMESTAMP = Math.floor(Date.now() / 1000);
 

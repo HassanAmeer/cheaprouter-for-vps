@@ -6,7 +6,7 @@
  * The base handles the cross-cutting concerns shared by every IDE-agent handler:
  *   - request body capture + secret masking
  *   - source model extraction
- *   - forwarding to the OmniRoute router (Next.js API)
+ *   - forwarding to the CheapRoute router (Next.js API)
  *   - SSE piping
  *   - optional Traffic Inspector hook (F4 — loaded via dynamic import; no-op when
  *     `agentBridgeHook.ts` is not yet present in the build)
@@ -23,13 +23,13 @@ import type { InterceptedRequest } from "../inspector/types";
 
 /**
  * Best-effort error sanitizer.
- * Routes through `@omniroute/open-sse/utils/error.sanitizeErrorMessage` (Hard Rule #12)
+ * Routes through `@cheaproute/open-sse/utils/error.sanitizeErrorMessage` (Hard Rule #12)
  * when available; falls back to a safe `String(err)` if the module is not present
  * (e.g. unit tests that don't load the full open-sse barrel).
  */
 async function safeErrorMessage(err: unknown): Promise<string> {
   try {
-    const mod = (await import("@omniroute/open-sse/utils/error")) as {
+    const mod = (await import("@cheaproute/open-sse/utils/error")) as {
       sanitizeErrorMessage?: (m: unknown) => string;
     };
     if (typeof mod.sanitizeErrorMessage === "function") {
@@ -145,7 +145,7 @@ export abstract class MitmHandlerBase {
    * Concrete handlers must:
    *   1. Optionally call `this.hookBufferStart(req, body, mappedModel)`.
    *   2. Build the upstream-bound payload (translate model, format, etc.).
-   *   3. Call `this.fetchRouter(...)` for the OmniRoute router round-trip.
+   *   3. Call `this.fetchRouter(...)` for the CheapRoute router round-trip.
    *   4. Pipe the response back via `this.pipeSSE(...)` for streaming
    *      or write the JSON body directly for non-streaming flows.
    *   5. Call `this.hookBufferUpdate(intercepted)` on completion / error.
@@ -185,8 +185,8 @@ export abstract class MitmHandlerBase {
   }
 
   /**
-   * Forward the prepared body to the OmniRoute router (Next.js API).
-   * Adds AgentBridge correlation headers (`x-omniroute-source`, `x-omniroute-agent`)
+   * Forward the prepared body to the CheapRoute router (Next.js API).
+   * Adds AgentBridge correlation headers (`x-cheaproute-source`, `x-cheaproute-agent`)
    * and forwards a sanitized copy of the original request headers (secrets masked,
    * hop-by-hop stripped).
    */
@@ -197,7 +197,7 @@ export abstract class MitmHandlerBase {
   ): Promise<Response> {
     const port = process.env.API_PORT || process.env.PORT || 20128;
     const base =
-      process.env.OMNIROUTE_BASE_URL ?? process.env.BASE_URL ?? `http://127.0.0.1:${port}`;
+      process.env.CHEAPROUTE_BASE_URL ?? process.env.BASE_URL ?? `http://127.0.0.1:${port}`;
     const url = `${base.replace(/\/+$/, "")}${path}`;
     const apiKey = process.env.ROUTER_API_KEY ?? "";
 
@@ -206,8 +206,8 @@ export abstract class MitmHandlerBase {
       headers: {
         "Content-Type": "application/json",
         ...(apiKey ? { Authorization: `Bearer ${apiKey}` } : {}),
-        "x-omniroute-source": "agent-bridge",
-        "x-omniroute-agent": this.agentId,
+        "x-cheaproute-source": "agent-bridge",
+        "x-cheaproute-agent": this.agentId,
         ...sanitizeHeaders(headers),
       },
       body: typeof body === "string" ? body : JSON.stringify(body),

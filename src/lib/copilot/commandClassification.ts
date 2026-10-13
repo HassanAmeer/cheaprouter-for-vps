@@ -1,5 +1,5 @@
 /**
- * Command classification for runOmniRouteCli approval gate (#8461).
+ * Command classification for runCheapRouteCli approval gate (#8461).
  *
  * Defines a classification table mapping CLI subcommand patterns to safety
  * categories, plus the classifier function. Read-only commands execute

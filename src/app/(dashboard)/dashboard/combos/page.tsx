@@ -89,7 +89,7 @@ import {
 import { getComboStepTarget } from "@/lib/combos/steps";
 import { DEAD_COMBO_CONFIG_KEYS } from "@/lib/combos/deadConfigKeys";
 import { modelFamily } from "@/lib/combos/invariants";
-import { resolveProviderAlias } from "@omniroute/open-sse/services/providerAlias.ts";
+import { resolveProviderAlias } from "@cheaproute/open-sse/services/providerAlias.ts";
 import { resolveServerErrorMessage } from "@/lib/api/serverErrorMessage";
 import { useTranslations } from "next-intl";
 
@@ -393,7 +393,7 @@ const STRATEGY_RECOMMENDATIONS_FALLBACK = {
   },
 };
 
-const COMBO_USAGE_GUIDE_STORAGE_KEY = "omniroute:combos:hide-usage-guide";
+const COMBO_USAGE_GUIDE_STORAGE_KEY = "cheaproute:combos:hide-usage-guide";
 
 // The dismissal lives in localStorage, which SSR cannot read: a lazy useState
 // initializer would render "not dismissed" on the server and the real value on

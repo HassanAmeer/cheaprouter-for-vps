@@ -1,9 +1,9 @@
-import { CREDENTIAL_PATTERNS } from "@omniroute/open-sse/utils/credentialPatterns.ts";
+import { CREDENTIAL_PATTERNS } from "@cheaproute/open-sse/utils/credentialPatterns.ts";
 import { getSettings } from "@/lib/db/settings";
 import { BaseGuardrail, type GuardrailContext, type GuardrailResult } from "./base";
 
 export { CREDENTIAL_PATTERNS };
-export type { CredentialPattern } from "@omniroute/open-sse/utils/credentialPatterns.ts";
+export type { CredentialPattern } from "@cheaproute/open-sse/utils/credentialPatterns.ts";
 
 /**
  * CredentialMaskerGuardrail — redacts well-known API-key / secret-token patterns

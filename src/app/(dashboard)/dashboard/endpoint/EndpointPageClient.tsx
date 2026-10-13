@@ -9,6 +9,7 @@ import { extractApiErrorMessage } from "@/shared/http/apiErrorMessage";
 import { useTranslations } from "next-intl";
 import VscodeTokenAliasCard from "./VscodeTokenAliasCard";
 import ShowcaseProvidersCard from "./components/ShowcaseProvidersCard";
+import ByokMasterToggleCard from "./components/ByokMasterToggleCard";
 import ApiDocsIntegrationHub from "./components/ApiDocsIntegrationHub";
 
 const BUILD_TIME_CLOUD_URL = process.env.NEXT_PUBLIC_CLOUD_URL || null;
@@ -1238,6 +1239,9 @@ export default function APIPageClient({ machineId }: Readonly<APIPageClientProps
       {/* API documentation. The MCP, A2A and Context Source tabs were removed:
           this page is now API-only (see git history for the retired tabs). */}
       <div className="flex flex-col gap-4">
+        {/* BYOK master toggle (spec §3 Tab 5 / §7) */}
+        <ByokMasterToggleCard />
+
         {/* Public Showcase Providers Card */}
         <ShowcaseProvidersCard />
 
@@ -1365,13 +1369,13 @@ export default function APIPageClient({ machineId }: Readonly<APIPageClientProps
             </span>
           </div>
 
-          {/* Cloud OmniRoute */}
+          {/* Cloud CheapRoute */}
           <div className="flex items-center gap-3 py-3">
             <span className="material-symbols-outlined text-[18px] text-blue-400 shrink-0">
               cloud
             </span>
             <div className="flex-1 min-w-0">
-              <span className="text-sm font-medium">{t("cloudOmniroute")}</span>
+              <span className="text-sm font-medium">{t("cloudCheaproute")}</span>
               <p className="text-xs text-text-muted break-all">
                 {translateOrFallback(
                   "cloudUploadDestination",

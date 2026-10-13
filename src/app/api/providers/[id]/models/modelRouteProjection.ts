@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
-import { getRegistryEntry } from "@omniroute/open-sse/config/providerRegistry.ts";
-import { filterChatSelectableModels } from "@omniroute/open-sse/services/modelEndpointPolicy.ts";
-import { filterSelectableModels } from "@omniroute/open-sse/services/modelLifecycle.ts";
+import { getRegistryEntry } from "@cheaproute/open-sse/config/providerRegistry.ts";
+import { filterChatSelectableModels } from "@cheaproute/open-sse/services/modelEndpointPolicy.ts";
+import { filterSelectableModels } from "@cheaproute/open-sse/services/modelLifecycle.ts";
 import { getModelIsHidden } from "@/lib/db/models";
 import { getSettings } from "@/lib/db/settings";
 import { getStaticModelsForProvider } from "@/lib/providers/staticModels";

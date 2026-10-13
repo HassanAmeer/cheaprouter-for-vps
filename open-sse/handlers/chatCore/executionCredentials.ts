@@ -68,8 +68,8 @@ function applyKimiExecutionMetadata(
   if (provider !== "kimi-coding" && provider !== "kimi-coding-apikey") return;
 
   const staticThinkingPolicy = getKimiCodeStaticThinkingPolicy(modelInfo?.model);
-  providerSpecificData._omnirouteKimiTargetFormat = targetFormat;
-  providerSpecificData._omnirouteKimiThinking = buildKimiThinkingMetadata(
+  providerSpecificData._cheaprouteKimiTargetFormat = targetFormat;
+  providerSpecificData._cheaprouteKimiThinking = buildKimiThinkingMetadata(
     modelInfo,
     staticThinkingPolicy
   );
@@ -143,13 +143,13 @@ export function resolveExecutionCredentials(opts: {
     targetFormat === FORMATS.OPENAI_RESPONSES &&
     (provider === "azure-ai" || provider === "oci")
   ) {
-    providerSpecificData._omnirouteForceResponsesUpstream = true;
+    providerSpecificData._cheaprouteForceResponsesUpstream = true;
   }
 
   // #8969: Poe's native /v1/responses surface — DefaultExecutor.buildUrl("poe")
   // reads this marker so Responses requests do not land on chat/completions.
   if (targetFormat === FORMATS.OPENAI_RESPONSES && provider === "poe") {
-    providerSpecificData._omnirouteForceResponsesUpstream = true;
+    providerSpecificData._cheaprouteForceResponsesUpstream = true;
   }
 
   // #8969: Claude-tagged Poe models speak Anthropic Messages wire format. Keep
@@ -192,7 +192,7 @@ export function resolveExecutionCredentials(opts: {
   applyKimiExecutionMetadata(providerSpecificData, provider, targetFormat, modelInfo);
   // Request-local resolved catalog metadata; never persist this on the connection.
   const codexThinking = buildCodexThinkingMetadata(provider, modelInfo, requestBody);
-  if (codexThinking) providerSpecificData._omnirouteCodexThinking = codexThinking;
+  if (codexThinking) providerSpecificData._cheaprouteCodexThinking = codexThinking;
   const withApiType = {
     ...nextCredentials,
     providerSpecificData,

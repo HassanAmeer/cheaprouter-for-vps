@@ -17,7 +17,7 @@ import {
   refreshTokenByProvider as _refreshTokenByProvider,
   formatProviderCredentials as _formatProviderCredentials,
   getAllAccessTokens as _getAllAccessTokens,
-} from "@omniroute/open-sse/services/tokenRefresh.ts";
+} from "@cheaproute/open-sse/services/tokenRefresh.ts";
 
 // DEPRECATED: withConnectionRefreshMutex was removed. The per-connection mutex
 // is now consolidated in open-sse/services/tokenRefresh.ts and protected by

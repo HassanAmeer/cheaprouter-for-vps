@@ -16,7 +16,7 @@
  * the outbound guard strips echoes known to come from another account.
  *
  * Mirrors sub2api v0.1.177 `openai_codex_turn_state.go` (commit 8219dcfc8).
- * OmniRoute keys the table by the client's original session id only — the
+ * CheapRoute keys the table by the client's original session id only — the
  * executor pipeline does not carry the API key id, and a real Codex session
  * id is a random UUID, so accidental cross-key collisions are not a
  * practical concern.

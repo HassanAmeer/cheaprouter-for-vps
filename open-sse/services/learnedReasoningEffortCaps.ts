@@ -1,6 +1,6 @@
 /**
  * Learned Reasoning-Effort Caps — reactive capability memory for providers/models
- * OmniRoute has no static registry entry for (custom OpenAI-compatible connections,
+ * CheapRoute has no static registry entry for (custom OpenAI-compatible connections,
  * or any registered provider whose registry entry carries no reasoning metadata).
  *
  * Same shape as `learnedThinkingCaps.ts` (thinking_budget), generalized from a
@@ -229,13 +229,13 @@ export function nextProbeReasoningEffort(sent: string): string | null {
  * that provider/model in this process, for a tier nothing was ever proven
  * against.
  *
- * So it is opt-in per provider. An empty/absent `OMNIROUTE_REASONING_EFFORT_PROBE_PROVIDERS`
+ * So it is opt-in per provider. An empty/absent `CHEAPROUTE_REASONING_EFFORT_PROBE_PROVIDERS`
  * disables the probe everywhere, which is the default: the enum-naming path
  * (#14013) already covers every upstream that cooperates, and this is only for
  * gateways that answer opaquely. `*` enables it for all providers.
  */
 export function reasoningEffortProbeEnabled(provider: string | null | undefined): boolean {
-  const raw = process.env.OMNIROUTE_REASONING_EFFORT_PROBE_PROVIDERS;
+  const raw = process.env.CHEAPROUTE_REASONING_EFFORT_PROBE_PROVIDERS;
   if (!raw) return false;
   const entries = raw
     .split(",")

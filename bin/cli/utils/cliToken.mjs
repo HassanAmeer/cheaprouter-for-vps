@@ -6,10 +6,10 @@ import { resolveDataDir } from "../data-dir.mjs";
 // #13679 PR B: checked-in literal, used ONLY as a last-resort fallback (see
 // getActiveSalt() below) — /etc/machine-id is commonly world-readable, so relying on
 // this literal as the real default let any local user derive the same bearer token.
-const BUILTIN_DEFAULT_SALT = "omniroute-cli-auth-v1";
+const BUILTIN_DEFAULT_SALT = "cheaproute-cli-auth-v1";
 const SALT_FILE_NAME = "cli-token-salt.json";
 const PERSISTED_SALT_RE = /^[0-9a-f]{64}$/;
-export const CLI_TOKEN_HEADER = "x-omniroute-cli-token";
+export const CLI_TOKEN_HEADER = "x-cheaproute-cli-token";
 
 let _cached = null;
 let _cachedSalt = null;
@@ -64,9 +64,9 @@ function establishPersistedSalt(dataDir) {
 }
 
 /** Mirrors getActiveSalt() in src/lib/machineToken.ts so a rotated
- *  OMNIROUTE_CLI_SALT reaches the CLI too (docs/security/CLI_TOKEN.md). */
+ *  CHEAPROUTE_CLI_SALT reaches the CLI too (docs/security/CLI_TOKEN.md). */
 function getActiveSalt() {
-  const envSalt = process.env.OMNIROUTE_CLI_SALT;
+  const envSalt = process.env.CHEAPROUTE_CLI_SALT;
   if (envSalt) return envSalt;
 
   if (_cachedActiveSalt) return _cachedActiveSalt;

@@ -1,5 +1,5 @@
 /**
- * Model Alias Resolver — maps client-facing model names to OmniRoute provider IDs.
+ * Model Alias Resolver — maps client-facing model names to CheapRoute provider IDs.
  *
  * When a client sends `model: "deepseek-chat"`, this resolver looks up the alias
  * in the database and rewrites it to the target model ID (e.g. `"ds/deepseek-v4-flash"`)

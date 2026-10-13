@@ -1,13 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { isAuthenticated } from "@/shared/utils/apiAuth";
-import { RERANK_PROVIDERS } from "@omniroute/open-sse/config/rerankRegistry.ts";
+import { RERANK_PROVIDERS } from "@cheaproute/open-sse/config/rerankRegistry.ts";
 import { getProviderCredentials } from "@/sse/services/auth";
 import {
   buildRerankProviderListing,
   mergeRerankProviderListings,
 } from "@/lib/memory/embedding/rerankListings";
 import { listProviderNodeModalityListings } from "@/lib/memory/embedding/nodeModalityListings";
-import { sanitizeErrorMessage } from "@omniroute/open-sse/utils/error.ts";
+import { sanitizeErrorMessage } from "@cheaproute/open-sse/utils/error.ts";
 
 /**
  * GET /api/memory/rerank-providers

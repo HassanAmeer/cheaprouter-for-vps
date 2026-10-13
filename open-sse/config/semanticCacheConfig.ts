@@ -1,8 +1,8 @@
 /**
  * Semantic Cache Configuration
  *
- * Configurable options for OmniRoute's dual-layer semantic caching system.
- * Supports environment variable overrides via OMNIROUTE_SEMANTIC_CACHE_*.
+ * Configurable options for CheapRoute's dual-layer semantic caching system.
+ * Supports environment variable overrides via CHEAPROUTE_SEMANTIC_CACHE_*.
  *
  * @module config/semanticCacheConfig
  */
@@ -15,7 +15,7 @@ export interface SemanticCacheConfig {
    * Master toggle for the dual-layer (in-memory/Redis vector) manager. OFF by default:
    * the legacy SQLite exact-match cache (`semanticCacheEnabled`) keeps working on its
    * own; this layer is opt-in via the `semanticCacheVectorEnabled` setting or
-   * `OMNIROUTE_SEMANTIC_CACHE_ENABLED=true`, because enabling it calls an embedding
+   * `CHEAPROUTE_SEMANTIC_CACHE_ENABLED=true`, because enabling it calls an embedding
    * endpoint on every cacheable request (#14159 re-land of #12630).
    */
   enabled: boolean;
@@ -51,7 +51,7 @@ export interface SemanticCacheConfig {
   embeddingApiKey?: string;
   /** Redis connection URL when backend is "redis". */
   redisUrl?: string;
-  /** Key prefix for Redis cache keys. Defaults to "omniroute:semcache:". */
+  /** Key prefix for Redis cache keys. Defaults to "cheaproute:semcache:". */
   redisPrefix: string;
   /** If true, only temperature=0 requests are cacheable. Defaults to true for strict determinism. */
   requireZeroTemperature: boolean;
@@ -73,7 +73,7 @@ export const DEFAULT_SEMANTIC_CACHE_CONFIG: SemanticCacheConfig = {
   conversationHistoryThreshold: 50,
   excludeSystemPrompt: false,
   redisUrl: undefined,
-  redisPrefix: "omniroute:semcache:",
+  redisPrefix: "cheaproute:semcache:",
   requireZeroTemperature: true,
 };
 
@@ -108,7 +108,7 @@ export function resolveSemanticCacheConfig(
   const dynamic = dynamicResolver ? dynamicResolver() : null;
   const env = process.env;
 
-  const backendEnv = (env.OMNIROUTE_SEMANTIC_CACHE_BACKEND || "").toLowerCase().trim();
+  const backendEnv = (env.CHEAPROUTE_SEMANTIC_CACHE_BACKEND || "").toLowerCase().trim();
   const backend: SemanticCacheBackend =
     backendEnv === "redis"
       ? "redis"
@@ -118,84 +118,84 @@ export function resolveSemanticCacheConfig(
 
   const resolved: SemanticCacheConfig = {
     enabled:
-      env.OMNIROUTE_SEMANTIC_CACHE_ENABLED !== undefined
-        ? parseBoolean(env.OMNIROUTE_SEMANTIC_CACHE_ENABLED, DEFAULT_SEMANTIC_CACHE_CONFIG.enabled)
+      env.CHEAPROUTE_SEMANTIC_CACHE_ENABLED !== undefined
+        ? parseBoolean(env.CHEAPROUTE_SEMANTIC_CACHE_ENABLED, DEFAULT_SEMANTIC_CACHE_CONFIG.enabled)
         : (dynamic?.enabled ?? DEFAULT_SEMANTIC_CACHE_CONFIG.enabled),
     backend,
     similarityThreshold:
-      env.OMNIROUTE_SEMANTIC_CACHE_THRESHOLD !== undefined
+      env.CHEAPROUTE_SEMANTIC_CACHE_THRESHOLD !== undefined
         ? parseNumber(
-            env.OMNIROUTE_SEMANTIC_CACHE_THRESHOLD,
+            env.CHEAPROUTE_SEMANTIC_CACHE_THRESHOLD,
             DEFAULT_SEMANTIC_CACHE_CONFIG.similarityThreshold
           )
         : (dynamic?.similarityThreshold ?? DEFAULT_SEMANTIC_CACHE_CONFIG.similarityThreshold),
     ttlMs:
-      env.OMNIROUTE_SEMANTIC_CACHE_TTL_MS !== undefined
-        ? parseNumber(env.OMNIROUTE_SEMANTIC_CACHE_TTL_MS, DEFAULT_SEMANTIC_CACHE_CONFIG.ttlMs)
+      env.CHEAPROUTE_SEMANTIC_CACHE_TTL_MS !== undefined
+        ? parseNumber(env.CHEAPROUTE_SEMANTIC_CACHE_TTL_MS, DEFAULT_SEMANTIC_CACHE_CONFIG.ttlMs)
         : (dynamic?.ttlMs ?? DEFAULT_SEMANTIC_CACHE_CONFIG.ttlMs),
     maxEntries:
-      env.OMNIROUTE_SEMANTIC_CACHE_MAX_ENTRIES !== undefined
+      env.CHEAPROUTE_SEMANTIC_CACHE_MAX_ENTRIES !== undefined
         ? parseNumber(
-            env.OMNIROUTE_SEMANTIC_CACHE_MAX_ENTRIES,
+            env.CHEAPROUTE_SEMANTIC_CACHE_MAX_ENTRIES,
             DEFAULT_SEMANTIC_CACHE_CONFIG.maxEntries
           )
         : (dynamic?.maxEntries ?? DEFAULT_SEMANTIC_CACHE_CONFIG.maxEntries),
     embeddingProvider:
-      env.OMNIROUTE_SEMANTIC_CACHE_EMBEDDING_PROVIDER?.trim() ||
+      env.CHEAPROUTE_SEMANTIC_CACHE_EMBEDDING_PROVIDER?.trim() ||
       dynamic?.embeddingProvider ||
       DEFAULT_SEMANTIC_CACHE_CONFIG.embeddingProvider,
     embeddingModel:
-      env.OMNIROUTE_SEMANTIC_CACHE_EMBEDDING_MODEL?.trim() ||
+      env.CHEAPROUTE_SEMANTIC_CACHE_EMBEDDING_MODEL?.trim() ||
       dynamic?.embeddingModel ||
       DEFAULT_SEMANTIC_CACHE_CONFIG.embeddingModel,
-    embeddingDimension: env.OMNIROUTE_SEMANTIC_CACHE_EMBEDDING_DIMENSION
-      ? parseNumber(env.OMNIROUTE_SEMANTIC_CACHE_EMBEDDING_DIMENSION, 1536)
+    embeddingDimension: env.CHEAPROUTE_SEMANTIC_CACHE_EMBEDDING_DIMENSION
+      ? parseNumber(env.CHEAPROUTE_SEMANTIC_CACHE_EMBEDDING_DIMENSION, 1536)
       : (dynamic?.embeddingDimension ?? DEFAULT_SEMANTIC_CACHE_CONFIG.embeddingDimension),
     embeddingTimeoutMs: parseNumber(
-      env.OMNIROUTE_SEMANTIC_CACHE_EMBEDDING_TIMEOUT_MS,
+      env.CHEAPROUTE_SEMANTIC_CACHE_EMBEDDING_TIMEOUT_MS,
       dynamic?.embeddingTimeoutMs ?? DEFAULT_SEMANTIC_CACHE_CONFIG.embeddingTimeoutMs
     ),
     cacheByModel: parseBoolean(
-      env.OMNIROUTE_SEMANTIC_CACHE_BY_MODEL,
+      env.CHEAPROUTE_SEMANTIC_CACHE_BY_MODEL,
       dynamic?.cacheByModel ?? DEFAULT_SEMANTIC_CACHE_CONFIG.cacheByModel
     ),
     cacheByProvider: parseBoolean(
-      env.OMNIROUTE_SEMANTIC_CACHE_BY_PROVIDER,
+      env.CHEAPROUTE_SEMANTIC_CACHE_BY_PROVIDER,
       dynamic?.cacheByProvider ?? DEFAULT_SEMANTIC_CACHE_CONFIG.cacheByProvider
     ),
     conversationHistoryDepth: parseNumber(
-      env.OMNIROUTE_SEMANTIC_CACHE_HISTORY_DEPTH,
+      env.CHEAPROUTE_SEMANTIC_CACHE_HISTORY_DEPTH,
       dynamic?.conversationHistoryDepth ?? DEFAULT_SEMANTIC_CACHE_CONFIG.conversationHistoryDepth
     ),
     conversationHistoryThreshold: parseNumber(
-      env.OMNIROUTE_SEMANTIC_CACHE_HISTORY_THRESHOLD,
+      env.CHEAPROUTE_SEMANTIC_CACHE_HISTORY_THRESHOLD,
       dynamic?.conversationHistoryThreshold ??
         DEFAULT_SEMANTIC_CACHE_CONFIG.conversationHistoryThreshold
     ),
     excludeSystemPrompt: parseBoolean(
-      env.OMNIROUTE_SEMANTIC_CACHE_EXCLUDE_SYSTEM,
+      env.CHEAPROUTE_SEMANTIC_CACHE_EXCLUDE_SYSTEM,
       dynamic?.excludeSystemPrompt ?? DEFAULT_SEMANTIC_CACHE_CONFIG.excludeSystemPrompt
     ),
     embeddingBaseUrl:
-      env.OMNIROUTE_SEMANTIC_CACHE_EMBEDDING_BASE_URL?.trim() ||
+      env.CHEAPROUTE_SEMANTIC_CACHE_EMBEDDING_BASE_URL?.trim() ||
       dynamic?.embeddingBaseUrl ||
       overrides?.embeddingBaseUrl ||
       undefined,
     embeddingApiKey:
-      env.OMNIROUTE_SEMANTIC_CACHE_EMBEDDING_API_KEY?.trim() ||
+      env.CHEAPROUTE_SEMANTIC_CACHE_EMBEDDING_API_KEY?.trim() ||
       dynamic?.embeddingApiKey ||
       overrides?.embeddingApiKey ||
       undefined,
     redisUrl:
-      env.OMNIROUTE_SEMANTIC_CACHE_REDIS_URL || env.REDIS_URL || dynamic?.redisUrl || undefined,
+      env.CHEAPROUTE_SEMANTIC_CACHE_REDIS_URL || env.REDIS_URL || dynamic?.redisUrl || undefined,
     redisPrefix:
-      env.OMNIROUTE_SEMANTIC_CACHE_REDIS_PREFIX?.trim() ||
+      env.CHEAPROUTE_SEMANTIC_CACHE_REDIS_PREFIX?.trim() ||
       dynamic?.redisPrefix ||
       DEFAULT_SEMANTIC_CACHE_CONFIG.redisPrefix,
     requireZeroTemperature:
-      env.OMNIROUTE_SEMANTIC_CACHE_REQUIRE_ZERO_TEMP !== undefined
+      env.CHEAPROUTE_SEMANTIC_CACHE_REQUIRE_ZERO_TEMP !== undefined
         ? parseBoolean(
-            env.OMNIROUTE_SEMANTIC_CACHE_REQUIRE_ZERO_TEMP,
+            env.CHEAPROUTE_SEMANTIC_CACHE_REQUIRE_ZERO_TEMP,
             DEFAULT_SEMANTIC_CACHE_CONFIG.requireZeroTemperature
           )
         : (dynamic?.requireZeroTemperature ?? DEFAULT_SEMANTIC_CACHE_CONFIG.requireZeroTemperature),

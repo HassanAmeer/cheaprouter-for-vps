@@ -16,9 +16,9 @@ import {
 } from "./tlsClientBase.ts";
 
 const DEFAULT_TIMEOUT_MS =
-  Number.parseInt(process.env.OMNIROUTE_PPLX_TLS_TIMEOUT_MS || "", 10) || 30_000;
+  Number.parseInt(process.env.CHEAPROUTE_PPLX_TLS_TIMEOUT_MS || "", 10) || 30_000;
 const HARD_TIMEOUT_GRACE_MS =
-  Number.parseInt(process.env.OMNIROUTE_PPLX_TLS_GRACE_MS || "", 10) || 10_000;
+  Number.parseInt(process.env.CHEAPROUTE_PPLX_TLS_GRACE_MS || "", 10) || 10_000;
 
 export const tlsClientModule = createTlsClientModule({
   providerName: "Perplexity",

@@ -2,7 +2,7 @@
  * Subscription-first routing: the rung model, its two groupings, and the
  * reset re-entry rules.
  *
- * OmniRoute already answers "is this model free?" (`paidModelFilter.ts`) and
+ * CheapRoute already answers "is this model free?" (`paidModelFilter.ts`) and
  * "can this connection ever bill me?" (`strictZeroCostFilter.ts`). Both fail
  * CLOSED — an exhausted free pool is an empty pool, never a step up to a paid
  * option. And every paid-side mechanism (`cost-optimized`, `budgetCap`,
@@ -32,7 +32,7 @@ import {
   isOverageSafe,
   type BillableConnection,
 } from "./connectionBilling";
-import type { ConnectionBillingEntry } from "@omniroute/open-sse/config/connectionBillingCatalog.ts";
+import type { ConnectionBillingEntry } from "@cheaproute/open-sse/config/connectionBillingCatalog.ts";
 import type { FreeAccessState } from "./strictZeroCostFilter";
 
 /**

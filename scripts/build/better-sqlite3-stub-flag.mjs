@@ -20,12 +20,12 @@
  * every npm/Electron/VPS artifact), so it gets the same treatment: the alias is
  * opt-in, and a default build gets the real, externalized native package.
  *
- * Set OMNIROUTE_BETTER_SQLITE3_STUB=1 ONLY on a build host that actually hits
+ * Set CHEAPROUTE_BETTER_SQLITE3_STUB=1 ONLY on a build host that actually hits
  * the SIGABRT worker teardown, and never for an artifact that will be run —
  * the resulting bundle cannot open a database.
  */
 export function shouldStubBetterSqlite3(env = process.env) {
-  return env.OMNIROUTE_BETTER_SQLITE3_STUB === "1";
+  return env.CHEAPROUTE_BETTER_SQLITE3_STUB === "1";
 }
 
 /** Turbopack resolveAlias fragment for `better-sqlite3`, derived from the env. */

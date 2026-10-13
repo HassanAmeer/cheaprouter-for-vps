@@ -59,7 +59,7 @@ export function toString(value: unknown, fallback = ""): string {
  * This is deliberately NOT the canonical `numeric.ts#toNumber`, and the two
  * are not interchangeable: the canonical one also PARSES numeric strings
  * (`toFiniteNumber("5")` -> 5), whereas this passes them through to the fallback
- * (`-> 0`). Every call site reads a value out of an OmniRoute JSON response,
+ * (`-> 0`). Every call site reads a value out of an CheapRoute JSON response,
  * where these fields are numbers already, so today the two agree.
  *
  * Swapping in the canonical helper is therefore a real behaviour change on a

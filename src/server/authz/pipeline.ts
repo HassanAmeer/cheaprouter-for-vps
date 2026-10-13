@@ -18,7 +18,7 @@ import {
   resolveStampedPeer,
   resolveStampedViaProxy,
 } from "./peerStamp";
-import { checkRequestIP } from "@omniroute/open-sse/services/ipFilter.ts";
+import { checkRequestIP } from "@cheaproute/open-sse/services/ipFilter.ts";
 import { clientApiPolicy } from "./policies/clientApi";
 import { managementPolicy } from "./policies/management";
 import { publicPolicy } from "./policies/public";
@@ -198,7 +198,7 @@ function invalidOriginResponse(requestId: string): NextResponse {
         code: "INVALID_ORIGIN",
         message:
           "Invalid request origin. Same-origin dashboard writes must include a valid dashboard CSRF token. " +
-          "Refresh the dashboard and retry, or set OMNIROUTE_PUBLIC_BASE_URL for non-dashboard browser integrations.",
+          "Refresh the dashboard and retry, or set CHEAPROUTE_PUBLIC_BASE_URL for non-dashboard browser integrations.",
         correlation_id: requestId,
       },
     },
@@ -329,7 +329,7 @@ export async function runAuthzPipeline(
   const peerLocality = classifyStampedPeerLocality(
     request.headers.get(PEER_IP_HEADER),
     request.headers.get(VIA_PROXY_HEADER),
-    process.env.OMNIROUTE_PEER_STAMP_TOKEN
+    process.env.CHEAPROUTE_PEER_STAMP_TOKEN
   );
   requestHeaders.set(AUTHZ_HEADER_PEER_LOCALITY, peerLocality);
   // Stamp the resolved, non-spoofable peer IP for route handlers that need
@@ -337,7 +337,7 @@ export async function runAuthzPipeline(
   // token is configured and the HMAC signature validates; absent otherwise.
   const trustedPeerIp = resolveStampedPeer(
     request.headers.get(PEER_IP_HEADER),
-    process.env.OMNIROUTE_PEER_STAMP_TOKEN
+    process.env.CHEAPROUTE_PEER_STAMP_TOKEN
   );
   if (trustedPeerIp) {
     requestHeaders.set(AUTHZ_HEADER_TRUSTED_PEER_IP, trustedPeerIp);
@@ -378,17 +378,17 @@ export async function runAuthzPipeline(
   if (peerLocality !== "loopback") {
     const trustedPeerIp = resolveStampedPeer(
       request.headers.get(PEER_IP_HEADER),
-      process.env.OMNIROUTE_PEER_STAMP_TOKEN
+      process.env.CHEAPROUTE_PEER_STAMP_TOKEN
     );
     const viaProxy = resolveStampedViaProxy(
       request.headers.get(VIA_PROXY_HEADER),
-      process.env.OMNIROUTE_PEER_STAMP_TOKEN
+      process.env.CHEAPROUTE_PEER_STAMP_TOKEN
     );
     // The server stamps the client address to judge (the peer, or what a trusted proxy
     // reported for it). Requests without that stamp keep the earlier rule.
     const stampedClientIp = resolveStampedPeer(
       request.headers.get(CLIENT_IP_HEADER),
-      process.env.OMNIROUTE_PEER_STAMP_TOKEN
+      process.env.CHEAPROUTE_PEER_STAMP_TOKEN
     );
     const ipVerdict = checkRequestIP(request, stampedClientIp ?? (viaProxy ? null : trustedPeerIp));
     if (!ipVerdict.allowed) {

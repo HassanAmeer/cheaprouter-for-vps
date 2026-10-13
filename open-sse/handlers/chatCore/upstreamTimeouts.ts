@@ -134,7 +134,7 @@ export function getExecutorTimeoutMs(
  * Cross-realm Response detection (#10360).
  *
  * `instanceof Response` is a NOMINAL check against `globalThis.Response`, and
- * OmniRoute's default egress does not use the global one: `proxyFetch.ts`
+ * CheapRoute's default egress does not use the global one: `proxyFetch.ts`
  * dispatches through the npm `undici` package's `fetch`, whose `Response` is a
  * different class from the Node built-in. A bare `instanceof` therefore
  * rejected virtually every real upstream response as a "contract violation".

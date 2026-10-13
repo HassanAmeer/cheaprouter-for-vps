@@ -12,7 +12,7 @@
  * demand; closing the connection does not stop the shared server. Set
  * OBSCURA_CDP_ENDPOINT to point at an already-running Obscura instead of
  * spawning one here (the process is then not owned by this module). The
- * module is also disabled entirely when OMNIROUTE_BROWSER_POOL=off.
+ * module is also disabled entirely when CHEAPROUTE_BROWSER_POOL=off.
  */
 
 import { spawn, type ChildProcess } from "node:child_process";
@@ -29,7 +29,7 @@ let shared: { child: ChildProcess | null; endpoint: string } | null = null;
 let starting: Promise<{ child: ChildProcess | null; endpoint: string } | null> | null = null;
 
 export function isObscuraUsable(): boolean {
-  const flag = process.env.OMNIROUTE_BROWSER_POOL;
+  const flag = process.env.CHEAPROUTE_BROWSER_POOL;
   if (flag === undefined) return true;
   return flag !== "off" && flag !== "0" && flag !== "false";
 }

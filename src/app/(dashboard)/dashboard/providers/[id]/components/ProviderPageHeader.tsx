@@ -35,7 +35,7 @@ interface ProviderPageHeaderProps {
    * referral link (D28 — referral links / free credits), rather than the
    * static catalog `website`. Reuses the same discreet "Partner link" note
    * as the pre-existing Kimi partnership link — both are the same kind of
-   * "this link supports OmniRoute" disclosure.
+   * "this link supports CheapRoute" disclosure.
    */
   isReferralLink?: boolean;
 }

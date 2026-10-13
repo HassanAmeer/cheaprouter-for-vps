@@ -49,7 +49,7 @@ const AGGRESSIVENESS: Record<string, number> = {
   llmlingua: 65, // stackPriority 35 — semantic pruning (ONNX), after aggressive, before ultra/llm
   llm: 68, // stackPriority 38 — full LLM-tier compressor, opt-in default-off
   ultra: 70,
-  omniglyph: 80, // stackPriority 90 — context-as-image (lossy render), runs after every text engine
+  cheapglyph: 80, // stackPriority 90 — context-as-image (lossy render), runs after every text engine
 };
 
 export function aggressivenessOf(engineOrMode: string): number {
@@ -77,7 +77,7 @@ const REDUCTION_FACTOR: Record<string, number> = {
   llmlingua: 0.5, // semantic pruning (ONNX)
   llm: 0.45, // full LLM-tier compressor, stronger than llmlingua
   ultra: 0.4,
-  omniglyph: 0.35, // measured 0.23-0.33 on converted blocks (254->84 tokens); 0.35 stays conservative
+  cheapglyph: 0.35, // measured 0.23-0.33 on converted blocks (254->84 tokens); 0.35 stays conservative
 };
 
 export function expectedReductionFactor(engine: string): number {

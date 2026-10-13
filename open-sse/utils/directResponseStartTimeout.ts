@@ -46,7 +46,7 @@ function isLocalDirectTarget(targetUrl?: string | null): boolean {
 function resolveLocalDirectHeadersFloorMs(
   env: Record<string, string | undefined> = process.env
 ): number {
-  const raw = env.OMNIROUTE_LOCAL_DIRECT_HEADERS_TIMEOUT_MS;
+  const raw = env.CHEAPROUTE_LOCAL_DIRECT_HEADERS_TIMEOUT_MS;
   if (raw == null || raw.trim() === "") return DEFAULT_LOCAL_DIRECT_HEADERS_TIMEOUT_MS;
   const parsed = Number(raw);
   return Number.isFinite(parsed) && parsed > 0 ? Math.floor(parsed) : 0;
@@ -57,7 +57,7 @@ function resolveFlatDirectHeadersFloorMs(
   body?: string | null,
   targetUrl?: string | null
 ): number {
-  const raw = env.OMNIROUTE_DIRECT_HEADERS_TIMEOUT_MS;
+  const raw = env.CHEAPROUTE_DIRECT_HEADERS_TIMEOUT_MS;
   let base =
     raw == null || raw.trim() === ""
       ? DEFAULT_DIRECT_HEADERS_TIMEOUT_MS
@@ -115,7 +115,7 @@ export function directHeadersTimeoutResolver(
  * layer before proxyFetch ever sees the request). In that case the caller's
  * own signal is the REAL deadline and always fires first in the intended
  * path, so the retry gets a generous backstop ceiling
- * (OMNIROUTE_DIRECT_RESPONSE_RETRY_TIMEOUT_MS, default 600s) instead of
+ * (CHEAPROUTE_DIRECT_RESPONSE_RETRY_TIMEOUT_MS, default 600s) instead of
  * reusing the short flat pooled-attempt floor.
  *
  * When there is no caller-supplied deadline at all, there is no larger budget
@@ -129,7 +129,7 @@ export function resolveDirectRetryTimeoutMs(
   env: Record<string, string | undefined> = process.env
 ): number {
   if (!hasCallerDeadline) return flatFloorMs;
-  const raw = env.OMNIROUTE_DIRECT_RESPONSE_RETRY_TIMEOUT_MS;
+  const raw = env.CHEAPROUTE_DIRECT_RESPONSE_RETRY_TIMEOUT_MS;
   const ceiling =
     raw == null || raw.trim() === ""
       ? DEFAULT_DIRECT_RETRY_CEILING_MS

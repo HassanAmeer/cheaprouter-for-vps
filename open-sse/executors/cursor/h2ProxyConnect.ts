@@ -1,7 +1,7 @@
 /**
  * Proxy tunnelling for the Cursor executor's raw HTTP/2 transport.
  *
- * Every other egress path in OmniRoute is proxy-aware because it goes through
+ * Every other egress path in CheapRoute is proxy-aware because it goes through
  * `fetch` (patched globally) or the undici dispatcher. The Cursor agent
  * transport is the exception: it calls `http2.connect()` directly, which opens
  * its own TCP/TLS socket and therefore ignores the provider proxy configured in

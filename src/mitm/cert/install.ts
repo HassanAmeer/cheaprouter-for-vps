@@ -12,7 +12,7 @@ import {
 const IS_WIN = process.platform === "win32";
 const IS_MAC = process.platform === "darwin";
 
-const LINUX_CERT_NAME = "omniroute-mitm.crt";
+const LINUX_CERT_NAME = "cheaproute-mitm.crt";
 
 interface LinuxCertConfig {
   dir: string;
@@ -92,7 +92,7 @@ async function updateNssDatabases(
         shell: "/bin/bash",
         env: {
           ...process.env,
-          CERT_NAME: "OmniRoute MITM Root CA",
+          CERT_NAME: "CheapRoute MITM Root CA",
           CERT_PATH: certPath || "",
           ACTION: action,
         },
@@ -209,8 +209,8 @@ export async function installCert(sudoPassword: string, certPath: string): Promi
     return;
   }
 
-  if (process.env.OMNIROUTE_SKIP_SYSTEM_TRUST === "1") {
-    console.log("[cert] OMNIROUTE_SKIP_SYSTEM_TRUST=1 — skipping OS trust-store mutation");
+  if (process.env.CHEAPROUTE_SKIP_SYSTEM_TRUST === "1") {
+    console.log("[cert] CHEAPROUTE_SKIP_SYSTEM_TRUST=1 — skipping OS trust-store mutation");
     return;
   }
 
@@ -328,10 +328,10 @@ export async function installCertResult(
  * trust store. Named wrapper over {@link installCertResult} for call-site
  * clarity — the underlying platform installers
  * (`installCertLinux`/`installCertMac`/`installCertWindows`) are already
- * cert-path-agnostic and keep writing to the same `omniroute-mitm.crt`
+ * cert-path-agnostic and keep writing to the same `cheaproute-mitm.crt`
  * trust-store slot the old single-leaf install used, so the CA cert simply
  * supersedes the old leaf under that slot; no new slot, no dual-trust
- * cleanup needed. Distinct from TPROXY's own `omniroute-tproxy-ca.crt` slot
+ * cleanup needed. Distinct from TPROXY's own `cheaproute-tproxy-ca.crt` slot
  * (`src/mitm/tproxy/caTrust.ts`), which this feature does not touch. #6684
  */
 export async function installCaCert(
@@ -416,7 +416,7 @@ export async function ensureSystemCertMode(destFile: string, sudoPassword: strin
 
 // SECURITY-AUDITOR-NOTE: This function and the surrounding install/uninstall
 // pair appear in Socket.dev finding `77484.js` (AI-detected potential malware).
-// They install / remove the OmniRoute MITM root CA from the OS trust store and
+// They install / remove the CheapRoute MITM root CA from the OS trust store and
 // only run when an operator explicitly enables the MITM proxy from the local
 // dashboard at /dashboard/cli-tools/mitm. The privileged commands invoked
 // here — `certutil -addstore Root`, `security add-trusted-cert`,
@@ -445,8 +445,8 @@ export async function uninstallCert(sudoPassword: string, certPath: string): Pro
     return;
   }
 
-  if (process.env.OMNIROUTE_SKIP_SYSTEM_TRUST === "1") {
-    console.log("[cert] OMNIROUTE_SKIP_SYSTEM_TRUST=1 — skipping OS trust-store mutation");
+  if (process.env.CHEAPROUTE_SKIP_SYSTEM_TRUST === "1") {
+    console.log("[cert] CHEAPROUTE_SKIP_SYSTEM_TRUST=1 — skipping OS trust-store mutation");
     return;
   }
 

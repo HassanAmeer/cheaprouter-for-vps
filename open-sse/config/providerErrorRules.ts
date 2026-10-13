@@ -97,8 +97,8 @@ export function setOperatorProviderErrorRules(
 // Scope note: `scope: "connection"` (not "provider") is correct because the
 // upstream quota is per egress IP for the free tier (the opencode free tier
 // is IP-bucketed, not account-bucketed — see #9611) and per account for paid
-// plans; a single OmniRoute provider entry maps to one user account. Multiple
-// OmniRoute connections under the same provider name mean the user has
+// plans; a single CheapRoute provider entry maps to one user account. Multiple
+// CheapRoute connections under the same provider name mean the user has
 // multiple upstream accounts — locking at the provider level would disable
 // every one of them when only one is exhausted. See Issue #2 (Monthly quota
 // exhausted treated as transient 429) and #10880 (egress-bucketed cooldown).
@@ -376,7 +376,7 @@ export function honorsRuleLockScope(provider: string | null | undefined): boolea
  */
 // Default free-tier set (#9611). PAID plans are account-bucketed, not
 // IP-bucketed, so operators running paid subscriptions can disable or trim
-// the egress-IP lockout via OMNIROUTE_EGRESS_IP_LOCK_PROVIDERS:
+// the egress-IP lockout via CHEAPROUTE_EGRESS_IP_LOCK_PROVIDERS:
 //   unset            → default set below (free-tier behavior)
 //   none/off/false/0 → empty set (egress-IP lockout fully disabled)
 //   "a,b,c"          → exact replacement set
@@ -389,7 +389,7 @@ const EGRESS_BUCKETED_LOCK_PROVIDERS_DEFAULT: Record<string, true> = {
 };
 
 /**
- * Pure parser for OMNIROUTE_EGRESS_IP_LOCK_PROVIDERS (exported for tests).
+ * Pure parser for CHEAPROUTE_EGRESS_IP_LOCK_PROVIDERS (exported for tests).
  * Returns the effective provider set: default free-tier family when unset,
  * empty for none/off/false/0, otherwise the comma-separated replacement set.
  */
@@ -409,7 +409,7 @@ export function egressIpLockProvidersFromEnv(
 }
 
 const EGRESS_BUCKETED_LOCK_PROVIDERS = egressIpLockProvidersFromEnv(
-  process.env.OMNIROUTE_EGRESS_IP_LOCK_PROVIDERS
+  process.env.CHEAPROUTE_EGRESS_IP_LOCK_PROVIDERS
 );
 
 export function isEgressBucketedLockScope(provider: string | null | undefined): boolean {

@@ -55,7 +55,7 @@ async function registerMoonshotFetchersForCreatedNode(node: {
 }): Promise<void> {
   try {
     const { registerMoonshotFetchersForNodes } = await import(
-      "@omniroute/open-sse/services/moonshotQuotaFetcher.ts"
+      "@cheaproute/open-sse/services/moonshotQuotaFetcher.ts"
     );
     registerMoonshotFetchersForNodes([
       {

@@ -60,7 +60,7 @@ interface ConsoleApiResult {
 }
 
 /**
- * Hit the Volcano console API directly via undici, BYPASSING OmniRoute's
+ * Hit the Volcano console API directly via undici, BYPASSING CheapRoute's
  * global fetch patch (open-sse/utils/proxyFetch.ts) which is built for LLM
  * provider traffic and reroutes/rewrites requests to console.volcengine.com.
  * Dynamic import so the build cannot extern/strip the dependency.

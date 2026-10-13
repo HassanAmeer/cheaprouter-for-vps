@@ -1,4 +1,4 @@
-const COPILOT_REASONING_SUMMARY_MARKER = "_omnirouteCopilotReasoningSummary";
+const COPILOT_REASONING_SUMMARY_MARKER = "_cheaprouteCopilotReasoningSummary";
 
 export function applyClaudeCodeCompatibleThinkingDisplay(
   thinking: Record<string, unknown>,

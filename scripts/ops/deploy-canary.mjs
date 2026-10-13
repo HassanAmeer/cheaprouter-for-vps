@@ -11,7 +11,7 @@
  * that performs the side effects and rolls back when the smoke fails.
  *
  * Usage:
- *   node scripts/ops/deploy-canary.mjs --host root@192.168.0.17 --tarball ./omniroute-3.8.50.tgz \
+ *   node scripts/ops/deploy-canary.mjs --host root@192.168.0.17 --tarball ./cheaproute-3.8.50.tgz \
  *        --base-url http://192.168.0.17:20128 --model cx/gpt-5.6-terra --model qct/deepseek-v4-flash-0731
  *
  * Flags:
@@ -19,13 +19,13 @@
  *   --tarball    local tarball produced by `npm run build:release && npm pack` (required)
  *   --base-url   http base of the deployed gateway (required)
  *   --model      completion probe target; repeatable, at least one required
- *   --pm2-app    process-manager app name (default: omniroute)
+ *   --pm2-app    process-manager app name (default: cheaproute)
  *   --dry-run    print the plan and the remote steps, change nothing
  *
  * Env:
- *   OMNIROUTE_RELEASE_REF        ref to check ancestry against (default origin/main)
- *   OMNIROUTE_ALLOW_CANARY_BUILD set to 1 to deploy an artifact that is not on the release line
- *   OMNIROUTE_SMOKE_API_KEY      sent as Authorization: Bearer when the gateway requires auth
+ *   CHEAPROUTE_RELEASE_REF        ref to check ancestry against (default origin/main)
+ *   CHEAPROUTE_ALLOW_CANARY_BUILD set to 1 to deploy an artifact that is not on the release line
+ *   CHEAPROUTE_SMOKE_API_KEY      sent as Authorization: Bearer when the gateway requires auth
  */
 
 import { execFileSync, spawnSync } from "node:child_process";
@@ -41,7 +41,7 @@ import {
 import { makeGitAncestryProbe, readBuildSha } from "../build/buildProvenance.ts";
 
 function parseArgs(argv) {
-  const args = { models: [], pm2App: "omniroute", dryRun: false };
+  const args = { models: [], pm2App: "cheaproute", dryRun: false };
   for (let i = 0; i < argv.length; i += 1) {
     const flag = argv[i];
     const value = argv[i + 1];
@@ -135,10 +135,10 @@ const localBuildSha = readBuildSha(repoRoot);
 const plan = planCanaryDeploy({
   buildSha: localBuildSha,
   isAncestorOfRelease: makeGitAncestryProbe(
-    process.env.OMNIROUTE_RELEASE_REF || "origin/main",
+    process.env.CHEAPROUTE_RELEASE_REF || "origin/main",
     repoRoot
   ),
-  allowCanary: process.env.OMNIROUTE_ALLOW_CANARY_BUILD === "1",
+  allowCanary: process.env.CHEAPROUTE_ALLOW_CANARY_BUILD === "1",
 });
 
 console.log(`[provenance] ${plan.reason}`);
@@ -197,7 +197,7 @@ try {
   const health = await probeHealth(args.baseUrl);
   const completions = [];
   for (const model of args.models) {
-    const probe = await probeCompletion(args.baseUrl, model, process.env.OMNIROUTE_SMOKE_API_KEY);
+    const probe = await probeCompletion(args.baseUrl, model, process.env.CHEAPROUTE_SMOKE_API_KEY);
     console.log(`   probe ${probe.model}: ${probe.ok ? "ok" : `FAILED (${probe.status})`}`);
     completions.push(probe);
   }

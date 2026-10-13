@@ -5,7 +5,7 @@ import type { RefreshLogger } from "../shared.ts";
 
 /**
  * Muse Code has no refresh-token grant. CLIProxyAPI remints the inference key
- * from the durable `dca:` device token on 401 / missing API key. OmniRoute
+ * from the durable `dca:` device token on 401 / missing API key. CheapRoute
  * stores that DCA token as `refreshToken`.
  */
 export async function refreshMuseCodeToken(

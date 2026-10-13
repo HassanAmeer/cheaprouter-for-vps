@@ -26,23 +26,23 @@ import {
   DEFAULT_CODEX_RESPONSES_CONFIG,
   type CodexResponsesConfig,
   type ContextEditingConfig,
-  DEFAULT_OMNIGLYPH_CONFIG,
-  type OmniglyphConfig,
+  DEFAULT_CHEAPGLYPH_CONFIG,
+  type CheapglyphConfig,
   type EngineToggle,
   type HeadroomConfig,
   type McpAccessibilityConfig,
   type RtkConfig,
   type UltraConfig,
-} from "@omniroute/open-sse/services/compression/types.ts";
-import { normalizeCompressionExclusions } from "@omniroute/open-sse/services/compression/exclusions.ts";
-import "@omniroute/open-sse/services/compression/adaptiveCompression/types.ts";
+} from "@cheaproute/open-sse/services/compression/types.ts";
+import { normalizeCompressionExclusions } from "@cheaproute/open-sse/services/compression/exclusions.ts";
+import "@cheaproute/open-sse/services/compression/adaptiveCompression/types.ts";
 import { normalizeContextBudgetConfig } from "./compressionContextBudget";
 import {
   isPreserveSystemPromptMode,
   normalizePreserveSystemPromptMode,
-} from "@omniroute/open-sse/services/compression/preserveSystemPromptMode.ts";
-import { maybePrewarmUltraSlmOnConfig } from "@omniroute/open-sse/services/compression/ultra.ts";
-import { isUsableLiteMaxToolLength } from "@omniroute/open-sse/services/compression/lite.ts";
+} from "@cheaproute/open-sse/services/compression/preserveSystemPromptMode.ts";
+import { maybePrewarmUltraSlmOnConfig } from "@cheaproute/open-sse/services/compression/ultra.ts";
+import { isUsableLiteMaxToolLength } from "@cheaproute/open-sse/services/compression/lite.ts";
 import { applyDetailConfigUpdate, buildDetailConfigDefaults } from "./compressionDetailNormalizers";
 
 const NAMESPACE = "compression";
@@ -55,7 +55,7 @@ const COMPRESSION_MODES = new Set<CompressionMode>([
   "rtk",
   "codex-responses",
   "stacked",
-  "omniglyph",
+  "cheapglyph",
 ]);
 
 type JsonRecord = Record<string, unknown>;
@@ -304,7 +304,7 @@ function normalizeLanguageConfig(value: unknown): CompressionLanguageConfig {
   };
 }
 
-function normalizeOmniglyphConfig(value: unknown): OmniglyphConfig {
+function normalizeCheapglyphConfig(value: unknown): CheapglyphConfig {
   const record = toRecord(value);
   const profile = record.profile;
   // Um perfil desconhecido não pode virar "roda com a política padrão": cai para
@@ -313,7 +313,7 @@ function normalizeOmniglyphConfig(value: unknown): OmniglyphConfig {
     profile:
       profile === "coding-safe" || profile === "balanced" || profile === "passthrough"
         ? profile
-        : DEFAULT_OMNIGLYPH_CONFIG.profile,
+        : DEFAULT_CHEAPGLYPH_CONFIG.profile,
   };
 }
 
@@ -342,7 +342,7 @@ const STACKED_PIPELINE_ENGINE_IDS = new Set([
   "ccr",
   "llmlingua",
   "relevance",
-  "omniglyph",
+  "cheapglyph",
 ]);
 
 export function normalizeStackedPipeline(value: unknown): CompressionPipelineStep[] {
@@ -502,7 +502,7 @@ const SINGLE_MODE_ENGINE: Partial<Record<CompressionMode, string>> = {
   aggressive: "aggressive",
   ultra: "ultra",
   rtk: "rtk",
-  omniglyph: "omniglyph",
+  cheapglyph: "cheapglyph",
   "codex-responses": "codex-responses",
 };
 
@@ -722,7 +722,7 @@ export async function getCompressionSettings(): Promise<CompressionConfig> {
     ...buildDetailConfigDefaults(),
     contextBudget: normalizeContextBudgetConfig(undefined),
     contextEditing: { ...DEFAULT_CONTEXT_EDITING_CONFIG },
-    omniglyph: { ...DEFAULT_OMNIGLYPH_CONFIG },
+    cheapglyph: { ...DEFAULT_CHEAPGLYPH_CONFIG },
     liveZone: { enabled: false },
     engines: {},
     activeComboId: null,
@@ -882,8 +882,8 @@ export async function getCompressionSettings(): Promise<CompressionConfig> {
       case "contextEditing":
         config.contextEditing = normalizeContextEditingConfig(parsed);
         break;
-      case "omniglyph":
-        config.omniglyph = normalizeOmniglyphConfig(parsed);
+      case "cheapglyph":
+        config.cheapglyph = normalizeCheapglyphConfig(parsed);
         break;
       case "liveZone":
         config.liveZone = { enabled: toRecord(parsed).enabled === true };

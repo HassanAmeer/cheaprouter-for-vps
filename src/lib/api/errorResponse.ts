@@ -1,6 +1,6 @@
 import { randomUUID } from "crypto";
 
-import { sanitizeErrorMessage } from "@omniroute/open-sse/utils/errorSanitization.ts";
+import { sanitizeErrorMessage } from "@cheaproute/open-sse/utils/errorSanitization.ts";
 
 export type ApiErrorType = "invalid_request" | "not_found" | "conflict" | "server_error";
 

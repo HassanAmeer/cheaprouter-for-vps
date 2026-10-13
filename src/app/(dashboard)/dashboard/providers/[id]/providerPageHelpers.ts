@@ -18,8 +18,8 @@ import {
 } from "@/lib/providers/requestDefaults";
 import { type CodexGlobalServiceMode } from "@/lib/providers/codexFastTier";
 import { CC_COMPATIBLE_DEFAULT_CHAT_PATH } from "./providerDetailConstants";
-import { getRegistryEntry } from "@omniroute/open-sse/config/providerRegistry";
-import type { AlternateFormat } from "@omniroute/open-sse/config/providers/alternateFormats";
+import { getRegistryEntry } from "@cheaproute/open-sse/config/providerRegistry";
+import type { AlternateFormat } from "@cheaproute/open-sse/config/providers/alternateFormats";
 import {
   type ProviderMessageTranslator,
   providerText,

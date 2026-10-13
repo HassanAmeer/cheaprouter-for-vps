@@ -15,7 +15,7 @@ export function createLogStream(options: LogStreamOptions = {}): LogStream {
   const port = process.env.PORT || process.env.DASHBOARD_PORT || 20128;
   const baseUrl =
     options.baseUrl ||
-    process.env.OMNIROUTE_BASE_URL ||
+    process.env.CHEAPROUTE_BASE_URL ||
     process.env.BASE_URL ||
     `http://localhost:${port}`;
   const filters = options.filters || [];

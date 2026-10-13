@@ -3,7 +3,7 @@ import { z } from "zod";
 
 import { requireManagementAuth } from "@/lib/api/requireManagementAuth";
 import { getModelLatencyStats } from "@/lib/usageDb";
-import { buildErrorBody } from "@omniroute/open-sse/utils/error.ts";
+import { buildErrorBody } from "@cheaproute/open-sse/utils/error.ts";
 
 const querySchema = z.object({
   windowHours: z.coerce

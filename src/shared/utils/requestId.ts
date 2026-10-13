@@ -21,7 +21,7 @@ type RequestLike = {
   headers?: HeaderReader | null;
 } | null;
 
-const REQUEST_ID_STORE_KEY = Symbol.for("omniroute.requestId.store");
+const REQUEST_ID_STORE_KEY = Symbol.for("cheaproute.requestId.store");
 type GlobalWithRequestIdStore = typeof globalThis & {
   [REQUEST_ID_STORE_KEY]?: AsyncLocalStorage<string>;
 };

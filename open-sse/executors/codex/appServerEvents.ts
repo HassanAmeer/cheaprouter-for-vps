@@ -34,12 +34,12 @@ export const CODEX_APPSERVER_METHODS = {
  * `params` shape = `DynamicToolCallParams` (ts-rs binding):
  *   { threadId, turnId, callId, namespace: string | null, tool: string, arguments: JsonValue }
  *
- * OmniRoute is a STATELESS ROUTER: it cannot execute the harness's tool (the tool
+ * CheapRoute is a STATELESS ROUTER: it cannot execute the harness's tool (the tool
  * body lives in the harness downstream, not here). So instead of "executing" the
  * call, we PASS IT THROUGH: emit tool_call_* AdapterEvents so the bridge renders a
  * Responses `function_call` output item, then complete the turn. The harness runs
  * the tool and replays the result in a fresh /v1/responses request (the same
- * stateless-full-history contract every other OmniRoute provider uses).
+ * stateless-full-history contract every other CheapRoute provider uses).
  */
 export const CODEX_APPSERVER_TOOL_CALL_METHOD = "item/tool/call";
 

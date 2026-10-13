@@ -1,4 +1,4 @@
-export const CATALOG_TEST_RESULTS_STORAGE_NAME = "omniroute.catalogTestResults.v1";
+export const CATALOG_TEST_RESULTS_STORAGE_NAME = "cheaproute.catalogTestResults.v1";
 export const MAX_TEST_RESULTS_CAP = 2000;
 
 export type CatalogTestStatus = "ok" | "slow" | "error";

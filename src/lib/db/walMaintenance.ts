@@ -64,20 +64,20 @@ let activeDb: SqliteAdapter | null = null;
 let truncateDeprecationWarned = false;
 
 /**
- * Operators who set OMNIROUTE_WAL_TRUNCATE_INTERVAL_MS to a positive value believe a
+ * Operators who set CHEAPROUTE_WAL_TRUNCATE_INTERVAL_MS to a positive value believe a
  * periodic TRUNCATE is reclaiming their WAL on a timer. It is not: that scheduler was
  * removed because a live TRUNCATE can SIGBUS the process (issue #13973). Warn once per
  * process so the stale setting is visible instead of silently ignored.
  */
 function warnPeriodicTruncateRemoved(env: NodeJS.ProcessEnv): void {
   if (truncateDeprecationWarned) return;
-  const rawValue = env.OMNIROUTE_WAL_TRUNCATE_INTERVAL_MS;
+  const rawValue = env.CHEAPROUTE_WAL_TRUNCATE_INTERVAL_MS;
   if (typeof rawValue !== "string" || rawValue.trim().length === 0) return;
   const parsed = Number(rawValue);
   if (!Number.isFinite(parsed) || parsed <= 0) return;
   truncateDeprecationWarned = true;
   console.warn(
-    "[DB] OMNIROUTE_WAL_TRUNCATE_INTERVAL_MS is no longer used and has no effect: periodic " +
+    "[DB] CHEAPROUTE_WAL_TRUNCATE_INTERVAL_MS is no longer used and has no effect: periodic " +
       "live wal_checkpoint(TRUNCATE) was removed because truncating the WAL of a live " +
       "process can invalidate the shared wal-index mapping and crash the server with " +
       "SIGBUS (issue #13973). Runtime checkpoints are PASSIVE; the shutdown checkpoint " +
@@ -189,7 +189,7 @@ export function runCheckpointNow(
 }
 
 export function getWalPassiveIntervalMs(env: NodeJS.ProcessEnv = process.env): number {
-  const rawValue = env.OMNIROUTE_WAL_PASSIVE_INTERVAL_MS;
+  const rawValue = env.CHEAPROUTE_WAL_PASSIVE_INTERVAL_MS;
   if (typeof rawValue === "string" && rawValue.trim().length > 0) {
     const parsed = Number(rawValue);
     if (Number.isFinite(parsed) && parsed >= 0) {
@@ -200,7 +200,7 @@ export function getWalPassiveIntervalMs(env: NodeJS.ProcessEnv = process.env): n
 }
 
 export function getWalGuardMaxBytes(env: NodeJS.ProcessEnv = process.env): number {
-  const rawValue = env.OMNIROUTE_WAL_GUARD_MAX_MB;
+  const rawValue = env.CHEAPROUTE_WAL_GUARD_MAX_MB;
   if (typeof rawValue === "string" && rawValue.trim().length > 0) {
     const parsed = Number(rawValue);
     if (Number.isFinite(parsed) && parsed >= 1) {

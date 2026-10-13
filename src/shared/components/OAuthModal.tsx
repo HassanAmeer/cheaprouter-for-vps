@@ -468,7 +468,7 @@ export default function OAuthModal({
         let forceManual = false;
 
         // Claude Code and Cline OAuth flows can finish on provider-hosted pages that
-        // show an auth code instead of redirecting back to OmniRoute.
+        // show an auth code instead of redirecting back to CheapRoute.
         // Start directly in manual mode so users always have an input to paste code/url.
         // zed-hosted's native-app sign-in redirects the browser to a local
         // 127.0.0.1:<native_app_port> callback. On true localhost that port IS the
@@ -561,7 +561,7 @@ export default function OAuthModal({
         //   localhost for the Google native-app handoff; Google documents that localhost
         //   can run into local firewall/name-resolution edge cases. The authorize route
         //   upgrades this to the public callback when custom Google web credentials plus
-        //   NEXT_PUBLIC_BASE_URL or OMNIROUTE_PUBLIC_BASE_URL are configured.
+        //   NEXT_PUBLIC_BASE_URL or CHEAPROUTE_PUBLIC_BASE_URL are configured.
         // - Other providers on remote: use actual origin (supports PUBLIC_URL env var)
         // - Localhost: use localhost:port
         let redirectUri: string;
@@ -581,7 +581,7 @@ export default function OAuthModal({
           const port = window.location.port || "20128";
           redirectUri = `http://127.0.0.1:${port}/callback`;
         } else if (!isLocalhost) {
-          // Behind reverse proxy: use actual origin (e.g., https://omniroute.example.com/callback)
+          // Behind reverse proxy: use actual origin (e.g., https://cheaproute.example.com/callback)
           // Supports PUBLIC_URL env var override, or falls back to window.location.origin.
           const publicUrl = process.env.NEXT_PUBLIC_BASE_URL;
           const origin =

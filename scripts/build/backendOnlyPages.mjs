@@ -2,11 +2,11 @@
 /**
  * Backend-only build helper.
  *
- * When `OMNIROUTE_BUILD_BACKEND_ONLY=1` (or `OMNIROUTE_BUILD_PROFILE=backend|contributor`) is set,
+ * When `CHEAPROUTE_BUILD_BACKEND_ONLY=1` (or `CHEAPROUTE_BUILD_PROFILE=backend|contributor`) is set,
  * `build-next-isolated.mjs` calls `stubDashboardPages()` BEFORE `next build` and
  * `restoreDashboardPages()` in a `finally` afterward.
  *
- * WHY: OmniRoute embedders that only consume the HTTP API (`/api/*`, `/v1/*`, `/v1beta/*`)
+ * WHY: CheapRoute embedders that only consume the HTTP API (`/api/*`, `/v1/*`, `/v1beta/*`)
  * — e.g. the VibeProxy desktop app, headless self-hosters, CI that only needs the router —
  * do NOT need the Next.js dashboard UI. Building it dominates `next build`: the ~126 leaf
  * pages pull in heavy client vendor chunks (recharts, monaco-editor, @xyflow, mermaid,
@@ -34,7 +34,7 @@ import fs from "node:fs";
 import path from "node:path";
 
 export const BACKEND_ONLY_STUB_MARKER =
-  "/* omniroute:backend-only-stub (auto-restored after build) */";
+  "/* cheaproute:backend-only-stub (auto-restored after build) */";
 
 const HEADER = `${BACKEND_ONLY_STUB_MARKER}\n`;
 // Each instrumentation entrypoint exports its own symbol — `src/instrumentation.ts`
@@ -64,7 +64,7 @@ const UI_BASENAME_RE =
 const ROUTE_FILE_RE = /[\\/]route\.(ts|js|tsx|jsx)$/;
 
 /**
- * Strip a leading `"use server"` module directive. Some OmniRoute API Route Handlers
+ * Strip a leading `"use server"` module directive. Some CheapRoute API Route Handlers
  * (`src/app/api/**\/route.ts`) carry a top-level `"use server"` — which registers the module
  * as a React Server-Actions provider. Once the dashboard pages that import those exports as
  * actions are stubbed away, Next's FlightClientEntryPlugin still has the action registered but
@@ -93,20 +93,20 @@ function stripLeadingUseServer(src) {
 /** True when the current build should skip the dashboard frontend. */
 export function isBackendOnlyBuild(env = process.env) {
   return (
-    env.OMNIROUTE_BUILD_BACKEND_ONLY === "1" ||
-    env.OMNIROUTE_BUILD_PROFILE === "backend" ||
-    env.OMNIROUTE_BUILD_PROFILE === "contributor"
+    env.CHEAPROUTE_BUILD_BACKEND_ONLY === "1" ||
+    env.CHEAPROUTE_BUILD_PROFILE === "backend" ||
+    env.CHEAPROUTE_BUILD_PROFILE === "contributor"
   );
 }
 
 /** True when the build is intended only for contributor feedback, not packaging. */
 export function isContributorBuild(env = process.env) {
-  return env.OMNIROUTE_BUILD_PROFILE === "contributor";
+  return env.CHEAPROUTE_BUILD_PROFILE === "contributor";
 }
 
 /** True when standalone output should be packaged (default true; skipped for contributor or fast build). */
 export function shouldBuildStandalone(env = process.env) {
-  return !isContributorBuild(env) && env.OMNIROUTE_SKIP_STANDALONE !== "1";
+  return !isContributorBuild(env) && env.CHEAPROUTE_SKIP_STANDALONE !== "1";
 }
 
 /** Replace the build-only instrumentation entrypoint to avoid pulling the startup graph. */

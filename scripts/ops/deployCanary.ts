@@ -127,7 +127,7 @@ export type RemoteStepsInput = {
  */
 export function buildRemoteSteps(input: RemoteStepsInput): RemoteStep[] {
   const { host, tarballPath, pm2App } = input;
-  const shaPath = "/usr/lib/node_modules/omniroute/dist/BUILD_SHA";
+  const shaPath = "/usr/lib/node_modules/cheaproute/dist/BUILD_SHA";
 
   return [
     {

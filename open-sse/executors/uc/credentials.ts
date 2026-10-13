@@ -17,7 +17,7 @@
  *                        `__client_uat`, etc.) sent on the mint call. Persisting
  *                        the whole jar lets the executor follow cookie rotation.
  *
- * These are minted by OmniRoute's own browserless email-code login (see
+ * These are minted by CheapRoute's own browserless email-code login (see
  * ./emailLogin.ts), so the router is self-contained and never reads any external
  * (Hermes) token file.
  */

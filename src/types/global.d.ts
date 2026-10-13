@@ -1,5 +1,5 @@
 /**
- * Global Type Declarations for OmniRoute
+ * Global Type Declarations for CheapRoute
  *
  * Ambient declarations for modules and globals that don't ship their own types.
  */
@@ -21,10 +21,10 @@ declare namespace NodeJS {
     PORT?: string;
     API_HOST?: string;
     DASHBOARD_PORT?: string;
-    OMNIROUTE_PUBLIC_BASE_URL?: string;
-    OMNIROUTE_BASE_URL?: string;
-    OMNIROUTE_DISABLE_BACKGROUND_SERVICES?: string;
-    OMNIROUTE_PORT?: string;
+    CHEAPROUTE_PUBLIC_BASE_URL?: string;
+    CHEAPROUTE_BASE_URL?: string;
+    CHEAPROUTE_DISABLE_BACKGROUND_SERVICES?: string;
+    CHEAPROUTE_PORT?: string;
     PRICING_SYNC_ENABLED?: string;
     NODE_ENV?: "development" | "production" | "test";
   }

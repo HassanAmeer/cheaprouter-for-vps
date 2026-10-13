@@ -1,11 +1,11 @@
-import { isEgressBucketedLockScope } from "@omniroute/open-sse/config/providerErrorRules.ts";
+import { isEgressBucketedLockScope } from "@cheaproute/open-sse/config/providerErrorRules.ts";
 import {
   hasProxyRefusals,
   noteProxyRecovered,
   noteProxyRefusal,
   noteProxyServed,
   proxyEgressKey,
-} from "@omniroute/open-sse/utils/proxyRefusalMemory.ts";
+} from "@cheaproute/open-sse/utils/proxyRefusalMemory.ts";
 import { isProxySkipRecentlyFailedEnabled } from "@/shared/utils/featureFlags";
 import { maybeSwitchOnSetAside } from "@/lib/proxySubscription/selectorTrigger";
 /**
@@ -52,4 +52,4 @@ export function noteProxyOutcome(
 // The transport cross-evidence decision lives next to its store in open-sse (the
 // proxy dispatcher calls it without reaching into src/sse); re-exported here so
 // the outcome feedback for proxies stays discoverable from one place.
-export { noteTransportOutcome } from "@omniroute/open-sse/utils/proxyTransportOutcome.ts";
+export { noteTransportOutcome } from "@cheaproute/open-sse/utils/proxyTransportOutcome.ts";

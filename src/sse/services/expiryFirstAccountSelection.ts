@@ -17,7 +17,7 @@ import { toNumber } from "@/shared/utils/numeric";
 import {
   resolveExpiryFirstConfig,
   scoreExpiryFirstQuota,
-} from "@omniroute/open-sse/services/combo/quotaScoring.ts";
+} from "@cheaproute/open-sse/services/combo/quotaScoring.ts";
 
 interface QuotaCacheView {
   quotas?: Record<string, { remainingPercentage?: number; resetAt?: string | null }>;

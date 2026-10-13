@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
 import { getProviderConnectionById } from "@/lib/db/providers";
 import { refreshKimiProviderConnection } from "@/lib/kimi/tokenRefresh";
-import { parseKimiJwt } from "@omniroute/open-sse/utils/kimiJwt.ts";
+import { parseKimiJwt } from "@cheaproute/open-sse/utils/kimiJwt.ts";
 import { requireManagementAuth } from "@/lib/api/requireManagementAuth";
-import { buildErrorBody } from "@omniroute/open-sse/utils/error.ts";
+import { buildErrorBody } from "@cheaproute/open-sse/utils/error.ts";
 
 export async function POST(
   req: Request,

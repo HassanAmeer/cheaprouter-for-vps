@@ -15,7 +15,7 @@ import {
 import { getHermesConfigPath } from "@/lib/cli-helper/config-generator/hermesHome";
 import { getApiKeyById } from "@/lib/db/apiKeys";
 import { createMultiBackup } from "@/shared/services/backupService";
-import { sanitizeErrorMessage } from "@omniroute/open-sse/utils/error.ts";
+import { sanitizeErrorMessage } from "@cheaproute/open-sse/utils/error.ts";
 
 const hermesRoleIds = HERMES_AGENT_ROLES.map((role) => role.id) as [
   HermesAgentRole,
@@ -52,8 +52,8 @@ function getMetadataPath(configPath: string) {
   return path.join(path.dirname(configPath), ".first-setup.json");
 }
 
-const HERMES_API_KEY_ENV = "OMNIROUTE_API_KEY";
-const HERMES_API_KEY_PLACEHOLDERS = new Set(["YOUR_OMNIROUTE_API_KEY_HERE", "sk_omniroute"]);
+const HERMES_API_KEY_ENV = "CHEAPROUTE_API_KEY";
+const HERMES_API_KEY_PLACEHOLDERS = new Set(["YOUR_CHEAPROUTE_API_KEY_HERE", "sk_cheaproute"]);
 
 async function readTextIfPresent(filePath: string): Promise<string> {
   try {
@@ -65,7 +65,7 @@ async function readTextIfPresent(filePath: string): Promise<string> {
 }
 
 function upsertHermesApiKey(existing: string, value: string): string {
-  if (/[\r\n]/.test(value)) throw new Error("Invalid OmniRoute API key");
+  if (/[\r\n]/.test(value)) throw new Error("Invalid CheapRoute API key");
   const replacement = `${HERMES_API_KEY_ENV}=${value}`;
   const next: string[] = [];
   let replaced = false;
@@ -168,7 +168,7 @@ export async function POST(request: Request) {
 
   await fs.mkdir(configDir, { recursive: true });
 
-  // Resolve keyId server-side. The generator references OMNIROUTE_API_KEY;
+  // Resolve keyId server-side. The generator references CHEAPROUTE_API_KEY;
   // only the non-preview apply path writes the resolved secret to Hermes' .env.
   let resolvedApiKey = apiKey ?? null;
   if (keyId) {
@@ -210,7 +210,7 @@ export async function POST(request: Request) {
   const hasExistingApiKey = hasUsableHermesApiKey(existingEnv);
   if (!resolvedApiKey && !hasExistingApiKey) {
     return NextResponse.json(
-      { error: "The selected OmniRoute API key could not be resolved" },
+      { error: "The selected CheapRoute API key could not be resolved" },
       { status: 400 }
     );
   }
@@ -220,7 +220,7 @@ export async function POST(request: Request) {
   }
   await writeAtomic(configPath, result.yaml, 0o600);
 
-  // Record first setup time if this is the first save via OmniRoute
+  // Record first setup time if this is the first save via CheapRoute
   const metaPath = getMetadataPath(configPath);
   try {
     await fs.access(metaPath);

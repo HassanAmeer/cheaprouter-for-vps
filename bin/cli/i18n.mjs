@@ -31,7 +31,7 @@ let fallbackCatalog = null;
 
 export function detectLocale() {
   const raw =
-    process.env.OMNIROUTE_LANG ||
+    process.env.CHEAPROUTE_LANG ||
     process.env.LC_ALL ||
     process.env.LC_MESSAGES ||
     process.env.LANG ||

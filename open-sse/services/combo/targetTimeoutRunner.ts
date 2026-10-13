@@ -3,7 +3,7 @@
  *
  * Extracted from handleComboChat's `handleSingleModelWithTimeout` closure (combo.ts).
  * A locally expired timer aborts that target and returns a typed 504 response so the Combo
- * can fall back without treating OmniRoute's own deadline as a provider-connection failure.
+ * can fall back without treating CheapRoute's own deadline as a provider-connection failure.
  * The per-model abort signal still comes from the target (`target.modelAbortSignal`), so
  * the outer request signal is intentionally NOT a dependency here.
  *
@@ -16,7 +16,7 @@ import {
 } from "./comboAbortReasons.ts";
 import type { HandleSingleModel, SingleModelTarget, ComboLogger } from "./types.ts";
 
-/** Stable internal classification for OmniRoute's own combo per-target timer. */
+/** Stable internal classification for CheapRoute's own combo per-target timer. */
 export const COMBO_TARGET_TIMEOUT_CODE = "combo_target_timeout";
 
 /**
@@ -144,7 +144,7 @@ export function buildTargetTimeoutRunner(deps: {
           `Model ${modelStr} exceeded ${effectiveTimeoutMs}ms timeout — falling back`
         );
         timeoutController.abort(abortErr);
-        // HTTP 504 (not proprietary 524): this is OmniRoute's own per-target timer.
+        // HTTP 504 (not proprietary 524): this is CheapRoute's own per-target timer.
         // Typed as combo_target_timeout so request-scoped classification can keep the
         // connection eligible for fallback instead of treating it like Cloudflare 524
         // or a genuine upstream gateway timeout.

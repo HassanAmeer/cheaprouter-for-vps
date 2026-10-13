@@ -620,7 +620,7 @@ export async function runNonStreamingResponse(deps: NonStreamingDeps) {
     finalBody = providerRequestCapture.body(okLeg.providerRequest || translatedBody);
     // Built inside executeProviderRequest on the pre-#12867 path. The leg now owns the
     // first non-streaming send, so that assignment never runs here and the meta stayed
-    // null — `_omniroute.claudePromptCache` silently vanished from every call log on
+    // null — `_cheaproute.claudePromptCache` silently vanished from every call log on
     // this path. Same inputs, same helper, at the point where they are available.
     claudePromptCacheLogMeta = buildClaudePromptCacheLogMeta(
       targetFormat,
@@ -994,7 +994,7 @@ export async function runNonStreamingResponse(deps: NonStreamingDeps) {
       comboStrategy,
       fallbackAttempts,
     });
-    // #6426: align response body `model` with the `X-OmniRoute-Model` header
+    // #6426: align response body `model` with the `X-CheapRoute-Model` header
     // (both must be the resolved backend model). Some upstreams (notably legacy
     // /v1/completions text-completion path) return a body `model` field that
     // differs from the resolved backend id we advertised in the header, leaving

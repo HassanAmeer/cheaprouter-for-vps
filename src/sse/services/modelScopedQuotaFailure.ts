@@ -1,4 +1,4 @@
-import { RateLimitReason } from "@omniroute/open-sse/config/constants.ts";
+import { RateLimitReason } from "@cheaproute/open-sse/config/constants.ts";
 
 type FallbackSignal = { permanent?: boolean; reason?: unknown; creditsExhausted?: boolean };
 

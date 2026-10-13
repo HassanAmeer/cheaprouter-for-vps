@@ -18,7 +18,7 @@ import {
   getUpstreamProxyConfig,
 } from "@/lib/db/upstreamProxy";
 import { getProviderConnections } from "@/lib/db/providers";
-import { clearCliproxyapiUrlCache } from "@omniroute/open-sse/executors/cliproxyapi.ts";
+import { clearCliproxyapiUrlCache } from "@cheaproute/open-sse/executors/cliproxyapi.ts";
 import {
   ensurePersistentManagementPasswordHash,
   getStoredManagementPassword,

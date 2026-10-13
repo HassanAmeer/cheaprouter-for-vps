@@ -35,6 +35,6 @@ export function isSizeLimitOmissionMarker(value: unknown): boolean {
  */
 export function isPipelineSizeLimitMarker(pipelineError: unknown): boolean {
   if (!pipelineError || typeof pipelineError !== "object") return false;
-  const candidate = pipelineError as { _omniroute_truncated?: unknown; reason?: unknown };
-  return candidate._omniroute_truncated === true && candidate.reason === CALL_LOG_SIZE_LIMIT_REASON;
+  const candidate = pipelineError as { _cheaproute_truncated?: unknown; reason?: unknown };
+  return candidate._cheaproute_truncated === true && candidate.reason === CALL_LOG_SIZE_LIMIT_REASON;
 }

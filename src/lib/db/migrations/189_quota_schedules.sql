@@ -1,7 +1,7 @@
 -- Migration 187: quota_schedules
 --
 -- Time-aware quota rules for a quota pool: each row is a recurring window
--- (days of week + start/end minute of day) that says WHEN OmniRoute may use
+-- (days of week + start/end minute of day) that says WHEN CheapRoute may use
 -- the accounts in the pool, and HOW MUCH of the account it may burn there.
 --
 -- Two orthogonal knobs per window (either, both, or neither may be set):
@@ -10,7 +10,7 @@
 --                     {"window": <quota window>|"any", "percent": <0..100>} rules.
 --                     Each rule is evaluated against the upstream saturation
 --                     signal for that window, which reflects the WHOLE account
---                     (OmniRoute plus anyone else using it), so a human on the
+--                     (CheapRoute plus anyone else using it), so a human on the
 --                     same account always keeps that headroom. Rules are ANDed:
 --                     the first unsatisfied one closes the window. "any" means
 --                     the most-consumed window of the plan decides, which is the
@@ -21,14 +21,14 @@
 --                     keeps a weekly reserve big enough to survive the week while
 --                     still letting a single 5h burst run almost to the edge.
 --
---   budget_value    — "how much OMNIROUTE may consume here". Evaluated against
---   budget_unit       OmniRoute's OWN recorded consumption (quota_consumption
+--   budget_value    — "how much CHEAPROUTE may consume here". Evaluated against
+--   budget_unit       CheapRoute's OWN recorded consumption (quota_consumption
 --   budget_window     rows keyed on "<pool_id>:sched:<schedule_id>"), so a third
 --                     party burning the same account never eats this allowance
 --                     and never inflates it.
 --
 -- Only countable units are accepted for budget_unit: 'percent' is excluded on
--- purpose because OmniRoute cannot attribute a share of an upstream percentage
+-- purpose because CheapRoute cannot attribute a share of an upstream percentage
 -- to itself — the percent case is what `reserves` is for.
 --
 -- mode:

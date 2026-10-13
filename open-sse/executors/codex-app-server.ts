@@ -283,7 +283,7 @@ export class CodexAppServerExecutor extends BaseExecutor {
         await client.connect(config.url, config.token);
         await client.request("initialize", {
           clientInfo: {
-            name: "omniroute-codex-app-server",
+            name: "cheaproute-codex-app-server",
             title: null,
             version: "1.0",
           },
@@ -294,7 +294,7 @@ export class CodexAppServerExecutor extends BaseExecutor {
         });
         const threadResult = (await client.request("thread/start", {
           cwd: config.cwd,
-          // OmniRoute is a router: the HARNESS that consumes OmniRoute owns tool
+          // CheapRoute is a router: the HARNESS that consumes CheapRoute owns tool
           // execution and policy. codex must therefore NEVER block a turn waiting
           // on its own interactive approval (approvalPolicy "never"). Its own
           // sandbox defaults to "workspace-write" (hardened after the #11205
@@ -334,14 +334,14 @@ export class CodexAppServerExecutor extends BaseExecutor {
         });
 
         // OUTBOUND codex tool call → harness. codex asks us to execute a harness
-        // tool via the `item/tool/call` ServerRequest. OmniRoute is a STATELESS
+        // tool via the `item/tool/call` ServerRequest. CheapRoute is a STATELESS
         // ROUTER and CANNOT execute the harness's tool (the tool body lives in the
         // harness downstream). So we PASS IT THROUGH: emit tool_call_* AdapterEvents
         // (the bridge renders a Responses function_call / custom_tool_call /
         // tool_search_call), settle the app-server request with a benign
         // DynamicToolCallResponse so codex does not hang, and COMPLETE the turn.
         // The harness runs the tool and replays the result in a fresh /v1/responses
-        // request (the stateless-full-history contract every OmniRoute provider uses).
+        // request (the stateless-full-history contract every CheapRoute provider uses).
         client.onToolCall((_id, params, api) => {
           if (terminated) return;
           const toolParams = (

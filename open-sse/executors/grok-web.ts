@@ -74,7 +74,7 @@ function isTlsClientUnavailableError(error: unknown): error is TlsClientUnavaila
 }
 
 // ─── Model mappings ─────────────────────────────────────────────────────────
-// Grok Web exposes UI modes, not stable public model IDs. Keep OmniRoute model
+// Grok Web exposes UI modes, not stable public model IDs. Keep CheapRoute model
 // IDs mapped directly to Grok's modeId field.
 
 interface GrokModelInfo {

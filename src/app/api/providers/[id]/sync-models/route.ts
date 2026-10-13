@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { defaultLogger as log } from "@omniroute/open-sse/utils/logger";
+import { defaultLogger as log } from "@cheaproute/open-sse/utils/logger";
 import { getCachedProviderConnectionById } from "@/lib/db/readCache";
 import {
   deleteImportedCustomModels,
@@ -22,7 +22,7 @@ import {
 } from "@/shared/services/modelSyncScheduler";
 import { autoSyncCodexProfilesFromLiveCatalog } from "@/lib/cli-helper/codexProfileAutoSync";
 import { autoSyncClaudeProfilesFromLiveCatalog } from "@/lib/cli-helper/claudeProfileAutoSync";
-import { getSearchProvider } from "@omniroute/open-sse/config/searchRegistry.ts";
+import { getSearchProvider } from "@cheaproute/open-sse/config/searchRegistry.ts";
 import { providerUsesCuratedModelsOnly } from "@/lib/providers/modelListingCapability";
 import {
   fetchVolcPlanModels,
@@ -31,7 +31,7 @@ import {
 import { replaceSyncedAvailableModelsForConnection } from "@/lib/db/models";
 import { GET as getProviderModels } from "../models/route";
 import { isDegradedDiscovery } from "./degradedLocalCatalog";
-import { sanitizeErrorMessage } from "@omniroute/open-sse/utils/error";
+import { sanitizeErrorMessage } from "@cheaproute/open-sse/utils/error";
 import { findStaleComboModelRefs, type StaleComboModelRef } from "@/lib/combos/staleModelRefs";
 import { logAuditEvent } from "@/lib/compliance/index";
 
@@ -369,7 +369,7 @@ async function fetchProviderModelsForSync(request: Request, connectionId: string
     "?refresh=true&excludeCustom=true";
   const headers = {
     cookie: request.headers.get("cookie") || "",
-    "x-omniroute-model-surface": "chat",
+    "x-cheaproute-model-surface": "chat",
     ...buildModelSyncInternalHeaders(),
   };
 

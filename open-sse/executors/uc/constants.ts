@@ -6,7 +6,7 @@
  * this path: auth is a short-lived Clerk `__session` JWT minted from a durable
  * `__client` cookie, passed as the `?token=` query param on the socket URL.
  *
- * All values below are capture-confirmed (UC-PERSONA-WS-OMNIROUTE-SPEC.md /
+ * All values below are capture-confirmed (UC-PERSONA-WS-CHEAPROUTE-SPEC.md /
  * UC-AUTH-AND-EMAIL-LOGIN.md) and match the proven reference client.
  */
 

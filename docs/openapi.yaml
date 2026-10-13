@@ -1,9 +1,9 @@
 openapi: 3.1.0
 info:
-  title: OmniRoute API
+  title: CheapRoute API
   version: 3.8.52
   description: |
-    OmniRoute is a local-first AI API proxy router. It provides an OpenAI-compatible
+    CheapRoute is a local-first AI API proxy router. It provides an OpenAI-compatible
     endpoint that routes requests to multiple AI providers with load balancing,
     failover, and usage tracking.
 
@@ -14,7 +14,7 @@ info:
     All proxy endpoints require a Bearer token (API key managed via the dashboard).
     Management endpoints are protected when `requireLogin` is enabled.
   contact:
-    name: OmniRoute
+    name: CheapRoute
   license:
     name: MIT
 
@@ -91,7 +91,7 @@ tags:
   - name: Agent Skills
     description: >-
       Agent Skills catalog — 42 SKILL.md files (22 REST API + 20 CLI) for external agents,
-      MCP clients, and A2A orchestrators to discover OmniRoute capabilities.
+      MCP clients, and A2A orchestrators to discover CheapRoute capabilities.
   - name: AgentBridge
     description: >-
       MITM proxy manager for 9 IDE agents (Antigravity, Kiro, Copilot, Codex, Cursor, Zed,
@@ -188,10 +188,10 @@ tags:
     description: Model combo mappings endpoints (generated route coverage)
   - name: Network
     description: Network endpoints (generated route coverage)
-  - name: Omniroute
-    description: Omniroute endpoints (generated route coverage)
-  - name: OmnirouteApiCatchAll
-    description: OmnirouteApiCatchAll endpoints (generated route coverage)
+  - name: Cheaproute
+    description: Cheaproute endpoints (generated route coverage)
+  - name: CheaprouteApiCatchAll
+    description: CheaprouteApiCatchAll endpoints (generated route coverage)
   - name: Plugins
     description: Plugins endpoints (generated route coverage)
   - name: Provider metrics
@@ -258,8 +258,8 @@ tags:
     description: V1 Muse-code endpoints (generated route coverage)
   - name: V1 Music
     description: V1 Music endpoints (generated route coverage)
-  - name: V1 OmnirouteCatchAll
-    description: V1 OmnirouteCatchAll endpoints (generated route coverage)
+  - name: V1 CheaprouteCatchAll
+    description: V1 CheaprouteCatchAll endpoints (generated route coverage)
   - name: V1 Providers
     description: V1 Providers endpoints (generated route coverage)
   - name: V1 Quotas
@@ -306,7 +306,7 @@ paths:
       security:
         - BearerAuth: []
       parameters:
-        - name: X-OmniRoute-Lease-Owner
+        - name: X-CheapRoute-Lease-Owner
           in: header
           required: true
           schema:
@@ -1557,61 +1557,61 @@ paths:
         "200":
           description: Chat completion response (or SSE stream)
           headers:
-            X-OmniRoute-Response-Cost:
+            X-CheapRoute-Response-Cost:
               schema:
                 type: string
               description: Request cost in USD, fixed 10 decimals (e.g. `0.0001234500`; `0.0000000000` for free/unpriced).
-            X-OmniRoute-Tokens-In:
+            X-CheapRoute-Tokens-In:
               schema:
                 type: string
               description: Input (prompt) token count.
-            X-OmniRoute-Tokens-Out:
+            X-CheapRoute-Tokens-Out:
               schema:
                 type: string
               description: Output (completion) token count.
-            X-OmniRoute-Model:
+            X-CheapRoute-Model:
               schema:
                 type: string
               description: Resolved model.
-            X-OmniRoute-Provider:
+            X-CheapRoute-Provider:
               schema:
                 type: string
               description: Resolved provider alias.
-            X-OmniRoute-Latency-Ms:
+            X-CheapRoute-Latency-Ms:
               schema:
                 type: string
               description: Handler latency in milliseconds.
-            X-OmniRoute-Cache-Hit:
+            X-CheapRoute-Cache-Hit:
               schema:
                 type: string
                 enum: ["true", "false"]
               description: Whether the response was served from cache.
-            X-OmniRoute-Fallback-Attempts:
+            X-CheapRoute-Fallback-Attempts:
               schema:
                 type: string
               description: Number of fallback attempts (only present when > 0).
-            X-OmniRoute-Decision:
+            X-CheapRoute-Decision:
               schema:
                 type: string
               description: >-
                 Routing decision trace: `strategy=<name>; provider=<alias>; latency_ms=<n>`.
                 `<name>` is the combo strategy (e.g. `priority`, `weighted`, `fusion`) or
                 `single` for a non-combo request. Emitted on every completion response.
-            X-OmniRoute-Request-Id:
+            X-CheapRoute-Request-Id:
               schema:
                 type: string
               description: Request correlation id (present when known).
-            X-OmniRoute-Version:
+            X-CheapRoute-Version:
               schema:
                 type: string
-              description: OmniRoute build version (always present).
-            X-OmniRoute-Cost-Saved:
+              description: CheapRoute build version (always present).
+            X-CheapRoute-Cost-Saved:
               schema:
                 type: string
               description: >-
                 On a semantic-cache HIT, the original (would-have-been) cost in USD that
                 the cache avoided (fixed 10 decimals). Present only on cache hits;
-                X-OmniRoute-Response-Cost is 0 for the same response (incremental cost).
+                X-CheapRoute-Response-Cost is 0 for the same response (incremental cost).
           content:
             application/json:
               schema:
@@ -1719,9 +1719,9 @@ paths:
         "200":
           description: >-
             Message response (or SSE stream). Non-streaming success responses
-            carry the `X-OmniRoute-*` cost-telemetry headers (see
-            `POST /api/v1/chat/completions`), including `X-OmniRoute-Request-Id`
-            and `X-OmniRoute-Version`.
+            carry the `X-CheapRoute-*` cost-telemetry headers (see
+            `POST /api/v1/chat/completions`), including `X-CheapRoute-Request-Id`
+            and `X-CheapRoute-Version`.
         "401":
           $ref: "#/components/responses/Unauthorized"
 
@@ -1758,9 +1758,9 @@ paths:
         "200":
           description: >-
             Response object or SSE stream. Non-streaming success responses carry
-            the `X-OmniRoute-*` cost-telemetry headers (see
-            `POST /api/v1/chat/completions`), including `X-OmniRoute-Request-Id`
-            and `X-OmniRoute-Version`.
+            the `X-CheapRoute-*` cost-telemetry headers (see
+            `POST /api/v1/chat/completions`), including `X-CheapRoute-Request-Id`
+            and `X-CheapRoute-Version`.
         "401":
           $ref: "#/components/responses/Unauthorized"
 
@@ -1825,7 +1825,7 @@ paths:
       responses:
         "200":
           description: >-
-            Embedding vectors. Success responses carry the `X-OmniRoute-*`
+            Embedding vectors. Success responses carry the `X-CheapRoute-*`
             cost-telemetry headers (see `POST /api/v1/chat/completions`); media
             cost is computed per modality when pricing is available, otherwise
             `0` (fail-open).
@@ -1911,7 +1911,7 @@ paths:
       responses:
         "200":
           description: >-
-            Generated images. Success responses carry the `X-OmniRoute-*`
+            Generated images. Success responses carry the `X-CheapRoute-*`
             cost-telemetry headers (see `POST /api/v1/chat/completions`); image
             cost is computed per image when pricing is available, otherwise `0`
             (fail-open).
@@ -1962,7 +1962,7 @@ paths:
       responses:
         "200":
           description: >-
-            Audio data. Success responses carry the `X-OmniRoute-*`
+            Audio data. Success responses carry the `X-CheapRoute-*`
             cost-telemetry headers (see `POST /api/v1/chat/completions`); speech
             cost is computed per character when pricing is available, otherwise
             `0` (fail-open).
@@ -1990,7 +1990,7 @@ paths:
       responses:
         "200":
           description: >-
-            Transcription result. Success responses carry the `X-OmniRoute-*`
+            Transcription result. Success responses carry the `X-CheapRoute-*`
             cost-telemetry headers (see `POST /api/v1/chat/completions`);
             transcription cost is computed per second when pricing is available,
             otherwise `0` (fail-open).
@@ -2019,7 +2019,7 @@ paths:
       responses:
         "200":
           description: >-
-            Moderation result. Success responses carry the `X-OmniRoute-*`
+            Moderation result. Success responses carry the `X-CheapRoute-*`
             cost-telemetry headers (see `POST /api/v1/chat/completions`);
             moderations are always cost `0` (free).
 
@@ -2049,7 +2049,7 @@ paths:
       responses:
         "200":
           description: >-
-            Reranked documents. Success responses carry the `X-OmniRoute-*`
+            Reranked documents. Success responses carry the `X-CheapRoute-*`
             cost-telemetry headers (see `POST /api/v1/chat/completions`); rerank
             cost is computed per search-unit when pricing is available,
             otherwise `0` (fail-open).
@@ -4743,7 +4743,7 @@ paths:
       tags: [Embedded Services]
       summary: Toggle 9Router auto-start
       description: >-
-        When enabled, 9Router starts automatically on the next OmniRoute boot.
+        When enabled, 9Router starts automatically on the next CheapRoute boot.
         **LOCAL_ONLY** — loopback only.
       requestBody:
         required: true
@@ -4773,8 +4773,8 @@ paths:
       tags: [Embedded Services]
       summary: Toggle 9Router auto-restart-when-adopted
       description: >-
-        When enabled, an externally-adopted (not OmniRoute-spawned) 9Router
-        process is restarted under OmniRoute's own supervisor on the next
+        When enabled, an externally-adopted (not CheapRoute-spawned) 9Router
+        process is restarted under CheapRoute's own supervisor on the next
         health-check cycle instead of being left as adopted-only.
         **LOCAL_ONLY** — loopback only.
       requestBody:
@@ -4931,7 +4931,7 @@ paths:
       tags: [Embedded Services]
       summary: Toggle CLIProxyAPI auto-start
       description: >-
-        When enabled, CLIProxyAPI starts automatically on the next OmniRoute boot.
+        When enabled, CLIProxyAPI starts automatically on the next CheapRoute boot.
         **LOCAL_ONLY** — loopback only.
       requestBody:
         required: true
@@ -4961,8 +4961,8 @@ paths:
       tags: [Embedded Services]
       summary: Toggle CLIProxyAPI auto-restart-when-adopted
       description: >-
-        When enabled, an externally-adopted (not OmniRoute-spawned) CLIProxyAPI
-        process is restarted under OmniRoute's own supervisor on the next
+        When enabled, an externally-adopted (not CheapRoute-spawned) CLIProxyAPI
+        process is restarted under CheapRoute's own supervisor on the next
         health-check cycle instead of being left as adopted-only.
         **LOCAL_ONLY** — loopback only.
       requestBody:
@@ -5118,7 +5118,7 @@ paths:
       tags: [Embedded Services]
       summary: Toggle Mux auto-start
       description: >-
-        When enabled, Mux starts automatically on the next OmniRoute boot.
+        When enabled, Mux starts automatically on the next CheapRoute boot.
         **LOCAL_ONLY** — loopback only.
       requestBody:
         required: true
@@ -5148,8 +5148,8 @@ paths:
       tags: [Embedded Services]
       summary: Toggle Mux auto-restart-when-adopted
       description: >-
-        When enabled, an externally-adopted (not OmniRoute-spawned) Mux
-        process is restarted under OmniRoute's own supervisor on the next
+        When enabled, an externally-adopted (not CheapRoute-spawned) Mux
+        process is restarted under CheapRoute's own supervisor on the next
         health-check cycle instead of being left as adopted-only.
         **LOCAL_ONLY** — loopback only.
       requestBody:
@@ -5315,7 +5315,7 @@ paths:
       tags: [Embedded Services]
       summary: Toggle open-wa auto-start
       description: >-
-        When enabled, open-wa starts automatically on the next OmniRoute boot.
+        When enabled, open-wa starts automatically on the next CheapRoute boot.
         **LOCAL_ONLY** — loopback only.
       requestBody:
         required: true
@@ -5345,8 +5345,8 @@ paths:
       tags: [Embedded Services]
       summary: Toggle open-wa auto-restart-when-adopted
       description: >-
-        When enabled, an externally-adopted (not OmniRoute-spawned) open-wa
-        process is restarted under OmniRoute's own supervisor on the next
+        When enabled, an externally-adopted (not CheapRoute-spawned) open-wa
+        process is restarted under CheapRoute's own supervisor on the next
         health-check cycle instead of being left as adopted-only.
         **LOCAL_ONLY** — loopback only.
       requestBody:
@@ -5459,7 +5459,7 @@ paths:
       tags: [Embedded Services]
       summary: Toggle Bifrost auto-start
       description: >-
-        When enabled, Bifrost starts automatically on the next OmniRoute boot.
+        When enabled, Bifrost starts automatically on the next CheapRoute boot.
         **LOCAL_ONLY** — loopback only.
       requestBody:
         required: true
@@ -5482,8 +5482,8 @@ paths:
       tags: [Embedded Services]
       summary: Toggle Bifrost auto-restart-when-adopted
       description: >-
-        When enabled, an externally-adopted (not OmniRoute-spawned) Bifrost
-        process is restarted under OmniRoute's own supervisor on the next
+        When enabled, an externally-adopted (not CheapRoute-spawned) Bifrost
+        process is restarted under CheapRoute's own supervisor on the next
         health-check cycle instead of being left as adopted-only.
         **LOCAL_ONLY** — loopback only.
       requestBody:
@@ -5651,7 +5651,7 @@ paths:
       tags: [Embedded Services]
       summary: Toggle Dario auto-start
       description: >-
-        When enabled, Dario starts automatically on the next OmniRoute boot.
+        When enabled, Dario starts automatically on the next CheapRoute boot.
         **LOCAL_ONLY** — loopback only.
       requestBody:
         required: true
@@ -5676,8 +5676,8 @@ paths:
       tags: [Embedded Services]
       summary: Toggle Dario auto-restart-when-adopted
       description: >-
-        When enabled, an externally-adopted (not OmniRoute-spawned) Dario process
-        is restarted under OmniRoute's own supervisor on the next health-check
+        When enabled, an externally-adopted (not CheapRoute-spawned) Dario process
+        is restarted under CheapRoute's own supervisor on the next health-check
         cycle instead of being left as adopted-only.
         **LOCAL_ONLY** — loopback only.
       requestBody:
@@ -5847,12 +5847,12 @@ paths:
         "502":
           description: Dario did not respond or Dario is not running
 
-  /api/services/dario/admin/import-from-omniroute:
+  /api/services/dario/admin/import-from-cheaproute:
     get:
       tags: [Embedded Services]
-      summary: List OmniRoute claude connections eligible for Dario import
+      summary: List CheapRoute claude connections eligible for Dario import
       description: >-
-        Returns eligible OmniRoute `claude` OAuth provider connections (metadata
+        Returns eligible CheapRoute `claude` OAuth provider connections (metadata
         only — id/name/email/org tier, never tokens) so the UI can offer a picker
         when more than one exists. **LOCAL_ONLY** — loopback only.
       responses:
@@ -5885,7 +5885,7 @@ paths:
           description: Missing or invalid admin auth
     post:
       tags: [Embedded Services]
-      summary: Import an OmniRoute claude connection's OAuth tokens into Dario
+      summary: Import an CheapRoute claude connection's OAuth tokens into Dario
       description: >-
         Writes the source connection's access/refresh token pair directly into
         Dario's own account-file store (`~/.dario/accounts/<alias>.json`), reusing
@@ -6024,7 +6024,7 @@ paths:
       tags: [Embedded Services]
       summary: Toggle LLMLingua auto-start
       description: >-
-        When enabled, LLMLingua starts automatically on the next OmniRoute boot.
+        When enabled, LLMLingua starts automatically on the next CheapRoute boot.
         **LOCAL_ONLY** — loopback only.
       requestBody:
         required: true
@@ -6047,8 +6047,8 @@ paths:
       tags: [Embedded Services]
       summary: Toggle LLMLingua auto-restart-when-adopted
       description: >-
-        When enabled, an externally-adopted (not OmniRoute-spawned) LLMLingua
-        process is restarted under OmniRoute's own supervisor on the next
+        When enabled, an externally-adopted (not CheapRoute-spawned) LLMLingua
+        process is restarted under CheapRoute's own supervisor on the next
         health-check cycle instead of being left as adopted-only.
         **LOCAL_ONLY** — loopback only.
       requestBody:
@@ -6227,7 +6227,7 @@ paths:
     post:
       tags: [Cloud]
       summary: Authenticate with cloud worker
-      description: Authenticates with the OmniRoute cloud worker for remote access.
+      description: Authenticates with the CheapRoute cloud worker for remote access.
       requestBody:
         required: true
         content:
@@ -6566,7 +6566,7 @@ paths:
       summary: Trigger a background job
       description: >-
         Local-only runtime administration. Starts the job, or waits for an in-flight
-        run before queueing the next one, subject to OMNIROUTE_RUNNOW_TIMEOUT_MS.
+        run before queueing the next one, subject to CHEAPROUTE_RUNNOW_TIMEOUT_MS.
       x-internal: true
       parameters:
         - name: id
@@ -7069,7 +7069,7 @@ paths:
       security: []
       parameters:
         - in: header
-          name: x-omniroute-video-bridge-principal
+          name: x-cheaproute-video-bridge-principal
           required: true
           description: Canonical visible-ASCII, opaque non-secret principal ID; production tenant derivation is required before enabling a caller
           schema:
@@ -7111,7 +7111,7 @@ paths:
       security: []
       parameters:
         - in: header
-          name: x-omniroute-video-bridge-principal
+          name: x-cheaproute-video-bridge-principal
           required: true
           description: Canonical visible-ASCII, opaque non-secret principal ID; production tenant derivation is required before enabling a caller
           schema:
@@ -7180,7 +7180,7 @@ paths:
       security: []
       parameters:
         - in: header
-          name: x-omniroute-video-bridge-principal
+          name: x-cheaproute-video-bridge-principal
           required: true
           description: Canonical visible-ASCII, opaque non-secret principal ID; production tenant derivation is required before enabling a caller
           schema:
@@ -7942,7 +7942,7 @@ paths:
   /api/tools/traffic-inspector/requests/{id}/replay:
     post:
       tags: [Traffic Inspector]
-      summary: Replay a captured request through OmniRoute router
+      summary: Replay a captured request through CheapRoute router
       description: Re-executes the original request body against /v1/chat/completions. Consumes quota.
       parameters:
         - name: id
@@ -8340,7 +8340,7 @@ paths:
   /api/openapi/try:
     post:
       tags: [System]
-      summary: Proxy an API Explorer request to an OmniRoute endpoint
+      summary: Proxy an API Explorer request to an CheapRoute endpoint
       description: >-
         Executes an API Explorer request through a server-side, same-origin proxy. The target
         must start with `/api/`, `/v1/`, `/v1beta/`, `/a2a`, or
@@ -8371,7 +8371,7 @@ paths:
                   type: string
                   minLength: 1
                   pattern: "^/(?:api/|v1/|v1beta/|a2a|\\.well-known/agent\\.json)"
-                  description: Same-origin OmniRoute API path, optionally including a query string.
+                  description: Same-origin CheapRoute API path, optionally including a query string.
                 headers:
                   type: object
                   default: {}
@@ -8443,7 +8443,7 @@ paths:
       summary: List agent skills catalog
       description: |
         Returns the full 42-entry Agent Skills catalog with optional filtering.
-        Skills describe how to use OmniRoute's REST API and CLI — they are structured
+        Skills describe how to use CheapRoute's REST API and CLI — they are structured
         SKILL.md documentation files discoverable by external agents, MCP clients, and
         A2A orchestrators. No authentication required.
       parameters:
@@ -8488,7 +8488,7 @@ paths:
       summary: Get a single agent skill
       description: |
         Returns metadata for a single agent skill by its canonical ID
-        (e.g. `omni-providers`, `cli-serve`). No authentication required.
+        (e.g. `cheap-providers`, `cli-serve`). No authentication required.
       parameters:
         - name: id
           in: path
@@ -8497,7 +8497,7 @@ paths:
             type: string
             pattern: "^[a-z][a-z0-9-]*$"
           description: Canonical skill ID
-          example: omni-providers
+          example: cheap-providers
       responses:
         "200":
           description: Agent skill metadata
@@ -8528,7 +8528,7 @@ paths:
             type: string
             pattern: "^[a-z][a-z0-9-]*$"
           description: Canonical skill ID
-          example: omni-providers
+          example: cheap-providers
       responses:
         "200":
           description: SKILL.md content as Markdown
@@ -8677,7 +8677,7 @@ paths:
         asynchronous upstream — the handler polls the returned operation
         until it succeeds or fails before responding, so this endpoint can
         take longer to return for that provider. Success responses carry the
-        `X-OmniRoute-*` cost-telemetry headers.
+        `X-CheapRoute-*` cost-telemetry headers.
       security:
         - BearerAuth: []
       requestBody:
@@ -8715,7 +8715,7 @@ paths:
         OpenAI Whisper–compatible audio translation (multipart/form-data).
         Unlike `/api/v1/audio/transcriptions`, output is always English
         regardless of the source language. Success responses carry the
-        `X-OmniRoute-*` cost-telemetry headers.
+        `X-CheapRoute-*` cost-telemetry headers.
       security:
         - BearerAuth: []
       requestBody:
@@ -8967,9 +8967,9 @@ paths:
     get:
       tags:
         - CLI Tools
-      summary: Read Crush CLI OmniRoute config
+      summary: Read Crush CLI CheapRoute config
       x-loopback-only: true
-      description: Local-only. Reads the OmniRoute provider block in Crush's config.
+      description: Local-only. Reads the CheapRoute provider block in Crush's config.
       x-internal: true
       responses:
         "200":
@@ -8977,9 +8977,9 @@ paths:
     post:
       tags:
         - CLI Tools
-      summary: Write Crush CLI OmniRoute config
+      summary: Write Crush CLI CheapRoute config
       x-loopback-only: true
-      description: Local-only. Registers OmniRoute as an `openai-compat` provider in Crush's config.
+      description: Local-only. Registers CheapRoute as an `openai-compat` provider in Crush's config.
       x-internal: true
       responses:
         "200":
@@ -8987,9 +8987,9 @@ paths:
     delete:
       tags:
         - CLI Tools
-      summary: Remove OmniRoute from Crush CLI config
+      summary: Remove CheapRoute from Crush CLI config
       x-loopback-only: true
-      description: Local-only. Removes the OmniRoute provider block from Crush's config.
+      description: Local-only. Removes the CheapRoute provider block from Crush's config.
       x-internal: true
       responses:
         "200":
@@ -8998,10 +8998,10 @@ paths:
     get:
       tags:
         - CLI Tools
-      summary: Read CodeWhale CLI OmniRoute config
+      summary: Read CodeWhale CLI CheapRoute config
       x-loopback-only: true
       description: >-
-        Local-only. Reads the OmniRoute config block from
+        Local-only. Reads the CheapRoute config block from
         `~/.codewhale/config.toml` (with `~/.deepseek/config.toml` legacy
         fallback).
       x-internal: true
@@ -9011,9 +9011,9 @@ paths:
     post:
       tags:
         - CLI Tools
-      summary: Write CodeWhale CLI OmniRoute config
+      summary: Write CodeWhale CLI CheapRoute config
       x-loopback-only: true
-      description: Local-only. Writes the OmniRoute config block in CodeWhale TOML format.
+      description: Local-only. Writes the CheapRoute config block in CodeWhale TOML format.
       x-internal: true
       responses:
         "200":
@@ -9021,9 +9021,9 @@ paths:
     delete:
       tags:
         - CLI Tools
-      summary: Remove OmniRoute from CodeWhale CLI config
+      summary: Remove CheapRoute from CodeWhale CLI config
       x-loopback-only: true
-      description: Local-only. Removes the OmniRoute config block from CodeWhale's config.
+      description: Local-only. Removes the CheapRoute config block from CodeWhale's config.
       x-internal: true
       responses:
         "200":
@@ -9033,39 +9033,39 @@ paths:
   # Minimal entries for every implemented route not documented above. Methods
   # are parsed from each route.ts's exports; summaries are path-derived.
   # Regenerate with: node scripts/ad-hoc/gen-openapi-missing-paths.mjs --apply
-  /api/{omnirouteApiCatchAll}:
+  /api/{cheaprouteApiCatchAll}:
     delete:
       tags:
-        - OmnirouteApiCatchAll
-      summary: "DELETE <omnirouteApiCatchAll>"
+        - CheaprouteApiCatchAll
+      summary: "DELETE <cheaprouteApiCatchAll>"
       responses:
         "200":
           description: OK
     get:
       tags:
-        - OmnirouteApiCatchAll
-      summary: "GET <omnirouteApiCatchAll>"
+        - CheaprouteApiCatchAll
+      summary: "GET <cheaprouteApiCatchAll>"
       responses:
         "200":
           description: OK
     patch:
       tags:
-        - OmnirouteApiCatchAll
-      summary: "PATCH <omnirouteApiCatchAll>"
+        - CheaprouteApiCatchAll
+      summary: "PATCH <cheaprouteApiCatchAll>"
       responses:
         "200":
           description: OK
     post:
       tags:
-        - OmnirouteApiCatchAll
-      summary: "POST <omnirouteApiCatchAll>"
+        - CheaprouteApiCatchAll
+      summary: "POST <cheaprouteApiCatchAll>"
       responses:
         "200":
           description: OK
     put:
       tags:
-        - OmnirouteApiCatchAll
-      summary: "PUT <omnirouteApiCatchAll>"
+        - CheaprouteApiCatchAll
+      summary: "PUT <cheaprouteApiCatchAll>"
       responses:
         "200":
           description: OK
@@ -9308,12 +9308,12 @@ paths:
       summary: "GET cli tools › config"
       description: >-
         Returns redacted, non-cacheable previews. Send the configuration API key
-        in x-omniroute-config-api-key, separate from management authentication.
+        in x-cheaproute-config-api-key, separate from management authentication.
         API keys in query strings are rejected. Preview content must not be
         copied into a credential-bearing configuration or submitted as an apply payload.
       parameters:
         - in: header
-          name: x-omniroute-config-api-key
+          name: x-cheaproute-config-api-key
           required: true
           schema:
             type: string
@@ -10816,19 +10816,19 @@ paths:
       responses:
         "200":
           description: OK
-  /api/omniroute/route/preview:
+  /api/cheaproute/route/preview:
     post:
       tags:
-        - Omniroute
-      summary: "POST omniroute › route › preview"
+        - Cheaproute
+      summary: "POST cheaproute › route › preview"
       responses:
         "200":
           description: OK
-  /api/omniroute/status:
+  /api/cheaproute/status:
     get:
       tags:
-        - Omniroute
-      summary: "GET omniroute › status"
+        - Cheaproute
+      summary: "GET cheaproute › status"
       responses:
         "200":
           description: OK
@@ -12351,7 +12351,7 @@ paths:
                   connections:
                     type: integer
                     minimum: 0
-                    description: Distinct OmniRoute connections logged through the pool members.
+                    description: Distinct CheapRoute connections logged through the pool members.
                   distinctExits:
                     type: integer
                     minimum: 0
@@ -13119,39 +13119,39 @@ paths:
       responses:
         "200":
           description: OK
-  /api/v1/{omnirouteCatchAll}:
+  /api/v1/{cheaprouteCatchAll}:
     delete:
       tags:
-        - V1 OmnirouteCatchAll
-      summary: "DELETE <omnirouteCatchAll>"
+        - V1 CheaprouteCatchAll
+      summary: "DELETE <cheaprouteCatchAll>"
       responses:
         "200":
           description: OK
     get:
       tags:
-        - V1 OmnirouteCatchAll
-      summary: "GET <omnirouteCatchAll>"
+        - V1 CheaprouteCatchAll
+      summary: "GET <cheaprouteCatchAll>"
       responses:
         "200":
           description: OK
     patch:
       tags:
-        - V1 OmnirouteCatchAll
-      summary: "PATCH <omnirouteCatchAll>"
+        - V1 CheaprouteCatchAll
+      summary: "PATCH <cheaprouteCatchAll>"
       responses:
         "200":
           description: OK
     post:
       tags:
-        - V1 OmnirouteCatchAll
-      summary: "POST <omnirouteCatchAll>"
+        - V1 CheaprouteCatchAll
+      summary: "POST <cheaprouteCatchAll>"
       responses:
         "200":
           description: OK
     put:
       tags:
-        - V1 OmnirouteCatchAll
-      summary: "PUT <omnirouteCatchAll>"
+        - V1 CheaprouteCatchAll
+      summary: "PUT <cheaprouteCatchAll>"
       responses:
         "200":
           description: OK
@@ -13980,7 +13980,7 @@ components:
       description: >
         Two bearer families are accepted. Inference API keys (typically `sk-…`)
         authorize `/v1/*`. Management routes also accept `oma_live_…` Access Tokens
-        (Settings → Access Tokens / `omniroute connect`) and API keys whose metadata
+        (Settings → Access Tokens / `cheaproute connect`) and API keys whose metadata
         includes `manage` or `admin` scope. See docs/guides/MANAGEMENT-AUTH.md.
         Bearer credentials are accepted on management routes that use this scheme;
         they are not rejected solely for being Bearer.
@@ -14345,7 +14345,7 @@ components:
     AgentSkill:
       type: object
       description: >-
-        Single entry in the Agent Skills catalog. Describes one OmniRoute REST API surface
+        Single entry in the Agent Skills catalog. Describes one CheapRoute REST API surface
         (category: api) or CLI subcommand group (category: cli) with a canonical ID and a
         link to its SKILL.md documentation file.
       required: [id, name, description, category, area, rawUrl, githubUrl]
@@ -14353,8 +14353,8 @@ components:
         id:
           type: string
           pattern: "^[a-z][a-z0-9-]*$"
-          description: Canonical skill ID (e.g. "omni-providers", "cli-serve")
-          example: omni-providers
+          description: Canonical skill ID (e.g. "cheap-providers", "cli-serve")
+          example: cheap-providers
         name:
           type: string
           minLength: 1
@@ -14401,12 +14401,12 @@ components:
           type: string
           format: uri
           description: GitHub raw URL of the SKILL.md file
-          example: "https://raw.githubusercontent.com/diegosouzapw/OmniRoute/refs/heads/main/skills/omni-providers/SKILL.md"
+          example: "https://raw.githubusercontent.com/diegosouzapw/CheapRoute/refs/heads/main/skills/cheap-providers/SKILL.md"
         githubUrl:
           type: string
           format: uri
           description: GitHub blob URL for viewing the SKILL.md in the browser
-          example: "https://github.com/diegosouzapw/OmniRoute/blob/main/skills/omni-providers/SKILL.md"
+          example: "https://github.com/diegosouzapw/CheapRoute/blob/main/skills/cheap-providers/SKILL.md"
 
     SkillCoverage:
       type: object
@@ -15403,7 +15403,7 @@ components:
           description: >-
             Redacted subscription URL. May be a local/loopback address
             (e.g. `http://127.0.0.1:8080/list`) — local-first fetch targets
-            are allowed by default (`OMNIROUTE_ALLOW_LOCAL_PROVIDER_URLS`);
+            are allowed by default (`CHEAPROUTE_ALLOW_LOCAL_PROVIDER_URLS`);
             cloud-metadata / link-local endpoints (169.254.0.0/16) are always
             blocked.
         enabled:

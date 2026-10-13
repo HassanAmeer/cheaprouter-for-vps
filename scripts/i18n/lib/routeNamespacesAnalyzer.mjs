@@ -90,7 +90,7 @@ function resolveSpec(spec, fromFile) {
   } else if (spec.startsWith("./") || spec.startsWith("../")) {
     base = resolve(dirname(fromFile), spec);
   } else {
-    return null; // external package, @omniroute/open-sse (server engine), etc.
+    return null; // external package, @cheaproute/open-sse (server engine), etc.
   }
   const candidates = [
     base,

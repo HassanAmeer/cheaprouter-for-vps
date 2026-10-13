@@ -3,7 +3,7 @@ import { requireManagementAuth } from "@/lib/api/requireManagementAuth";
 import { getProviderConnectionById, updateProviderConnection } from "@/lib/db/providers";
 import { getSettings } from "@/lib/db/settings";
 import { runSingleModelTest } from "@/lib/api/modelTestRunner";
-import { sanitizeErrorMessage } from "@omniroute/open-sse/utils/error.ts";
+import { sanitizeErrorMessage } from "@cheaproute/open-sse/utils/error.ts";
 import { DEFAULT_CONNECTION_TEST_PROMPT } from "@/shared/constants/connectionTest";
 import { isFreeModel, providerHasFreeModels } from "@/shared/utils/freeModels";
 import { getProviderAlias } from "@/shared/constants/providers";

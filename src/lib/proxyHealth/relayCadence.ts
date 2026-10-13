@@ -10,7 +10,7 @@
  * clock, so a restart or a freshly registered relay does not wake it at once.
  */
 
-import { isRelayType } from "@omniroute/open-sse/utils/proxyDispatcher";
+import { isRelayType } from "@cheaproute/open-sse/utils/proxyDispatcher";
 
 export const DEFAULT_RELAY_INTERVAL_MS = 6 * 60 * 60 * 1000;
 const MIN_RELAY_INTERVAL_MS = 60_000;

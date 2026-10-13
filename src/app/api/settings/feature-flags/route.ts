@@ -18,7 +18,7 @@ import {
 } from "@/lib/db/featureFlags";
 import { resolveAllFeatureFlags } from "@/shared/utils/featureFlags";
 import { getCcAliasGlobalState } from "@/lib/db/ccDiscoveryAliases";
-import { sanitizeErrorMessage } from "@omniroute/open-sse/utils/error";
+import { sanitizeErrorMessage } from "@cheaproute/open-sse/utils/error";
 
 const ACTIVE_VALUES = new Set(["true", "1", "yes"]);
 const CC_DISCOVERY_ALIASES_FLAG_KEY = "EXPOSE_CC_DISCOVERY_ALIASES";

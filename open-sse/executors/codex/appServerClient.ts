@@ -9,7 +9,7 @@
  *
  * The critical addition over the other transports is a catch-all handler for
  * server -> client ServerRequests: the app-server can ask the client to approve a
- * command / patch / permission. OmniRoute is a ROUTER — the harness that consumes
+ * command / patch / permission. CheapRoute is a ROUTER — the harness that consumes
  * it owns tool execution and policy — so codex must never stall a turn on its own
  * interactive approval. Every inbound ServerRequest is always answered: approval
  * prompts are auto-DENIED by default (they gate codex's OWN host execution, not

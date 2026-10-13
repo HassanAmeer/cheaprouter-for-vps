@@ -74,7 +74,7 @@ const transformAppendSystemBlockSchema = z.object({
 const transformInjectBillingHeaderSchema = z.object({
   kind: z.literal("inject_billing_header"),
   entrypoint: z.string().min(1).max(50),
-  versionFormat: z.enum(["ex-machina", "omniroute-daystamp"]),
+  versionFormat: z.enum(["ex-machina", "cheaproute-daystamp"]),
   cchAlgo: z.enum(["sha256-first-user", "xxhash64-body", "static-zero"]),
   version: z.string().max(50).optional(),
   buildRevision: z.string().min(1).max(20).optional(),
@@ -128,7 +128,11 @@ export const updateSettingsSchema = z.object({
   cloudUrl: z.string().max(500).optional(),
   baseUrl: z.string().max(500).optional(),
   setupComplete: z.boolean().optional(),
-  publishedProviders: z.array(z.string().max(100)).optional(),
+   publishedProviders: z.array(z.string().max(100)).optional(),
+   // Master BYOK toggle (Reseller API tab). When ON, reseller users may supply
+   // custom provider keys via `x-upstream-key` headers; when OFF, CheapRouter
+   // rejects BYOK pass-through requests with a 403 + "BYOK is disabled". Default ON.
+   byokEnabled: z.boolean().optional(),
   blockedProviders: z.array(z.string().max(100)).optional(),
   noAuthFallbackDisabledProviders: z.array(z.string().max(100)).optional(),
   hidePaidModels: z.boolean().optional(),

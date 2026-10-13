@@ -29,7 +29,7 @@ import { sanitizeErrorMessage } from "../utils/error.ts";
 
 /**
  * Loopback HTTP GET that MUST NOT use globalThis.fetch.
- * OmniRoute patches fetch with a proxy dispatcher (proxyFetch.ts); routing
+ * CheapRoute patches fetch with a proxy dispatcher (proxyFetch.ts); routing
  * 127.0.0.1 Chrome DevTools through that proxy yields PROXY_UNREACHABLE /
  * "Chrome DevTools did not become ready: fetch failed" while Chrome is fine.
  */
@@ -176,9 +176,9 @@ export function extractUserJwtFromStorageRaw(raw: string): string {
 
 function resolveAdobeFireflyDataRoot(): string {
   const dataRoot =
-    String(process.env.DATA_DIR || process.env.OMNIROUTE_DATA_DIR || "").trim() ||
+    String(process.env.DATA_DIR || process.env.CHEAPROUTE_DATA_DIR || "").trim() ||
     (process.env.LOCALAPPDATA
-      ? join(process.env.LOCALAPPDATA, "OmniRoute")
+      ? join(process.env.LOCALAPPDATA, "CheapRoute")
       : join(process.cwd(), ".data"));
   mkdirSync(dataRoot, { recursive: true });
   return dataRoot;
@@ -290,7 +290,7 @@ export async function resolveAdobeAccountLabel(
 
 /** Resolve system Chrome/Edge executable. Exported for unit tests. */
 export function resolveSystemBrowserExecutable(): string | null {
-  const configured = process.env.OMNIROUTE_LOGIN_BROWSER_PATH?.trim();
+  const configured = process.env.CHEAPROUTE_LOGIN_BROWSER_PATH?.trim();
   if (configured && existsSync(configured)) return configured;
 
   const pf = process.env.ProgramFiles || "C:\\Program Files";
@@ -1162,7 +1162,7 @@ async function runAdobeFireflyCdpBrowser(opts: {
       success: false,
       error:
         "No Chrome or Edge browser found for Adobe Firefly sign-in. " +
-        "Install Google Chrome or Microsoft Edge, or set OMNIROUTE_LOGIN_BROWSER_PATH, " +
+        "Install Google Chrome or Microsoft Edge, or set CHEAPROUTE_LOGIN_BROWSER_PATH, " +
         "or paste the IMS Bearer JWT from firefly-3p.ff.adobe.io.",
     };
   }

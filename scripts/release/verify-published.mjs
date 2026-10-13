@@ -47,11 +47,11 @@ export function buildDockerArgs(version) {
 // (slim has no curl). Kept as a single quoted constant — no runtime interpolation.
 export const CONTAINER_SCRIPT = `
 set -euo pipefail
-echo "[verify-published] npm i -g omniroute@\${VERIFY_VERSION} (public registry)"
-npm install -g "omniroute@\${VERIFY_VERSION}"
-export DATA_DIR=/tmp/omniroute-data JWT_SECRET=verify-published-secret-with-sufficient-length API_KEY_SECRET=verify-published-api-key-secret DISABLE_SQLITE_AUTO_BACKUP=true OMNIROUTE_SKIP_SYSTEM_TRUST=1
+echo "[verify-published] npm i -g cheaproute@\${VERIFY_VERSION} (public registry)"
+npm install -g "cheaproute@\${VERIFY_VERSION}"
+export DATA_DIR=/tmp/cheaproute-data JWT_SECRET=verify-published-secret-with-sufficient-length API_KEY_SECRET=verify-published-api-key-secret DISABLE_SQLITE_AUTO_BACKUP=true CHEAPROUTE_SKIP_SYSTEM_TRUST=1
 mkdir -p "\$DATA_DIR"
-omniroute serve --port "\$VERIFY_PORT" &
+cheaproute serve --port "\$VERIFY_PORT" &
 node -e '
 const port = process.env.VERIFY_PORT;
 const want = process.env.VERIFY_VERSION;
@@ -90,13 +90,13 @@ function main() {
     console.error("[verify-published] docker unavailable — this verifier requires a clean container");
     process.exit(2);
   }
-  console.log(`[verify-published] clean-container verify of omniroute@${version}…`);
+  console.log(`[verify-published] clean-container verify of cheaproute@${version}…`);
   const r = spawnSync("docker", buildDockerArgs(version), { stdio: "inherit" });
   if (r.status === 0) {
     console.log("[verify-published] ✅ the published package installs and boots");
     process.exit(0);
   }
-  console.error(`[verify-published] ❌ FAILED (exit ${r.status}) — consider: npm deprecate omniroute@${version} "<reason>"`);
+  console.error(`[verify-published] ❌ FAILED (exit ${r.status}) — consider: npm deprecate cheaproute@${version} "<reason>"`);
   process.exit(1);
 }
 

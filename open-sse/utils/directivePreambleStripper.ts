@@ -2,7 +2,7 @@
  * Streaming-safe preamble stripper.
  *
  * Background: DeepSeek-V4 and similar models sometimes echo the tail of the
- * system message (highest recency) — e.g. the OMNIROUTE_SYSTEM_INSTRUCTION_APPEND
+ * system message (highest recency) — e.g. the CHEAPROUTE_SYSTEM_INSTRUCTION_APPEND
  * directive appended by claude-to-openai.ts — verbatim at the START of their
  * response content. The user then sees the system instruction inside the
  * assistant's reply ("시스템 메시지" leak). This helper deterministically
@@ -86,7 +86,7 @@ export function createDirectivePreambleStripper(directive: string): PreambleStri
  * Streaming-safe system-preamble stripper (Phase B).
  *
  * DeepSeek-V4 and similar models sometimes echo not just the exact
- * OMNIROUTE_SYSTEM_INSTRUCTION_APPEND directive but whole chunks of the system
+ * CHEAPROUTE_SYSTEM_INSTRUCTION_APPEND directive but whole chunks of the system
  * prompt at the START of their reply: `<analysis>...</analysis>` blocks,
  * `<system-reminder>` blocks, `<summary>` blocks, or prose reproductions of the
  * superpowers skill section ("Skill usage (when superpowers skills are
@@ -95,11 +95,11 @@ export function createDirectivePreambleStripper(directive: string): PreambleStri
  * such known system-echo constructs from the very start of a stream, across
  * arbitrary chunk boundaries, and only while the stream is still a preamble.
  *
- * OFF by default — see the OMNIROUTE_STRIP_SYSTEM_PREAMBLE gate at the call
+ * OFF by default — see the CHEAPROUTE_STRIP_SYSTEM_PREAMBLE gate at the call
  * site (translator/response/openai-to-claude.ts). The heuristics below are
  * English-prose shaped and DO mutate response payloads, so they only run when
  * the operator opts in, exactly like the directive stripper above only runs
- * when OMNIROUTE_SYSTEM_INSTRUCTION_APPEND is configured.
+ * when CHEAPROUTE_SYSTEM_INSTRUCTION_APPEND is configured.
  */
 // System-echo blocks (the system prompt's tail echoed at the start of a reply) are
 // short — a few hundred chars at most. A block carrying >= this many chars of

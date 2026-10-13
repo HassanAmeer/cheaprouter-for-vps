@@ -3,7 +3,7 @@
  *
  * This is the persistence + freshness layer around ./constants.ts:
  *   - `getStoredMaxaiConstants()` reads the last-extracted, validated constants
- *     from OmniRoute settings (the sole source of the two secret-shaped keys).
+ *     from CheapRoute settings (the sole source of the two secret-shaped keys).
  *   - `persistMaxaiConstants()` writes a freshly-extracted+validated set.
  *   - `ensureMaxaiConstants()` is the gate every signed path calls: it returns a
  *     usable constants object, extracting + persisting on a cold store, and is

@@ -1,11 +1,11 @@
-import { getAntigravityModelsDiscoveryUrls } from "@omniroute/open-sse/config/antigravityUpstream.ts";
+import { getAntigravityModelsDiscoveryUrls } from "@cheaproute/open-sse/config/antigravityUpstream.ts";
 import {
   getGrokBuildModelsHeaders,
   GROK_BUILD_MODELS_URL,
   GROK_BUILD_SUPPORTED_REASONING_EFFORTS,
-} from "@omniroute/open-sse/config/grokBuild.ts";
-import { grok_cliProvider } from "@omniroute/open-sse/config/providers/registry/grok-cli/index.ts";
-import { getAntigravityContentHeaders } from "@omniroute/open-sse/services/antigravityHeaders.ts";
+} from "@cheaproute/open-sse/config/grokBuild.ts";
+import { grok_cliProvider } from "@cheaproute/open-sse/config/providers/registry/grok-cli/index.ts";
+import { getAntigravityContentHeaders } from "@cheaproute/open-sse/services/antigravityHeaders.ts";
 import { parseGeminiModelsList } from "@/lib/providerModels/geminiModelsParser";
 import { buildClaudeModelsHeaders } from "@/lib/providerModels/claudeModelsHeaders";
 import {
@@ -13,22 +13,22 @@ import {
   CLINEPASS_MODELS_ENDPOINT,
   parseClineModels,
   parseClinepassRecommendedModels,
-} from "@omniroute/open-sse/services/clinepassModels.ts";
-import { buildClaudeCodeCompatibleHeaders } from "@omniroute/open-sse/services/claudeCodeCompatible.ts";
+} from "@cheaproute/open-sse/services/clinepassModels.ts";
+import { buildClaudeCodeCompatibleHeaders } from "@cheaproute/open-sse/services/claudeCodeCompatible.ts";
 import {
   buildKimiCodeIdentityHeaders,
   getKimiCodeCliUserAgent,
   KIMI_CODING_MODELS_URL,
-} from "@omniroute/open-sse/config/providers/registry/kimi/coding/runtime.ts";
-import { ALIBABA_MODEL_STUDIO_MODELS } from "@omniroute/open-sse/config/providers/registry/alibaba/index.ts";
-import { QWEN_CLOUD_TEXT_MODELS } from "@omniroute/open-sse/config/providers/registry/qwen-cloud/index.ts";
-import { filterAlibabaFreeEligibleModels } from "@omniroute/open-sse/services/alibabaFreeTierDiscovery.ts";
-import { shouldUseLiveAlibabaFreeModelDiscovery } from "@omniroute/open-sse/services/alibabaFreeTier.ts";
-import { isDashscopeTextModelId } from "@omniroute/open-sse/services/dashscopeTextModels.ts";
-import "@omniroute/open-sse/services/zaiWebCredentials.ts";
-import { buildOpencodeBackgroundHeaders } from "@omniroute/open-sse/utils/opencodeHeaders.ts";
+} from "@cheaproute/open-sse/config/providers/registry/kimi/coding/runtime.ts";
+import { ALIBABA_MODEL_STUDIO_MODELS } from "@cheaproute/open-sse/config/providers/registry/alibaba/index.ts";
+import { QWEN_CLOUD_TEXT_MODELS } from "@cheaproute/open-sse/config/providers/registry/qwen-cloud/index.ts";
+import { filterAlibabaFreeEligibleModels } from "@cheaproute/open-sse/services/alibabaFreeTierDiscovery.ts";
+import { shouldUseLiveAlibabaFreeModelDiscovery } from "@cheaproute/open-sse/services/alibabaFreeTier.ts";
+import { isDashscopeTextModelId } from "@cheaproute/open-sse/services/dashscopeTextModels.ts";
+import "@cheaproute/open-sse/services/zaiWebCredentials.ts";
+import { buildOpencodeBackgroundHeaders } from "@cheaproute/open-sse/utils/opencodeHeaders.ts";
 import { isFeatureFlagEnabled } from "@/shared/utils/featureFlags";
-import { buildChatPlaygroundModelsDiscoveryEntry } from "@omniroute/open-sse/services/chatplaygroundModels.ts";
+import { buildChatPlaygroundModelsDiscoveryEntry } from "@cheaproute/open-sse/services/chatplaygroundModels.ts";
 import { normalizeOpenAiLikeModelsResponse, normalizeWorkbuddyModelsResponse } from "./normalizers";
 
 const QWEN_CLOUD_TEXT_MODEL_IDS = new Set(QWEN_CLOUD_TEXT_MODELS.map((model) => model.id));

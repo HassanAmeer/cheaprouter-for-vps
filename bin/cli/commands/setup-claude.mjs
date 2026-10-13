@@ -1,14 +1,14 @@
 /**
- * omniroute setup-claude — Remote-aware Claude Code profile generator.
+ * cheaproute setup-claude — Remote-aware Claude Code profile generator.
  *
  * Claude Code has no native profile files (unlike Codex). The idiomatic way to
  * keep multiple named configs is `CLAUDE_CONFIG_DIR` — a separate config dir per
  * profile (its own settings.json, credentials, history, cache). This command
- * fetches the live /v1/models catalog from a (possibly remote) OmniRoute and
+ * fetches the live /v1/models catalog from a (possibly remote) CheapRoute and
  * writes `~/.claude/profiles/<name>/settings.json` for each supported model,
  * reusing the SAME profile names as `setup-codex` (glm52, kimi-k27, …).
  *
- * Launch a profile with:  omniroute launch --profile <name>
+ * Launch a profile with:  cheaproute launch --profile <name>
  * (which injects ANTHROPIC_AUTH_TOKEN from the active context — the token is
  * never written to disk). Or export ANTHROPIC_AUTH_TOKEN and run:
  *   CLAUDE_CONFIG_DIR=~/.claude/profiles/<name> claude
@@ -55,7 +55,7 @@ export function fallbackClaudeProfile(modelId, model) {
  * itself (bash/zsh). On PowerShell or cmd.exe it either fails to parse or
  * resolves to a literal `./~/.claude/...` that does not exist — Claude Code
  * then starts with NO `ANTHROPIC_BASE_URL`, and its `firstParty` provider
- * falls back to `api.anthropic.com`, which rejects an OmniRoute key with a real
+ * falls back to `api.anthropic.com`, which rejects an CheapRoute key with a real
  * Anthropic `401 {"type":"error","error":{"type":"authentication_error",…}}`
  * (#11525).
  *
@@ -70,10 +70,10 @@ export function formatManualLaunchHint(profileDir, platform = process.platform) 
   if (platform === "win32") {
     return (
       `$env:CLAUDE_CONFIG_DIR="${profileDir}"; ` +
-      `$env:ANTHROPIC_AUTH_TOKEN="<your OmniRoute key>"; claude`
+      `$env:ANTHROPIC_AUTH_TOKEN="<your CheapRoute key>"; claude`
     );
   }
-  return `CLAUDE_CONFIG_DIR="${profileDir}" ANTHROPIC_AUTH_TOKEN="<your OmniRoute key>" claude`;
+  return `CLAUDE_CONFIG_DIR="${profileDir}" ANTHROPIC_AUTH_TOKEN="<your CheapRoute key>" claude`;
 }
 
 /**
@@ -93,7 +93,7 @@ export function inheritedAnthropicKeyWarning(env = process.env) {
     "ANTHROPIC_API_KEY is set in this shell. Claude Code sends it as x-api-key and asks " +
     "\"Detected a custom API key in your environment\" — if ANTHROPIC_BASE_URL is not " +
     "picked up, that key goes to api.anthropic.com and you get a real Anthropic 401. " +
-    "Unset it, or use `omniroute launch --profile <name>` (it strips every inherited " +
+    "Unset it, or use `cheaproute launch --profile <name>` (it strips every inherited " +
     "ANTHROPIC_* var before spawning claude)."
   );
 }
@@ -113,7 +113,7 @@ export function buildProfileSettings(modelId, baseUrl, cfg) {
   };
   const effort = effortLevelFor(cfg);
   if (effort) settings.effortLevel = effort;
-  // NOTE: ANTHROPIC_AUTH_TOKEN is intentionally NOT written here — `omniroute
+  // NOTE: ANTHROPIC_AUTH_TOKEN is intentionally NOT written here — `cheaproute
   // launch --profile` injects it from the active context, keeping the secret off
   // disk. For direct `CLAUDE_CONFIG_DIR=… claude` use, export it in your shell.
   return JSON.stringify(settings, null, 2) + "\n";
@@ -193,17 +193,17 @@ export async function runSetupClaudeCommand(opts = {}) {
   const baseUrl = (opts.remote ?? `http://localhost:${port}`)
     .replace(/\/+$/, "")
     .replace(/\/v1$/, "");
-  const apiKey = opts.apiKey ?? opts["api-key"] ?? process.env.OMNIROUTE_API_KEY ?? "";
+  const apiKey = opts.apiKey ?? opts["api-key"] ?? process.env.CHEAPROUTE_API_KEY ?? "";
   const claudeHome = opts.claudeHome ?? opts["claude-home"] ?? join(os.homedir(), ".claude");
   const profilesRoot = join(claudeHome, "profiles");
   const dryRun = Boolean(opts.dryRun ?? opts["dry-run"]);
 
-  printHeading("OmniRoute → Claude Code profile generator");
+  printHeading("CheapRoute → Claude Code profile generator");
   printInfo(`Connecting to ${baseUrl} …`);
 
   const guard = await guardHostConfigTarget(profilesRoot, {
     toolLabel: "Claude Code",
-    hostCommand: "omniroute setup-claude",
+    hostCommand: "cheaproute setup-claude",
     allowContainerWrite: Boolean(opts.allowContainerWrite ?? opts["allow-container-write"]),
     dryRun,
   });
@@ -233,8 +233,8 @@ export async function runSetupClaudeCommand(opts = {}) {
   } catch (err) {
     printError(`Failed to fetch models: ${err.message}`);
     printInfo(
-      "Make sure OmniRoute is running and the --remote URL is correct.\n" +
-        "You may also need --api-key if OmniRoute requires authentication."
+      "Make sure CheapRoute is running and the --remote URL is correct.\n" +
+        "You may also need --api-key if CheapRoute requires authentication."
     );
     return 1;
   }
@@ -256,7 +256,7 @@ export async function runSetupClaudeCommand(opts = {}) {
     printSuccess(`${written} Claude Code profiles written to ${profilesRoot}`);
     if (skipped > 0) printInfo(`${skipped} models skipped (no matching profile pattern)`);
     console.log("\nTo use a profile:");
-    console.log("  omniroute launch --profile <name>     # e.g. omniroute launch --profile glm52");
+    console.log("  cheaproute launch --profile <name>     # e.g. cheaproute launch --profile glm52");
     // Absolute path, host-shell syntax: Claude Code does not expand `~` in
     // CLAUDE_CONFIG_DIR, and a config dir that does not resolve silently drops
     // ANTHROPIC_BASE_URL — the request then goes to api.anthropic.com (#11525).
@@ -279,12 +279,12 @@ export function registerSetupClaude(program) {
   program
     .command("setup-claude")
     .description(
-      "Fetch the live model catalog from OmniRoute (local or remote VPS) and generate " +
+      "Fetch the live model catalog from CheapRoute (local or remote VPS) and generate " +
         "~/.claude/profiles/<name>/ Claude Code profiles (CLAUDE_CONFIG_DIR) for each model"
     )
-    .option("--port <port>", "Local OmniRoute port (ignored when --remote is set)", "20128")
-    .option("--remote <url>", "Remote OmniRoute URL, e.g. http://192.168.0.15:20128")
-    .option("--api-key <key>", "OmniRoute API key (defaults to OMNIROUTE_API_KEY env var)")
+    .option("--port <port>", "Local CheapRoute port (ignored when --remote is set)", "20128")
+    .option("--remote <url>", "Remote CheapRoute URL, e.g. http://192.168.0.15:20128")
+    .option("--api-key <key>", "CheapRoute API key (defaults to CHEAPROUTE_API_KEY env var)")
     .option("--claude-home <dir>", "Claude home dir (default: ~/.claude)")
     .option(
       "--only <patterns>",

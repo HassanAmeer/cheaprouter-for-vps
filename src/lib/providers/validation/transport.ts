@@ -1,7 +1,7 @@
 // Outbound fetch wrappers for provider validation: proxy-fallback, SSRF-aware proxy targeting, and
 // error→result mapping. Extracted from validation.ts (god-file decomposition) and kept as the
 // common boundary for sanitizing validation failures.
-import { sanitizeErrorMessage } from "@omniroute/open-sse/utils/errorSanitization.ts";
+import { sanitizeErrorMessage } from "@cheaproute/open-sse/utils/errorSanitization.ts";
 import {
   SAFE_OUTBOUND_FETCH_PRESETS,
   SafeOutboundFetchError,
@@ -10,7 +10,7 @@ import {
 } from "@/shared/network/safeOutboundFetch";
 import { isPrivateHost } from "@/shared/network/outboundUrlGuard";
 import { getProviderValidationGuard } from "@/shared/network/outboundUrlGuardPolicy";
-import { selectProxyForValidation } from "@omniroute/open-sse/services/proxyAutoSelector.ts";
+import { selectProxyForValidation } from "@cheaproute/open-sse/services/proxyAutoSelector.ts";
 
 export type ProjectedProviderValidationResult<T> = {
   [K in keyof T]: K extends "error" | "warning" ? string | null : T[K];

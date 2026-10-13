@@ -1,13 +1,13 @@
 #!/usr/bin/env node
 /**
- * OmniRoute — site catalog retranslator (omnirouteSite/lang/<code>.json).
+ * CheapRoute — site catalog retranslator (cheaprouteSite/lang/<code>.json).
  *
  * The site catalogs are flat { "dotted.key": "text" } files translated once by
  * add-locale; 10 % of their leaves were still verbatim English on 2026-09-16
  * (th 25 %). For every locale, the leaves equal to lang/_source.en.json —
  * outside untranslatable-site-keys.json — are sent to the translation backend
  * in batches and written back in place (key order preserved). Same backend
- * env as sync-ui-keys (`OMNIROUTE_TRANSLATION_*`, loaded from the repo-root
+ * env as sync-ui-keys (`CHEAPROUTE_TRANSLATION_*`, loaded from the repo-root
  * `.env` when present).
  *
  * A batch whose answer cannot be trusted (see `parseBatchResponse`) is retried
@@ -16,7 +16,7 @@
  * done, so an aborted run keeps the locales already finished.
  *
  * Usage:
- *   node scripts/i18n/retranslate-site.mjs --site-dir=../omnirouteSite \
+ *   node scripts/i18n/retranslate-site.mjs --site-dir=../cheaprouteSite \
  *     [--locale=th,phi] [--dry-run] [--batch-size=40]
  */
 import { existsSync, readFileSync } from "node:fs";
@@ -99,7 +99,7 @@ function parseArgs(argv) {
       o.batchSize = Math.max(1, Number(a.slice("--batch-size=".length)) || 40);
     else throw new Error(`unknown argument: ${a}`);
   }
-  if (!o.siteDir) throw new Error("--site-dir=<omnirouteSite checkout> is required");
+  if (!o.siteDir) throw new Error("--site-dir=<cheaprouteSite checkout> is required");
   return o;
 }
 

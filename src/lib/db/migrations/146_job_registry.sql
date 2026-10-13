@@ -10,7 +10,7 @@ CREATE TABLE IF NOT EXISTS jobs (
   cron TEXT,                                 -- cron expression (type='cron'); NULL for interval jobs
   interval_ms INTEGER,                       -- interval in ms (type='interval'); NULL for cron jobs
   enabled INTEGER NOT NULL DEFAULT 1,        -- 0=disabled, 1=enabled
-  env_flag TEXT,                             -- env var name (boolean gate), e.g. 'OMNIROUTE_WARMUP_ENABLED'; NULL = no gate
+  env_flag TEXT,                             -- env var name (boolean gate), e.g. 'CHEAPROUTE_WARMUP_ENABLED'; NULL = no gate
   config TEXT NOT NULL DEFAULT '{}',         -- JSON config (concurrency, timezone, envDefault, ...)
   created_at TEXT NOT NULL DEFAULT (datetime('now')),
   updated_at TEXT NOT NULL DEFAULT (datetime('now'))
@@ -39,7 +39,7 @@ CREATE INDEX IF NOT EXISTS idx_jr_started_at ON job_runs(started_at);
 -- handler flips it on.
 INSERT OR IGNORE INTO jobs (id, type, cron, interval_ms, enabled, env_flag, config) VALUES
   ('budget_reset', 'interval', NULL, 600000, 1, NULL, '{}'),
-  ('warmup', 'cron', '0 7 * * *', NULL, 0, 'OMNIROUTE_WARMUP_ENABLED', '{"timezone":"America/Los_Angeles","envDefault":false}'),
+  ('warmup', 'cron', '0 7 * * *', NULL, 0, 'CHEAPROUTE_WARMUP_ENABLED', '{"timezone":"America/Los_Angeles","envDefault":false}'),
   ('token_health_check', 'interval', NULL, 60000, 1, NULL, '{}');
 
 -- records_affected semantics:

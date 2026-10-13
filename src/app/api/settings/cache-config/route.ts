@@ -7,7 +7,7 @@ import {
 import { getSettings, updateSettings } from "@/lib/db/settings";
 import { isAuthenticated } from "@/shared/utils/apiAuth";
 import { ensureSemanticCacheDbBridge } from "@/lib/cache/semanticCacheDbBridge";
-import { resetSemanticCacheManager } from "@omniroute/open-sse/services/cache/semanticCacheManager";
+import { resetSemanticCacheManager } from "@cheaproute/open-sse/services/cache/semanticCacheManager";
 import { getEmbeddingOptions } from "./embeddingOptions";
 import { z } from "zod";
 import { isValidationFailure, validateBody } from "@/shared/validation/helpers";
@@ -71,7 +71,7 @@ const DEFAULTS = {
   semanticCacheEmbeddingBaseUrl: "",
   semanticCacheEmbeddingApiKey: "",
   semanticCacheRedisUrl: "",
-  semanticCacheRedisPrefix: "omniroute:semcache:",
+  semanticCacheRedisPrefix: "cheaproute:semcache:",
   semanticCacheRequireZeroTemp: true,
   promptCacheEnabled: true,
   promptCacheStrategy: "auto",

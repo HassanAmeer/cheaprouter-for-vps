@@ -21,7 +21,7 @@ import {
 
 const CRASH_LOG_LINES = 50;
 
-// #13538: shared path resolver so `omniroute doctor` (bin/cli/commands/doctor.mjs)
+// #13538: shared path resolver so `cheaproute doctor` (bin/cli/commands/doctor.mjs)
 // can surface the same file persistCrashLog() writes, without duplicating the
 // `<DATA_DIR>/server/...` convention from bin/cli/utils/pid.mjs.
 export function getCrashLogPath() {
@@ -74,8 +74,8 @@ export class ServerSupervisor {
     this.instrumentationFailureHintPrinted = false;
     this.fatalStartupDiagnosticPrinted = false;
 
-    const showLog = process.env.OMNIROUTE_SHOW_LOG === "1";
-    // #6321: stdout used to be discarded (`"ignore"`) whenever `--log`/OMNIROUTE_SHOW_LOG
+    const showLog = process.env.CHEAPROUTE_SHOW_LOG === "1";
+    // #6321: stdout used to be discarded (`"ignore"`) whenever `--log`/CHEAPROUTE_SHOW_LOG
     // wasn't set (the default) — any debug/pino output written to stdout vanished
     // silently, so a boot that never becomes ready looked like a dead hang with zero
     // output even at APP_LOG_LEVEL=debug. Pipe stdout too and buffer it alongside

@@ -21,7 +21,7 @@ import {
 } from "../../utils/progressTracker.ts";
 import { createPiiSseTransform as defaultPiiSse } from "@/lib/streamingPiiTransform";
 import { isFeatureFlagEnabled as defaultFeatureFlag } from "@/shared/utils/featureFlags";
-import { OMNIROUTE_RESPONSE_HEADERS } from "@/shared/constants/headers";
+import { CHEAPROUTE_RESPONSE_HEADERS } from "@/shared/constants/headers";
 import { SSE_HEARTBEAT_INTERVAL_MS } from "../../config/constants.ts";
 /**
  * Pipeline assembly instrumentation — performance.mark() along the SSE hot path.
@@ -104,7 +104,7 @@ export function assembleStreamingPipeline(
     });
     // Chain: provider → transform → progress → client
     finalStream = piiStream.pipeThrough(progressTransform);
-    args.responseHeaders[OMNIROUTE_RESPONSE_HEADERS.progress] = "enabled";
+    args.responseHeaders[CHEAPROUTE_RESPONSE_HEADERS.progress] = "enabled";
   } else {
     finalStream = piiStream;
   }

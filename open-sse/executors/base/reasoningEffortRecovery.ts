@@ -122,7 +122,7 @@ export async function applyReasoningEffortRecovery(
 /**
  * #14895 — the 4xx body named no accepted set, so there is nothing to learn from
  * it and no way to tell an effort rejection from an unrelated validation failure.
- * Opt in per provider (OMNIROUTE_REASONING_EFFORT_PROBE_PROVIDERS, off by default)
+ * Opt in per provider (CHEAPROUTE_REASONING_EFFORT_PROBE_PROVIDERS, off by default)
  * rather than guess for everyone: a 2xx on the probe would otherwise mask the real
  * error and record a cap nothing was proven against. When enabled, step down ONE
  * tier and retry the same URL once; only an ANSWERED probe is recorded (that one

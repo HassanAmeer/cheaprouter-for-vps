@@ -3,12 +3,12 @@ import pino from "pino";
 import { isModelExcludedByConnection } from "@/domain/connectionModelRules";
 import { getProviderConnections } from "@/lib/db/providers";
 import { getCircuitBreaker } from "@/shared/utils/circuitBreaker";
-import { getModelLockoutInfo } from "@omniroute/open-sse/services/accountFallback.ts";
+import { getModelLockoutInfo } from "@cheaproute/open-sse/services/accountFallback.ts";
 import {
   createCodexAccountPool,
   inspectCodexAccount,
   resolveCodexAccount,
-} from "@omniroute/open-sse/services/codexAccount/index.ts";
+} from "@cheaproute/open-sse/services/codexAccount/index.ts";
 import type {
   ResilienceAccountExplanation,
   ResilienceExplainState,

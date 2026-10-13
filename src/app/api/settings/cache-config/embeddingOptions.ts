@@ -3,7 +3,7 @@ import { getSyncedAvailableModels, getCustomModels } from "@/lib/db/models";
 import {
   EMBEDDING_PROVIDERS,
   getEmbeddingProvider,
-} from "@omniroute/open-sse/config/embeddingRegistry.ts";
+} from "@cheaproute/open-sse/config/embeddingRegistry.ts";
 
 export interface AvailableEmbeddingModelOption {
   id: string;

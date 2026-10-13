@@ -11,7 +11,7 @@ import {
 import { persistCursorConnection } from "@/lib/oauth/services/persistCursorConnection";
 import { isCloudEnabled } from "@/models";
 import { syncToCloud } from "@/lib/cloudSync";
-import { sanitizeErrorMessage } from "@omniroute/open-sse/utils/error.ts";
+import { sanitizeErrorMessage } from "@cheaproute/open-sse/utils/error.ts";
 import { getConsistentMachineId } from "@/shared/utils/machineId";
 
 const pollSchema = z.object({

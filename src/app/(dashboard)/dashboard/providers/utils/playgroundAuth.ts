@@ -16,7 +16,7 @@
 /** Header used to test a specific API key's policy from the dashboard playground
  *  without exposing the key secret to the browser — the gateway resolves the key
  *  by id server-side (see enforceApiKeyPolicy). */
-export const PLAYGROUND_KEY_ID_HEADER = "x-omniroute-playground-key-id";
+export const PLAYGROUND_KEY_ID_HEADER = "x-cheaproute-playground-key-id";
 
 /**
  * Map the playground's masked key selection (sk-xxxx****yyyy, as returned by

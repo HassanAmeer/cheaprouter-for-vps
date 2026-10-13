@@ -34,7 +34,7 @@ type RouteDecision = {
   explicit: boolean;
 };
 
-const ROUTE_RE = /^\s*OMNIROUTE_ROUTE:\s*(TOOLS|FINAL)\b\s*([\s\S]*)$/i;
+const ROUTE_RE = /^\s*CHEAPROUTE_ROUTE:\s*(TOOLS|FINAL)\b\s*([\s\S]*)$/i;
 const DEFAULT_MAX_TOOL_ROUNDS = 8;
 
 function stepModel(step: PipelineStep): string {
@@ -211,10 +211,10 @@ function plannerDecisionPrompt(continuation: boolean, maxRoundsReached: boolean)
     state,
     limit,
     "Return exactly one routing line followed by the content:",
-    "OMNIROUTE_ROUTE: TOOLS",
+    "CHEAPROUTE_ROUTE: TOOLS",
     "<precise instructions for the tool executor>",
     "or",
-    "OMNIROUTE_ROUTE: FINAL",
+    "CHEAPROUTE_ROUTE: FINAL",
     "<a concise draft of the final answer>",
     "Do not emit native tool calls in this internal planning pass.",
   ].join("\n");
@@ -338,7 +338,7 @@ export async function handleAgenticPipelineChat({
   if (!decision.explicit) {
     log.warn(
       "AGENTIC_PIPELINE",
-      `Planner ${plannerModel} omitted OMNIROUTE_ROUTE; using safe ${decision.route.toUpperCase()} fallback`
+      `Planner ${plannerModel} omitted CHEAPROUTE_ROUTE; using safe ${decision.route.toUpperCase()} fallback`
     );
   }
 

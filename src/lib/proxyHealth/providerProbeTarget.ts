@@ -10,7 +10,7 @@
  * "the" target of such a provider, so they fall back to the generic probe.
  */
 
-import { getRegistryEntry } from "@omniroute/open-sse/config/providerRegistry.ts";
+import { getRegistryEntry } from "@cheaproute/open-sse/config/providerRegistry.ts";
 import { normalizeBaseUrl, addModelsSuffix } from "@/lib/providers/validation/urlHelpers";
 import { getProxyWhereUsed } from "@/lib/db/proxies";
 

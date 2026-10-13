@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 
 import { CORS_HEADERS } from "@/shared/utils/cors";
-import { generateProviderPluginManifest } from "@omniroute/open-sse/config/providerPluginManifestRegistry.ts";
+import { generateProviderPluginManifest } from "@cheaproute/open-sse/config/providerPluginManifestRegistry.ts";
 import { getServiceRow } from "@/lib/db/versionManager";
 import { getServiceModels, type ServiceModel } from "@/lib/db/serviceModels";
 import {
@@ -14,7 +14,7 @@ import type {
   ProviderPluginManifest,
   ProviderPluginManifestEntry,
   ProviderPluginModel,
-} from "@omniroute/open-sse/config/providerPluginManifest.ts";
+} from "@cheaproute/open-sse/config/providerPluginManifest.ts";
 
 const SERVICE_BACKEND_EXPOSURE_REQUIRED = new Set(SERVICE_BACKEND_PLUGIN_IDS);
 const SERVICE_BACKEND_PLUGIN_ID_SET = new Set<string>(SERVICE_BACKEND_PLUGIN_IDS);

@@ -199,7 +199,7 @@ const DEFAULT_TASK_MODEL_MAP: Record<TaskType, string> = {
 // src/instrumentation-node.ts would land on the instrumentation graph's copy and
 // never reach the copy src/sse/handlers/chat.ts reads — exactly the #5312 fix-A
 // break proven on the VPS. Mirrors thinkingBudget.ts (#5312) and systemPrompt.ts (#2470).
-const GLOBAL_KEY = "__omniroute_taskRouting_config__";
+const GLOBAL_KEY = "__cheaproute_taskRouting_config__";
 const _store = globalThis as unknown as Record<string, TaskRoutingConfig | undefined>;
 
 function freshConfig(): TaskRoutingConfig {

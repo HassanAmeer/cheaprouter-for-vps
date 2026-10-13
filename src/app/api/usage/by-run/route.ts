@@ -3,7 +3,7 @@ import { z } from "zod";
 
 import { requireManagementAuth } from "@/lib/api/requireManagementAuth";
 import { getCostBySessionTag } from "@/lib/db/costLedger";
-import { buildErrorBody } from "@omniroute/open-sse/utils/error.ts";
+import { buildErrorBody } from "@cheaproute/open-sse/utils/error.ts";
 
 const RUN_ID_REQUIRED = "run_id query param is required";
 
@@ -19,7 +19,7 @@ const querySchema = z.object({
  * GET /api/usage/by-run?run_id=<id> — per-run cost rows, read from the
  * per-request ledger for every call tagged with `run_id`.
  *
- * `run_id` is the value the client sent as `x-omniroute-session-id`
+ * `run_id` is the value the client sent as `x-cheaproute-session-id`
  * (`call_logs.session_tag`) and is matched EXACTLY — no wildcard. Callers
  * following the `<lane>/<run-id>` convention can pass the bare lane string to
  * get the rows tagged with the lane itself.

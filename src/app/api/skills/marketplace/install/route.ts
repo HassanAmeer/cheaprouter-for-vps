@@ -5,7 +5,7 @@ import { GLOBAL_SKILL_OWNER_ID, skillRegistry } from "@/lib/skills/registry";
 import { getSkillsProviderSetting } from "@/lib/skills/providerSettings";
 
 import { isAuthenticated } from "@/shared/utils/apiAuth";
-import { sanitizeErrorMessage } from "@omniroute/open-sse/utils/error";
+import { sanitizeErrorMessage } from "@cheaproute/open-sse/utils/error";
 
 const marketplaceInstallSchema = z.object({
   name: z.string().min(1).max(64),

@@ -15,7 +15,7 @@
  * the whole request — recording each parked target too would duplicate it.
  */
 import * as log from "../utils/logger";
-import { HTTP_STATUS } from "@omniroute/open-sse/config/constants.ts";
+import { HTTP_STATUS } from "@cheaproute/open-sse/config/constants.ts";
 import type { RejectedRequestUsageInput } from "./rejectedRequestUsage";
 
 /** The request-scoped values of handleSingleModelChat that attribute a rejection. */

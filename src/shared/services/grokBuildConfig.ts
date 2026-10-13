@@ -2,7 +2,7 @@ import path from "node:path";
 
 import { parse as parseToml } from "smol-toml";
 
-export const GROK_MAIN_MODEL_SLOT = "omniroute";
+export const GROK_MAIN_MODEL_SLOT = "cheaproute";
 export const GROK_SUBAGENT_TYPES = ["general-purpose", "explore", "plan"] as const;
 
 export type GrokSubagentType = (typeof GROK_SUBAGENT_TYPES)[number];
@@ -45,9 +45,9 @@ export function resolveGrokBuildConfigPath(env: NodeJS.ProcessEnv, configHome: s
   return path.join(path.normalize(grokHome), "config.toml");
 }
 
-const UNSET_SENTINEL = "__omniroute_unset__";
-const MANAGED_MARKER = '# omniroute-managed = "true"';
-const LEGACY_DESCRIPTION = "Routed via OmniRoute gateway";
+const UNSET_SENTINEL = "__cheaproute_unset__";
+const MANAGED_MARKER = '# cheaproute-managed = "true"';
+const LEGACY_DESCRIPTION = "Routed via CheapRoute gateway";
 const MODELS_SECTION = "models";
 const SUBAGENT_MODELS_SECTION = "subagents.models";
 
@@ -58,9 +58,9 @@ const modelSlot = (type: GrokSubagentType): string => `${GROK_MAIN_MODEL_SLOT}-$
 const sectionRegExp = (section: string): RegExp =>
   new RegExp(`^\\[${escapeRegExp(section)}\\][ \\t]*\\r?\\n((?:(?!\\[)[^\\r\\n]*\\r?\\n?)*)`, "m");
 
-const previousDefaultRegExp = /^# omniroute-prev-default = "([^"]*)"[ \t]*\r?\n?/m;
+const previousDefaultRegExp = /^# cheaproute-prev-default = "([^"]*)"[ \t]*\r?\n?/m;
 const previousSubagentRegExp = (type: GrokSubagentType): RegExp =>
-  new RegExp(`^# omniroute-prev-subagent-${escapeRegExp(type)} = "([^"]*)"[ \\t]*\\r?\\n?`, "m");
+  new RegExp(`^# cheaproute-prev-subagent-${escapeRegExp(type)} = "([^"]*)"[ \\t]*\\r?\\n?`, "m");
 
 const getSectionBody = (toml: string, section: string): string | null =>
   toml.match(sectionRegExp(section))?.[1] ?? null;
@@ -176,7 +176,7 @@ const rememberPreviousDefault = (toml: string): string => {
   const current = getSectionString(toml, MODELS_SECTION, "default");
   const previous = !current || current === "grok-build" ? UNSET_SENTINEL : current;
   if (current === GROK_MAIN_MODEL_SLOT) return toml;
-  return insertMarker(toml, `# omniroute-prev-default = ${tomlString(previous)}\n`);
+  return insertMarker(toml, `# cheaproute-prev-default = ${tomlString(previous)}\n`);
 };
 
 const restorePreviousDefault = (toml: string): string => {
@@ -193,7 +193,7 @@ const rememberPreviousSubagent = (toml: string, type: GrokSubagentType): string 
   if (previousSubagentRegExp(type).test(toml)) return toml;
   const current = getSectionString(toml, SUBAGENT_MODELS_SECTION, type);
   const previous = current ?? UNSET_SENTINEL;
-  return insertMarker(toml, `# omniroute-prev-subagent-${type} = ${tomlString(previous)}\n`);
+  return insertMarker(toml, `# cheaproute-prev-subagent-${type} = ${tomlString(previous)}\n`);
 };
 
 const restorePreviousSubagent = (toml: string, type: GrokSubagentType): string => {
@@ -217,7 +217,7 @@ const isLegacyOwnedMainSection = (toml: string): boolean => {
     keys.every((key) => allowed.has(key)) &&
     section.model !== null &&
     section.base_url !== null &&
-    section.name === "OmniRoute" &&
+    section.name === "CheapRoute" &&
     section.api_backend === "chat_completions" &&
     getSectionString(toml, `model.${GROK_MAIN_MODEL_SLOT}`, "description") === LEGACY_DESCRIPTION
   );
@@ -231,12 +231,12 @@ const assertMainSlotOwnership = (toml: string): void => {
 
 export class GrokBuildConfigConflictError extends Error {
   constructor() {
-    super("The [model.omniroute] table exists and OmniRoute does not own it");
+    super("The [model.cheaproute] table exists and CheapRoute does not own it");
     this.name = "GrokBuildConfigConflictError";
   }
 }
 
-/** Parse the Grok Build fields that OmniRoute manages. */
+/** Parse the Grok Build fields that CheapRoute manages. */
 export function parseGrokBuildConfig(toml: string): GrokBuildSettings {
   if (toml.trim()) parseToml(toml);
   const subagentModels = {} as Record<GrokSubagentType, GrokModelConfig | null>;
@@ -254,7 +254,7 @@ export function parseGrokBuildConfig(toml: string): GrokBuildSettings {
   };
 }
 
-/** Apply the OmniRoute model slots and preserve unrelated TOML text. */
+/** Apply the CheapRoute model slots and preserve unrelated TOML text. */
 export function applyGrokBuildConfig(toml: string, options: GrokBuildApplyOptions): string {
   if (toml.trim()) parseToml(toml);
   assertMainSlotOwnership(toml);
@@ -293,7 +293,7 @@ export function applyGrokBuildConfig(toml: string, options: GrokBuildApplyOption
   return next;
 }
 
-/** Remove the OmniRoute model slots and restore values that users did not change. */
+/** Remove the CheapRoute model slots and restore values that users did not change. */
 export function resetGrokBuildConfig(toml: string): string {
   if (toml.trim()) parseToml(toml);
   let next = toml;

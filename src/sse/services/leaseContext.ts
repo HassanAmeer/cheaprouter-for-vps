@@ -1,9 +1,9 @@
 import { LEASE_OWNER_PATTERN } from "@/lib/db/exclusiveConnectionLeases";
-import { buildErrorBody } from "@omniroute/open-sse/utils/error.ts";
+import { buildErrorBody } from "@cheaproute/open-sse/utils/error.ts";
 
 export const LEASE_EXCLUSIVE_SCOPE = "lease:exclusive",
-  LEASE_OWNER_HEADER = "X-OmniRoute-Lease-Owner",
-  LEASE_GENERATION_HEADER = "X-OmniRoute-Lease-Generation";
+  LEASE_OWNER_HEADER = "X-CheapRoute-Lease-Owner",
+  LEASE_GENERATION_HEADER = "X-CheapRoute-Lease-Generation";
 
 export type ManagedLeaseRequestContext = { leaseOwnerId: string; generation: number };
 export type ManagedLeaseDispatchContext = {

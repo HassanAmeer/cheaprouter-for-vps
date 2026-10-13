@@ -93,7 +93,7 @@ describe("MCP HTTP auth context", () => {
         headers: { Authorization: "Bearer manage-key" },
       });
       await withMcpHttpAuthContext(request, () =>
-        client.callTool({ name: "omniroute_list_combos", arguments: {} })
+        client.callTool({ name: "cheaproute_list_combos", arguments: {} })
       );
 
       expect(fetchMock).toHaveBeenCalledWith(
@@ -108,13 +108,13 @@ describe("MCP HTTP auth context", () => {
     }
   });
 
-  it("forwarded caller auth wins over the OMNIROUTE_API_KEY env fallback (#5819)", async () => {
+  it("forwarded caller auth wins over the CHEAPROUTE_API_KEY env fallback (#5819)", async () => {
     const fetchMock = vi.fn().mockResolvedValue({
       ok: true,
       json: async () => ({ combos: [] }),
     });
     vi.stubGlobal("fetch", fetchMock);
-    vi.stubEnv("OMNIROUTE_API_KEY", "env-fallback-key");
+    vi.stubEnv("CHEAPROUTE_API_KEY", "env-fallback-key");
 
     const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
     const server = createMcpServer();
@@ -127,7 +127,7 @@ describe("MCP HTTP auth context", () => {
         headers: { Authorization: "Bearer manage-key" },
       });
       await withMcpHttpAuthContext(request, () =>
-        client.callTool({ name: "omniroute_list_combos", arguments: {} })
+        client.callTool({ name: "cheaproute_list_combos", arguments: {} })
       );
 
       // The per-caller forwarded identity must win over the static env fallback.
@@ -152,7 +152,7 @@ describe("MCP HTTP auth context", () => {
       json: async () => ({ entries: 2, hitRate: 0.5 }),
     });
     vi.stubGlobal("fetch", fetchMock);
-    vi.stubEnv("OMNIROUTE_INTERNAL_SERVICE_TOKEN", "internal-hop-token");
+    vi.stubEnv("CHEAPROUTE_INTERNAL_SERVICE_TOKEN", "internal-hop-token");
 
     const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
     const server = createMcpServer();
@@ -165,10 +165,10 @@ describe("MCP HTTP auth context", () => {
         headers: { Authorization: "Bearer manage-key" },
       });
       await withMcpHttpAuthContext(request, () =>
-        client.callTool({ name: "omniroute_cache_stats", arguments: {} })
+        client.callTool({ name: "cheaproute_cache_stats", arguments: {} })
       );
       await withMcpHttpAuthContext(request, () =>
-        client.callTool({ name: "omniroute_pick_fastest_model", arguments: {} })
+        client.callTool({ name: "cheaproute_pick_fastest_model", arguments: {} })
       );
 
       expect(fetchMock).toHaveBeenCalledWith(
@@ -184,7 +184,7 @@ describe("MCP HTTP auth context", () => {
           expect.objectContaining({
             headers: expect.objectContaining({
               Authorization: "Bearer manage-key",
-              "x-omniroute-internal-service-token": "internal-hop-token",
+              "x-cheaproute-internal-service-token": "internal-hop-token",
             }),
           })
         );

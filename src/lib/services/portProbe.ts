@@ -59,7 +59,7 @@ export function decidePreSpawn(
       message:
         `Port ${port} is already serving a healthy response, but adopting an ` +
         `existing listener is disabled by default (a 2xx cannot prove the listener ` +
-        `is this service). Set OMNIROUTE_ADOPT_EXISTING_SERVICE=1 to allow adoption, ` +
+        `is this service). Set CHEAPROUTE_ADOPT_EXISTING_SERVICE=1 to allow adoption, ` +
         `or stop the process holding the port and start the service again.`,
     };
   }
@@ -86,7 +86,7 @@ export function decidePreSpawn(
  * genuinely their (externally-managed) instance.
  */
 export function isAdoptExistingEnabled(env: NodeJS.ProcessEnv = process.env): boolean {
-  const v = env.OMNIROUTE_ADOPT_EXISTING_SERVICE;
+  const v = env.CHEAPROUTE_ADOPT_EXISTING_SERVICE;
   return v === "1" || v === "true";
 }
 
@@ -236,7 +236,7 @@ export const PID_PROBES: ReadonlyArray<{
   args: (port: number) => string[];
   parse: (stdout: string, port: number) => number | null;
 }> = [
-  // #14722: listeners only, matching the win32/ss/netstat LISTEN filters and omniroute stop (#14605).
+  // #14722: listeners only, matching the win32/ss/netstat LISTEN filters and cheaproute stop (#14605).
   // A bare `lsof -ti :PORT` also returns every client connected to the port (for example a browser
   // tab on the dashboard, a Docker/VM port forward, or an SSH tunnel), which can cause the supervisor
   // to kill the client or track the wrong pid when adopting.

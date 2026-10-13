@@ -1,5 +1,5 @@
 /**
- * Core-agnostic generation model: what OmniRoute owns (local listeners,
+ * Core-agnostic generation model: what CheapRoute owns (local listeners,
  * selector groups, node tags) — never how a protocol is translated.
  *
  * It doesn't model outbound protocol payloads: each node carries its
@@ -12,7 +12,7 @@ import { isLocalCoreEndpointAllowed } from "../coreEndpoint";
 import { parseSelectorTag, stripSelectorSuffix } from "../selectorEndpoint";
 
 /** Prefix marking every tag this generator owns (listeners, groups, nodes). */
-export const OWNED_TAG_PREFIX = "omniroute-";
+export const OWNED_TAG_PREFIX = "cheaproute-";
 
 export interface CoreListener {
   tag: string;

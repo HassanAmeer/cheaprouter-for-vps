@@ -1,15 +1,15 @@
 import type { Dispatcher } from "undici";
 
-const DISPATCHER_CACHE_KEY = Symbol.for("omniroute.proxyDispatcher.cache");
-const DEFAULT_DISPATCHER_KEY = Symbol.for("omniroute.proxyDispatcher.default");
-const RETRY_DISPATCHER_KEY = Symbol.for("omniroute.proxyDispatcher.retry");
+const DISPATCHER_CACHE_KEY = Symbol.for("cheaproute.proxyDispatcher.cache");
+const DEFAULT_DISPATCHER_KEY = Symbol.for("cheaproute.proxyDispatcher.default");
+const RETRY_DISPATCHER_KEY = Symbol.for("cheaproute.proxyDispatcher.retry");
 // Local-egress dispatchers: separate cache for hostnames like
 // host.docker.internal / *.internal / *.local, where Docker Desktop's NAT
 // silently drops idle keep-alive sockets within the global pool's
 // keepAliveMaxTimeout window. Kept on their own cache so a wider keep-alive
 // for cloud upstreams cannot pull the .internal sockets down with it.
-const LOCAL_DEFAULT_DISPATCHER_KEY = Symbol.for("omniroute.proxyDispatcher.localDefault");
-const LOCAL_RETRY_DISPATCHER_KEY = Symbol.for("omniroute.proxyDispatcher.localRetry");
+const LOCAL_DEFAULT_DISPATCHER_KEY = Symbol.for("cheaproute.proxyDispatcher.localDefault");
+const LOCAL_RETRY_DISPATCHER_KEY = Symbol.for("cheaproute.proxyDispatcher.localRetry");
 
 /** Upper bound on cached per-URL proxy dispatchers; oldest entries are evicted first. */
 const MAX_DISPATCHER_CACHE_ENTRIES = 512;

@@ -20,7 +20,7 @@ import {
   isPoolEgressObservationEnabled,
 } from "@/shared/utils/featureFlags";
 import { createLogger } from "@/shared/utils/logger";
-import { sanitizeErrorMessage } from "@omniroute/open-sse/utils/errorSanitization.ts";
+import { sanitizeErrorMessage } from "@cheaproute/open-sse/utils/errorSanitization.ts";
 
 const log = createLogger("proxy/uniform-egress-regime");
 

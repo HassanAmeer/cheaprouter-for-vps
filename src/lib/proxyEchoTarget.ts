@@ -26,7 +26,7 @@ export const EGRESS_ECHO_URL_DUAL = "https://api64.ipify.org?format=json";
 export const EGRESS_ECHO_URL_V4 = "https://api4.ipify.org?format=json";
 
 /** Operators can pin a single target (including a self-hosted echo) per deployment. */
-export const EGRESS_ECHO_URL_ENV = "OMNIROUTE_PROXY_ECHO_URL";
+export const EGRESS_ECHO_URL_ENV = "CHEAPROUTE_PROXY_ECHO_URL";
 
 /** Minimum a single attempt may be given, so a small caller budget is not split into uselessly short tries. */
 export const MIN_ECHO_ATTEMPT_MS = 2000;

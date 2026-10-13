@@ -49,7 +49,7 @@ export const HooksSchema = z.object({
 // ── Requires ──
 
 export const RequiresSchema = z.object({
-  omniroute: z.string().optional(),
+  cheaproute: z.string().optional(),
   permissions: z.array(PermissionSchema).optional(),
 });
 
@@ -97,7 +97,7 @@ export interface PluginManifestWithDefaults extends PluginManifest {
   main: string;
   source: "local" | "marketplace";
   tags: string[];
-  requires: { omniroute?: string; permissions: Permission[] };
+  requires: { cheaproute?: string; permissions: Permission[] };
   hooks: {
     onRequest: boolean;
     onResponse: boolean;
@@ -121,7 +121,7 @@ export function applyDefaults(manifest: PluginManifest): PluginManifestWithDefau
     source: manifest.source ?? "local",
     tags: manifest.tags ?? [],
     requires: {
-      omniroute: manifest.requires?.omniroute,
+      cheaproute: manifest.requires?.cheaproute,
       permissions: manifest.requires?.permissions ?? [],
     },
     hooks: {

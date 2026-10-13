@@ -17,7 +17,7 @@ export const ZCODE_MODELS = GLM_SHARED_MODELS.filter(
 
 /**
  * Local ZCode app-server backend. Authentication remains in the user's local
- * ZCode profile (`builtin:zai-coding-plan`); OmniRoute does not receive or
+ * ZCode profile (`builtin:zai-coding-plan`); CheapRoute does not receive or
  * persist the Z.ai credential.
  */
 export const zcodeProvider: RegistryEntry = {

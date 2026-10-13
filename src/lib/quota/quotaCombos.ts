@@ -21,7 +21,7 @@ import {
   updateCombo,
 } from "@/lib/db/combos";
 import { getCustomModels, getSyncedAvailableModelsForConnection } from "@/lib/db/models";
-import { REGISTRY } from "@omniroute/open-sse/config/providerRegistry";
+import { REGISTRY } from "@cheaproute/open-sse/config/providerRegistry";
 import {
   quotaModelName,
   parseQuotaModelName,

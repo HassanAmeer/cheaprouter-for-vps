@@ -2,10 +2,10 @@ import { getUnifiedModelsResponse as fetchUnifiedModels } from "@/app/api/v1/mod
 import { getProviderNodeById } from "@/lib/db/providers/nodes";
 import { getServiceModels } from "@/lib/db/serviceModels";
 import { isServiceBackendPluginId } from "@/lib/services/serviceBackends";
-import { getRegistryEntry } from "@omniroute/open-sse/config/providerRegistry.ts";
+import { getRegistryEntry } from "@cheaproute/open-sse/config/providerRegistry.ts";
 import { getProviderById, getProviderByAlias } from "@/shared/constants/providers";
 import { isCompatibleProviderConnectionId } from "@/shared/utils/compatibleProviderId";
-import { stripStaleEncodingHeaders } from "@omniroute/open-sse/utils/upstreamResponseHeaders.ts";
+import { stripStaleEncodingHeaders } from "@cheaproute/open-sse/utils/upstreamResponseHeaders.ts";
 
 // Object field, not a live ESM binding: tests replace `load` so a planted
 // upstream response reaches GET. Production leaves it pointing at the catalog.

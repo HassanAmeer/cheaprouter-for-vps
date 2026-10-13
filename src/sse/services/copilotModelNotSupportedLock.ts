@@ -1,4 +1,4 @@
-import { lockModel } from "@omniroute/open-sse/services/accountFallback.ts";
+import { lockModel } from "@cheaproute/open-sse/services/accountFallback.ts";
 
 /** Bounded TTL so a transient Copilot outage never hides a model for long (#15634). */
 export const COPILOT_MODEL_NOT_SUPPORTED_LOCK_MS = 6 * 60 * 60 * 1000;

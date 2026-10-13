@@ -9,7 +9,7 @@ import {
   type ContextBudgetMode,
   type ContextBudgetPolicy,
   type LadderStage,
-} from "@omniroute/open-sse/services/compression/adaptiveCompression/types.ts";
+} from "@cheaproute/open-sse/services/compression/adaptiveCompression/types.ts";
 
 type JsonRecord = Record<string, unknown>;
 

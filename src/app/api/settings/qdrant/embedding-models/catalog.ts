@@ -1,7 +1,7 @@
 import {
   EMBEDDING_PROVIDERS,
   type EmbeddingProvider,
-} from "@omniroute/open-sse/config/embeddingRegistry.ts";
+} from "@cheaproute/open-sse/config/embeddingRegistry.ts";
 
 export type EmbeddingModelOption = {
   value: string;

@@ -43,7 +43,7 @@ export async function checkResolvedModelPermission(
 
 // A process-local symbol cannot be spoofed by an upstream response body/header.
 // Symbol.for preserves marker identity across separately compiled server chunks.
-const LOCAL_MODEL_POLICY = Symbol.for("omniroute.local-model-policy-response");
+const LOCAL_MODEL_POLICY = Symbol.for("cheaproute.local-model-policy-response");
 
 export function markLocalModelPolicyResponse(response: Response): Response {
   Object.defineProperty(response, LOCAL_MODEL_POLICY, { value: true });

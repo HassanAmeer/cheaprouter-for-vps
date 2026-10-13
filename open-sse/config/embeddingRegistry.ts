@@ -340,13 +340,13 @@ export const EMBEDDING_PROVIDERS: Record<string, EmbeddingProvider> = {
       { id: "jina-embeddings-v5-text-nano", name: "Jina Embeddings v5 Text Nano", dimensions: 768 },
       {
         id: "jina-embeddings-v5-omni-small",
-        name: "Jina Embeddings v5 Omni Small",
+        name: "Jina Embeddings v5 Cheap Small",
         dimensions: 1024,
         modalities: ["text", "image", "audio", "video", "document"],
       },
       {
         id: "jina-embeddings-v5-omni-nano",
-        name: "Jina Embeddings v5 Omni Nano",
+        name: "Jina Embeddings v5 Cheap Nano",
         dimensions: 768,
         modalities: ["text", "image", "audio", "video", "document"],
       },

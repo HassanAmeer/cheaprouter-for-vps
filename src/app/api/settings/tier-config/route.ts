@@ -2,8 +2,8 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { loadTierConfig, saveTierConfig } from "@/lib/db/tierConfig";
 import { requireManagementAuth } from "@/lib/api/requireManagementAuth";
-import { setTierConfig } from "@omniroute/open-sse/services/tierResolver";
-import { buildErrorBody } from "@omniroute/open-sse/utils/error";
+import { setTierConfig } from "@cheaproute/open-sse/services/tierResolver";
+import { buildErrorBody } from "@cheaproute/open-sse/utils/error";
 
 /**
  * Settings route for a single provider's routing-tier override (#7818).

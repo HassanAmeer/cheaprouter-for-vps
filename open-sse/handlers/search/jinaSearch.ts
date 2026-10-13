@@ -1,7 +1,7 @@
 /**
  * Jina Search (s.jina.ai) request builder + response normalizer.
  *
- * Uses the same Bearer token as the Jina Foundation API. OmniRoute does not
+ * Uses the same Bearer token as the Jina Foundation API. CheapRoute does not
  * add a third dashboard card — credentials come from jina-ai / jina-reader /
  * JINA_AI_API_KEY.
  */

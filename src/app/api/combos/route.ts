@@ -5,7 +5,7 @@ import { getConsistentMachineId } from "@/shared/utils/machineId";
 import { syncToCloud } from "@/lib/cloudSync";
 import { validateCompositeTiersConfig } from "@/lib/combos/compositeTiers";
 import { normalizeComboModels } from "@/lib/combos/steps";
-import { validateComboDAG, clampComboDepth } from "@omniroute/open-sse/services/combo.ts";
+import { validateComboDAG, clampComboDepth } from "@cheaproute/open-sse/services/combo.ts";
 import { createComboSchema, paginationSchema } from "@/shared/validation/schemas";
 import { isValidationFailure, validateBody } from "@/shared/validation/helpers";
 import { requireManagementAuth } from "@/lib/api/requireManagementAuth";

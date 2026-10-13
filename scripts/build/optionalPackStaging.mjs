@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /**
- * OmniRoute — Stage 7 build-time optional-pack staging (issue #10321).
+ * CheapRoute — Stage 7 build-time optional-pack staging (issue #10321).
  *
  * Runs ONLY against the Electron staging tree (`.build/electron-standalone`),
  * after `assembleStandalone()` and the native-module steps. For each optional
@@ -13,7 +13,7 @@
  *  2. MOVES the member trees out of the staging bundle into
  *     `.build/optional-packs/<name>/node_modules/…` (same volume → cheap rename),
  *  3. emits `optional-pack-<name>.tar.gz` next to them (bsdtar; disable with
- *     `OMNIROUTE_OPTIONAL_PACK_TAR=0`) for the desktop release workflow to
+ *     `CHEAPROUTE_OPTIONAL_PACK_TAR=0`) for the desktop release workflow to
  *     upload as versioned assets.
  *
  * The shared Next standalone bundle (Docker / non-Electron deploys) is never
@@ -116,7 +116,7 @@ export function tarPack(packOutDir, tarballPath) {
 export async function stageOptionalPacks({
   stagingRoot,
   packsOutDir,
-  emitTarballs = process.env.OMNIROUTE_OPTIONAL_PACK_TAR !== "0",
+  emitTarballs = process.env.CHEAPROUTE_OPTIONAL_PACK_TAR !== "0",
   log = () => {},
 }) {
   const packsOut = [];

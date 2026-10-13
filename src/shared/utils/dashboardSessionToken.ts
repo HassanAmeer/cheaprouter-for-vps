@@ -5,7 +5,7 @@
  * `authenticated: true` — the claim every session minter emits
  * (`api/auth/login`, `api/auth/oidc/callback`, the authz pipeline refresh).
  * Other tokens signed with the same secret exist (the Cursor CLI passthrough
- * mints `iss "omniroute" / aud "cursor-cli"` tokens for any key holder) and
+ * mints `iss "cheaproute" / aud "cursor-cli"` tokens for any key holder) and
  * MUST NOT verify as a session: before #13298 any such token forged the
  * cookie and reached instance-wide operations. Every place that trusts the
  * cookie goes through `verifyDashboardSessionToken`; a bare `jwtVerify` on

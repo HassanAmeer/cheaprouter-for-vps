@@ -124,7 +124,7 @@ function normalizeModelCandidate(item: unknown): CursorAgentModelEntry | null {
  * Exported for unit tests.
  *
  * Always ensures catalog id `auto` is present (Cursor often returns wire id `default`
- * only). OmniRoute clients request `cu/auto`; resolveRequestedModel maps it to `default`.
+ * only). CheapRoute clients request `cu/auto`; resolveRequestedModel maps it to `default`.
  */
 export function normalizeCursorAvailableModelsPayload(payload: unknown): CursorAgentModelEntry[] {
   const seen = new Set<string>();

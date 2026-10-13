@@ -16,7 +16,7 @@
  *
  * KEYING MATERIAL IS NOT HARDCODED. The `hmacKey` and `aesKey` are the CLIENT-SIDE
  * constants MaxAI's own web app ships verbatim in its public JS bundle. Rather
- * than pin them here, OmniRoute extracts them live (see ./constants.ts) and passes
+ * than pin them here, CheapRoute extracts them live (see ./constants.ts) and passes
  * a `MaxaiSigningConstants` object into every signing call. There is deliberately
  * NO in-code default for the two keys: a signer with no extracted keys cannot sign
  * (the caller surfaces a clear auth error) — we never sign with a guessed secret.

@@ -10,26 +10,26 @@ import { mergeOpenCodeConfigText } from "@/shared/services/opencodeConfig";
 import { guideSettingsSaveSchema } from "@/shared/validation/schemas";
 import { isValidationFailure, validateBody } from "@/shared/validation/helpers";
 import { resolveApiKey, getOrCreateApiKey } from "@/shared/services/apiKeyResolver";
-import { sanitizeErrorMessage } from "@omniroute/open-sse/utils/error";
+import { sanitizeErrorMessage } from "@cheaproute/open-sse/utils/error";
 import { guardCliConfigWrite } from "@/lib/api/cliConfigWriteGuard";
 
 /**
  * Where each guide tool's config lands, and the host command that writes the
- * same thing when OmniRoute itself runs in a container.
+ * same thing when CheapRoute itself runs in a container.
  */
 const GUIDE_TOOL_TARGETS: Record<string, { resolve: () => string; hostCommand: string }> = {
   continue: {
     resolve: () => path.join(os.homedir(), ".continue", "config.json"),
-    hostCommand: "omniroute setup-continue",
+    hostCommand: "cheaproute setup-continue",
   },
   opencode: {
     resolve: () => getOpenCodeConfigPath(),
-    hostCommand: "omniroute setup-opencode",
+    hostCommand: "cheaproute setup-opencode",
   },
   hermes: {
     resolve: () =>
       getCliPrimaryConfigPath("hermes") || path.join(os.homedir(), ".hermes", "config.yaml"),
-    hostCommand: "omniroute config set hermes",
+    hostCommand: "cheaproute config set hermes",
   },
 };
 
@@ -134,7 +134,7 @@ async function saveContinueConfig({ baseUrl, apiKey, model }) {
     // No existing config or invalid JSON — start fresh
   }
 
-  // Build the OmniRoute model entry
+  // Build the CheapRoute model entry
   const normalizedBaseUrl = String(baseUrl || "")
     .trim()
     .replace(/\/+$/, "");
@@ -143,8 +143,8 @@ async function saveContinueConfig({ baseUrl, apiKey, model }) {
     title: model,
     model: model,
     provider: "openai",
-    apiKey: apiKey || "sk_omniroute",
-    omnirouteManaged: true,
+    apiKey: apiKey || "sk_cheaproute",
+    cheaprouteManaged: true,
   };
 
   // Merge into existing models array
@@ -157,19 +157,19 @@ async function saveContinueConfig({ baseUrl, apiKey, model }) {
       .toLowerCase();
   }
 
-  // Check if OmniRoute entry already exists and update it, or add new
+  // Check if CheapRoute entry already exists and update it, or add new
   const existingIdx = models.findIndex(
     (m) =>
       m &&
-      (m.omnirouteManaged === true ||
+      (m.cheaprouteManaged === true ||
         normalizeApiBase(m.apiBase) === normalizedBaseUrl.toLowerCase() ||
-        normalizeApiBase(m.apiBase).includes("omniroute") ||
+        normalizeApiBase(m.apiBase).includes("cheaproute") ||
         normalizeApiBase(m.apiBase).includes(`localhost:${apiPort}`) ||
         normalizeApiBase(m.apiBase).includes(`127.0.0.1:${apiPort}`) ||
         // eslint-disable-next-line no-restricted-syntax -- teknik string kontrolü, kullanıcı metni araması değil
         String(m.apiKey || "")
           .toLowerCase()
-          .includes("sk_omniroute"))
+          .includes("sk_cheaproute"))
   );
 
   if (existingIdx >= 0) {
@@ -239,7 +239,7 @@ async function saveOpenCodeConfig({ baseUrl, apiKey, model, models, modelLabels,
  * Save Hermes config to ~/.hermes/config.yaml
  *
  * Hermes stores its primary routing settings in YAML. Preserve any existing
- * keys, but make sure the OmniRoute provider entry is present and selected.
+ * keys, but make sure the CheapRoute provider entry is present and selected.
  */
 async function saveHermesConfig({ baseUrl, apiKey, model }) {
   const configPath =
@@ -276,19 +276,19 @@ async function saveHermesConfig({ baseUrl, apiKey, model }) {
     model: {
       ...(existingConfig.model || {}),
       default: selectedModel,
-      provider: "omniroute",
+      provider: "cheaproute",
       base_url: providerBaseUrl,
     },
     providers: {
       ...(existingConfig.providers || {}),
-      omniroute: {
-        ...((existingConfig.providers && existingConfig.providers.omniroute) || {}),
+      cheaproute: {
+        ...((existingConfig.providers && existingConfig.providers.cheaproute) || {}),
         base_url: providerBaseUrl,
         api_key:
           apiKey ||
           (existingConfig.providers &&
-            existingConfig.providers.omniroute &&
-            existingConfig.providers.omniroute.api_key) ||
+            existingConfig.providers.cheaproute &&
+            existingConfig.providers.cheaproute.api_key) ||
           "",
       },
     },

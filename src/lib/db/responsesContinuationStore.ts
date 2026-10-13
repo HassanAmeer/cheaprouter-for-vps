@@ -1,10 +1,10 @@
 /**
- * responsesContinuationStore.ts — OmniRoute-native `previous_response_id`
+ * responsesContinuationStore.ts — CheapRoute-native `previous_response_id`
  * virtualization for the OpenAI Responses API.
  *
  * Exposes `previous_response_id` continuation to clients unconditionally,
  * regardless of whether the actual upstream provider for a connection
- * supports Responses-API state at all: OmniRoute resolves the response id
+ * supports Responses-API state at all: CheapRoute resolves the response id
  * back to the full input/output it produced and reconstructs the full
  * request server-side before forwarding upstream (full history, exactly as
  * today) -- the client only ever has to resend the new delta.
@@ -23,7 +23,7 @@
  * already been streamed to the client. A client that fires its next turn
  * immediately -- normal in a tight tool-calling loop -- can reach this
  * module before that write lands, and would otherwise see a false "not
- * found" for a response id OmniRoute itself minted moments earlier.
+ * found" for a response id CheapRoute itself minted moments earlier.
  * `seedPendingContinuationState` / `clearPendingContinuationState` (called
  * from callLogs.ts, synchronously around that same write) bridge exactly
  * that window, applying the identical extraction/fail-closed rules via
@@ -54,7 +54,7 @@ function isPlainRecord(value: unknown): value is Record<string, unknown> {
 // malformed reconstructed request upstream (translator 400:
 // "input item type 'missing' cannot be represented..."), which is worse than
 // the plain cache-miss this function is otherwise designed to fail into.
-const TRUNCATED_ARRAY_MARKER = "_omniroute_truncated_array";
+const TRUNCATED_ARRAY_MARKER = "_cheaproute_truncated_array";
 
 function containsTruncatedArrayMarker(items: readonly unknown[]): boolean {
   return items.some((item) => isPlainRecord(item) && item[TRUNCATED_ARRAY_MARKER] === true);

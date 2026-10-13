@@ -17,7 +17,7 @@ import {
   SafeOutboundFetchError,
   getSafeOutboundFetchErrorStatus,
 } from "@/shared/network/safeOutboundFetch";
-import { sanitizeErrorMessage } from "@omniroute/open-sse/utils/error";
+import { sanitizeErrorMessage } from "@cheaproute/open-sse/utils/error";
 
 const DAHL_TOKENS_URL = "https://inference.dahl.global/tokens";
 

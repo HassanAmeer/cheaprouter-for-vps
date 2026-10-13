@@ -16,8 +16,8 @@ import { request as undiciRequest } from "undici";
 import {
   createProxyDispatcher,
   proxyConfigToUrl,
-} from "@omniroute/open-sse/utils/proxyDispatcher.ts";
-import { rotationGroupFor } from "@omniroute/open-sse/services/refreshSerializer.ts";
+} from "@cheaproute/open-sse/utils/proxyDispatcher.ts";
+import { rotationGroupFor } from "@cheaproute/open-sse/services/refreshSerializer.ts";
 import { probeEchoTargets } from "./proxyEchoTarget";
 
 const EGRESS_PROBE_TIMEOUT_MS = 6000;

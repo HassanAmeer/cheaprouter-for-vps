@@ -1,17 +1,17 @@
 import { handleChat } from "@/sse/handlers/chat";
 import { generateRequestId } from "@/shared/utils/requestId";
 import { resolveIncomingCorrelationId } from "@/shared/utils/correlationPreserve.ts";
-import { initTranslators } from "@omniroute/open-sse/translator/index.ts";
+import { initTranslators } from "@cheaproute/open-sse/translator/index.ts";
 import { withInjectionGuard } from "@/middleware/promptInjectionGuard";
 import { withChatAdmission } from "@/shared/middleware/withChatAdmission";
 import { requireJsonContentType } from "@/shared/middleware/requireJsonContentType";
 import {
   withEarlyStreamKeepalive,
   ANTHROPIC_PING_FRAME,
-} from "@omniroute/open-sse/utils/earlyStreamKeepalive";
-import { createStreamDeadlineSignal } from "@omniroute/open-sse/utils/streamDeadlineSignal";
-import { resolveKeepaliveThreshold } from "@omniroute/open-sse/utils/keepaliveThreshold";
-import { resolveStreamFlag } from "@omniroute/open-sse/utils/aiSdkCompat";
+} from "@cheaproute/open-sse/utils/earlyStreamKeepalive";
+import { createStreamDeadlineSignal } from "@cheaproute/open-sse/utils/streamDeadlineSignal";
+import { resolveKeepaliveThreshold } from "@cheaproute/open-sse/utils/keepaliveThreshold";
+import { resolveStreamFlag } from "@cheaproute/open-sse/utils/aiSdkCompat";
 
 let initialized = false;
 
@@ -53,7 +53,7 @@ async function postHandler(request: any, _context: any, preParsedBody: any = nul
   await ensureInitialized();
   // Streaming Anthropic clients (Claude Code, the Anthropic SDK) drop the connection
   // when no bytes arrive while a large prompt is processed before the first token — a
-  // big context can exceed the client's stream/first-token watchdog. OmniRoute holds
+  // big context can exceed the client's stream/first-token watchdog. CheapRoute holds
   // the response until the first useful upstream byte (ensureStreamReadiness), so keep
   // the connection warm with early keepalives during that gap — same wrapper used by
   // /v1/responses (#2544). Anthropic clients ignore SSE comments for their watchdog, so

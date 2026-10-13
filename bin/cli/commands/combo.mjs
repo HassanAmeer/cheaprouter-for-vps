@@ -64,7 +64,7 @@ export function extendComboSuggest(combo) {
         weights: opts.weights ? JSON.parse(opts.weights) : undefined,
         top: opts.top,
       };
-      const data = await mcpCallTool("omniroute_best_combo_for_task", body);
+      const data = await mcpCallTool("cheaproute_best_combo_for_task", body);
       const candidates = data.candidates ?? data;
       const rows = (Array.isArray(candidates) ? candidates : []).map((c, i) => ({
         rank: i + 1,

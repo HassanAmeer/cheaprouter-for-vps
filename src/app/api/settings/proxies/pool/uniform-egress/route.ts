@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { errorResponse } from "@omniroute/open-sse/utils/error";
+import { errorResponse } from "@cheaproute/open-sse/utils/error";
 import { requireManagementAuth } from "@/lib/api/requireManagementAuth";
 import { readUniformEgressRegime } from "@/lib/proxyPoolEgressObservation";
 import {

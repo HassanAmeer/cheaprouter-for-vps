@@ -8,7 +8,7 @@ import { CORS_HEADERS } from "../utils/cors.ts";
 import { getModerationProvider, parseModerationModel } from "../config/moderationRegistry.ts";
 import { errorResponse, sanitizeErrorMessage } from "../utils/error.ts";
 import { buildSanitizedUpstreamErrorResponse } from "../utils/upstreamErrorResponse.ts";
-import { attachOmniRouteMetaHeaders } from "@/domain/omnirouteResponseMeta";
+import { attachCheapRouteMetaHeaders } from "@/domain/cheaprouteResponseMeta";
 import { generateRequestId } from "@/shared/utils/requestId";
 
 /**
@@ -68,7 +68,7 @@ export async function handleModeration({ body, credentials }) {
 
     const data = await res.json();
     const headers = new Headers({ ...CORS_HEADERS, "Content-Type": "application/json" });
-    attachOmniRouteMetaHeaders(headers, {
+    attachCheapRouteMetaHeaders(headers, {
       provider: providerId,
       model: modelId,
       costUsd: 0,

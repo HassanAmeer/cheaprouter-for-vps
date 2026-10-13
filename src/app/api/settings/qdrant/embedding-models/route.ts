@@ -2,8 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { isAuthenticated } from "@/shared/utils/apiAuth";
 import { getProviderConnections } from "@/lib/db/providers";
 import { providerAllowsOptionalApiKey } from "@/shared/constants/providers";
-import { getAllEmbeddingModels } from "@omniroute/open-sse/config/embeddingRegistry.ts";
-import { sanitizeErrorMessage } from "@omniroute/open-sse/utils/error.ts";
+import { getAllEmbeddingModels } from "@cheaproute/open-sse/config/embeddingRegistry.ts";
+import { sanitizeErrorMessage } from "@cheaproute/open-sse/utils/error.ts";
 import { buildRegistryEmbeddingOptions, mergeEmbeddingOptions } from "./catalog";
 
 type EmbeddingModelOption = {

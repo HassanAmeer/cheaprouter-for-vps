@@ -47,12 +47,12 @@ interface LogRotationState {
 }
 
 declare global {
-  var __omnirouteLogRotationState: LogRotationState | undefined;
+  var __cheaprouteLogRotationState: LogRotationState | undefined;
 }
 
 /** Process-wide state survives Next.js development HMR and split server chunks. */
 function getLogRotationState(): LogRotationState {
-  return (globalThis.__omnirouteLogRotationState ??= { timer: null });
+  return (globalThis.__cheaprouteLogRotationState ??= { timer: null });
 }
 
 export function getLogConfig() {

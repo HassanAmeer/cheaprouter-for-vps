@@ -114,8 +114,8 @@ describe("handleChaosChat", () => {
       models: ["a/gpt", "b/opus"],
       handleSingleModel: handle,
     });
-    expect(res.headers.get("X-OmniRoute-Chaos")).toBe("true");
-    expect(res.headers.get("X-OmniRoute-Chaos-Panel")).toBe("2");
+    expect(res.headers.get("X-CheapRoute-Chaos")).toBe("true");
+    expect(res.headers.get("X-CheapRoute-Chaos-Panel")).toBe("2");
     const body = await res.text();
     // NO custom event by default — OpenAI-compatible parsers choke on it
     expect(body.match(/event: omni-chaos-part/g)?.length ?? 0).toBe(0);

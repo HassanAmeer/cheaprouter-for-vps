@@ -4,8 +4,8 @@
  * MaxAI's request signer needs three things bound together: the OpenAI-style
  * `access_token` (Bearer, ~24h), the `device_id` that minted it (embedded in the
  * signed `X-Authorization` — a mismatch is rejected), and the `user_id` (folded
- * into the signature proof). OmniRoute stores these in the connection's
- * `providerSpecificData` (minted by OmniRoute's own browser-mint flow — see
+ * into the signature proof). CheapRoute stores these in the connection's
+ * `providerSpecificData` (minted by CheapRoute's own browser-mint flow — see
  * maxaiBrowserLogin), so the router is self-contained and never reads any
  * external (Hermes) token file.
  *
@@ -68,7 +68,7 @@ export function accessTokenExpiry(accessToken: string): number {
 /**
  * Resolve the MaxAI credential from a connection's providerSpecificData (with the
  * OpenAI-style `access_token` optionally supplied separately by the caller, which
- * is how OmniRoute threads the stored connection token). Returns null when not
+ * is how CheapRoute threads the stored connection token). Returns null when not
  * fully configured (all three of accessToken/deviceId/userId required).
  */
 export function resolveMaxaiCredential(

@@ -35,12 +35,12 @@ export async function deleteModelAlias(alias: string) {
 }
 
 // ──────── Managed-alias provenance marker (#11836) ────────
-// Distinguishes an alias OmniRoute itself generated during a provider model sync from one a
+// Distinguishes an alias CheapRoute itself generated during a provider model sync from one a
 // person typed in the dashboard. Only alias names recorded here are eligible for the
 // sync's prune passes — resolveManagedModelAlias() and syncManagedAvailableModelAliases()
 // must never delete or "adopt" an alias unless its name is present in this set, so a
 // hand-created custom alias that happens to already point at a model's full id is never
-// silently claimed (and later pruned) as if OmniRoute had generated it.
+// silently claimed (and later pruned) as if CheapRoute had generated it.
 const MANAGED_ALIAS_NAMES_KEY = "names";
 
 async function getManagedModelAliasNamesRow(): Promise<string[]> {
@@ -59,7 +59,7 @@ async function getManagedModelAliasNamesRow(): Promise<string[]> {
 }
 
 /**
- * The set of alias names OmniRoute has generated/adopted itself during a managed
+ * The set of alias names CheapRoute has generated/adopted itself during a managed
  * provider model sync (OpenRouter + OpenAI/Anthropic-compatible custom providers).
  * Only these are eligible for sync-triggered pruning.
  */
@@ -74,7 +74,7 @@ async function writeManagedModelAliasNames(names: Set<string>): Promise<void> {
   ).run(MANAGED_ALIAS_NAMES_KEY, JSON.stringify(Array.from(names)));
 }
 
-/** Record that `alias` was generated/adopted by OmniRoute's own sync logic. */
+/** Record that `alias` was generated/adopted by CheapRoute's own sync logic. */
 export async function markManagedModelAlias(alias: string): Promise<void> {
   const names = await getManagedModelAliasNames();
   if (names.has(alias)) return;

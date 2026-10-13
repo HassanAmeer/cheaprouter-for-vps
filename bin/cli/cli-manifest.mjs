@@ -1,5 +1,5 @@
 /**
- * Canonical executable manifest for the OmniRoute CLI command surfaces.
+ * Canonical executable manifest for the CheapRoute CLI command surfaces.
  *
  * One entry per canonical target id. `run.mjs`, `configure.mjs` and
  * `completion.mjs` derive their target lists, alias resolution and model-flag
@@ -10,8 +10,8 @@
  * plain Node CLI and TypeScript/Next.js without importing either runtime.
  *
  * Capability semantics:
- * - `run`: launchable through `omniroute run <target>`.
- * - `configure`: supported by the `omniroute configure <target>` picker.
+ * - `run`: launchable through `cheaproute run <target>`.
+ * - `configure`: supported by the `cheaproute configure <target>` picker.
  * - `runModel`: how `run` injects `--model` for the target (`null` when the
  *   model travels via env/provider args instead of a CLI flag).
  */

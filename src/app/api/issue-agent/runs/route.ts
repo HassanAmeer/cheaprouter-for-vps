@@ -9,7 +9,7 @@ import { normalizeGitHubIssueExport } from "@/lib/issueAgent/githubExport";
 import { createRecordedTriageRun } from "@/lib/issueAgent/recordedTriage";
 import { POST as postChatCompletion } from "@/app/api/v1/chat/completions/route";
 import { isValidationFailure, validateBody } from "@/shared/validation/helpers";
-import { sanitizeErrorMessage } from "@omniroute/open-sse/utils/error";
+import { sanitizeErrorMessage } from "@cheaproute/open-sse/utils/error";
 
 const issueAgentRunRequestSchema = z.object({
   mode: z.string().optional(),
@@ -26,7 +26,7 @@ const issueAgentRunRequestSchema = z.object({
 const ENABLED_VALUES = new Set(["1", "true", "yes", "on"]);
 
 function isIssueAgentEnabled(): boolean {
-  return ENABLED_VALUES.has((process.env.OMNIROUTE_ISSUE_AGENT_ENABLED ?? "").toLowerCase());
+  return ENABLED_VALUES.has((process.env.CHEAPROUTE_ISSUE_AGENT_ENABLED ?? "").toLowerCase());
 }
 
 /**
@@ -82,7 +82,7 @@ export async function POST(request: Request) {
       {
         error: "Issue Agent execution is disabled",
         enabled: false,
-        requiredEnv: "OMNIROUTE_ISSUE_AGENT_ENABLED=true",
+        requiredEnv: "CHEAPROUTE_ISSUE_AGENT_ENABLED=true",
       },
       { status: 403 }
     );
@@ -113,7 +113,7 @@ export async function POST(request: Request) {
     return NextResponse.json(
       {
         ...run,
-        runner: "omniroute-chat-completions",
+        runner: "cheaproute-chat-completions",
         auditPath: audit.path,
         completion: completion.body,
       },

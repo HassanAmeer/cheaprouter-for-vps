@@ -2,7 +2,7 @@
  * zodToTsSignature — converts a Zod v4 object schema into a compact one-line
  * TypeScript function signature string. Never throws.
  *
- * Example output: `omniroute_tool_search(args: { query: string; limit?: number })`
+ * Example output: `cheaproute_tool_search(args: { query: string; limit?: number })`
  */
 
 type ZodLike = { type?: string; _def?: Record<string, unknown>; shape?: Record<string, ZodLike> };

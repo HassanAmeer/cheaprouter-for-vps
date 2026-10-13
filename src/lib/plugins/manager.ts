@@ -374,7 +374,7 @@ class PluginManager {
    * Refresh the stored manifest from the on-disk plugin.json, falling back to the
    * DB snapshot when the disk copy is unreadable, invalid, or mismatched.
    *
-   * The `manifest` column is a snapshot validated by the Zod schema of the OmniRoute
+   * The `manifest` column is a snapshot validated by the Zod schema of the CheapRoute
    * version that INSTALLED the plugin. When a later upgrade adds a manifest field
    * (e.g. hooks.onStreamComplete, #11934), plugins installed earlier keep a snapshot
    * with that field stripped — and nothing re-reads plugin.json: scan() only inserts

@@ -32,7 +32,7 @@ export const MODERATION_PROVIDERS: Record<string, ModerationProvider> = {
     authType: "apikey",
     authHeader: "bearer",
     models: [
-      { id: "omni-moderation-latest", name: "Omni Moderation Latest" },
+      { id: "omni-moderation-latest", name: "Cheap Moderation Latest" },
       { id: "text-moderation-latest", name: "Text Moderation Latest" },
     ],
   },

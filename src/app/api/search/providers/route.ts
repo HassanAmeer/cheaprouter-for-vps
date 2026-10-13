@@ -2,11 +2,11 @@ import { NextResponse } from "next/server";
 import {
   SEARCH_PROVIDERS,
   getSearchCredentialFallbacks,
-} from "@omniroute/open-sse/config/searchRegistry.ts";
+} from "@cheaproute/open-sse/config/searchRegistry.ts";
 import { isAuthenticated } from "@/shared/utils/apiAuth";
 import { getProviderCredentials } from "@/sse/services/auth";
 import { isAllRateLimitedCredentials } from "@/app/api/v1/_shared/rateLimit";
-import { buildErrorBody } from "@omniroute/open-sse/utils/error.ts";
+import { buildErrorBody } from "@cheaproute/open-sse/utils/error.ts";
 import {
   SearchProviderCatalogResponseSchema,
   type SearchProviderCatalogItem,

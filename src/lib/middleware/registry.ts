@@ -25,7 +25,7 @@ import {
 // ── State (globalThis singleton) ──────────────────────────────────────────
 
 declare global {
-  var __omniroutePreRequestRegistry:
+  var __cheaproutePreRequestRegistry:
     | {
         initialized: boolean;
         hooks: Map<string, HookConfig>;
@@ -37,8 +37,8 @@ declare global {
 }
 
 function getRegistryState() {
-  if (!globalThis.__omniroutePreRequestRegistry) {
-    globalThis.__omniroutePreRequestRegistry = {
+  if (!globalThis.__cheaproutePreRequestRegistry) {
+    globalThis.__cheaproutePreRequestRegistry = {
       initialized: false,
       hooks: new Map(),
       middlewares: new Map(),
@@ -46,7 +46,7 @@ function getRegistryState() {
       maxLogs: 1000,
     };
   }
-  return globalThis.__omniroutePreRequestRegistry;
+  return globalThis.__cheaproutePreRequestRegistry;
 }
 
 // ── Compile hook code into middleware function ────────────────────────────
@@ -59,8 +59,8 @@ function getRegistryState() {
  */
 const HOOK_EXECUTION_TIMEOUT_MS = 5000;
 
-const HOOK_INPUT_GLOBAL = "__omnirouteHookInput";
-const HOOK_OUTPUT_GLOBAL = "__omnirouteHookOutput";
+const HOOK_INPUT_GLOBAL = "__cheaprouteHookInput";
+const HOOK_OUTPUT_GLOBAL = "__cheaprouteHookOutput";
 
 /**
  * GHSA-9p9m-h9rj-rhhg — the hook runs in its OWN realm and only JSON crosses the
@@ -88,36 +88,36 @@ const HOOK_OUTPUT_GLOBAL = "__omnirouteHookOutput";
  */
 function buildHookSource(code: string): string {
   return `(async () => {
-  const __omnirouteLogs = [];
-  let __omniroutePayload;
+  const __cheaprouteLogs = [];
+  let __cheaproutePayload;
   try {
     const context = JSON.parse(${HOOK_INPUT_GLOBAL});
     context.log = {
-      info: (tag, msg) => { __omnirouteLogs.push(["info", String(tag), String(msg)]); },
-      warn: (tag, msg) => { __omnirouteLogs.push(["warn", String(tag), String(msg)]); },
-      error: (tag, msg) => { __omnirouteLogs.push(["error", String(tag), String(msg)]); },
+      info: (tag, msg) => { __cheaprouteLogs.push(["info", String(tag), String(msg)]); },
+      warn: (tag, msg) => { __cheaprouteLogs.push(["warn", String(tag), String(msg)]); },
+      error: (tag, msg) => { __cheaprouteLogs.push(["error", String(tag), String(msg)]); },
     };
-    const __omnirouteResult = await (async () => { ${code}
+    const __cheaprouteResult = await (async () => { ${code}
     })();
     delete context.log;
-    __omniroutePayload = {
+    __cheaproutePayload = {
       ok: true,
-      result: __omnirouteResult === undefined || __omnirouteResult === null ? {} : __omnirouteResult,
+      result: __cheaprouteResult === undefined || __cheaprouteResult === null ? {} : __cheaprouteResult,
       context,
-      logs: __omnirouteLogs,
+      logs: __cheaprouteLogs,
     };
-  } catch (__omnirouteError) {
+  } catch (__cheaprouteError) {
     let message = "Hook threw";
     try {
       message = String(
-        __omnirouteError && __omnirouteError.message !== undefined
-          ? __omnirouteError.message
-          : __omnirouteError
+        __cheaprouteError && __cheaprouteError.message !== undefined
+          ? __cheaprouteError.message
+          : __cheaprouteError
       );
     } catch {}
-    __omniroutePayload = { ok: false, error: message, logs: __omnirouteLogs };
+    __cheaproutePayload = { ok: false, error: message, logs: __cheaprouteLogs };
   }
-  globalThis.${HOOK_OUTPUT_GLOBAL} = JSON.stringify(__omniroutePayload);
+  globalThis.${HOOK_OUTPUT_GLOBAL} = JSON.stringify(__cheaproutePayload);
 })();`;
 }
 
@@ -210,7 +210,7 @@ function compileHookCode(code: string, hookName: string): HookMiddleware {
   let script: vm.Script;
   try {
     script = new vm.Script(buildHookSource(code), {
-      filename: `omniroute-hook:${hookName}`,
+      filename: `cheaproute-hook:${hookName}`,
     });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "Compilation error";

@@ -4,7 +4,7 @@ import {
   getCodexDefaultHeaders,
   refreshCodexClientVersion,
   type CodexClientVersionFetch,
-} from "@omniroute/open-sse/config/codexClient.ts";
+} from "@cheaproute/open-sse/config/codexClient.ts";
 import { readCodexReasoningMetadata } from "@/shared/reasoning/codexEfforts";
 import {
   classifyCodexDiscoveryModel,

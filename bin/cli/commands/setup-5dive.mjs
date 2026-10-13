@@ -1,9 +1,9 @@
 /**
- * omniroute setup-5dive — point a 5dive agent fleet at OmniRoute.
+ * cheaproute setup-5dive — point a 5dive agent fleet at CheapRoute.
  *
  * 5dive (https://5dive.com) manages a fleet of long-running coding agents, each
  * one a systemd unit under its own Unix user. It is not itself a coding CLI, so
- * there is nothing for `omniroute run` to launch — this is a configure-only
+ * there is nothing for `cheaproute run` to launch — this is a configure-only
  * target.
  *
  * Unlike the other recipes, 5dive does not read a config file out of $HOME. Its
@@ -19,7 +19,7 @@
  *                   and silently dropped. `openai` here is 5dive's BYO id for
  *                   "a custom Anthropic-compatible endpoint", not a vendor
  *                   choice — override with --byo-provider.
- *   --base-url      OmniRoute's Anthropic surface, ROOT url with no /v1.
+ *   --base-url      CheapRoute's Anthropic surface, ROOT url with no /v1.
  *   --auth-profile  BYO credentials are profile-scoped; required for claude.
  *   --model         `openai` has no row in 5dive's built-in endpoint catalog,
  *                   so there are no per-tier model ids to inherit.
@@ -40,7 +40,7 @@ import { spawn } from "node:child_process";
 import { printHeading, printInfo, printSuccess, printError, createPrompt } from "../io.mjs";
 import { resolveActiveContext } from "../contexts.mjs";
 
-const DEFAULT_PROFILE = "omniroute";
+const DEFAULT_PROFILE = "cheaproute";
 
 /** 5dive's `claude` BYO endpoint is the Anthropic surface ROOT — strip a trailing /v1. */
 function stripToRoot(url) {
@@ -55,7 +55,7 @@ export function resolveFivediveTarget(opts = {}) {
   else {
     try {
       baseUrl = stripToRoot(
-        resolveActiveContext(opts.context ?? process.env.OMNIROUTE_CONTEXT)?.baseUrl
+        resolveActiveContext(opts.context ?? process.env.CHEAPROUTE_CONTEXT)?.baseUrl
       );
     } catch {
       /* no context configured */
@@ -66,13 +66,13 @@ export function resolveFivediveTarget(opts = {}) {
   let apiKey = opts.apiKey ?? opts["api-key"];
   if (!apiKey) {
     try {
-      const c = resolveActiveContext(opts.context ?? process.env.OMNIROUTE_CONTEXT);
+      const c = resolveActiveContext(opts.context ?? process.env.CHEAPROUTE_CONTEXT);
       apiKey = c?.accessToken || c?.apiKey;
     } catch {
       /* no context configured */
     }
   }
-  if (!apiKey) apiKey = process.env.OMNIROUTE_API_KEY || "";
+  if (!apiKey) apiKey = process.env.CHEAPROUTE_API_KEY || "";
   return { baseUrl, apiKey };
 }
 
@@ -97,7 +97,7 @@ export function validateFivediveBaseUrl(rawUrl) {
     ok: false,
     reason:
       `5dive accepts http:// only for a loopback host; '${host}' is off-box, so the agent's ` +
-      `API key would travel in plaintext. Serve OmniRoute over https:// and pass ` +
+      `API key would travel in plaintext. Serve CheapRoute over https:// and pass ` +
       `--remote https://${host}...`,
   };
 }
@@ -177,12 +177,12 @@ export async function runSetup5diveCommand(opts = {}) {
   const bin = opts.fivediveBin ?? opts["fivedive-bin"] ?? process.env.CLI_5DIVE_BIN ?? "5dive";
   const profile = String(opts.authProfile ?? opts["auth-profile"] ?? opts.name ?? DEFAULT_PROFILE);
   // NOT `opts.provider`: the `configure` picker uses that flag for the
-  // OmniRoute model provider to filter on, and it reaches setup recipes
+  // CheapRoute model provider to filter on, and it reaches setup recipes
   // verbatim. The 5dive BYO id is its own flag.
   const provider = String(opts.byoProvider ?? opts["byo-provider"] ?? "openai");
   const agents = agentList(opts);
 
-  printHeading("OmniRoute -> 5dive (claude BYO endpoint)");
+  printHeading("CheapRoute -> 5dive (claude BYO endpoint)");
   printInfo(`Server:  ${baseUrl}`);
   printInfo(`Profile: ${profile}`);
 
@@ -213,7 +213,7 @@ export async function runSetup5diveCommand(opts = {}) {
     return 2;
   }
   if (!apiKey) {
-    printError("An OmniRoute API key is required. Pass --api-key, or set OMNIROUTE_API_KEY.");
+    printError("An CheapRoute API key is required. Pass --api-key, or set CHEAPROUTE_API_KEY.");
     return 2;
   }
 
@@ -289,13 +289,13 @@ export function registerSetup5dive(program) {
   program
     .command("setup-5dive")
     .description(
-      "Point a 5dive agent fleet's claude seats at OmniRoute (writes a 5dive auth profile)"
+      "Point a 5dive agent fleet's claude seats at CheapRoute (writes a 5dive auth profile)"
     )
-    .option("--port <port>", "Local OmniRoute port (ignored when --remote is set)", "20128")
-    .option("--remote <url>", "Remote OmniRoute URL, e.g. https://omniroute.example.com")
+    .option("--port <port>", "Local CheapRoute port (ignored when --remote is set)", "20128")
+    .option("--remote <url>", "Remote CheapRoute URL, e.g. https://cheaproute.example.com")
     .option("--context <name>", "Named local/remote context")
-    .option("--api-key <key>", "OmniRoute API key (defaults to the active context/env)")
-    .option("--model <id>", "OmniRoute model or combo id the agents should use")
+    .option("--api-key <key>", "CheapRoute API key (defaults to the active context/env)")
+    .option("--model <id>", "CheapRoute model or combo id the agents should use")
     .option("--byo-provider <id>", "5dive BYO provider id (default: openai)", "openai")
     .option("--auth-profile <name>", "5dive auth profile to write", DEFAULT_PROFILE)
     .option(

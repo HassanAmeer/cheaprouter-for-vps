@@ -11,18 +11,18 @@ import {
 } from "./outboundUrlGuard";
 
 // #7682: this module is the DB/feature-flag-backed half of the outbound URL guard, split out
-// of `./outboundUrlGuard.ts` so the CLI (`omniroute setup-opencode`, loaded via tsx with no
+// of `./outboundUrlGuard.ts` so the CLI (`cheaproute setup-opencode`, loaded via tsx with no
 // tsconfig.json in a global npm install) never has to resolve the `@/` alias. Only Next.js /
 // webpack-bundled server code (never the CLI) should import from here.
 
 const TRUE_ENV_VALUES = new Set(["1", "true", "yes", "on"]);
 
-export const PRIVATE_PROVIDER_URLS_ENV = "OMNIROUTE_ALLOW_PRIVATE_PROVIDER_URLS";
+export const PRIVATE_PROVIDER_URLS_ENV = "CHEAPROUTE_ALLOW_PRIVATE_PROVIDER_URLS";
 // #5066: scoped to provider validation/use. Allows local/private provider endpoints
 // (127.0.0.1, localhost, LAN) so local-first OpenAI-compatible providers validate, while
-// cloud-metadata endpoints stay blocked. Defaults ON (OmniRoute is local-first); operators
+// cloud-metadata endpoints stay blocked. Defaults ON (CheapRoute is local-first); operators
 // who only use public providers can disable it to restore strict SSRF blocking.
-export const LOCAL_PROVIDER_URLS_ENV = "OMNIROUTE_ALLOW_LOCAL_PROVIDER_URLS";
+export const LOCAL_PROVIDER_URLS_ENV = "CHEAPROUTE_ALLOW_LOCAL_PROVIDER_URLS";
 const SSRF_GUARD_FLAG = "OUTBOUND_SSRF_GUARD_ENABLED";
 
 function isTrueValue(raw: unknown): boolean {
@@ -86,8 +86,8 @@ export function getProviderOutboundGuard(): OutboundUrlGuardMode {
 
 /**
  * #5066: whether provider endpoints on local/private addresses are permitted. Defaults ON
- * (OmniRoute is local-first — local OpenAI-compatible providers should validate out of the
- * box). Disable via the `OMNIROUTE_ALLOW_LOCAL_PROVIDER_URLS` flag (DB toggle or env) to
+ * (CheapRoute is local-first — local OpenAI-compatible providers should validate out of the
+ * box). Disable via the `CHEAPROUTE_ALLOW_LOCAL_PROVIDER_URLS` flag (DB toggle or env) to
  * restore strict public-only SSRF blocking. Cloud-metadata stays blocked regardless.
  */
 export function areLocalProviderUrlsAllowed(): boolean {
@@ -119,7 +119,7 @@ export function getProviderValidationGuard(): OutboundUrlGuardMode {
  * Webhook variant of `parseAndValidatePublicUrl`. Webhooks legitimately point at
  * internal services (n8n, Home Assistant, a LAN box) in Docker/self-hosted deployments,
  * so the private-host block is gated behind the same explicit opt-in used for private
- * provider URLs (`OMNIROUTE_ALLOW_PRIVATE_PROVIDER_URLS`, default OFF). Protocol and
+ * provider URLs (`CHEAPROUTE_ALLOW_PRIVATE_PROVIDER_URLS`, default OFF). Protocol and
  * embedded-credential checks in `parseOutboundUrl` remain unconditional. (#3269)
  */
 export function parseAndValidateWebhookUrl(input: string | URL) {

@@ -487,8 +487,8 @@ function printUsage(): void {
       "",
       "The default command validates configuration and emits HOLD without calling a model.",
       "A real paid/networked run requires --execute-real, --model, and the documented variables:",
-      "  OMNIROUTE_BASE_URL",
-      "  OMNIROUTE_API_KEY",
+      "  CHEAPROUTE_BASE_URL",
+      "  CHEAPROUTE_API_KEY",
       "",
       "Manifest v1: id, thresholds, and 1+ cases. Each case has 1-16 bounded JPEG data URIs,",
       "timestamps, a prompt, and expectedFacts with timestampSeconds + requiredTerms.",
@@ -518,10 +518,10 @@ async function main(): Promise<void> {
   const missingConfiguration: string[] = [];
   if (!manifestPath) missingConfiguration.push("--manifest");
   if (!model) missingConfiguration.push("--model");
-  const baseUrl = process.env.OMNIROUTE_BASE_URL;
-  const apiKey = process.env.OMNIROUTE_API_KEY;
-  if (!baseUrl) missingConfiguration.push("OMNIROUTE_BASE_URL");
-  if (!apiKey) missingConfiguration.push("OMNIROUTE_API_KEY");
+  const baseUrl = process.env.CHEAPROUTE_BASE_URL;
+  const apiKey = process.env.CHEAPROUTE_API_KEY;
+  if (!baseUrl) missingConfiguration.push("CHEAPROUTE_BASE_URL");
+  if (!apiKey) missingConfiguration.push("CHEAPROUTE_API_KEY");
 
   let manifest: VideoContactSheetEvalManifest | null = null;
   if (manifestPath) manifest = await loadManifest(manifestPath);

@@ -13,7 +13,7 @@
  *    401 + Xiaomi SSO `loginUrl` without the session cookie.
  *
  * 2. Self-tracked fallback (keeps working without a cookie): count the tokens
- *    OmniRoute routed to the connection in the current UTC month
+ *    CheapRoute routed to the connection in the current UTC month
  *    (usage_history) and compare them to a configurable monthly budget —
  *    providerSpecificData.monthlyTokenLimit, then XIAOMI_MIMO_MONTHLY_TOKEN_LIMIT,
  *    then 4.1B (the Lite plan's Credits). When the console session is missing
@@ -41,7 +41,7 @@ const CONSOLE_FETCH_TIMEOUT_MS = 8_000;
 /** providerSpecificData keys scanned for the console `Cookie:` value (first hit wins). */
 const CONSOLE_COOKIE_KEYS = ["xiaomiMimoConsoleCookie", "cookie"] as const;
 
-const PLAN_LABEL_TRACKED = "Xiaomi MiMo Token Plan (OmniRoute-tracked)";
+const PLAN_LABEL_TRACKED = "Xiaomi MiMo Token Plan (CheapRoute-tracked)";
 const PLAN_LABEL_LIVE = "Xiaomi MiMo Token Plan";
 
 const CONSOLE_COOKIE_HINT =

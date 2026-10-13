@@ -59,7 +59,7 @@ export function redactCoreEntryForDetail(entry: string): string {
  *
  * Only loopback hosts over a proxy scheme (http/https/socks5) are permitted.
  * A subscription's `localCoreEndpoint` lists the SOCKS5/HTTP addresses
- * OmniRoute routes SS/VMess/Trojan/VLESS/etc. traffic through, so each entry
+ * CheapRoute routes SS/VMess/Trojan/VLESS/etc. traffic through, so each entry
  * must never point at a remote host — and a non-proxy scheme (file:/ftp:/…) is
  * meaningless and rejected.
  */

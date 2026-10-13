@@ -646,7 +646,7 @@ export default function ApiManagerPageClient() {
               arrow_forward
             </span>
             <span className="rounded-control border border-border bg-surface px-3 py-1.5 font-medium">
-              {t("requestFlowOmniRoute")}
+              {t("requestFlowCheapRoute")}
             </span>
           </div>
         </div>

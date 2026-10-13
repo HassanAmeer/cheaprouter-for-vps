@@ -169,10 +169,10 @@ export function claudeToOpenAIRequest(model, body, stream, credentials: unknown 
   // user's language (e.g. Korean) then continue with English planning/chain-of-thought
   // in the same content field instead of using reasoning_content. Same mitigation as
   // translator/response/openai-to-claude.ts's directivePreambleStripper.ts: when the
-  // operator configured OMNIROUTE_SYSTEM_INSTRUCTION_APPEND, append it here to the
+  // operator configured CHEAPROUTE_SYSTEM_INSTRUCTION_APPEND, append it here to the
   // (system) message so the directive reaches the model on the /v1/messages (Claude
   // Messages -> OpenAI Chat Completions) path too.
-  const systemAppend = process.env.OMNIROUTE_SYSTEM_INSTRUCTION_APPEND?.trim();
+  const systemAppend = process.env.CHEAPROUTE_SYSTEM_INSTRUCTION_APPEND?.trim();
   if (systemAppend) {
     const sysIndex = result.messages.findIndex((m) => m.role === "system");
     if (sysIndex >= 0) {

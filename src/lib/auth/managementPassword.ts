@@ -46,7 +46,7 @@ export function isBcryptHash(value: unknown): value is string {
 }
 
 // #13679 (PR D, item #5): the well-known INITIAL_PASSWORD placeholder shipped in
-// .env.example / contrib/podman/omniroute.container / docker deploy manifests is a
+// .env.example / contrib/podman/cheaproute.container / docker deploy manifests is a
 // public, guessable credential. Callers on the authentication path use this to refuse
 // a successful match from non-loopback requests instead of only warning on boot.
 export function isKnownInsecureManagementPassword(password: string): boolean {

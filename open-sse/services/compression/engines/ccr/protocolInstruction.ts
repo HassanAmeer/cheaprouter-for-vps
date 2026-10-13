@@ -4,26 +4,26 @@
  * The CCR engine replaces large blocks of text with a bare
  * `[CCR retrieve hash=<24hex> chars=N]` marker (see `index.ts`). A caller that has
  * never been told what that marker means has no way to recover the original
- * content — it can only call `omniroute_ccr_retrieve` if it (a) knows the tool
+ * content — it can only call `cheaproute_ccr_retrieve` if it (a) knows the tool
  * exists and (b) copies the 24-hex hash verbatim.
  *
  * This module injects a single, idempotent `system` message the first time a
  * request carries a CCR marker, teaching the model the marker → tool contract —
  * but ONLY when the caller's advertised `tools[]` proves it can actually reach
- * `omniroute_ccr_retrieve` (an MCP-capable caller). Plain OpenAI-compatible
+ * `cheaproute_ccr_retrieve` (an MCP-capable caller). Plain OpenAI-compatible
  * callers that cannot reach the tool must never be told to call it.
  *
  * MCP gateways/aggregators (Docker MCP Toolkit, Claude Code, and similar) rename
  * tools when re-exposing them to the model to avoid cross-server name collisions,
- * typically as `mcp__<gateway>__<server>__omniroute_ccr_retrieve` or with a
- * dotted/slashed namespace prefix (`omniroute.omniroute_ccr_retrieve`). A caller
+ * typically as `mcp__<gateway>__<server>__cheaproute_ccr_retrieve` or with a
+ * dotted/slashed namespace prefix (`cheaproute.cheaproute_ccr_retrieve`). A caller
  * reachable only under such a namespaced name is still MCP-capable, so the match
  * below accepts a trailing-segment match bounded by a separator (`__`, `.`, `/`,
  * `:`) — never a bare substring test — so a near-miss like
- * `omniroute_ccr_retrieve_v2` still correctly does not match (#13781, #13897).
+ * `cheaproute_ccr_retrieve_v2` still correctly does not match (#13781, #13897).
  */
 
-const CCR_RETRIEVE_TOOL_NAME = "omniroute_ccr_retrieve";
+const CCR_RETRIEVE_TOOL_NAME = "cheaproute_ccr_retrieve";
 
 /** Separators MCP gateways use to namespace a re-exposed tool name. */
 const CCR_RETRIEVE_TOOL_NAME_SEPARATORS = ["__", ".", "/", ":"];
@@ -31,9 +31,9 @@ const CCR_RETRIEVE_TOOL_NAME_SEPARATORS = ["__", ".", "/", ":"];
 /**
  * True when `name` is exactly the CCR retrieve tool name, or ends with it as a
  * separator-bounded trailing segment (e.g. an MCP-gateway-namespaced name such
- * as `mcp__docker__omniroute__omniroute_ccr_retrieve`). Deliberately NOT a bare
+ * as `mcp__docker__cheaproute__cheaproute_ccr_retrieve`). Deliberately NOT a bare
  * `.includes()`/unqualified `.endsWith()` — that would also match an unrelated
- * near-miss name like `omniroute_ccr_retrieve_v2`.
+ * near-miss name like `cheaproute_ccr_retrieve_v2`.
  */
 function matchesCcrRetrieveToolName(name: string | undefined): boolean {
   if (typeof name !== "string") return false;
@@ -95,7 +95,7 @@ function messageContainsSentinel(message: MessageWithContent): boolean {
 /**
  * Prepend the CCR protocol instruction as a single leading `system` message,
  * but only when:
- *  - the caller can actually reach `omniroute_ccr_retrieve` (see
+ *  - the caller can actually reach `cheaproute_ccr_retrieve` (see
  *    `callerSupportsCcrRetrieve`), and
  *  - the message history does not already carry the sentinel (idempotent —
  *    multi-turn requests replay prior messages, so without this check the

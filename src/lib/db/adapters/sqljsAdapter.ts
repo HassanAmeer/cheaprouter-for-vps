@@ -26,7 +26,7 @@ let _sqlJsLib: Awaited<ReturnType<(typeof import("sql.js"))["default"]>> | null 
  * Resolves the absolute on-disk path to `sql-wasm.wasm`.
  *
  * Precedence order:
- *  0. `OMNIROUTE_SQLJS_WASM_PATH` env override (validated to be a non-empty, non-directory file,
+ *  0. `CHEAPROUTE_SQLJS_WASM_PATH` env override (validated to be a non-empty, non-directory file,
  *     and resolved to an absolute path).
  *  1. Layout candidate paths checked relative to `process.cwd()`:
  *     - `<cwd>/node_modules/sql.js/dist/sql-wasm.wasm` (standard standalone layout)
@@ -41,13 +41,13 @@ let _sqlJsLib: Awaited<ReturnType<(typeof import("sql.js"))["default"]>> | null 
  */
 export function resolveSqlJsWasmPath(): string {
   // 0. Explicit environment variable override
-  if (process.env.OMNIROUTE_SQLJS_WASM_PATH != null) {
-    const raw = process.env.OMNIROUTE_SQLJS_WASM_PATH;
+  if (process.env.CHEAPROUTE_SQLJS_WASM_PATH != null) {
+    const raw = process.env.CHEAPROUTE_SQLJS_WASM_PATH;
     const trimmed = raw.trim();
     if (trimmed.length === 0) {
       throw new Error(
-        `[sqljsAdapter] OMNIROUTE_SQLJS_WASM_PATH is set to an empty or whitespace-only string.\n` +
-          `Unset OMNIROUTE_SQLJS_WASM_PATH to allow auto-detection, or set it to the path of a valid sql-wasm.wasm file.`
+        `[sqljsAdapter] CHEAPROUTE_SQLJS_WASM_PATH is set to an empty or whitespace-only string.\n` +
+          `Unset CHEAPROUTE_SQLJS_WASM_PATH to allow auto-detection, or set it to the path of a valid sql-wasm.wasm file.`
       );
     }
     const resolvedPath = path.resolve(trimmed);
@@ -56,20 +56,20 @@ export function resolveSqlJsWasmPath(): string {
       stat = fs.statSync(resolvedPath);
     } catch (err) {
       throw new Error(
-        `[sqljsAdapter] OMNIROUTE_SQLJS_WASM_PATH is set to "${trimmed}", but the file cannot be accessed: ${(err as Error).message}\n` +
-          `Verify the path or unset OMNIROUTE_SQLJS_WASM_PATH to allow auto-detection.`
+        `[sqljsAdapter] CHEAPROUTE_SQLJS_WASM_PATH is set to "${trimmed}", but the file cannot be accessed: ${(err as Error).message}\n` +
+          `Verify the path or unset CHEAPROUTE_SQLJS_WASM_PATH to allow auto-detection.`
       );
     }
     if (stat.isDirectory()) {
       throw new Error(
-        `[sqljsAdapter] OMNIROUTE_SQLJS_WASM_PATH is set to "${trimmed}", but the path points to a directory, not a file.\n` +
+        `[sqljsAdapter] CHEAPROUTE_SQLJS_WASM_PATH is set to "${trimmed}", but the path points to a directory, not a file.\n` +
           `Set it to the full path of sql-wasm.wasm or unset the variable to allow auto-detection.`
       );
     }
     if (!stat.isFile() || stat.size === 0) {
       throw new Error(
-        `[sqljsAdapter] OMNIROUTE_SQLJS_WASM_PATH is set to "${trimmed}", but the file is empty (size=0) or not a regular file.\n` +
-          `Verify the path or unset OMNIROUTE_SQLJS_WASM_PATH to allow auto-detection.`
+        `[sqljsAdapter] CHEAPROUTE_SQLJS_WASM_PATH is set to "${trimmed}", but the file is empty (size=0) or not a regular file.\n` +
+          `Verify the path or unset CHEAPROUTE_SQLJS_WASM_PATH to allow auto-detection.`
       );
     }
     return resolvedPath;
@@ -79,7 +79,7 @@ export function resolveSqlJsWasmPath(): string {
   const candidatePaths: string[] = [
     // Standard standalone layout (<bundle>/node_modules/sql.js/...)
     path.join(process.cwd(), "node_modules", "sql.js", "dist", "sql-wasm.wasm"),
-    // Global CLI install (#12960): `omniroute serve` child process sets cwd
+    // Global CLI install (#12960): `cheaproute serve` child process sets cwd
     // to <packageRoot>/dist, while npm installs dependencies at <packageRoot>/node_modules
     path.join(process.cwd(), "..", "node_modules", "sql.js", "dist", "sql-wasm.wasm"),
     // Direct source / legacy standalone layouts
@@ -138,10 +138,10 @@ export function resolveSqlJsWasmPath(): string {
       `Checked locations:\n${candidatePaths.map((p) => `  - ${p}`).join("\n")}\n\n` +
       `Remedy:\n` +
       `  * If running a global npm install without native SQLite (better-sqlite3), rebuild it:\n` +
-      `      cd $(npm root -g)/omniroute && npm rebuild better-sqlite3\n` +
+      `      cd $(npm root -g)/cheaproute && npm rebuild better-sqlite3\n` +
       `  * If running locally, rebuild better-sqlite3:\n` +
       `      npm rebuild better-sqlite3\n` +
-      `  * Or set OMNIROUTE_SQLJS_WASM_PATH to the path of sql-wasm.wasm.\n` +
+      `  * Or set CHEAPROUTE_SQLJS_WASM_PATH to the path of sql-wasm.wasm.\n` +
       `  * See docs/guides/TROUBLESHOOTING.md for details.`
   );
 }

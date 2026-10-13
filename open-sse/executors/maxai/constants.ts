@@ -3,7 +3,7 @@
  *
  * MaxAI's request signer needs a small set of CLIENT-SIDE constants that its own
  * front-end ships VERBATIM in the public `www.maxai.co` JavaScript bundle
- * (identical for every visitor, no per-user or server secret). OmniRoute EXTRACTS
+ * (identical for every visitor, no per-user or server secret). CheapRoute EXTRACTS
  * them from the live bundle and persists them, so if MaxAI ever rotates a value —
  * or a Next.js rebuild renumbers its chunks — the provider self-heals on the next
  * login or daily refresh instead of hard-failing every signed call.

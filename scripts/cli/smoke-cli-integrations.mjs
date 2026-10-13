@@ -22,13 +22,13 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-export const SMOKE_MARKER = "OMNIROUTE_SMOKE_OK";
-export const SMOKE_TOKEN = "omniroute-smoke-sentinel";
+export const SMOKE_MARKER = "CHEAPROUTE_SMOKE_OK";
+export const SMOKE_TOKEN = "cheaproute-smoke-sentinel";
 export const DEFAULT_SMOKE_TARGETS = Object.freeze(["aider", "goose", "opencode", "qwen", "codex"]);
 
 const SCRIPT_PATH = fileURLToPath(import.meta.url);
 const REPO_ROOT = path.resolve(path.dirname(SCRIPT_PATH), "../..");
-const CLI_PATH = path.join(REPO_ROOT, "bin", "omniroute.mjs");
+const CLI_PATH = path.join(REPO_ROOT, "bin", "cheaproute.mjs");
 const AIDER_EMPTY_CONFIG = path.join(REPO_ROOT, "tests", "fixtures", "cli", "empty-aider.yml");
 
 function jsonResponse(response, status, body) {
@@ -43,7 +43,7 @@ function sseWrite(response, event) {
 
 export function openAiChatBody(model = "smoke/model", marker = SMOKE_MARKER) {
   return {
-    id: "chatcmpl_omniroute_smoke",
+    id: "chatcmpl_cheaproute_smoke",
     object: "chat.completion",
     created: 1,
     model,
@@ -65,7 +65,7 @@ function streamOpenAiChat(response, model, marker) {
     connection: "keep-alive",
   });
   const base = {
-    id: "chatcmpl_omniroute_smoke",
+    id: "chatcmpl_cheaproute_smoke",
     object: "chat.completion.chunk",
     created: 1,
     model,
@@ -81,7 +81,7 @@ function streamOpenAiChat(response, model, marker) {
 
 export function completedResponsesBody(model = "smoke/model", marker = SMOKE_MARKER) {
   return {
-    id: "resp_omniroute_smoke",
+    id: "resp_cheaproute_smoke",
     object: "response",
     created_at: 1,
     status: "completed",
@@ -92,7 +92,7 @@ export function completedResponsesBody(model = "smoke/model", marker = SMOKE_MAR
     model,
     output: [
       {
-        id: "msg_omniroute_smoke",
+        id: "msg_cheaproute_smoke",
         type: "message",
         status: "completed",
         role: "assistant",
@@ -340,7 +340,7 @@ export function targetToolArgs(target) {
 export function buildSmokeInvocation(target, baseUrl, { inheritIsolatedEnv = false } = {}) {
   // Aider performs an expensive browser-backed warning path for unknown model
   // metadata before it ever calls the endpoint. A known OpenAI model still
-  // exercises the same OmniRoute transport without that unrelated cold path.
+  // exercises the same CheapRoute transport without that unrelated cold path.
   const model = smokeModel(target);
   return [
     CLI_PATH,
@@ -351,7 +351,7 @@ export function buildSmokeInvocation(target, baseUrl, { inheritIsolatedEnv = fal
     "--model",
     model,
     "--api-key-env",
-    "OMNIROUTE_SMOKE_KEY",
+    "CHEAPROUTE_SMOKE_KEY",
     ...(inheritIsolatedEnv ? ["--inherit-env"] : []),
     "--",
     ...targetToolArgs(target),
@@ -405,7 +405,7 @@ function binaryAvailable(target, env) {
 }
 
 async function runTarget(target, options) {
-  const temporary = mkdtempSync(path.join(os.tmpdir(), "omniroute-real-cli-smoke-"));
+  const temporary = mkdtempSync(path.join(os.tmpdir(), "cheaproute-real-cli-smoke-"));
   let server;
   const result = { target, status: "FAIL", requests: [] };
   try {

@@ -2,7 +2,7 @@ import { z } from "zod";
 import { deleteProxyById, listProxies, updateProxy } from "@/lib/db/proxies";
 import { createErrorResponseFromUnknown } from "@/lib/api/errorResponse";
 import { requireManagementAuth } from "@/lib/api/requireManagementAuth";
-import { createProxyDispatcher, proxyConfigToUrl } from "@omniroute/open-sse/utils/proxyDispatcher";
+import { createProxyDispatcher, proxyConfigToUrl } from "@cheaproute/open-sse/utils/proxyDispatcher";
 import { fetch as undiciFetch } from "undici";
 import { classifyProbeStatus } from "@/lib/proxyHealth/decision";
 import { resolveHealthCheckStatusWrite } from "@/lib/proxyHealth/statusPolicy";
@@ -83,7 +83,7 @@ async function testSingleProxy(proxy: {
       method,
       signal: controller.signal,
       dispatcher,
-      headers: { "User-Agent": "OmniRoute/1.0" },
+      headers: { "User-Agent": "CheapRoute/1.0" },
     });
     const latencyMs = Date.now() - start;
     const outcome = classifyProbeStatus(resp.status);

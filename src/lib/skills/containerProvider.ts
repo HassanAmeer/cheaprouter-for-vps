@@ -1,8 +1,8 @@
 /**
- * Container runtime providers for the OmniRoute skill sandbox.
+ * Container runtime providers for the CheapRoute skill sandbox.
  *
  * The sandbox historically hardcoded the `docker` CLI. This module abstracts
- * the container runtime so OmniRoute can pick the most performant / native
+ * the container runtime so CheapRoute can pick the most performant / native
  * runtime available on each host:
  *
  *   - macOS:  Apple Container (`container` CLI)  >  OrbStack (docker shim)  >  Podman  >  Docker
@@ -61,7 +61,7 @@ export interface ContainerProvider {
 //  Helpers
 // ----------------------------------------------------------------
 
-const SANDBOX_NAME = (sandboxId: string) => `omniroute-${sandboxId}`;
+const SANDBOX_NAME = (sandboxId: string) => `cheaproute-${sandboxId}`;
 
 /**
  * Probe whether a CLI binary exists on PATH.

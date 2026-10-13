@@ -1,5 +1,5 @@
 /**
- * omniroute setup-aider — configure Aider (aider.chat) for OmniRoute.
+ * cheaproute setup-aider — configure Aider (aider.chat) for CheapRoute.
  *
  * Aider (LiteLLM under the hood) talks to an OpenAI-compatible endpoint via env
  * `OPENAI_API_BASE` (ROOT url — LiteLLM appends /v1/chat/completions) + the model
@@ -27,7 +27,7 @@ export function resolveAiderTarget(opts = {}) {
   else {
     try {
       root = stripToRoot(
-        resolveActiveContext(opts.context ?? process.env.OMNIROUTE_CONTEXT)?.baseUrl
+        resolveActiveContext(opts.context ?? process.env.CHEAPROUTE_CONTEXT)?.baseUrl
       );
     } catch {
       /* none */
@@ -37,13 +37,13 @@ export function resolveAiderTarget(opts = {}) {
   let apiKey = opts.apiKey ?? opts["api-key"];
   if (!apiKey) {
     try {
-      const c = resolveActiveContext(opts.context ?? process.env.OMNIROUTE_CONTEXT);
+      const c = resolveActiveContext(opts.context ?? process.env.CHEAPROUTE_CONTEXT);
       apiKey = c?.accessToken || c?.apiKey;
     } catch {
       /* none */
     }
   }
-  if (!apiKey) apiKey = process.env.OMNIROUTE_API_KEY || "";
+  if (!apiKey) apiKey = process.env.CHEAPROUTE_API_KEY || "";
   return { apiBase: root, apiKey };
 }
 
@@ -59,7 +59,7 @@ export function buildAiderConfig(existing, { apiBase, model }) {
 export function buildAiderRecipe({ apiBase, model }) {
   return [
     `export OPENAI_API_BASE=${apiBase}`,
-    "export OPENAI_API_KEY=$OMNIROUTE_API_KEY",
+    "export OPENAI_API_KEY=$CHEAPROUTE_API_KEY",
     `aider --model openai/${model}`,
     `# headless:  aider --model openai/${model} --message "reply OK" --yes`,
   ].join("\n");
@@ -96,13 +96,13 @@ export async function runSetupAiderCommand(opts = {}) {
 
   const guard = await guardHostConfigTarget(configPath, {
     toolLabel: "Aider",
-    hostCommand: "omniroute setup-aider",
+    hostCommand: "cheaproute setup-aider",
     allowContainerWrite: Boolean(opts.allowContainerWrite ?? opts["allow-container-write"]),
     dryRun,
   });
   if (guard !== 0) return guard;
 
-  printHeading("OmniRoute → Aider (openai-compatible via LiteLLM)");
+  printHeading("CheapRoute → Aider (openai-compatible via LiteLLM)");
   printInfo(`OPENAI_API_BASE: ${apiBase}   (no /v1 — LiteLLM appends it)`);
 
   let model = opts.model;
@@ -145,10 +145,10 @@ export async function runSetupAiderCommand(opts = {}) {
 export function registerSetupAider(program) {
   program
     .command("setup-aider")
-    .description("Configure Aider for OmniRoute: write ~/.aider.conf.yml + print the env recipe")
-    .option("--port <port>", "Local OmniRoute port (ignored when --remote is set)", "20128")
-    .option("--remote <url>", "Remote OmniRoute URL, e.g. http://192.168.0.15:20128")
-    .option("--api-key <key>", "OmniRoute API key (defaults to OMNIROUTE_API_KEY env var)")
+    .description("Configure Aider for CheapRoute: write ~/.aider.conf.yml + print the env recipe")
+    .option("--port <port>", "Local CheapRoute port (ignored when --remote is set)", "20128")
+    .option("--remote <url>", "Remote CheapRoute URL, e.g. http://192.168.0.15:20128")
+    .option("--api-key <key>", "CheapRoute API key (defaults to CHEAPROUTE_API_KEY env var)")
     .option("--model <id>", "Model id (the openai/ prefix is added automatically)")
     .option("--config-path <path>", ".aider.conf.yml path (default: ~/.aider.conf.yml)")
     .option("--yes", "Non-interactive: do not prompt (requires --model)")

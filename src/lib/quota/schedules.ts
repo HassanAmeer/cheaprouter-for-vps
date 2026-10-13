@@ -3,13 +3,13 @@
  *
  * A schedule answers two questions the static pool allocation cannot:
  *
- *   WHEN may OmniRoute use this account?   → days + start/end minute + mode
+ *   WHEN may CheapRoute use this account?   → days + start/end minute + mode
  *   HOW MUCH may it burn while it is in there?
  *       · reservePercent — how much must be LEFT on the account. Measured on the
  *         upstream saturation signal, which covers the WHOLE account, so a human
  *         (or another tool) sharing the same credentials always keeps that floor.
- *       · budgetValue/budgetUnit — how much OMNIROUTE itself may consume in the
- *         window. Measured on OmniRoute's own recorded consumption, so somebody
+ *       · budgetValue/budgetUnit — how much CHEAPROUTE itself may consume in the
+ *         window. Measured on CheapRoute's own recorded consumption, so somebody
  *         else's traffic on the same account neither eats nor inflates it.
  *
  * Everything here is pure and clock-injectable: `nowMs` is always a parameter so
@@ -29,7 +29,7 @@ export type ScheduleMode = "allow" | "block";
 
 /**
  * Units a per-window budget can be expressed in. See the migration for why
- * "percent" is absent: OmniRoute cannot attribute a share of an upstream
+ * "percent" is absent: CheapRoute cannot attribute a share of an upstream
  * percentage to itself — that is what `reservePercent` covers.
  */
 export type ScheduleBudgetUnit = "requests" | "tokens" | "usd";
@@ -67,7 +67,7 @@ export interface QuotaSchedule {
   mode: ScheduleMode;
   /** Per-window floors that must stay unspent. Empty = no reserve at all. */
   reserves: ReserveRule[];
-  /** OmniRoute's own consumption allowance inside the window. */
+  /** CheapRoute's own consumption allowance inside the window. */
   budgetValue?: number;
   budgetUnit?: ScheduleBudgetUnit;
   /** Rolling window the budget is counted over. */
@@ -258,7 +258,7 @@ export function scheduleBucketPoolId(poolId: string, scheduleId: string): string
 
 /**
  * Saturation per quota window, 0..1, as reported for the WHOLE account — so
- * third-party consumption counts against a floor exactly like OmniRoute's own.
+ * third-party consumption counts against a floor exactly like CheapRoute's own.
  * A window the plan does not meter is simply absent.
  */
 export type SaturationByWindow = Partial<Record<QuotaWindow, number>>;

@@ -1,6 +1,6 @@
 // Build-time stub for better-sqlite3 (#10060).
 //
-// OPT-IN ONLY — set OMNIROUTE_BETTER_SQLITE3_STUB=1 to alias it in, and only on
+// OPT-IN ONLY — set CHEAPROUTE_BETTER_SQLITE3_STUB=1 to alias it in, and only on
 // a build host that actually hits the SIGABRT worker teardown: the native
 // Statement destructor aborts when a Next.js build worker thread exits
 // (assertion in node::RemoveEnvironmentCleanupHook, env == nullptr), which can

@@ -1,6 +1,6 @@
 import { getComboForModel, getModelInfo } from "../services/model";
-import { errorResponse } from "@omniroute/open-sse/utils/error.ts";
-import { HTTP_STATUS } from "@omniroute/open-sse/config/constants.ts";
+import { errorResponse } from "@cheaproute/open-sse/utils/error.ts";
+import { HTTP_STATUS } from "@cheaproute/open-sse/config/constants.ts";
 import { validateApiKeyRoutingTarget, type ApiKeyMetadata } from "@/shared/utils/apiKeyPolicy";
 import { resolveRequestRoutingTags } from "@/domain/tagRouter";
 import * as log from "../utils/logger";

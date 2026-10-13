@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /**
- * OmniRoute — Postinstall Native Module Fix
+ * CheapRoute — Postinstall Native Module Fix
  *
  * The npm package ships with a Next.js standalone build that includes
  * native modules compiled for the build platform (Linux x64) inside
@@ -18,11 +18,11 @@
  *   - sql.js (WASM SQLite fallback runtime)
  *   - node-machine-id (local CLI machine-token server runtime)
  *
- * Fixes: https://github.com/diegosouzapw/OmniRoute/issues/129
- * Fixes: https://github.com/diegosouzapw/OmniRoute/issues/321
- * Fixes: https://github.com/diegosouzapw/OmniRoute/issues/426
- * Fixes: https://github.com/diegosouzapw/OmniRoute/issues/1634
- * Fixes: https://github.com/diegosouzapw/OmniRoute/issues/7802
+ * Fixes: https://github.com/diegosouzapw/CheapRoute/issues/129
+ * Fixes: https://github.com/diegosouzapw/CheapRoute/issues/321
+ * Fixes: https://github.com/diegosouzapw/CheapRoute/issues/426
+ * Fixes: https://github.com/diegosouzapw/CheapRoute/issues/1634
+ * Fixes: https://github.com/diegosouzapw/CheapRoute/issues/7802
  */
 
 import { copyFileSync, cpSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
@@ -403,7 +403,7 @@ await ensureStandaloneRuntimePackages();
 await ensureLlmlinguaOptionals();
 await syncProjectEnv();
 
-// Warm up native runtimes (better-sqlite3 in ~/.omniroute/runtime/).
+// Warm up native runtimes (better-sqlite3 in ~/.cheaproute/runtime/).
 // Non-fatal: errors are caught inside postinstall.mjs.
 try {
   await import("../postinstall.mjs");

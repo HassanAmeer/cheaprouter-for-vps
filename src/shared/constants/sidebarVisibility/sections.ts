@@ -16,16 +16,28 @@ const HOME_ITEMS: readonly SidebarItemDefinition[] = [
   },
 ];
 
-const OMNI_PROXY_ITEMS: readonly SidebarItemDefinition[] = [
+const API_NAV_ITEMS: readonly SidebarItemDefinition[] = [
   {
-    id: "endpoints",
+    id: "api-endpoints",
     href: "/dashboard/endpoint",
-    i18nKey: "endpoints",
-    labelFallback: "APIs & Documentation",
-    subtitleKey: "endpointsSubtitle",
-    subtitleFallback: "API endpoints, documentation & integration guides",
+    i18nKey: "apiEndpoints",
+    labelFallback: "API Endpoints",
+    subtitleKey: "apiEndpointsSubtitle",
+    subtitleFallback: "Visual endpoint catalog & integration guides",
     icon: "api",
   },
+  {
+    id: "api-docs",
+    href: "/docs",
+    i18nKey: "apiDocs",
+    labelFallback: "API Docs",
+    subtitleKey: "apiDocsSubtitle",
+    subtitleFallback: "Interactive developer documentation",
+    icon: "menu_book",
+  },
+];
+
+const OMNI_PROXY_ITEMS: readonly SidebarItemDefinition[] = [
   {
     id: "api-manager",
     href: "/dashboard/api-manager",
@@ -118,9 +130,30 @@ const SETTINGS_ITEMS: readonly SidebarItemDefinition[] = [
   },
 ];
 
+const MULTI_TENANT_ITEMS: readonly SidebarItemDefinition[] = [
+  {
+    id: "users",
+    href: "/dashboard/users",
+    i18nKey: "users",
+    labelFallback: "Users",
+    subtitleKey: "usersSubtitle",
+    subtitleFallback: "Reseller users, plans & BYOK keys",
+    icon: "groups",
+  },
+];
+
 // ─── Sections ────────────────────────────────────────────────────────────────
 
 export const SIDEBAR_SECTIONS: readonly SidebarSectionDefinition[] = [
+  // Dedicated top-level API navigation — pinned to the very top of the sidebar
+  // so operators land on the Endpoint catalog or API Docs first.
+  {
+    id: "api",
+    titleKey: "apiSection",
+    titleFallback: "API",
+    children: API_NAV_ITEMS,
+    showTitle: false,
+  },
   {
     id: "home",
     titleKey: "home",
@@ -129,10 +162,16 @@ export const SIDEBAR_SECTIONS: readonly SidebarSectionDefinition[] = [
     showTitle: false,
   },
   {
-    id: "omni-proxy",
-    titleKey: "omniProxySection",
-    titleFallback: "OmniProxy",
+    id: "cheap-proxy",
+    titleKey: "cheapProxySection",
+    titleFallback: "CheapProxy",
     children: OMNI_PROXY_ITEMS,
+  },
+  {
+    id: "multi-tenant",
+    titleKey: "multiTenantSection",
+    titleFallback: "Reseller",
+    children: MULTI_TENANT_ITEMS,
   },
   {
     id: "costs",

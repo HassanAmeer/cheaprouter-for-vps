@@ -1,6 +1,6 @@
 import { z } from "zod";
-import { handleFirecrawlMap } from "@omniroute/open-sse/handlers/firecrawlMap.ts";
-import { errorResponse } from "@omniroute/open-sse/utils/error.ts";
+import { handleFirecrawlMap } from "@cheaproute/open-sse/handlers/firecrawlMap.ts";
+import { errorResponse } from "@cheaproute/open-sse/utils/error.ts";
 import {
   extractApiKey,
   getProviderCredentialsWithQuotaPreflight,

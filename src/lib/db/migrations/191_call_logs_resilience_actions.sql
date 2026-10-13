@@ -1,5 +1,5 @@
 -- 191_call_logs_resilience_actions.sql
--- Per-attempt resilience summary: what OmniRoute did to save the request
+-- Per-attempt resilience summary: what CheapRoute did to save the request
 -- (account rotations, park-and-replay, empty-turn retries, mid-stream
 -- continuations, stored-error replay, buffered-turn verdict). Additive:
 -- NULL means no resilience action was recorded. Compact JSON, closed keys.

@@ -16,7 +16,7 @@ const RETIRED_GITHUB_COPILOT_MODEL_IDS = new Set([
   "gemini-3.6-flash",
   "kimi-k2.7-code",
   "claude-opus-4.7",
-  // Removed from OmniRoute's curated Copilot catalog by operator choice.
+  // Removed from CheapRoute's curated Copilot catalog by operator choice.
   // These entries do not imply that GitHub has retired the models upstream.
   "claude-sonnet-4.6",
   "claude-fable-5",

@@ -4,18 +4,18 @@
 
 import { getDbInstance } from "./core";
 import { backupDbFile } from "./backup";
-import { PROVIDER_ID_TO_ALIAS } from "@omniroute/open-sse/config/providerModels.ts";
+import { PROVIDER_ID_TO_ALIAS } from "@cheaproute/open-sse/config/providerModels.ts";
 import {
   getProxyRefusalSeq,
   hasProxyRefusals,
   proxyEgressKey,
   proxySetAsideSeq,
-} from "@omniroute/open-sse/utils/proxyRefusalMemory.ts";
+} from "@cheaproute/open-sse/utils/proxyRefusalMemory.ts";
 import { isProxySkipRecentlyFailedEnabled } from "@/shared/utils/featureFlags";
 import { invalidateDbCache } from "./readCache";
 import { encrypt, decrypt } from "./encryption";
 import { getProxyRegistryGeneration, resolveProxyForScopeFromRegistry } from "./proxies";
-import { isEgressBucketedLockScope } from "@omniroute/open-sse/config/providerErrorRules.ts";
+import { isEgressBucketedLockScope } from "@cheaproute/open-sse/config/providerErrorRules.ts";
 import { getComboModelProvider as getComboEntryProvider } from "@/lib/combos/steps";
 import { requestBodyLimitMbFromEnv } from "@/shared/constants/bodySize";
 import { DEFAULT_RESPONSES_PREVIOUS_RESPONSE_ID_MODE } from "@/shared/constants/responsesPreviousResponseId";
@@ -193,7 +193,7 @@ export async function getSettings() {
     hideEndpointTailscaleFunnel: false,
     hideEndpointNgrokTunnel: false,
     preferClaudeCodeForUnprefixedClaudeModels: isTruthyEnvFlag(
-      process.env.OMNIROUTE_PREFER_CLAUDE_CODE_FOR_UNPREFIXED_CLAUDE_MODELS
+      process.env.CHEAPROUTE_PREFER_CLAUDE_CODE_FOR_UNPREFIXED_CLAUDE_MODELS
     ),
     // Opt-in (default "off"): short-circuits Claude Code's `--permission-mode auto`
     // internal security-classifier request with a synthetic `<block>no</block>` ALLOW
@@ -274,6 +274,9 @@ export async function getSettings() {
     modelVisibilityAllowlist: [],
     modelVisibilityDenylist: [],
     publishedProviders: [],
+    // Default ON: resellers can supply BYOK provider keys unless the operator
+    // flips the master toggle off.
+    byokEnabled: true,
     // #6977: Opt-in per-connection auto-ping that warms a Codex OAuth connection's
     // quota window right after it resets, so the first real request doesn't land in
     // a cold window. `connections` maps connection id -> enabled. Default empty map
@@ -826,7 +829,7 @@ export async function resolveProxyForConnection(
 
   // Step 11: Auto-selection fallback (only when global proxy is enabled)
   try {
-    const { selectWorkingProxyFallback } = await import("@omniroute/open-sse/utils/proxyFallback");
+    const { selectWorkingProxyFallback } = await import("@cheaproute/open-sse/utils/proxyFallback");
     const fallback = await selectWorkingProxyFallback(connectionId);
     if (fallback) {
       // Auto-selected proxies are probed via a URL roundtrip that drops any

@@ -42,7 +42,7 @@ import {
   checkResourcePressureGuard,
   getResourcePressureObservation,
   type PressureSeverity,
-} from "@omniroute/open-sse/utils/resourcePressure.ts";
+} from "@cheaproute/open-sse/utils/resourcePressure.ts";
 
 function parsePositiveInt(value: string | undefined, fallback: number): number {
   const parsed = Number.parseInt(String(value), 10);
@@ -55,17 +55,17 @@ function parseNonNegativeInt(value: string | undefined, fallback: number): numbe
 }
 
 export const CHAT_LARGE_BODY_BYTES = parsePositiveInt(
-  process.env.OMNIROUTE_CHAT_LARGE_BODY_BYTES,
+  process.env.CHEAPROUTE_CHAT_LARGE_BODY_BYTES,
   256 * 1024
 );
 
 export const CHAT_HARD_MAX_BODY_BYTES = parsePositiveInt(
-  process.env.OMNIROUTE_CHAT_HARD_MAX_BODY_BYTES,
+  process.env.CHEAPROUTE_CHAT_HARD_MAX_BODY_BYTES,
   50 * 1024 * 1024
 );
 
 export const CHAT_MAX_HEAVY_IN_FLIGHT = parsePositiveInt(
-  process.env.OMNIROUTE_CHAT_MAX_HEAVY_IN_FLIGHT,
+  process.env.CHEAPROUTE_CHAT_MAX_HEAVY_IN_FLIGHT,
   1
 );
 
@@ -87,7 +87,7 @@ export const CHAT_MAX_HEAVY_IN_FLIGHT = parsePositiveInt(
  * upstreams does not have to discover this second knob to keep the gate coherent.
  */
 export const CHAT_ADMISSION_QUEUE_MAX_MS = parseNonNegativeInt(
-  process.env.OMNIROUTE_CHAT_ADMISSION_QUEUE_MS,
+  process.env.CHEAPROUTE_CHAT_ADMISSION_QUEUE_MS,
   DEFAULT_REQUEST_QUEUE_MAX_WAIT_MS
 );
 
@@ -100,7 +100,7 @@ export const CHAT_ADMISSION_QUEUE_MAX_MS = parseNonNegativeInt(
  * parking. Bytes are released when a waiter wakes, aborts, or times out.
  */
 export const CHAT_ADMISSION_MAX_QUEUED_BYTES = parsePositiveInt(
-  process.env.OMNIROUTE_CHAT_ADMISSION_MAX_QUEUED_BYTES,
+  process.env.CHEAPROUTE_CHAT_ADMISSION_MAX_QUEUED_BYTES,
   4 * 1024 * 1024
 );
 
@@ -120,15 +120,15 @@ export const CHAT_ADMISSION_QUEUE_CLEANUP_INTERVAL_MS = 60_000;
 export const CHAT_ADMISSION_QUEUE_IDLE_TTL_MS = 300_000;
 
 export const CHAT_HEAVY_MESSAGE_COUNT = parsePositiveInt(
-  process.env.OMNIROUTE_CHAT_HEAVY_MESSAGE_COUNT,
+  process.env.CHEAPROUTE_CHAT_HEAVY_MESSAGE_COUNT,
   200
 );
 export const CHAT_HEAVY_TOOL_COUNT = parsePositiveInt(
-  process.env.OMNIROUTE_CHAT_HEAVY_TOOL_COUNT,
+  process.env.CHEAPROUTE_CHAT_HEAVY_TOOL_COUNT,
   64
 );
 export const CHAT_HEAVY_ESTIMATED_TOKENS = parsePositiveInt(
-  process.env.OMNIROUTE_CHAT_HEAVY_ESTIMATED_TOKENS,
+  process.env.CHEAPROUTE_CHAT_HEAVY_ESTIMATED_TOKENS,
   32_000
 );
 
@@ -146,7 +146,7 @@ export const CHAT_HEAVY_ESTIMATED_TOKENS = parsePositiveInt(
  * admitted anyway because the heap has real headroom).
  */
 export const CHAT_ADMISSION_HEAP_SHED_RATIO = (() => {
-  const parsed = Number(process.env.OMNIROUTE_CHAT_ADMISSION_HEAP_SHED_RATIO);
+  const parsed = Number(process.env.CHEAPROUTE_CHAT_ADMISSION_HEAP_SHED_RATIO);
   return Number.isFinite(parsed) && parsed > 0 && parsed <= 1 ? parsed : 0.75;
 })();
 
@@ -165,7 +165,7 @@ export const CHAT_ADMISSION_HEAP_SHED_RATIO = (() => {
  * real heap pressure, so there is still a real ceiling either way.
  */
 export const CHAT_ADMISSION_HEALTHY_HEADROOM = parseNonNegativeInt(
-  process.env.OMNIROUTE_CHAT_ADMISSION_HEALTHY_HEADROOM,
+  process.env.CHEAPROUTE_CHAT_ADMISSION_HEALTHY_HEADROOM,
   CHAT_MAX_HEAVY_IN_FLIGHT
 );
 
@@ -190,19 +190,19 @@ export function defaultHeapPressureCheck(): boolean {
  *
  * A fixed message count is a *deployment policy*, not a universal property of a chat request:
  * the same 900-message conversation is trivial on a 16 GB host and fatal in a 1 GB container.
- * Enforcing one here rejected conversations before OmniRoute's own compression pipeline — the
+ * Enforcing one here rejected conversations before CheapRoute's own compression pipeline — the
  * component that exists precisely to make them servable — ever ran, and returned a terminal 413
  * that no client can retry its way out of. Message count is also not an input the caller fully
  * controls: translation from other protocols expands a single turn into several `messages[]`
- * entries, so the metric an operator caps is partly manufactured by OmniRoute itself.
+ * entries, so the metric an operator caps is partly manufactured by CheapRoute itself.
  *
  * What actually bounds heap growth is the heavyweight lease below (bounded concurrency through
  * the allocation-heavy path) plus the heap-pressure shed in the chat handler. Both remain in
  * force for every request, including large ones. Constrained deployments that still want a hard
- * ceiling opt in with `OMNIROUTE_CHAT_HARD_MAX_MESSAGES`.
+ * ceiling opt in with `CHEAPROUTE_CHAT_HARD_MAX_MESSAGES`.
  */
 export const CHAT_HARD_MAX_MESSAGES = parsePositiveInt(
-  process.env.OMNIROUTE_CHAT_HARD_MAX_MESSAGES,
+  process.env.CHEAPROUTE_CHAT_HARD_MAX_MESSAGES,
   0
 );
 
@@ -249,7 +249,7 @@ export type ChatAdmissionShedReason =
  * "critical", a passive read here sheds every subsequent request before any
  * of those downstream paths can run, which means `check()` never gets called
  * again and the guard can never observe recovery. See
- * https://github.com/diegosouzapw/OmniRoute/issues/13821.
+ * https://github.com/diegosouzapw/CheapRoute/issues/13821.
  *
  * `checkResourcePressureGuard()` is cheap on the hot path: it only does a
  * synchronous `process.memoryUsage()` read plus a timestamp comparison per
@@ -309,7 +309,7 @@ function defaultChatAdmissionShedSink(event: ChatAdmissionShedEvent): void {
 
 /**
  * Process-local heavyweight reservation. The capacity check and increment execute in one
- * synchronous JavaScript turn, making acquisition atomic within an OmniRoute process.
+ * synchronous JavaScript turn, making acquisition atomic within an CheapRoute process.
  * Unavailable capacity is a bounded wait (see `acquireHeavyWithin`) and only then a
  * retryable 503, so short agent bursts serialize instead of killing the client's
  * retry budget.
@@ -790,7 +790,7 @@ export class PerConnectionAdmissionController {
     /** #503-fanout: live multi-signal resource-pressure severity. */
     pressureSeverity: PressureSeverity;
     /** #503-fanout: false on a default deployment — the legacy count cap only
-     * binds when the operator explicitly set OMNIROUTE_CHAT_MAX_HEAVY_IN_FLIGHT. */
+     * binds when the operator explicitly set CHEAPROUTE_CHAT_MAX_HEAVY_IN_FLIGHT. */
     countCapEnabled: boolean;
   } {
     return {
@@ -829,7 +829,7 @@ export class PerConnectionAdmissionController {
 
 /**
  * The legacy count cap (#503-fanout) now binds ONLY when the operator has
- * explicitly set `OMNIROUTE_CHAT_MAX_HEAVY_IN_FLIGHT`. Left unset — the
+ * explicitly set `CHEAPROUTE_CHAT_MAX_HEAVY_IN_FLIGHT`. Left unset — the
  * default on every deployment that produced the multi-subagent 503 storm —
  * it resolves to effectively unlimited, so the auto-derived ingest byte
  * budget below (`resolveIngestByteBudget()`) is the gate that actually binds.
@@ -837,7 +837,7 @@ export class PerConnectionAdmissionController {
  * setting `=5`) keeps its exact prior behavior layered on top of the budget.
  */
 function resolveLegacyCountCap(): number {
-  const raw = process.env.OMNIROUTE_CHAT_MAX_HEAVY_IN_FLIGHT;
+  const raw = process.env.CHEAPROUTE_CHAT_MAX_HEAVY_IN_FLIGHT;
   if (raw === undefined || raw.trim() === "") return Number.MAX_SAFE_INTEGER;
   return CHAT_MAX_HEAVY_IN_FLIGHT;
 }
@@ -1102,7 +1102,7 @@ export async function admitChatRequest(
   const heapPressureCheck = options.heapPressureCheck ?? defaultHeapPressureCheck;
   let lease: ChatAdmissionLease | null = null;
   // #10437: busy primary + healthy heap uses tryAcquireHealthyHeadroom; else queue/shed.
-  // Bodies at/above OMNIROUTE_CHAT_LARGE_BODY_BYTES take this same heavyweight lease.
+  // Bodies at/above CHEAPROUTE_CHAT_LARGE_BODY_BYTES take this same heavyweight lease.
   const reserve = async (bytes = 0): Promise<boolean> => {
     if (lease) return true;
     const countLease =

@@ -8,7 +8,7 @@
  *
  *   1. Complete block (call log 1787040934679-f8f772):
  *        <｜DSML｜:Read>
- *        <path>images/omniroute.png</path>
+ *        <path>images/cheaproute.png</path>
  *        </｜DSML｜:Read>
  *      The tool name follows a leading colon (`:Read`); child elements
  *      (`<path>`, `<parameter name="...">`) carry the arguments.

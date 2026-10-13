@@ -54,7 +54,7 @@ interface SessionView {
   };
 }
 
-const PHONE_STORAGE_KEY = "omniroute.volcengine.phone";
+const PHONE_STORAGE_KEY = "cheaproute.volcengine.phone";
 const TERMINAL_PHASES: SessionPhase[] = [
   "success",
   "error",

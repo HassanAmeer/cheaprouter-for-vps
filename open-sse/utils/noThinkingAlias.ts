@@ -33,7 +33,7 @@ export const NO_THINKING_PREFIX = "no-think/";
 
 // Ids that already carry a Claude reasoning-effort suffix (see
 // claudeEffortVariants.ts's identical constant) — a no-think variant of an effort
-// variant would combine two independent OmniRoute catalog conventions on the same
+// variant would combine two independent CheapRoute catalog conventions on the same
 // id. Dispatch-time, applyNoThinkingAlias pre-sets reasoning_effort:"none" before
 // applyClaudeEffortVariant's hasExplicitClaudeEffort() check runs, so the pre-set
 // "none" is treated as explicit and the suffix's implied effort is silently

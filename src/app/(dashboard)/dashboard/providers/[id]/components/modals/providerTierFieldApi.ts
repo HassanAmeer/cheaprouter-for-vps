@@ -10,7 +10,7 @@
  * same directory.
  */
 
-import type { ProviderTier, TierConfig } from "@omniroute/open-sse/services/tierTypes";
+import type { ProviderTier, TierConfig } from "@cheaproute/open-sse/services/tierTypes";
 
 const VALID_TIERS = new Set<ProviderTier>(["free", "cheap", "premium"]);
 

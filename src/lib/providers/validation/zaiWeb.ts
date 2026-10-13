@@ -1,4 +1,4 @@
-import { extractZaiToken } from "@omniroute/open-sse/services/zaiWebCredentials.ts";
+import { extractZaiToken } from "@cheaproute/open-sse/services/zaiWebCredentials.ts";
 import { toValidationErrorResult, validationRead } from "./transport";
 
 const ZAI_SESSION_PROBE_URL = "https://chat.z.ai/api/v1/users/user/settings";

@@ -13,7 +13,7 @@
  */
 type FeatureFlagResolver = (key: string) => boolean;
 
-const RESOLVER_KEY = Symbol.for("omniroute.featureFlagResolver");
+const RESOLVER_KEY = Symbol.for("cheaproute.featureFlagResolver");
 
 type ResolverStore = { [RESOLVER_KEY]?: FeatureFlagResolver };
 

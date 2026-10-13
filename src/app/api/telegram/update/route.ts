@@ -11,7 +11,7 @@
  *   1. Rejects when TELEGRAM_BOT_TOKEN is unset (never silently no-op).
  *   2. Verifies initData when present (Mini App path).
  *   3. Handles /start (returns the Mini App deep link) and everything else
- *      as a chat prompt proxied through the OmniRoute pipeline.
+ *      as a chat prompt proxied through the CheapRoute pipeline.
  */
 import { timingSafeEqual } from "node:crypto";
 import { NextResponse } from "next/server";
@@ -28,7 +28,7 @@ import {
 import { verifyInitData, parseInitData } from "@/lib/telegram/initData";
 import { proxyChat } from "@/lib/telegram/chatProxy";
 import { formatTelegramGatewayError } from "@/lib/telegram/errorMessage";
-import { resolveOmniRouteBaseUrl } from "@/shared/utils/resolveOmniRouteBaseUrl";
+import { resolveCheapRouteBaseUrl } from "@/shared/utils/resolveCheapRouteBaseUrl";
 
 /**
  * Telegram update bodies are open-ended (many update types, evolving schema),
@@ -66,14 +66,14 @@ function extractInitDataUserId(initData: string): number {
 }
 
 function buildMiniAppLink(botUsername?: string): string {
-  const _base = resolveOmniRouteBaseUrl();
+  const _base = resolveCheapRouteBaseUrl();
   // Deep link: t.me/<bot>?startapp= opens the Mini App with start_param.
   const bot = botUsername || "YOUR_BOT";
   return `https://t.me/${bot}?startapp=miniapp`;
 }
 
 const START_HELP =
-  "👋 Welcome! This bot bridges Telegram and your OmniRoute gateway.\n\n" +
+  "👋 Welcome! This bot bridges Telegram and your CheapRoute gateway.\n\n" +
   "• Send any message and I'll route it through your configured models.\n" +
   "• Open the Mini App for a full chat UI.";
 

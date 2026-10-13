@@ -286,7 +286,7 @@ export const cursorProvider: RegistryEntry = {
  * holds a Cursor user API key (`crsr_…`, cursor.com/dashboard/api) instead of
  * an IDE/OAuth session. The executor exchanges that key for a session token
  * on demand (open-sse/services/cursorApiKeyAuth.ts), so no cursor-agent or
- * IDE install is needed on the OmniRoute host. Kept as a distinct backend ID
+ * IDE install is needed on the CheapRoute host. Kept as a distinct backend ID
  * so API-key and IDE-session connections never share renewal, quota or
  * dashboard semantics.
  */

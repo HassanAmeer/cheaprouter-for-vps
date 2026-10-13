@@ -2,7 +2,7 @@
  * modelsDevSync/transform — pure data model + transform layer.
  *
  * Extracted verbatim from modelsDevSync.ts. Holds the models.dev data-model
- * types, the provider-id mapping table, and the raw→OmniRoute transform
+ * types, the provider-id mapping table, and the raw→CheapRoute transform
  * functions. Zero imports, no DB access, no module state — pure functions and
  * static data. The host (modelsDevSync.ts) imports these for its sync
  * orchestration and re-exports the originally-public symbols.
@@ -109,11 +109,11 @@ export interface ModelsDevProvider {
 
 export type ModelsDevData = Record<string, ModelsDevProvider>;
 
-// ─── Provider mapping: models.dev provider ID → OmniRoute provider IDs/aliases ──
+// ─── Provider mapping: models.dev provider ID → CheapRoute provider IDs/aliases ──
 //
 // models.dev uses canonical provider IDs (e.g. "openai", "anthropic", "google").
-// OmniRoute uses both full IDs and short aliases (e.g. "cc" for claude, "cx" for codex).
-// We map each models.dev provider to ALL OmniRoute identifiers that should receive
+// CheapRoute uses both full IDs and short aliases (e.g. "cc" for claude, "cx" for codex).
+// We map each models.dev provider to ALL CheapRoute identifiers that should receive
 // its pricing/capability data.
 
 export const MODELS_DEV_PROVIDER_MAP: Record<string, string[]> = {
@@ -148,18 +148,18 @@ export const MODELS_DEV_PROVIDER_MAP: Record<string, string[]> = {
   kilocode: ["kilocode", "kc", "kilo-gateway"],
   "kimi-for-coding": ["kimi-coding", "kmc", "kimi-coding-apikey", "kmca"],
   // The `opencode` models.dev entry used to map only to "opencode-zen" because
-  // that is the historical alias pair. But OmniRoute's catalog & combo targets
+  // that is the historical alias pair. But CheapRoute's catalog & combo targets
   // reference models under BOTH provider IDs:
   //   - `opencode-zen/big-pickle` (alias form)
   //   - `opencode/big-pickle`    (canonical id form, used by live API catalog
-  //                               and by combos like "Opencode FREE Omni")
+  //                               and by combos like "Opencode FREE Cheap")
   // If we only store synced capabilities under "opencode-zen", the canonical
   // `opencode/<model>` lookup in getCanonicalModelMetadata returns null and
   // any combo that targets `opencode/...` ends up with no computed context.
   // Symmetric mapping keeps both lookup paths populated.
   opencode: ["opencode", "opencode-zen"],
   "opencode-go": ["opencode-go", "opencode-zen"],
-  // Additional providers that may overlap with OmniRoute
+  // Additional providers that may overlap with CheapRoute
   alibaba: ["ali", "alibaba"],
   "alibaba-cn": ["ali-cn", "alibaba-cn", "alibaba-china"],
   "alibaba-coding-plan": ["bcp", "bailian-coding-plan"],
@@ -183,7 +183,7 @@ export const MODELS_DEV_PROVIDER_MAP: Record<string, string[]> = {
 };
 
 /**
- * Map a models.dev provider ID to OmniRoute provider IDs.
+ * Map a models.dev provider ID to CheapRoute provider IDs.
  * Returns array of provider identifiers (may include aliases).
  */
 export function mapProviderId(modelsDevProviderId: string): string[] {
@@ -193,16 +193,16 @@ export function mapProviderId(modelsDevProviderId: string): string[] {
 // ─── Transform: Pricing ──────────────────────────────────
 
 /**
- * Transform models.dev raw data → OmniRoute PricingByProvider format.
+ * Transform models.dev raw data → CheapRoute PricingByProvider format.
  *
- * models.dev costs are already in $/1M tokens (same as OmniRoute format).
+ * models.dev costs are already in $/1M tokens (same as CheapRoute format).
  * Maps: cache_read → cached, cache_write → cache_creation.
  */
 export function transformModelsDevToPricing(raw: ModelsDevData): PricingByProvider {
   const result: PricingByProvider = {};
 
   for (const [providerId, providerData] of Object.entries(raw)) {
-    const omniRouteProviders = mapProviderId(providerId);
+    const cheapRouteProviders = mapProviderId(providerId);
 
     for (const [modelId, model] of Object.entries(providerData.models || {})) {
       if (!model.cost) continue;
@@ -225,10 +225,10 @@ export function transformModelsDevToPricing(raw: ModelsDevData): PricingByProvid
         entry.reasoning = model.cost.reasoning;
       }
 
-      // Write to ALL mapped OmniRoute providers
-      for (const omniProvider of omniRouteProviders) {
-        if (!result[omniProvider]) result[omniProvider] = {};
-        result[omniProvider][modelId] = entry;
+      // Write to ALL mapped CheapRoute providers
+      for (const cheapProvider of cheapRouteProviders) {
+        if (!result[cheapProvider]) result[cheapProvider] = {};
+        result[cheapProvider][modelId] = entry;
       }
     }
   }
@@ -258,7 +258,7 @@ export function transformModelsDevToCapabilities(raw: ModelsDevData): Capabiliti
   const result: CapabilitiesByProvider = {};
 
   for (const [providerId, providerData] of Object.entries(raw)) {
-    const omniRouteProviders = mapProviderId(providerId);
+    const cheapRouteProviders = mapProviderId(providerId);
 
     for (const [modelId, model] of Object.entries(providerData.models || {})) {
       const modalitiesInput = model.modalities?.input ?? [];
@@ -303,9 +303,9 @@ export function transformModelsDevToCapabilities(raw: ModelsDevData): Capabiliti
               : null,
       };
 
-      for (const omniProvider of omniRouteProviders) {
-        if (!result[omniProvider]) result[omniProvider] = {};
-        result[omniProvider][modelId] = cap;
+      for (const cheapProvider of cheapRouteProviders) {
+        if (!result[cheapProvider]) result[cheapProvider] = {};
+        result[cheapProvider][modelId] = cap;
       }
     }
   }

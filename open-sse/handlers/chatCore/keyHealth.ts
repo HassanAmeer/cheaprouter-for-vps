@@ -74,7 +74,7 @@ export function recordKeyHealthStatus(
   retryAfterMs?: number | null
 ): void {
   // CLIProxyAPI owns a shared external credential pool. Its auth failures cannot be
-  // attributed to the native OmniRoute connection selected before proxy dispatch.
+  // attributed to the native CheapRoute connection selected before proxy dispatch.
   if (transport === "cliproxyapi") return;
 
   const connId = creds?.connectionId as string | undefined;

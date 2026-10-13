@@ -14,7 +14,7 @@
  *
  * When the connection carries a console cookie in providerSpecificData
  * (`volcConsoleCookie` + `volcCsrfToken`), we fetch the real quota windows and
- * map them into OmniRoute's UsageQuota shape. Without a cookie we fall back to a
+ * map them into CheapRoute's UsageQuota shape. Without a cookie we fall back to a
  * data-plane connectivity probe (validates the key, no quota numbers).
  */
 

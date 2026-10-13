@@ -3,7 +3,7 @@
 // API_HOST, LIVE_WS_HOST) while REQUIRE_API_KEY still defaults to `false`.
 // That combination puts the anonymous /v1 LLM proxy on the LAN/WAN with no
 // key required. This never hard-fails the boot (a reverse proxy in front of
-// OmniRoute may already be doing its own auth) — it only logs a loud warning
+// CheapRoute may already be doing its own auth) — it only logs a loud warning
 // so the operator notices the exposure instead of discovering it from traffic.
 
 const LOOPBACK_HOSTS = new Set(["127.0.0.1", "::1", "localhost", "::ffff:127.0.0.1"]);
@@ -42,13 +42,13 @@ export function warnIfNonLoopbackWithoutApiKey(serverLabel: string, host: string
  *
  * - `scripts/dev/run-next.mjs` (`npm run dev` / `npm start`) uses
  *   `process.env.HOST`, and publishes the resolved value as
- *   `OMNIROUTE_BOUND_HOST` for exactly this lookup.
+ *   `CHEAPROUTE_BOUND_HOST` for exactly this lookup.
  * - `scripts/dev/run-standalone.mjs` (the Docker entrypoint) delegates to
  *   Next's generated `server.js`, which uses Next's own `HOSTNAME`
  *   convention — `Dockerfile` sets `HOSTNAME=0.0.0.0`.
  *
  * `HOST` is deliberately NOT in this chain. The only path that honours it is
- * run-next.mjs, which has already folded it into `OMNIROUTE_BOUND_HOST`; on
+ * run-next.mjs, which has already folded it into `CHEAPROUTE_BOUND_HOST`; on
  * the standalone path Next ignores `HOST` and binds `HOSTNAME`, so consulting
  * it there would name an interface the server is not on. A warning that
  * fingers the wrong interface is worse than none — an operator who sees one
@@ -59,7 +59,7 @@ export function warnIfNonLoopbackWithoutApiKey(serverLabel: string, host: string
 export const MAIN_SERVER_DEFAULT_HOST = "0.0.0.0";
 
 export function resolveMainServerHost(): string {
-  return process.env.OMNIROUTE_BOUND_HOST || process.env.HOSTNAME || MAIN_SERVER_DEFAULT_HOST;
+  return process.env.CHEAPROUTE_BOUND_HOST || process.env.HOSTNAME || MAIN_SERVER_DEFAULT_HOST;
 }
 
 /**

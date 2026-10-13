@@ -8,7 +8,7 @@ vi.mock("../audit.ts", () => ({
   closeAuditDb: vi.fn(),
 }));
 
-describe("omniroute_tool_search", () => {
+describe("cheaproute_tool_search", () => {
   let client: Client;
 
   beforeEach(async () => {
@@ -25,32 +25,32 @@ describe("omniroute_tool_search", () => {
 
   it("appears in tools/list with read:tools scope", async () => {
     const { tools } = await client.listTools();
-    expect(tools.find((t) => t.name === "omniroute_tool_search")).toBeTruthy();
+    expect(tools.find((t) => t.name === "cheaproute_tool_search")).toBeTruthy();
   });
 
   it("returns relevant tool with a signature, not itself", async () => {
     const res = await client.callTool({
-      name: "omniroute_tool_search",
+      name: "cheaproute_tool_search",
       arguments: { query: "health" },
     });
     const text = (res.content as Array<{ text: string }>)[0].text;
     const parsed = JSON.parse(text);
-    expect(parsed.tools.some((t: any) => t.name === "omniroute_get_health")).toBe(true);
-    expect(parsed.tools.every((t: any) => t.name !== "omniroute_tool_search")).toBe(true);
+    expect(parsed.tools.some((t: any) => t.name === "cheaproute_get_health")).toBe(true);
+    expect(parsed.tools.every((t: any) => t.name !== "cheaproute_tool_search")).toBe(true);
     expect(typeof parsed.tools[0].signature).toBe("string");
   });
 
   it("discovers all GitHub skill tools", async () => {
     const res = await client.callTool({
-      name: "omniroute_tool_search",
+      name: "cheaproute_tool_search",
       arguments: { query: "GitHub skills", limit: 25 },
     });
     const text = (res.content as Array<{ text: string }>)[0].text;
     const parsed = JSON.parse(text);
     const names = new Set(parsed.tools.map((tool: { name: string }) => tool.name));
 
-    expect(names.has("omniroute_github_skills_search")).toBe(true);
-    expect(names.has("omniroute_github_skills_scan")).toBe(true);
-    expect(names.has("omniroute_github_skills_install")).toBe(true);
+    expect(names.has("cheaproute_github_skills_search")).toBe(true);
+    expect(names.has("cheaproute_github_skills_scan")).toBe(true);
+    expect(names.has("cheaproute_github_skills_install")).toBe(true);
   });
 });

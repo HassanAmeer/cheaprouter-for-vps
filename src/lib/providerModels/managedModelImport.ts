@@ -21,13 +21,13 @@ import {
   ANTIGRAVITY_MODEL_ALIASES,
   ANTIGRAVITY_REVERSE_MODEL_ALIASES,
   isDiscoverableAntigravityModelId,
-} from "@omniroute/open-sse/config/antigravityModelAliases.ts";
-import { isDiscoverableAgyModelId } from "@omniroute/open-sse/config/agyModels.ts";
+} from "@cheaproute/open-sse/config/antigravityModelAliases.ts";
+import { isDiscoverableAgyModelId } from "@cheaproute/open-sse/config/agyModels.ts";
 import {
   declaresOnlyNonChatEndpoints,
   filterChatSelectableModels,
-} from "@omniroute/open-sse/services/modelEndpointPolicy.ts";
-import { filterSelectableModels } from "@omniroute/open-sse/services/modelLifecycle.ts";
+} from "@cheaproute/open-sse/services/modelEndpointPolicy.ts";
+import { filterSelectableModels } from "@cheaproute/open-sse/services/modelLifecycle.ts";
 import { isSelfHostedChatProvider } from "@/shared/constants/providers";
 import type { VertexModelMetadataProvenance } from "@/lib/providerModels/vertexModelMetadata";
 

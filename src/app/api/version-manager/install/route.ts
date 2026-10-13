@@ -8,7 +8,7 @@ import { versionManagerInstallSchema } from "@/shared/validation/schemas";
 import { isValidationFailure, validateBody } from "@/shared/validation/helpers";
 import { requireManagementAuth } from "@/lib/api/requireManagementAuth";
 import { VERSION_MANAGER_SUPERVISOR_TOOLS } from "../request";
-import { sanitizeErrorMessage } from "@omniroute/open-sse/utils/error";
+import { sanitizeErrorMessage } from "@cheaproute/open-sse/utils/error";
 
 // The version is spliced into a GitHub release URL and an install directory.
 const installBodySchema = versionManagerInstallSchema.extend({

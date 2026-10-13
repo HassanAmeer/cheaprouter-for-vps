@@ -3,19 +3,19 @@
 /**
  * Dario account panel — drives the headless Claude OAuth login flow against the
  * server-side admin-proxy routes (/api/services/dario/admin/*). The real
- * DARIO_ADMIN_TOKEN never reaches this component; the OmniRoute routes attach it.
+ * DARIO_ADMIN_TOKEN never reaches this component; the CheapRoute routes attach it.
  *
  * Flow: "Start Login" → render the returned Claude authorize_url as an external
  * link + expiry countdown + a code input → "Complete Login" posts the pasted
  * code → on success the account is routable immediately (Dario hot-reloads) and
  * the account list refreshes. Each row has a "Remove" button.
  *
- * Also offers "Import from OmniRoute": lists any existing OmniRoute `claude`
+ * Also offers "Import from CheapRoute": lists any existing CheapRoute `claude`
  * provider connection (OAuth-based) and imports its access+refresh token pair
  * directly into Dario's account store, skipping the browser OAuth round trip
  * entirely — valid because both tools authenticate against the same public
  * Claude Code OAuth client. See
- * /api/services/dario/admin/import-from-omniroute/route.ts for why this is
+ * /api/services/dario/admin/import-from-cheaproute/route.ts for why this is
  * safe (no re-implemented OAuth, just a decrypt()'d token handoff).
  *
  * Structurally mirrors the shared services components (Card/Button, text-xs
@@ -44,7 +44,7 @@ interface PendingLogin {
   expiresAt: string;
 }
 
-interface OmniConnection {
+interface CheapConnection {
   id: string;
   name: string;
   email: string | null;
@@ -84,11 +84,11 @@ async function fetchDarioAccounts(): Promise<{ accounts: DarioAccount[] } | { er
   }
 }
 
-async function fetchOmniConnectionsList(): Promise<OmniConnection[] | null> {
+async function fetchCheapConnectionsList(): Promise<CheapConnection[] | null> {
   try {
-    const res = await fetch("/api/services/dario/admin/import-from-omniroute");
+    const res = await fetch("/api/services/dario/admin/import-from-cheaproute");
     const json = (await res.json().catch(() => null)) as {
-      connections?: OmniConnection[];
+      connections?: CheapConnection[];
       error?: string;
     } | null;
     if (!res.ok) return null;
@@ -110,8 +110,8 @@ export function DarioAccountPanel() {
   const [busy, setBusy] = useState<null | "start" | "complete">(null);
   const [notice, setNotice] = useState<string | null>(null);
 
-  const [omniConnections, setOmniConnections] = useState<OmniConnection[]>([]);
-  const [omniLoading, setOmniLoading] = useState(true);
+  const [cheapConnections, setCheapConnections] = useState<CheapConnection[]>([]);
+  const [cheapLoading, setCheapLoading] = useState(true);
   const [importBusyId, setImportBusyId] = useState<string | null>(null);
 
   const refreshAccounts = useCallback(async () => {
@@ -141,9 +141,9 @@ export function DarioAccountPanel() {
     };
     void run();
     const runOmni = async () => {
-      const list = await fetchOmniConnectionsList();
-      if (list) setOmniConnections(list);
-      setOmniLoading(false);
+      const list = await fetchCheapConnectionsList();
+      if (list) setCheapConnections(list);
+      setCheapLoading(false);
     };
     void runOmni();
   }, []);
@@ -154,12 +154,12 @@ export function DarioAccountPanel() {
     void refreshAccounts();
   };
 
-  async function importFromOmniroute(connectionId: string) {
+  async function importFromCheaproute(connectionId: string) {
     setImportBusyId(connectionId);
     setError(null);
     setNotice(null);
     try {
-      const res = await fetch("/api/services/dario/admin/import-from-omniroute", {
+      const res = await fetch("/api/services/dario/admin/import-from-cheaproute", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ connectionId }),
@@ -321,9 +321,9 @@ export function DarioAccountPanel() {
             Reuse an existing CheapRouter Claude connection&apos;s OAuth tokens instead of logging in
             again — skips the browser approval step entirely.
           </p>
-          {omniLoading && omniConnections.length === 0 ? (
+          {cheapLoading && cheapConnections.length === 0 ? (
             <div className="h-8 animate-pulse bg-bg-subtle rounded" />
-          ) : omniConnections.length === 0 ? (
+          ) : cheapConnections.length === 0 ? (
             <div className="flex items-center justify-between gap-3 rounded-lg border border-border px-3 py-2">
               <p className="text-xs text-text-muted">
                 No eligible CheapRouter Claude connections found.
@@ -335,7 +335,7 @@ export function DarioAccountPanel() {
               </Tooltip>
             </div>
           ) : (
-            omniConnections.map((c) => (
+            cheapConnections.map((c) => (
               <div
                 key={c.id}
                 className="flex items-center justify-between gap-3 rounded-lg border border-border px-3 py-2"
@@ -349,7 +349,7 @@ export function DarioAccountPanel() {
                 <Button
                   size="sm"
                   disabled={importBusyId !== null}
-                  onClick={() => void importFromOmniroute(c.id)}
+                  onClick={() => void importFromCheaproute(c.id)}
                 >
                   {importBusyId === c.id ? "Importing…" : "Import"}
                 </Button>

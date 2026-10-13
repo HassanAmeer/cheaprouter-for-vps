@@ -1,5 +1,5 @@
-import { classify429 } from "@omniroute/open-sse/services/antigravity429Engine.ts";
-import { sanitizeErrorMessage } from "@omniroute/open-sse/utils/error.ts";
+import { classify429 } from "@cheaproute/open-sse/services/antigravity429Engine.ts";
+import { sanitizeErrorMessage } from "@cheaproute/open-sse/utils/error.ts";
 
 import { getProviderCredentialsWithQuotaPreflight } from "./auth";
 import { checkAndRefreshToken } from "./tokenRefresh";

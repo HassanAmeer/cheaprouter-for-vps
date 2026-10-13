@@ -1,7 +1,7 @@
 import {
   getDeprecationNotice,
   isDeprecatedProvider,
-} from "@omniroute/open-sse/services/tokenRefresh.ts";
+} from "@cheaproute/open-sse/services/tokenRefresh.ts";
 
 export function isOrphanDeprecatedConnection(conn: { provider?: string | null }): boolean {
   return isDeprecatedProvider(String(conn.provider || ""));

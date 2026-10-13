@@ -1,7 +1,7 @@
 /**
  * MaxAI model discovery — live model list + per-model context windows from the
  * web app's own `/models/get_config` endpoint (the signed call the app makes on
- * load). Feeds OmniRoute's model-discovery pipeline so the MaxAI catalog and its
+ * load). Feeds CheapRoute's model-discovery pipeline so the MaxAI catalog and its
  * per-model context windows self-update instead of relying only on the static
  * catalog (`open-sse/executors/maxai/catalog.ts`).
  *

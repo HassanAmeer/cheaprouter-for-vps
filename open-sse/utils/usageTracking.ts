@@ -657,7 +657,7 @@ export function normalizeUsage(usage: UsageLike | null | undefined) {
 // filterUsageForFormat never copy it, so it cannot reach a client payload or change any
 // usage field, cost or budget — it only lets the call-log sink tell estimated usage apart
 // after extraction rebuilt the object without the provider's `estimated` flag.
-const ESTIMATED_USAGE_MARKER = Symbol.for("omniroute.usage.estimated");
+const ESTIMATED_USAGE_MARKER = Symbol.for("cheaproute.usage.estimated");
 
 export function carryEstimatedUsageMarker<T>(source: unknown, rebuilt: T): T {
   const estimated =
@@ -670,7 +670,7 @@ export function carryEstimatedUsageMarker<T>(source: unknown, rebuilt: T): T {
 
 /**
  * True when token usage was estimated locally instead of reported by the provider: either
- * the usage still carries `estimated: true` (OmniRoute's own estimateUsage fallback) or
+ * the usage still carries `estimated: true` (CheapRoute's own estimateUsage fallback) or
  * extraction kept the internal marker. Observability only — billing does not read it.
  */
 export function isEstimatedUsage(usage: unknown): boolean {

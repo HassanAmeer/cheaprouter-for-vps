@@ -7,7 +7,7 @@
  * 172.16.0.0/12 literals, so such a node had to be configured with a container IP — one
  * that Docker's IPAM can hand to a different container after a restart.
  *
- * `OMNIROUTE_LOCAL_PROVIDER_NODE_HOSTS` lists hostnames (comma or whitespace separated)
+ * `CHEAPROUTE_LOCAL_PROVIDER_NODE_HOSTS` lists hostnames (comma or whitespace separated)
  * that are treated exactly like a Docker-bridge IP literal would be: always eligible for
  * the rerank/audio provider-node routes and the local health check, and sent direct
  * instead of through HTTP(S)_PROXY. Unset (the default) changes nothing.
@@ -27,7 +27,7 @@ import { isLoopbackNodeHost } from "./loopbackNodeHost";
 import { isCloudMetadataHost } from "./outboundUrlGuard";
 import { ipVersion, normalizeHost } from "./privateHost";
 
-export const LOCAL_PROVIDER_NODE_HOSTS_ENV = "OMNIROUTE_LOCAL_PROVIDER_NODE_HOSTS";
+export const LOCAL_PROVIDER_NODE_HOSTS_ENV = "CHEAPROUTE_LOCAL_PROVIDER_NODE_HOSTS";
 
 // Short cloud-metadata names that resolve through a cloud VM's DNS search path (GCE
 // documents `http://metadata/`; EC2 has served `instance-data`). The fully qualified names
@@ -71,7 +71,7 @@ function warnIgnored(entries: string[]): void {
   );
 }
 
-/** Parsed `OMNIROUTE_LOCAL_PROVIDER_NODE_HOSTS`; re-read whenever the env value changes. */
+/** Parsed `CHEAPROUTE_LOCAL_PROVIDER_NODE_HOSTS`; re-read whenever the env value changes. */
 export function getConfiguredLocalNodeHosts(): ReadonlySet<string> {
   const raw = readEnv() ?? "";
   if (raw === cachedRaw) return cachedHosts;

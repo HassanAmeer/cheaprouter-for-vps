@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireManagementAuth } from "@/lib/api/requireManagementAuth";
-import { buildOmniRouteStatus } from "@/lib/omnirouteStatus";
+import { buildCheapRouteStatus } from "@/lib/cheaprouteStatus";
 
 export const dynamic = "force-dynamic";
 
@@ -13,9 +13,9 @@ export async function GET(request: Request): Promise<Response> {
     return NextResponse.json({
       generatedAt: new Date().toISOString(),
       liveRequestExecuted: false,
-      ...(await buildOmniRouteStatus()),
+      ...(await buildCheapRouteStatus()),
     });
   } catch {
-    return NextResponse.json({ error: "Failed to build OmniRoute status" }, { status: 500 });
+    return NextResponse.json({ error: "Failed to build CheapRoute status" }, { status: 500 });
   }
 }

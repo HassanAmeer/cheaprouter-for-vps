@@ -1,10 +1,10 @@
 #!/usr/bin/env node
 /**
- * OmniRoute — add one locale to every surface with a single command.
+ * CheapRoute — add one locale to every surface with a single command.
  *
  *   npm run i18n:add-locale -- --code=el --english=Greek --native=Ελληνικά --flag=🇬🇷 \
  *     [--aliases=el-gr] [--flag-file=gr.svg] [--rtl] [--docs=core|all | --files=<csv>] [--cli-full] \
- *     [--force-cli] [--site-dir=../omnirouteSite] [--batch-size=40] [--only=<phase,…>] \
+ *     [--force-cli] [--site-dir=../cheaprouteSite] [--batch-size=40] [--only=<phase,…>] \
  *     [--skip=<phase,…>] [--dry-run]
  *
  * Phases, in order. Every phase checks presence first, so re-running the command
@@ -32,7 +32,7 @@
  * planned write / command — including the computed docs core set — and touches
  * nothing: no files, no network, no child processes.
  *
- * The translating phases (ui, docs, cli, site) need OMNIROUTE_TRANSLATION_API_URL,
+ * The translating phases (ui, docs, cli, site) need CHEAPROUTE_TRANSLATION_API_URL,
  * _API_KEY and _MODEL (docs/guides/I18N.md → "Translation pipeline"); `.env` is loaded
  * automatically. Child scripts run through execFileSync with an argument array —
  * nothing is ever interpolated into a shell.
@@ -75,7 +75,7 @@ const FLAG_CDN = "https://raw.githubusercontent.com/lipis/flag-icons/main/flags/
 const SITE_PAGES = ["index.html", "why/index.html", "viral/index.html"];
 const CLI_DEFAULT_SECTIONS = ["common", "program"];
 const MIRROR_STUBS = [
-  ["llm.txt", "OmniRoute"],
+  ["llm.txt", "CheapRoute"],
   ["CHANGELOG.md", "Changelog"],
 ];
 const PLACEHOLDER_PREFIX = "__MISSING__:";
@@ -101,14 +101,14 @@ const USAGE = `Usage: node scripts/i18n/add-locale.mjs --code=<code> --english=<
   --files=<csv>         repo-relative English sources to translate instead of the core set (not with --docs=all)
   --cli-full            translate every CLI catalog section (default: common + program)
   --force-cli           retranslate CLI keys that already have a value
-  --site-dir=<dir>      omnirouteSite checkout (relative to the repo root or absolute); skipped when absent
+  --site-dir=<dir>      cheaprouteSite checkout (relative to the repo root or absolute); skipped when absent
   --batch-size=<n>      strings per translation request (default ${DEFAULT_BATCH_SIZE})
   --only=<phase,…>      run only these phases
   --skip=<phase,…>      skip these phases
   --dry-run             print every planned write / command and touch nothing
 
 Phases, in order: ${PHASES.join(", ")}
-The translating phases (${PHASES_TRANSLATING.join(", ")}) need OMNIROUTE_TRANSLATION_API_URL / _API_KEY / _MODEL
+The translating phases (${PHASES_TRANSLATING.join(", ")}) need CHEAPROUTE_TRANSLATION_API_URL / _API_KEY / _MODEL
 (docs/guides/I18N.md → "Translation pipeline"); .env is loaded automatically.`;
 
 // ----- .env loader ---------------------------------------------------------
@@ -654,7 +654,7 @@ async function phaseSite(ctx) {
   }
   const sourcePath = path.join(siteDir, "lang", "_source.en.json");
   if (!existsSync(sourcePath)) {
-    throw new Error(`site: ${sourcePath} not found — is --site-dir the omnirouteSite checkout?`);
+    throw new Error(`site: ${sourcePath} not found — is --site-dir the cheaprouteSite checkout?`);
   }
 
   // lang/<code>.json — flat keys; only the ones without a translation yet.

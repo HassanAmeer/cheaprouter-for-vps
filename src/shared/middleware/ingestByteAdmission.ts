@@ -1,4 +1,4 @@
-import type { PressureSeverity } from "@omniroute/open-sse/utils/resourcePressure.ts";
+import type { PressureSeverity } from "@cheaproute/open-sse/utils/resourcePressure.ts";
 
 import type { IngestBudgetSource } from "./admissionBudget";
 

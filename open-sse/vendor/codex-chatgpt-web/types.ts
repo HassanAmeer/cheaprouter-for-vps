@@ -282,7 +282,7 @@ export interface CodexProviderConfig {
     storageStatePath?: string;
     /** System Chrome executable. The runtime never downloads a browser. */
     chromeExecutablePath?: string;
-    /** Internal-only Chromium DevTools endpoint used by the OmniRoute Docker sidecar. */
+    /** Internal-only Chromium DevTools endpoint used by the CheapRoute Docker sidecar. */
     cdpEndpoint?: string;
     /** Unix socket bridging the turn-bound MCP capability into outer Codex tools. */
     brokerSocketPath?: string;

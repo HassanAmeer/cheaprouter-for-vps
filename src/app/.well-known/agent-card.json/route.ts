@@ -1,7 +1,7 @@
 /**
  * Agent Card Endpoint — /.well-known/agent-card.json
  *
- * Serves the OmniRoute A2A Agent Card in the A2A Protocol v1.0 shape for
+ * Serves the CheapRoute A2A Agent Card in the A2A Protocol v1.0 shape for
  * discovery by 1.0 clients (a2a-sdk 1.x, Hermes, …). The legacy v0.3 card
  * remains available at /.well-known/agent.json.
  *
@@ -20,14 +20,14 @@ import { getBaseUrl } from "@/lib/wellKnown";
 /**
  * GET /.well-known/agent-card.json
  *
- * Returns the OmniRoute Agent Card (A2A v1.0).
+ * Returns the CheapRoute Agent Card (A2A v1.0).
  */
 export async function GET(request?: NextRequest) {
   const fleetSkills = await getFleetSkills();
   const baseUrl = getBaseUrl(request);
 
   const agentCard = {
-    name: "OmniRoute AI Gateway",
+    name: "CheapRoute AI Gateway",
     description:
       "Intelligent AI routing gateway with 36+ providers, smart fallback, quota tracking, " +
       "format translation, and auto-managed combos. Routes AI requests to the optimal " +
@@ -102,7 +102,7 @@ export async function GET(request?: NextRequest) {
       {
         id: "list-capabilities",
         name: "List Capabilities",
-        description: "Returns the full catalog of OmniRoute agent skills.",
+        description: "Returns the full catalog of CheapRoute agent skills.",
         tags: ["discovery", "capabilities"],
         examples: ["What can you do?", "List your skills"],
       },

@@ -675,7 +675,7 @@ export { isLoopbackNodeHost };
  *
  * Loopback nodes keep `authType: "none"` — a local Ollama/LM Studio has no key and
  * must not be blocked on a missing credential. Every other node — a remote node the
- * operator opted into, or a hostname listed in `OMNIROUTE_LOCAL_PROVIDER_NODE_HOSTS`
+ * operator opted into, or a hostname listed in `CHEAPROUTE_LOCAL_PROVIDER_NODE_HOSTS`
  * (#14635) — must present the credential stored on its connection, so it is built as an
  * api-key provider keyed by the node id (`credentialProviderId`) rather than by the
  * caller-facing prefix.

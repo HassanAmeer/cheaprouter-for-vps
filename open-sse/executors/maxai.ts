@@ -1,5 +1,5 @@
 /**
- * MaxAiExecutor — MaxAI web-app chat as an OpenAI-compatible OmniRoute provider.
+ * MaxAiExecutor — MaxAI web-app chat as an OpenAI-compatible CheapRoute provider.
  *
  * MaxAI (chat.maxai.co / api.maxai.me) is a consumer web app with no public API.
  * This executor reproduces the web app's own signed request to `/gpt/cwc/chat`:
@@ -11,14 +11,14 @@
  *     out into `reasoning_content` (see ./stream.ts).
  *
  * Egress + TLS: the request MUST exit a residential IP (MaxAI bot-bans datacenter
- * IPs). OmniRoute routes the executor's `fetch()` through the per-connection proxy
+ * IPs). CheapRoute routes the executor's `fetch()` through the per-connection proxy
  * (a residential HTTP proxy) transparently, and applies the wreq-js Firefox TLS
  * fingerprint when enabled. This executor does not open its own socket; it uses
  * the ambient patched `fetch`, so the proxy + TLS overlay apply automatically.
  *
  * Auth refresh: MaxAI's `/oauth/refresh_access_token` is deep-TLS-gated and cannot
  * be called by any HTTP client (only a real browser passes). The access token is
- * therefore minted/refreshed out-of-band by OmniRoute's own browser-mint flow
+ * therefore minted/refreshed out-of-band by CheapRoute's own browser-mint flow
  * (see maxaiBrowserLogin); this executor only consumes the stored credential.
  */
 import { BaseExecutor, type ExecuteInput, type ExecutorExecuteResult } from "./base.ts";
@@ -280,7 +280,7 @@ export class MaxAiExecutor extends BaseExecutor {
       // 401/418 = auth expired/masked-reject; surface so the caller can prompt a re-mint.
       // A body-too-large rejection (MaxAI answers 422 "...message you submitted being
       // too long...") is INPUT-bound: classify it as context_length_exceeded so
-      // OmniRoute's compression/overflow pipeline can shrink and retry instead of
+      // CheapRoute's compression/overflow pipeline can shrink and retry instead of
       // treating it as an opaque provider error.
       const tooLong = /too\s+long|exceeds?\b.*\bcontext|context.*(?:exceeded|too long|limit)/i.test(
         detail

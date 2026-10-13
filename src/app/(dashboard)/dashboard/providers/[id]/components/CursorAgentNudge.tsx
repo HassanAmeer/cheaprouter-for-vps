@@ -3,10 +3,10 @@
 import { useEffect, useState, useSyncExternalStore } from "react";
 import { useTranslations } from "next-intl";
 
-const DISMISS_STORAGE_KEY = "omniroute.cursorAgentNudgeDismissed";
+const DISMISS_STORAGE_KEY = "cheaproute.cursorAgentNudgeDismissed";
 // Same-tab signal for the dismiss button, since writing localStorage doesn't
 // fire a "storage" event in the tab that wrote it.
-const DISMISS_EVENT = "omniroute:cursor-agent-nudge-dismissed";
+const DISMISS_EVENT = "cheaproute:cursor-agent-nudge-dismissed";
 
 function isNotDismissed(): boolean {
   try {

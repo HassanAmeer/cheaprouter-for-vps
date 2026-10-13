@@ -9,14 +9,14 @@ import { syncToCloud } from "@/lib/cloudSync";
 import { validateProviderApiKey } from "@/lib/providers/validation";
 import { projectProviderValidationResultForPublicResponse } from "@/lib/providers/validation/transport";
 import { getCliRuntimeStatus } from "@/shared/services/cliRuntime";
-import { buildQoderCliNotFoundHint } from "@omniroute/open-sse/services/qoderCliResolve.ts";
+import { buildQoderCliNotFoundHint } from "@cheaproute/open-sse/services/qoderCliResolve.ts";
 // Use the shared open-sse token refresh with built-in dedup/race-condition cache
-import { getAccessToken } from "@omniroute/open-sse/services/tokenRefresh.ts";
-import { rotationGroupFor } from "@omniroute/open-sse/services/refreshSerializer.ts";
+import { getAccessToken } from "@cheaproute/open-sse/services/tokenRefresh.ts";
+import { rotationGroupFor } from "@cheaproute/open-sse/services/refreshSerializer.ts";
 import { saveCallLog } from "@/lib/usageDb";
 import { shouldHideLogs } from "@/lib/tokenHealthCheck";
 import { logProxyEvent } from "@/lib/proxyLogger";
-import { runWithProxyContext } from "@omniroute/open-sse/utils/proxyFetch.ts";
+import { runWithProxyContext } from "@cheaproute/open-sse/utils/proxyFetch.ts";
 import {
   buildGitLabDuoProbeBody,
   buildGitLabDuoProbeHeaders,
@@ -27,13 +27,13 @@ import {
 import { providerAllowsOptionalApiKey } from "@/shared/constants/providers";
 import { shouldUseApiKeyConnectionTest } from "./webSessionTestDispatch";
 import { testCodexAppServerConnection, makeDiagnosis } from "./codexAppServerHealth";
-import { recoverKeyHealth } from "@omniroute/open-sse/services/apiKeyRotator.ts";
-import { lockModelIfPerModelQuota } from "@omniroute/open-sse/services/accountFallback.ts";
+import { recoverKeyHealth } from "@cheaproute/open-sse/services/apiKeyRotator.ts";
+import { lockModelIfPerModelQuota } from "@cheaproute/open-sse/services/accountFallback.ts";
 import { shouldClearErrorStateOnValidProbe } from "@/lib/usage/providerLimits";
 import { isConnectionUnavailableToAuxiliaryActivity } from "@/lib/exclusiveLeaseIsolation";
 import * as apiKeyTestResult from "./apiKeyTestResult";
 import { classifyOAuthProbeInconclusive, OAUTH_TEST_CONFIG } from "./oauthTestConfig";
-import { isGeoBlockedError } from "@omniroute/open-sse/services/errorClassifier.ts";
+import { isGeoBlockedError } from "@cheaproute/open-sse/services/errorClassifier.ts";
 import * as retirement from "@/lib/providers/chatgptWebRetirementResponse";
 import {
   classifyFailure,

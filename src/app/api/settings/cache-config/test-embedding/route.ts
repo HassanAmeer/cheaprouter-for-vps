@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { isAuthenticated } from "@/shared/utils/apiAuth";
-import { createDefaultEmbeddingGenerator } from "@omniroute/open-sse/services/cache/embeddingClient.ts";
-import { sanitizeErrorMessage } from "@omniroute/open-sse/utils/error";
+import { createDefaultEmbeddingGenerator } from "@cheaproute/open-sse/services/cache/embeddingClient.ts";
+import { sanitizeErrorMessage } from "@cheaproute/open-sse/utils/error";
 import { z } from "zod";
 import { isValidationFailure, validateBody } from "@/shared/validation/helpers";
 import { resolveProviderConnectionDetails } from "@/lib/cache/semanticCacheDbBridge";
@@ -50,7 +50,7 @@ export async function POST(request: Request) {
     });
 
     const start = Date.now();
-    const result = await generator("OmniRoute semantic cache live probe test");
+    const result = await generator("CheapRoute semantic cache live probe test");
     const latencyMs = Date.now() - start;
 
     if (!result || !Array.isArray(result.embedding)) {

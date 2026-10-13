@@ -78,7 +78,7 @@ export default function CacheSettingsTab() {
   const [semBaseUrl, setSemBaseUrl] = useState("");
   const [semApiKey, setSemApiKey] = useState("");
   const [semRedisUrl, setSemRedisUrl] = useState("");
-  const [semRedisPrefix, setSemRedisPrefix] = useState("omniroute:semcache:");
+  const [semRedisPrefix, setSemRedisPrefix] = useState("cheaproute:semcache:");
   const [semRequireZeroTemp, setSemRequireZeroTemp] = useState(true);
 
   // Saved Semantic Cache State
@@ -274,7 +274,7 @@ export default function CacheSettingsTab() {
       semanticCacheEmbeddingBaseUrl: semBaseUrl.trim() || selectedProviderOption?.baseUrl || null,
       semanticCacheEmbeddingApiKey: semApiKey.trim() || null,
       semanticCacheRedisUrl: semRedisUrl.trim() || null,
-      semanticCacheRedisPrefix: semRedisPrefix.trim() || "omniroute:semcache:",
+      semanticCacheRedisPrefix: semRedisPrefix.trim() || "cheaproute:semcache:",
       semanticCacheRequireZeroTemp: semRequireZeroTemp,
     };
 

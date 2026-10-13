@@ -53,7 +53,7 @@ export const radarCatalogTool: McpToolDefinition<
   typeof radarCatalogInput,
   typeof radarCatalogOutput
 > = {
-  name: "omniroute_radar_catalog",
+  name: "cheaproute_radar_catalog",
   description:
     "Reads the local signed Radar catalog with optional provider and curated-family filters. Never syncs or writes data.",
   inputSchema: radarCatalogInput,

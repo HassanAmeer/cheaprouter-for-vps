@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# OmniRoute — translate the `__MISSING__:<en>` markers a branch adds, every locale in parallel.
+# CheapRoute — translate the `__MISSING__:<en>` markers a branch adds, every locale in parallel.
 #
 # Why this exists: on 2026-09-16 eight feature PRs added 61 keys to `src/i18n/messages/en.json`
 # and stamped `__MISSING__:<en>` into all 65 locales instead of translating. The new-key gate
@@ -31,7 +31,7 @@
 #   --locales=<csv>    subset of locale codes (default: every <code>.json in the catalog but en)
 #
 # Backend: the translation env block must be present — in the shell or in the repo `.env`
-# (the script reads only the OMNIROUTE_TRANSLATION_* lines of `.env`; already-set variables
+# (the script reads only the CHEAPROUTE_TRANSLATION_* lines of `.env`; already-set variables
 # win). Without it the script refuses to start and names the variables. It never leaves
 # markers silently: the exit code is non-zero while any selected locale still carries one.
 #
@@ -46,7 +46,7 @@ ART="$ROOT/_artifacts/i18n-new-keys"
 CATALOG=ui
 WORKERS=5
 LOCALES=""
-RETRY_SLEEP=${OMNIROUTE_TRANSLATION_RETRY_SLEEP:-30}
+RETRY_SLEEP=${CHEAPROUTE_TRANSLATION_RETRY_SLEEP:-30}
 
 usage() {
   sed -n '2,40p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'
@@ -86,7 +86,7 @@ case "$WORKERS" in
     ;;
 esac
 
-# ----- translation backend env: shell first, then the OMNIROUTE_TRANSLATION_* lines of .env
+# ----- translation backend env: shell first, then the CHEAPROUTE_TRANSLATION_* lines of .env
 load_translation_env() {
   local env_file="$ROOT/.env" line key value
   [ -f "$env_file" ] || return 0
@@ -94,7 +94,7 @@ load_translation_env() {
     line="${line#"${line%%[![:space:]]*}"}" # ltrim
     line="${line#export }"
     case "$line" in
-      OMNIROUTE_TRANSLATION_*=*) ;;
+      CHEAPROUTE_TRANSLATION_*=*) ;;
       *) continue ;;
     esac
     key="${line%%=*}"
@@ -111,8 +111,8 @@ load_translation_env() {
 }
 load_translation_env
 
-REQUIRED_VARS="OMNIROUTE_TRANSLATION_API_URL OMNIROUTE_TRANSLATION_API_KEY OMNIROUTE_TRANSLATION_MODEL"
-OPTIONAL_VARS="OMNIROUTE_TRANSLATION_CONCURRENCY OMNIROUTE_TRANSLATION_TIMEOUT_MS"
+REQUIRED_VARS="CHEAPROUTE_TRANSLATION_API_URL CHEAPROUTE_TRANSLATION_API_KEY CHEAPROUTE_TRANSLATION_MODEL"
+OPTIONAL_VARS="CHEAPROUTE_TRANSLATION_CONCURRENCY CHEAPROUTE_TRANSLATION_TIMEOUT_MS"
 missing=""
 for v in $REQUIRED_VARS; do
   [ -n "${!v:-}" ] || missing="$missing $v"

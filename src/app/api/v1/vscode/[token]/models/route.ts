@@ -26,7 +26,7 @@ import {
 } from "@/app/api/v1/vscode/[token]/serviceTierVariants";
 import { getFamilyFirstPublishedModelId } from "@/app/api/v1/vscode/[token]/familyFirstModelIds";
 import { isUsableChatModel } from "@/app/api/v1/vscode/[token]/usableChatModel";
-import { filterUpstreamResponseHeaderEntries } from "@omniroute/open-sse/utils/upstreamResponseHeaders.ts";
+import { filterUpstreamResponseHeaderEntries } from "@cheaproute/open-sse/utils/upstreamResponseHeaders.ts";
 
 type CatalogModelEntry = {
   id?: string;

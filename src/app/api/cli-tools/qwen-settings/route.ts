@@ -5,14 +5,14 @@ import path from "node:path";
 import pino from "pino";
 import { NextResponse } from "next/server";
 
-import { sanitizeErrorMessage } from "@omniroute/open-sse/utils/error";
+import { sanitizeErrorMessage } from "@cheaproute/open-sse/utils/error";
 
 import { requireCliToolsAuth } from "@/lib/api/requireCliToolsAuth";
 import { getApiKeyById } from "@/lib/db/apiKeys";
 import { deleteCliToolLastConfigured, saveCliToolLastConfigured } from "@/lib/db/cliToolState";
 import { createMultiBackup } from "@/shared/services/backupService";
 import {
-  hasOmniRouteQwenCodeConfig,
+  hasCheapRouteQwenCodeConfig,
   mergeQwenCodeEnv,
   mergeQwenCodeSettings,
   removeQwenCodeEnv,
@@ -89,7 +89,7 @@ export async function GET(request: Request): Promise<Response> {
     return NextResponse.json({
       ...runtime,
       settings,
-      hasOmniRoute: hasOmniRouteQwenCodeConfig(settings),
+      hasCheapRoute: hasCheapRouteQwenCodeConfig(settings),
       settingsPath: configPaths.settings,
       envPath: configPaths.env,
     });
@@ -138,7 +138,7 @@ export async function POST(request: Request): Promise<Response> {
       const keyRecord = await getApiKeyById(keyId);
       if (keyRecord?.key) apiKey = keyRecord.key;
     }
-    if (!apiKey) apiKey = "sk_omniroute";
+    if (!apiKey) apiKey = "sk_cheaproute";
 
     const [existingSettings, existingEnv] = await Promise.all([
       readSettings(configPaths.settings),
@@ -163,7 +163,7 @@ export async function POST(request: Request): Promise<Response> {
 
     return NextResponse.json({
       success: true,
-      message: "Qwen Code now routes through OmniRoute",
+      message: "Qwen Code now routes through CheapRoute",
       settingsPath: configPaths.settings,
       envPath: configPaths.env,
     });
@@ -210,7 +210,7 @@ export async function DELETE(request: Request): Promise<Response> {
 
     return NextResponse.json({
       success: true,
-      message: "OmniRoute settings removed from Qwen Code",
+      message: "CheapRoute settings removed from Qwen Code",
     });
   } catch (error) {
     logger.error({ err: error }, "Failed to reset Qwen Code settings");

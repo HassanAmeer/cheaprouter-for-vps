@@ -70,7 +70,7 @@ const FIELDS: readonly LogExportConfigField[] = [
     labelFallback: "Dataset id",
     type: "text",
     required: true,
-    placeholder: "omniroute",
+    placeholder: "cheaproute",
   },
   {
     key: "tableId",

@@ -74,7 +74,7 @@ export type ResourcePressureThresholds = {
 
 /** #13124: host-wide PSI is not this process. Operators can ignore it. */
 export function psiPressureDisabled(): boolean {
-  const raw = process.env.OMNIROUTE_PRESSURE_PSI_DISABLED?.trim().toLowerCase();
+  const raw = process.env.CHEAPROUTE_PRESSURE_PSI_DISABLED?.trim().toLowerCase();
   return raw === "1" || raw === "true" || raw === "yes" || raw === "on";
 }
 
@@ -87,7 +87,7 @@ export const DEFAULT_RESOURCE_PRESSURE_THRESHOLDS: ResourcePressureThresholds = 
   // comparing /proc/pressure/memory against /sys/fs/cgroup/memory.pressure
   // from inside a running container -- the two differ). On a shared host
   // running many unrelated workloads, host-wide memory contention from
-  // OTHER processes was tripping this guard even while OmniRoute's own
+  // OTHER processes was tripping this guard even while CheapRoute's own
   // usage stayed trivial. The ratio-based thresholds above stay untouched
   // -- they're this process's own real OOM safety margin and unaffected by
   // noisy neighbors.

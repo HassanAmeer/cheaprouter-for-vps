@@ -100,7 +100,7 @@ function hasOmissionSentinel(propSchema: ToolArgSchema | null | undefined): bool
 // `null`, meaning "omitted" (OpenAI's own nullable-union idiom for Responses-API strict
 // mode). Enums use injectOptionalEnumOmissionSentinel; plain strings use
 // injectOptionalStringOmissionSentinel. Drop the key when the model follows that idiom
-// for a non-required, schema-declared property, or when OmniRoute's marker is present
+// for a non-required, schema-declared property, or when CheapRoute's marker is present
 // even after an upstream strictifies the field into `required`.
 function isDroppableNullEntry(
   entry: unknown,

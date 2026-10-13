@@ -6,7 +6,7 @@ import {
   deleteSemanticCacheBySignature,
   deleteSemanticCacheByModel,
 } from "@/lib/db/semanticCache";
-import { sanitizeErrorMessage } from "@omniroute/open-sse/utils/error";
+import { sanitizeErrorMessage } from "@cheaproute/open-sse/utils/error";
 
 export async function GET(req: NextRequest) {
   if (!(await isAuthenticated(req))) {

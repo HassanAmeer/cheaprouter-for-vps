@@ -1,17 +1,17 @@
 {
-  "name": "omniroute",
+  "name": "cheaproute",
   "version": "1.0.0",
   "description": "Unified AI router with 370 providers, RTK+Caveman compression, auto fallback, MCP/A2A, desktop, PWA, and OpenAI-compatible APIs.",
   "type": "module",
   "bin": {
-    "omniroute": "bin/omniroute.mjs",
-    "omniroute-reset-password": "bin/reset-password.mjs"
+    "cheaproute": "bin/cheaproute.mjs",
+    "cheaproute-reset-password": "bin/reset-password.mjs"
   },
   "files": [
     "config/cli-tools-manifest.json",
     "bin/",
     "dist/",
-    "@omniroute/",
+    "@cheaproute/",
     "open-sse/",
     "src/domain/",
     "src/lib/",
@@ -88,15 +88,15 @@
   "author": "diegosouzapw",
   "repository": {
     "type": "git",
-    "url": "https://github.com/diegosouzapw/OmniRoute"
+    "url": "https://github.com/diegosouzapw/CheapRoute"
   },
-  "homepage": "https://omniroute.online",
+  "homepage": "https://cheaproute.online",
   "scripts": {
     "dev": "node --max-old-space-size=3072 scripts/dev/run-next.mjs dev",
     "dev:bun": "bun scripts/dev/run-next.mjs dev",
     "start": "node scripts/dev/run-next.mjs start",
     "build": "node scripts/build/build-next-isolated.mjs",
-    "build:fast": "cross-env OMNIROUTE_SKIP_STANDALONE=1 node scripts/build/build-next-isolated.mjs",
+    "build:fast": "cross-env CHEAPROUTE_SKIP_STANDALONE=1 node scripts/build/build-next-isolated.mjs",
     "postinstall": "node scripts/build/postinstall.mjs",
     "typecheck": "node --max-old-space-size=4096 node_modules/.bin/tsc --noEmit -p tsconfig.json",
     "typecheck:core": "node --max-old-space-size=4096 node_modules/.bin/tsc --noEmit -p tsconfig.json",
@@ -147,7 +147,7 @@
     "next": "16.3.6",
     "next-intl": "^4.14.0",
     "node-machine-id": "^1.1.12",
-    "omniglyph": "^1.4.0",
+    "cheapglyph": "^1.4.0",
     "open": "^11.0.2",
     "ora": "^9.4.1",
     "parse5": "^8.0.1",
@@ -231,7 +231,7 @@
       "@swc/core",
       "better-sqlite3",
       "esbuild",
-      "omniroute",
+      "cheaproute",
       "sharp"
     ]
   },

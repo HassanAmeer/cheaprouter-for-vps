@@ -1,6 +1,6 @@
 import { t } from "../i18n.mjs";
 
-const OMNIROUTE_ENV_VARS = [
+const CHEAPROUTE_ENV_VARS = [
   "PORT",
   "API_PORT",
   "DASHBOARD_PORT",
@@ -10,16 +10,16 @@ const OMNIROUTE_ENV_VARS = [
   "NODE_ENV",
   "REQUEST_TIMEOUT_MS",
   "ENABLE_SOCKS5_PROXY",
-  "OMNIROUTE_API_KEY",
-  "OMNIROUTE_BASE_URL",
-  "OMNIROUTE_HTTP_TIMEOUT_MS",
-  "OMNIROUTE_READY_TIMEOUT_MS",
+  "CHEAPROUTE_API_KEY",
+  "CHEAPROUTE_BASE_URL",
+  "CHEAPROUTE_HTTP_TIMEOUT_MS",
+  "CHEAPROUTE_READY_TIMEOUT_MS",
 ];
 
 const ENV_DEFAULTS = {
   PORT: "20128",
   DASHBOARD_PORT: "20128",
-  DATA_DIR: "~/.omniroute",
+  DATA_DIR: "~/.cheaproute",
   NODE_ENV: "production",
 };
 
@@ -53,7 +53,7 @@ export function registerEnv(program) {
 
 export async function runEnvShowCommand(opts = {}) {
   const current = {};
-  for (const key of OMNIROUTE_ENV_VARS) {
+  for (const key of CHEAPROUTE_ENV_VARS) {
     if (process.env[key] !== undefined) current[key] = process.env[key];
   }
 
@@ -83,7 +83,7 @@ export async function runEnvShowCommand(opts = {}) {
 
 export async function runEnvGetCommand(key) {
   if (!key) {
-    console.error("Key is required. Usage: omniroute env get <key>");
+    console.error("Key is required. Usage: cheaproute env get <key>");
     return 1;
   }
   console.log(process.env[key] || "");
@@ -92,7 +92,7 @@ export async function runEnvGetCommand(key) {
 
 export async function runEnvSetCommand(key, value) {
   if (!key || value === undefined) {
-    console.error("Usage: omniroute env set <key> <value>");
+    console.error("Usage: cheaproute env set <key> <value>");
     return 1;
   }
   process.env[key] = String(value);

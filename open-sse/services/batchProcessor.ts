@@ -182,7 +182,7 @@ function resolveBatchApiKeyValue(batch: Pick<BatchRecord, "apiKeyId">, apiKeyRow
     return apiKeyRow.key;
   }
   if (batch.apiKeyId === "env-key") {
-    return process.env.OMNIROUTE_API_KEY || process.env.ROUTER_API_KEY || null;
+    return process.env.CHEAPROUTE_API_KEY || process.env.ROUTER_API_KEY || null;
   }
   return null;
 }

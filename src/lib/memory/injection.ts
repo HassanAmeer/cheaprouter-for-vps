@@ -77,7 +77,7 @@ export function providerSupportsSystemMessage(provider: string | null | undefine
  * they are documented as strict.
  *
  * Self-hosted deployments can extend this list without a source change via
- * OMNIROUTE_STRICT_SYSTEM_PROVIDERS (comma-separated provider ids,
+ * CHEAPROUTE_STRICT_SYSTEM_PROVIDERS (comma-separated provider ids,
  * case-insensitive) — e.g. a custom OpenAI-compatible connection in front of a
  * self-hosted Qwen3.5+/3.6 model, whose chat template enforces the same
  * single-leading-system-message constraint as xiaomi-mimo.
@@ -85,11 +85,11 @@ export function providerSupportsSystemMessage(provider: string | null | undefine
 const BUILTIN_PROVIDERS_SYSTEM_MUST_BE_FIRST = new Set(["xiaomi-mimo", "mimo", "tokenrouter"]);
 
 /**
- * Parses OMNIROUTE_STRICT_SYSTEM_PROVIDERS into a normalized id list.
+ * Parses CHEAPROUTE_STRICT_SYSTEM_PROVIDERS into a normalized id list.
  * Exported for tests; not expected to be called directly by other modules.
  */
 export function parseStrictSystemProvidersEnv(env: NodeJS.ProcessEnv = process.env): string[] {
-  const raw = env.OMNIROUTE_STRICT_SYSTEM_PROVIDERS ?? "";
+  const raw = env.CHEAPROUTE_STRICT_SYSTEM_PROVIDERS ?? "";
   return raw
     .split(",")
     .map((id) => id.trim().toLowerCase())
@@ -105,7 +105,7 @@ function resolveProvidersSystemMustBeFirst(env: NodeJS.ProcessEnv = process.env)
 /**
  * Returns true when the given provider requires the system message to be first.
  * Falls back to false for unknown/null providers (preserves current behavior).
- * Honors OMNIROUTE_STRICT_SYSTEM_PROVIDERS for self-hosted additions (see above).
+ * Honors CHEAPROUTE_STRICT_SYSTEM_PROVIDERS for self-hosted additions (see above).
  */
 export function systemMessageMustBeFirst(
   provider: string | null | undefined,

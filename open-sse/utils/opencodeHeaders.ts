@@ -290,7 +290,7 @@ function applyCliDefaults(
 }
 
 /**
- * Build outbound headers for OmniRoute's BACKGROUND calls to opencode.ai —
+ * Build outbound headers for CheapRoute's BACKGROUND calls to opencode.ai —
  * model-catalog discovery (autoSync/autoFetchModels), quota checks, and any
  * other non-chat fetch. These calls previously went out on the bare runtime
  * fetch (User-Agent "Bun fetch") with no `x-opencode-session`, which is exactly

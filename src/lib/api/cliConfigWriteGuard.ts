@@ -6,7 +6,7 @@ import { isContainerWriteRefusal } from "@/shared/utils/containerConfigGuard";
  * Shared gate for API routes that write a host CLI's config file.
  *
  * Returns `null` when the write may proceed, otherwise the response to send:
- *   - 422 + `containerEphemeralTarget` when OmniRoute runs in a container and
+ *   - 422 + `containerEphemeralTarget` when CheapRoute runs in a container and
  *     the target is not bind-mounted from the host (the write would vanish),
  *   - 403 when CLI config writes are switched off entirely.
  *

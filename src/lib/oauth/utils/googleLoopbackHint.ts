@@ -26,7 +26,7 @@ import {
 } from "./loopbackTunnel";
 
 /**
- * Providers the `omniroute login <provider>` helper can mint a blob for.
+ * Providers the `cheaproute login <provider>` helper can mint a blob for.
  *
  * `bin/cli/commands/login.mjs` pins `PROVIDER = "antigravity"`, and
  * `parsePastedCredentials()` refuses a blob whose embedded provider does not match the
@@ -66,6 +66,6 @@ export function buildGoogleLoopbackHint(
     // One forward only: the callback rides the dashboard port itself.
     tunnelCommand: buildSshLocalForward([dashboardPort], location.hostname),
     localDashboardUrl: `http://localhost:${dashboardPort}`,
-    helperCommand: LOGIN_HELPER_PROVIDERS.has(provider) ? `npx omniroute login ${provider}` : null,
+    helperCommand: LOGIN_HELPER_PROVIDERS.has(provider) ? `npx cheaproute login ${provider}` : null,
   };
 }

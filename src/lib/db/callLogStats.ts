@@ -1,9 +1,9 @@
 import { getDbInstance } from "./core";
-import { ERROR_TYPE_CONTRACT } from "@omniroute/open-sse/services/errorClassifier.ts";
+import { ERROR_TYPE_CONTRACT } from "@cheaproute/open-sse/services/errorClassifier.ts";
 import {
   SEARCH_CREDENTIAL_FALLBACKS,
   SEARCH_PROVIDERS,
-} from "@omniroute/open-sse/config/searchRegistry.ts";
+} from "@cheaproute/open-sse/config/searchRegistry.ts";
 import { foldUsageRowsByFamily } from "@/lib/providerFamilyAgg";
 import { isFeatureFlagEnabled } from "@/shared/utils/featureFlags";
 

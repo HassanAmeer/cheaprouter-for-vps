@@ -14,7 +14,7 @@ import {
   type ConnectionBillingClass,
   type ConnectionBillingEntry,
   type ConnectionOverageBehavior,
-} from "@omniroute/open-sse/config/connectionBillingCatalog.ts";
+} from "@cheaproute/open-sse/config/connectionBillingCatalog.ts";
 import { SYNTHETIC_NOAUTH_CONNECTION_ID } from "./resilienceCandidateFilter";
 
 /** The minimum a caller must know about a connection to classify it. */

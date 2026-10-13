@@ -1213,7 +1213,7 @@ export function recordProviderFailure(
   if (!provider) return;
   provider = resolveProviderId(provider);
   if (opts?.providerProbeSettled && !connectionId) return;
-  // OmniRoute's own rate-limit queue timeout is backpressure we applied, not a
+  // CheapRoute's own rate-limit queue timeout is backpressure we applied, not a
   // provider failure — the provider never saw the request, so it must not count
   // toward the provider breaker.
   if (opts?.isQueueTimeout) return;

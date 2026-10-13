@@ -12,10 +12,10 @@ import {
   getModelInfoCore,
   splitSyncedEffortSuffix,
   stripContextWindowSuffix,
-} from "@omniroute/open-sse/services/model.ts";
-import { getLearnedReasoningEffortForModel } from "@omniroute/open-sse/services/learnedReasoningEffortCaps.ts";
-import { REGISTRY } from "@omniroute/open-sse/config/providerRegistry.ts";
-import { getRegisteredProviderEffortBaseModelId } from "@omniroute/open-sse/utils/registeredEffortVariants.ts";
+} from "@cheaproute/open-sse/services/model.ts";
+import { getLearnedReasoningEffortForModel } from "@cheaproute/open-sse/services/learnedReasoningEffortCaps.ts";
+import { REGISTRY } from "@cheaproute/open-sse/config/providerRegistry.ts";
+import { getRegisteredProviderEffortBaseModelId } from "@cheaproute/open-sse/utils/registeredEffortVariants.ts";
 import { getReservedProviderPrefixes } from "@/shared/constants/reservedProviderPrefixes";
 import {
   assertMicrosoftDesignerWebProviderAvailable,
@@ -31,8 +31,8 @@ import {
   isCommonChatGptWebRetirementError,
 } from "@/shared/constants/chatgptWebRetirement";
 import { commonChatGptWebRetirementResponse } from "@/lib/providers/chatgptWebRetirementResponse";
-import { errorResponse } from "@omniroute/open-sse/utils/error.ts";
-import { HTTP_STATUS } from "@omniroute/open-sse/config/constants.ts";
+import { errorResponse } from "@cheaproute/open-sse/utils/error.ts";
+import { HTTP_STATUS } from "@cheaproute/open-sse/config/constants.ts";
 
 export { parseModel, stripContextWindowSuffix };
 

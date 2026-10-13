@@ -82,7 +82,7 @@ function createNodeSqliteAuditAdapter(db: NodeSqliteDatabase): AuditDatabase {
 }
 
 declare global {
-  var __omnirouteMcpAuditDb: AuditDatabase | null | undefined;
+  var __cheaprouteMcpAuditDb: AuditDatabase | null | undefined;
 }
 
 interface AuditStatsRow {
@@ -187,11 +187,11 @@ function buildAuditFilterSql(filters: McpAuditQuery): { whereSql: string; params
 }
 
 function getCachedAuditDb(): AuditDatabase | null | undefined {
-  return globalThis.__omnirouteMcpAuditDb;
+  return globalThis.__cheaprouteMcpAuditDb;
 }
 
 function setCachedAuditDb(database: AuditDatabase | null | undefined): void {
-  globalThis.__omnirouteMcpAuditDb = database;
+  globalThis.__cheaprouteMcpAuditDb = database;
 }
 
 function toNumber(value: unknown, fallback = 0): number {
@@ -264,7 +264,7 @@ async function openFallbackAuditDb(
     console.error(
       `[MCP Audit] better-sqlite3 native binding unavailable and Node ${process.version} ` +
         "has no built-in sqlite. Audit logging disabled. Fix: run " +
-        "`npm rebuild better-sqlite3` in the omniroute install root."
+        "`npm rebuild better-sqlite3` in the cheaproute install root."
     );
     return null;
   }
@@ -285,7 +285,7 @@ async function openFallbackAuditDb(
 
 /**
  * Lazy-load the database connection.
- * Uses the same SQLite database as the main OmniRoute app.
+ * Uses the same SQLite database as the main CheapRoute app.
  *
  * Driver priority:
  *   1. better-sqlite3 — fast native binding (when its compiled `.node`
@@ -310,7 +310,7 @@ async function getDb(): Promise<AuditDatabase | null> {
 
     const dbPath = process.env.DATA_DIR
       ? join(process.env.DATA_DIR, "storage.sqlite")
-      : join(homedir(), ".omniroute", "storage.sqlite");
+      : join(homedir(), ".cheaproute", "storage.sqlite");
 
     if (!existsSync(dbPath)) {
       // Do NOT cache this miss: an MCP server can start before the app creates

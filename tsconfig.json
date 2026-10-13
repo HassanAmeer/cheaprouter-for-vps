@@ -18,8 +18,8 @@
     "forceConsistentCasingInFileNames": true,
     "paths": {
       "@/*": ["./src/*"],
-      "@omniroute/open-sse": ["./open-sse"],
-      "@omniroute/open-sse/*": ["./open-sse/*"]
+      "@cheaproute/open-sse": ["./open-sse"],
+      "@cheaproute/open-sse/*": ["./open-sse/*"]
     },
     "plugins": [
       {
@@ -54,7 +54,7 @@
     ".tmp",
     ".claude",
     ".worktrees",
-    "@omniroute",
+    "@cheaproute",
     "_tasks",
     "_ideia",
     "_mono_repo",

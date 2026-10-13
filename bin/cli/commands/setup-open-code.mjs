@@ -1,9 +1,9 @@
 /**
- * omniroute setup opencode — Wire the bundled @omniroute/opencode-plugin
+ * cheaproute setup opencode — Wire the bundled @cheaproute/opencode-plugin
  * into a local OpenCode install.
  *
- * Closes the gap where `npm install -g omniroute` ships the plugin
- * inside the omniroute package (`@omniroute/opencode-plugin/dist/`) but
+ * Closes the gap where `npm install -g cheaproute` ships the plugin
+ * inside the cheaproute package (`@cheaproute/opencode-plugin/dist/`) but
  * OpenCode discovers plugins via `~/.config/opencode/plugins/` or
  * via entries in `opencode.json`. Without this command, the user has
  * to extract the tarball and wire it up by hand (see the plugin README,
@@ -12,10 +12,10 @@
  * What it does, in order:
  *   1. Resolves the bundled plugin path (source + built dist).
  *   2. Resolves the OpenCode config directory (XDG-aware).
- *   3. Copies the built plugin into `<opencode>/plugins/omniroute/`.
+ *   3. Copies the built plugin into `<opencode>/plugins/cheaproute/`.
  *   4. Creates or updates `opencode.json` with a single `plugin` entry
  *      pointing at the local copy (so OC ≥1.15 picks it up).
- *   5. Optionally runs `opencode auth login --provider omniroute`
+ *   5. Optionally runs `opencode auth login --provider cheaproute`
  *      so the next `opencode` invocation already has the API key.
  *
  * Idempotent: re-running with the same `--provider-id` updates the
@@ -35,18 +35,18 @@ import { guardHostConfigTarget } from "../utils/config-home-guard.mjs";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-// We walk up from this file to find the omniroute package root. The script
-// lives at `<omniroute>/bin/cli/commands/setup-open-code.mjs`, so the
+// We walk up from this file to find the cheaproute package root. The script
+// lives at `<cheaproute>/bin/cli/commands/setup-open-code.mjs`, so the
 // package root is three levels up. Using import.meta.url (not process.cwd())
 // means the command works the same way whether you run it from the source
 // repo, a global install, or a symlinked location.
 const PACKAGE_ROOT = resolve(__dirname, "..", "..", "..");
 
-// The bundled plugin ships at PACKAGE_ROOT/@omniroute/opencode-plugin/
-// (see root package.json `files`: ["@omniroute/", ...]). The env override
+// The bundled plugin ships at PACKAGE_ROOT/@cheaproute/opencode-plugin/
+// (see root package.json `files`: ["@cheaproute/", ...]). The env override
 // exists so tests can point at a fixture without building the real plugin.
 const BUNDLED_PLUGIN_DIR =
-  process.env.OMNIROUTE_OPENCODE_PLUGIN_DIR || join(PACKAGE_ROOT, "@omniroute", "opencode-plugin");
+  process.env.CHEAPROUTE_OPENCODE_PLUGIN_DIR || join(PACKAGE_ROOT, "@cheaproute", "opencode-plugin");
 
 /**
  * Resolve the OpenCode config directory. Honours XDG_CONFIG_HOME and the
@@ -80,11 +80,11 @@ function resolveOpenCodeDirs() {
 }
 
 /**
- * Locate the bundled @omniroute/opencode-plugin dist. The plugin may be
+ * Locate the bundled @cheaproute/opencode-plugin dist. The plugin may be
  * present in two states:
  *
  *   - Built (`dist/index.cjs` + `dist/index.js` exist) — preferred,
- *     ships from a published omniroute tarball after Step 8.8 of
+ *     ships from a published cheaproute tarball after Step 8.8 of
  *     `scripts/build/prepublish.ts` runs.
  *   - Unbuilt (only `src/index.ts`) — local dev / fresh clone. We surface
  *     a clear error instead of running tsup here, because the CLI runtime
@@ -95,10 +95,10 @@ function resolveOpenCodeDirs() {
 function resolveBundledPlugin() {
   if (!existsSync(BUNDLED_PLUGIN_DIR)) {
     throw new Error(
-      `Bundled @omniroute/opencode-plugin not found at ${BUNDLED_PLUGIN_DIR}.\n` +
-        `This usually means omniroute was installed from a source tree that does not ` +
-        `include the workspace package. Try reinstalling omniroute (npm install -g omniroute) ` +
-        `or run \`cd @omniroute/opencode-plugin && npm install && npm run build\` from the source repo.`
+      `Bundled @cheaproute/opencode-plugin not found at ${BUNDLED_PLUGIN_DIR}.\n` +
+        `This usually means cheaproute was installed from a source tree that does not ` +
+        `include the workspace package. Try reinstalling cheaproute (npm install -g cheaproute) ` +
+        `or run \`cd @cheaproute/opencode-plugin && npm install && npm run build\` from the source repo.`
     );
   }
 
@@ -106,7 +106,7 @@ function resolveBundledPlugin() {
 
   if (!existsSync(esmEntry)) {
     throw new Error(
-      `@omniroute/opencode-plugin dist/ not built (looked for ${esmEntry}).\n` +
+      `@cheaproute/opencode-plugin dist/ not built (looked for ${esmEntry}).\n` +
         `Run \`cd ${BUNDLED_PLUGIN_DIR} && npm install && npm run build\` and re-run this command.`
     );
   }
@@ -117,15 +117,15 @@ function resolveBundledPlugin() {
 }
 
 /**
- * Copy the plugin package into `<opencodeConfig>/plugins/omniroute/`. We
+ * Copy the plugin package into `<opencodeConfig>/plugins/cheaproute/`. We
  * copy the entire package (dist/ + package.json) so the dist file's
  * require/import of `zod` and `@opencode-ai/plugin` resolves against the
  * copy's own node_modules. Without the copy, OpenCode would need to
- * resolve the peer deps from the omniroute package's tree, which is
+ * resolve the peer deps from the cheaproute package's tree, which is
  * unreliable.
  */
 function installPluginToOpenCode(pluginInfo, opencodeConfigDir) {
-  const targetDir = join(opencodeConfigDir, "plugins", "omniroute");
+  const targetDir = join(opencodeConfigDir, "plugins", "cheaproute");
   mkdirSync(dirname(targetDir), { recursive: true });
   mkdirSync(targetDir, { recursive: true });
 
@@ -164,7 +164,7 @@ function registerPluginInOpenCodeConfig({
     } catch (err) {
       throw new Error(
         `Failed to parse existing ${configPath}: ${err.message}\n` +
-          `Fix or remove the file manually, then re-run \`omniroute setup opencode\`.`
+          `Fix or remove the file manually, then re-run \`cheaproute setup opencode\`.`
       );
     }
   }
@@ -176,7 +176,7 @@ function registerPluginInOpenCodeConfig({
   // we use that. The "module path" is a file:// URL relative to the
   // opencode config dir — that is what opencode ≥1.15 resolves.
   const entry = [
-    `./plugins/omniroute/dist/index.js`,
+    `./plugins/cheaproute/dist/index.js`,
     {
       providerId,
       baseURL,
@@ -185,18 +185,18 @@ function registerPluginInOpenCodeConfig({
   ];
 
   // Idempotency: drop any prior entry for the same providerId. We also
-  // drop a legacy `opencode-omniroute-auth` entry if present — that
-  // package is the obsolete predecessor of @omniroute/opencode-plugin
+  // drop a legacy `opencode-cheaproute-auth` entry if present — that
+  // package is the obsolete predecessor of @cheaproute/opencode-plugin
   // and was the root cause of issue #3711.
   const filtered = plugins.filter((p) => {
     if (typeof p === "string") {
-      return !p.includes("opencode-omniroute-auth");
+      return !p.includes("opencode-cheaproute-auth");
     }
     if (Array.isArray(p) && p[1] && typeof p[1] === "object") {
       const pid = p[1].providerId;
       if (pid === providerId) return false;
       // Also drop the legacy auth plugin if it's there.
-      if (typeof p[0] === "string" && p[0].includes("opencode-omniroute-auth")) {
+      if (typeof p[0] === "string" && p[0].includes("opencode-cheaproute-auth")) {
         return false;
       }
     }
@@ -222,7 +222,7 @@ function registerPluginInOpenCodeConfig({
 /**
  * Resolve the provider id used for `opencode auth login --provider <id>`.
  *
- * The bundled @omniroute/opencode-plugin registers its provider under
+ * The bundled @cheaproute/opencode-plugin registers its provider under
  * `opencode-<id>` (the `opencode-` prefix is required by OpenCode >=1.17.8's
  * native-adapter gate). The auth login command must use the prefixed form
  * because OpenCode resolves `--provider <id>` against the provider id the
@@ -230,7 +230,7 @@ function registerPluginInOpenCodeConfig({
  *
  * Idempotent: if the id already starts with `opencode-`, it passes through
  * unchanged. This protects users who manually worked around the bug with
- * `--provider opencode-omniroute`.
+ * `--provider opencode-cheaproute`.
  *
  * @param {string} providerId
  * @returns {string}
@@ -283,7 +283,7 @@ export function runOpenCodeAuth(providerId) {
  * drive it without spawning a subprocess.
  *
  * @param {object} opts
- * @param {string} [opts.providerId="omniroute"]
+ * @param {string} [opts.providerId="cheaproute"]
  * @param {string} [opts.baseURL="http://localhost:20128"]  (Commander camelCases
  *   `--base-url` into `baseUrl`, so both spellings are accepted.)
  * @param {string} [opts.configDir]  Override the OpenCode config dir (tests / non-standard installs).
@@ -293,12 +293,12 @@ export function runOpenCodeAuth(providerId) {
  * @returns {Promise<{ exitCode: number, configPath?: string, pluginTargetDir?: string }>}
  */
 export async function runSetupOpenCodeCommand(opts = {}) {
-  const providerId = opts.providerId || "omniroute";
+  const providerId = opts.providerId || "cheaproute";
   // Remote-aware: explicit --remote/--base-url → active context → localhost.
   let baseURL = opts.remote || opts.baseURL || opts.baseUrl;
   if (!baseURL) {
     try {
-      const ctx = resolveActiveContext(opts.context ?? process.env.OMNIROUTE_CONTEXT);
+      const ctx = resolveActiveContext(opts.context ?? process.env.CHEAPROUTE_CONTEXT);
       baseURL = ctx?.baseUrl;
     } catch {
       /* no context */
@@ -309,7 +309,7 @@ export async function runSetupOpenCodeCommand(opts = {}) {
   const wantsAuth = Boolean(opts.auth);
   const nonInteractive = Boolean(opts.nonInteractive);
 
-  printHeading("OmniRoute → OpenCode Plugin Setup");
+  printHeading("CheapRoute → OpenCode Plugin Setup");
 
   const resolvedDirs = resolveOpenCodeDirs();
   const opencodeConfigDir = opts.configDir || resolvedDirs.configDir;
@@ -319,7 +319,7 @@ export async function runSetupOpenCodeCommand(opts = {}) {
 
   const guard = await guardHostConfigTarget(opencodeConfigDir, {
     toolLabel: "OpenCode",
-    hostCommand: "omniroute setup opencode",
+    hostCommand: "cheaproute setup opencode",
     allowContainerWrite: Boolean(opts.allowContainerWrite ?? opts["allow-container-write"]),
   });
   if (guard !== 0) return { exitCode: guard };
@@ -395,9 +395,9 @@ export async function runSetupOpenCodeCommand(opts = {}) {
 }
 
 /**
- * Register the `omniroute setup opencode` subcommand on the parent
+ * Register the `cheaproute setup opencode` subcommand on the parent
  * `setup` command. Commander builds the doc/help from the chain, so
- * `omniroute setup --help` automatically shows the new subcommand.
+ * `cheaproute setup --help` automatically shows the new subcommand.
  *
  * @param {import("commander").Command} setupCommand  the registered `setup` command
  */
@@ -406,20 +406,20 @@ export function registerSetupOpenCode(setupCommand) {
     .command("opencode")
     .description(
       t("setup.opencode") ||
-        "Install and register the bundled @omniroute/opencode-plugin with a local OpenCode install"
+        "Install and register the bundled @cheaproute/opencode-plugin with a local OpenCode install"
     )
     .option(
       "--provider-id <id>",
-      "OpenCode provider id to register (default: omniroute)",
-      "omniroute"
+      "OpenCode provider id to register (default: cheaproute)",
+      "cheaproute"
     )
     .option(
       "--base-url <url>",
-      "OmniRoute base URL the plugin should talk to (default: active context or http://localhost:20128)"
+      "CheapRoute base URL the plugin should talk to (default: active context or http://localhost:20128)"
     )
     .option(
       "--remote <url>",
-      "Remote OmniRoute URL, e.g. http://192.168.0.15:20128 (overrides --base-url and the context)"
+      "Remote CheapRoute URL, e.g. http://192.168.0.15:20128 (overrides --base-url and the context)"
     )
     .option("--display-name <name>", "Display name in the OpenCode UI (optional)")
     .option(

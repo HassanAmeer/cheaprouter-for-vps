@@ -4,8 +4,8 @@ import { validateBody, isValidationFailure } from "@/shared/validation/helpers";
 import { MemoryReindexSchema } from "@/shared/schemas/memory";
 import { runReindexBatch, getReindexPending } from "@/lib/memory/reindex";
 import { markAllMemoriesNeedReindex } from "@/lib/db/memoryVec";
-import { sanitizeErrorMessage } from "@omniroute/open-sse/utils/error.ts";
-import { logger } from "@omniroute/open-sse/utils/logger.ts";
+import { sanitizeErrorMessage } from "@cheaproute/open-sse/utils/error.ts";
+import { logger } from "@cheaproute/open-sse/utils/logger.ts";
 
 const log = logger("MEMORY_REINDEX_ROUTE");
 

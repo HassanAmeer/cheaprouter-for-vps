@@ -68,11 +68,11 @@ export interface ResolveAutoStrategyDeps {
   relayOptions?: {
     bypassProviderQuotaPolicy?: boolean;
     sessionId?: string | null;
-    /** Per-request X-OmniRoute-Mode value (#6024/#6025). */
+    /** Per-request X-CheapRoute-Mode value (#6024/#6025). */
     mode?: string | null;
-    /** Per-request X-OmniRoute-Budget value in USD (#6023). */
+    /** Per-request X-CheapRoute-Budget value in USD (#6023). */
     budgetCap?: number | null;
-    /** Per-request X-OmniRoute-Budget-Fallback value ("cheapest" | "strict") — #3470. */
+    /** Per-request X-CheapRoute-Budget-Fallback value ("cheapest" | "strict") — #3470. */
     budgetFallback?: "cheapest" | "strict" | null;
   } | null;
   resilienceSettings: ResilienceSettings;
@@ -256,8 +256,8 @@ export async function resolveAutoStrategyOrder(
     slaPolicy,
   } = parseAutoConfig(combo, eligibleTargets);
 
-  // Per-request overrides (#6023 / #6024 / #6025 / #3470): X-OmniRoute-Budget,
-  // X-OmniRoute-Budget-Fallback and X-OmniRoute-Mode headers (threaded via
+  // Per-request overrides (#6023 / #6024 / #6025 / #3470): X-CheapRoute-Budget,
+  // X-CheapRoute-Budget-Fallback and X-CheapRoute-Mode headers (threaded via
   // relayOptions) take precedence over the combo's stored config for this single
   // request. Unknown/garbage header values are ignored so the saved config is
   // preserved.
@@ -270,7 +270,7 @@ export async function resolveAutoStrategyOrder(
   // #7008: `weights` must track the *effective* (post-override) modePack, not just
   // the combo's stored one. `selectAutoProvider()` (engine.ts) already re-derives
   // weights internally from the `modePack` it's given, so it correctly reacts to a
-  // per-request X-OmniRoute-Mode override — but `scoreAutoTargets()` (the fallback
+  // per-request X-CheapRoute-Mode override — but `scoreAutoTargets()` (the fallback
   // ranking below) has no such re-derivation and only ever sees whatever `weights`
   // it's handed. Without this recompute, a request overriding e.g. `quality-first`
   // to `ship-fast` would select its primary target under ship-fast weights but rank

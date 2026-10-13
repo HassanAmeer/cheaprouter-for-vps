@@ -43,7 +43,7 @@ function safeKey(key) {
 }
 
 /**
- * Third-party CLI binaries must not inherit OmniRoute/provider/database secrets
+ * Third-party CLI binaries must not inherit CheapRoute/provider/database secrets
  * merely because the parent loaded its server `.env`. Operators can explicitly
  * opt into the historical full-shell behavior with `--inherit-env`.
  */

@@ -2,14 +2,14 @@ import { randomBytes } from "node:crypto";
 import { rmSync } from "node:fs";
 
 import { CHATGPT_WEB_CODEX_CONNECTOR_NAME } from "@/shared/constants/chatgptWebCodex";
-import { inspectBrowserLoginCapabilities } from "@omniroute/open-sse/vendor/codex-chatgpt-web/browser-login.ts";
-import { decodeChatGptWebCodexSecrets } from "@omniroute/open-sse/executors/chatgpt-web-codex/credentials.ts";
+import { inspectBrowserLoginCapabilities } from "@cheaproute/open-sse/vendor/codex-chatgpt-web/browser-login.ts";
+import { decodeChatGptWebCodexSecrets } from "@cheaproute/open-sse/executors/chatgpt-web-codex/credentials.ts";
 import {
   connectionRuntimePaths,
   ensureConnectionStorageState,
   ensureConnectionStorageStateFromCredential,
-} from "@omniroute/open-sse/executors/chatgpt-web-codex/storageState.ts";
-import { sanitizeErrorMessage } from "@omniroute/open-sse/utils/error.ts";
+} from "@cheaproute/open-sse/executors/chatgpt-web-codex/storageState.ts";
+import { sanitizeErrorMessage } from "@cheaproute/open-sse/utils/error.ts";
 
 // detectChromeExecutable (executors/chatgpt-web-codex.ts) is imported
 // dynamically below, not statically here: this module is re-exported through
@@ -64,7 +64,7 @@ export async function validateChatGptWebCodexProvider({
     }
     const cdpEndpoint = process.env.CHATGPT_WEB_CODEX_CDP_URL?.trim();
     const { detectChromeExecutable } =
-      await import("@omniroute/open-sse/executors/chatgpt-web-codex.ts");
+      await import("@cheaproute/open-sse/executors/chatgpt-web-codex.ts");
     const chromeExecutablePath = detectChromeExecutable(
       typeof providerSpecificData.chromeExecutablePath === "string"
         ? providerSpecificData.chromeExecutablePath

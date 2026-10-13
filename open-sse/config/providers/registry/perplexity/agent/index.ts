@@ -11,7 +11,7 @@ export const perplexityAgentProvider: RegistryEntry = {
   authType: "apikey",
   authHeader: "bearer",
   headers: {
-    "X-Pplx-Integration": "omniroute",
+    "X-Pplx-Integration": "cheaproute",
   },
   passthroughModels: true,
   liveCatalogAuthoritative: false,

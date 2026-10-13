@@ -5,7 +5,7 @@
  * and `sid` (derived from the `__session` cookie JWT payload), direct Clerk Bearer JWTs,
  * and Clerk user IDs.
  *
- * Multi-account load balancing and failover are handled natively by OmniRoute's
+ * Multi-account load balancing and failover are handled natively by CheapRoute's
  * Combo Routing engine (combo.ts and accountFallback.ts) across connection records.
  */
 

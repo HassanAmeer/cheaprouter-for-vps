@@ -16,10 +16,10 @@
  * @module domain/quotaCache
  */
 
-import { getUsageForProvider } from "@omniroute/open-sse/services/usage.ts";
+import { getUsageForProvider } from "@cheaproute/open-sse/services/usage.ts";
 import { getCachedProviderConnectionById } from "@/lib/db/readCache";
 import { resolveProxyForConnection } from "@/lib/db/settings";
-import { runWithProxyContext } from "@omniroute/open-sse/utils/proxyFetch.ts";
+import { runWithProxyContext } from "@cheaproute/open-sse/utils/proxyFetch.ts";
 import { safePercentage } from "@/shared/utils/formatting";
 import {
   saveQuotaSnapshot,
@@ -31,14 +31,14 @@ import {
   CODEX_SPARK_QUOTA_SESSION,
   CODEX_SPARK_QUOTA_WEEKLY,
   getCodexQuotaWindowFilterForModel,
-} from "@omniroute/open-sse/config/codexQuotaScopes.ts";
+} from "@cheaproute/open-sse/config/codexQuotaScopes.ts";
 import {
   createCodexAccountPool,
   getCodexChildQuotaHydration,
   resolveCodexAccount,
   type CodexPersistedQuotaState,
-} from "@omniroute/open-sse/services/codexAccount/index.ts";
-import { selectAntigravityQuotaWindowNames } from "@omniroute/open-sse/services/antigravityQuotaFamily.ts";
+} from "@cheaproute/open-sse/services/codexAccount/index.ts";
+import { selectAntigravityQuotaWindowNames } from "@cheaproute/open-sse/services/antigravityQuotaFamily.ts";
 import { isClaudeExtraUsageAllowed } from "@/lib/providers/claudeExtraUsage";
 import { isCodexQuotaFilteringDisabled } from "@/lib/providers/codexQuotaFiltering";
 import { resolveProviderId } from "@/shared/constants/providers";
@@ -46,9 +46,9 @@ import {
   claudeQuotaMatchesModel,
   isExplicitClaudeQuota429Text,
   isClaudeQuotaMetadata,
-} from "@omniroute/open-sse/services/usage/claudeQuota.ts";
-import { readClaudeUsageLimitConfig } from "@omniroute/open-sse/services/claudeLowPriority.ts";
-import type { ClaudeQuotaMetadata } from "@omniroute/open-sse/services/usage/quota.ts";
+} from "@cheaproute/open-sse/services/usage/claudeQuota.ts";
+import { readClaudeUsageLimitConfig } from "@cheaproute/open-sse/services/claudeLowPriority.ts";
+import type { ClaudeQuotaMetadata } from "@cheaproute/open-sse/services/usage/quota.ts";
 import {
   EXHAUSTED_MAX_PARK_MS,
   getQuotaCacheState as getState,

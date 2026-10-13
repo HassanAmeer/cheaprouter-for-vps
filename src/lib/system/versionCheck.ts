@@ -2,7 +2,7 @@
  * Latest-version discovery + comparison for the dashboard "Update Available" banner.
  *
  * #4100: the banner is gated on `isNewer(latest, current)`. Previously `latest` came
- * ONLY from `npm info omniroute version --json` (the `npm` CLI binary). When that binary
+ * ONLY from `npm info cheaproute version --json` (the `npm` CLI binary). When that binary
  * is absent (Docker / desktop / locked-down installs) or the registry is unreachable, the
  * call returned null and the banner silently never rendered — even when an update existed.
  *
@@ -25,7 +25,7 @@ const execFileAsync = promisify(execFile);
 const log = createLogger("system/versionCheck");
 
 /** npm-binary-free latest-version source: the registry JSON API. */
-const NPM_REGISTRY_LATEST_URL = "https://registry.npmjs.org/omniroute/latest";
+const NPM_REGISTRY_LATEST_URL = "https://registry.npmjs.org/cheaproute/latest";
 
 /**
  * Second npm-binary-free source: the GitHub releases API. Works on networks that allow
@@ -33,7 +33,7 @@ const NPM_REGISTRY_LATEST_URL = "https://registry.npmjs.org/omniroute/latest";
  * surviving cause of "#4100 still not fixed" after the registry fallback shipped in v3.8.28.
  */
 const GITHUB_RELEASES_LATEST_URL =
-  "https://api.github.com/repos/diegosouzapw/OmniRoute/releases/latest";
+  "https://api.github.com/repos/diegosouzapw/CheapRoute/releases/latest";
 
 const LOOKUP_TIMEOUT_MS = 10_000;
 // Bound on the version-metadata responses, so a misdirected or hostile URL
@@ -82,7 +82,7 @@ export async function getLatestVersionFromNpmCli(
     // the function backing the dashboard's "Update Available" banner.
     const { stdout } = await execFn(
       "npm",
-      ["info", "omniroute", "version", "--json", "--prefer-online"],
+      ["info", "cheaproute", "version", "--json", "--prefer-online"],
       buildNpmExecOptions(process.platform, { timeoutMs: LOOKUP_TIMEOUT_MS })
     );
     const parsed = JSON.parse(String(stdout).trim());
@@ -199,7 +199,7 @@ export async function getLatestVersionFromGitHub(
       signal: controller.signal,
       headers: {
         // GitHub's API rejects requests without a User-Agent.
-        "User-Agent": "omniroute-version-check",
+        "User-Agent": "cheaproute-version-check",
         Accept: "application/vnd.github+json",
       },
     });

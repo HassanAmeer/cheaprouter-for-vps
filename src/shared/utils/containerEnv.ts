@@ -3,7 +3,7 @@ import fs from "node:fs";
 /**
  * Container awareness for CLI-tool config writes.
  *
- * OmniRoute frequently runs as a container while the AI CLIs it configures
+ * CheapRoute frequently runs as a container while the AI CLIs it configures
  * (Codex, Claude Code, Cursor, ...) live on the operator's host. Writing
  * `~/.codex/...` inside the container "succeeds" and then silently disappears
  * with the container, so every auto-config write path consults this module
@@ -35,11 +35,11 @@ const FALSE_VALUES = new Set(["0", "false", "no", "off"]);
  * Best-effort container detection. Superset of the Zed-specific
  * `isRunningInDocker()` (kept separate so its callers keep their behavior).
  *
- * `OMNIROUTE_CONTAINER` forces the answer either way — needed for tests and for
+ * `CHEAPROUTE_CONTAINER` forces the answer either way — needed for tests and for
  * operators on exotic runtimes we fail to recognise.
  */
 export function isRunningInContainer(deps: ContainerEnvDeps = defaultDeps()): boolean {
-  const override = String(deps.env?.OMNIROUTE_CONTAINER ?? "")
+  const override = String(deps.env?.CHEAPROUTE_CONTAINER ?? "")
     .trim()
     .toLowerCase();
   if (TRUE_VALUES.has(override)) return true;

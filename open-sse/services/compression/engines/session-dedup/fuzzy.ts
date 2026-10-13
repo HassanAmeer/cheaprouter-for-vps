@@ -144,7 +144,7 @@ export function runFuzzyPass(
   const cfg = typeof raw === "boolean" ? { enabled: raw } : raw;
   if (!cfg?.enabled) return { messages, fuzzyCount: 0 };
   // The replacement is a [CCR retrieve] marker. A caller that does not advertise
-  // omniroute_ccr_retrieve cannot expand it, so the near-duplicate text would be
+  // cheaproute_ccr_retrieve cannot expand it, so the near-duplicate text would be
   // stranded. Skip the whole pass for them; exact dedup (a [dedup:ref] marker the
   // model resolves by looking back) does not need a tool and stays unaffected.
   if (!callerCanRetrieve) return { messages, fuzzyCount: 0 };

@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { buildErrorBody } from "@omniroute/open-sse/utils/error.ts";
+import { buildErrorBody } from "@cheaproute/open-sse/utils/error.ts";
 import { requireManagementAuth } from "@/lib/api/requireManagementAuth";
 import { getApiKeyById } from "@/lib/db/apiKeys";
 import { getComboForModel } from "@/sse/services/model";

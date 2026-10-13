@@ -39,7 +39,7 @@ let syncFn: SyncFn = defaultSyncFn;
  * true when the sync actually succeeded in time.
  *
  * Used by the Antigravity executor on a 404: when an upstream model was added
- * between OmniRoute releases, awaiting the sync lets the current request retry
+ * between CheapRoute releases, awaiting the sync lets the current request retry
  * once immediately instead of failing the first caller.
  */
 export async function awaitReactiveModelSync(

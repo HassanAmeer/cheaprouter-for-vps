@@ -5,8 +5,8 @@
 
 import { getResolvedModelCapabilities } from "@/lib/modelCapabilities";
 import { getActiveSyncedCatalog } from "@/lib/db/models/activeSyncedCatalog";
-import { PROVIDER_MODELS } from "@omniroute/open-sse/config/providerModels";
-import { getRegisteredProviderEffortBaseModelId } from "@omniroute/open-sse/utils/registeredEffortVariants.ts";
+import { PROVIDER_MODELS } from "@cheaproute/open-sse/config/providerModels";
+import { getRegisteredProviderEffortBaseModelId } from "@cheaproute/open-sse/utils/registeredEffortVariants.ts";
 import {
   hasUsableCredentialsForModel,
   getUsableConnectionsForModel,
@@ -16,7 +16,7 @@ import { resolveProviderId } from "@/shared/constants/providers";
 import {
   isModelLocked,
   getAllModelLockouts,
-} from "@omniroute/open-sse/services/accountFallback.ts";
+} from "@cheaproute/open-sse/services/accountFallback.ts";
 
 export interface VisionModelCandidate {
   modelId: string;
@@ -54,12 +54,12 @@ export interface VisionBridgeRouterConfig {
 }
 
 /**
- * `OMNIROUTE_VISION_BRIDGE_NEGATIVE_CACHE_MS` overrides how long a
+ * `CHEAPROUTE_VISION_BRIDGE_NEGATIVE_CACHE_MS` overrides how long a
  * "no usable candidate" outcome is remembered. Invalid or negative values
  * fall back to the default; `0` disables the negative cache entirely.
  */
 function readNoCandidateCacheTtlMs(): number {
-  const raw = process.env.OMNIROUTE_VISION_BRIDGE_NEGATIVE_CACHE_MS;
+  const raw = process.env.CHEAPROUTE_VISION_BRIDGE_NEGATIVE_CACHE_MS;
   if (raw == null || raw.trim() === "") return 30_000;
   const parsed = Number(raw);
   if (!Number.isFinite(parsed) || parsed < 0) return 30_000;

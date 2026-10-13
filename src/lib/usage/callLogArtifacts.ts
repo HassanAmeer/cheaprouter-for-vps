@@ -1,6 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
-import type { RequestPipelinePayloads } from "@omniroute/open-sse/utils/requestLogger.ts";
+import type { RequestPipelinePayloads } from "@cheaproute/open-sse/utils/requestLogger.ts";
 import { resolveDataDir } from "../dataPaths";
 import { getCallLogPipelineMaxSizeBytes, isChatDebugFileEnabled } from "../logEnv";
 import {
@@ -12,7 +12,7 @@ import {
 
 const isCloud = typeof globalThis.caches === "object" && globalThis.caches !== null;
 const isBuildPhase =
-  process.env.NEXT_PHASE === "phase-production-build" || process.env.OMNIROUTE_BUILDING === "1";
+  process.env.NEXT_PHASE === "phase-production-build" || process.env.CHEAPROUTE_BUILDING === "1";
 const DATA_DIR = resolveDataDir({ isCloud });
 
 export const CALL_LOGS_DIR = isCloud ? null : path.join(DATA_DIR, "call_logs");
@@ -158,7 +158,7 @@ function omitOversizedPipeline(artifact: CallLogArtifact): CallLogArtifact {
     ...artifact,
     pipeline: {
       error: {
-        _omniroute_truncated: true,
+        _cheaproute_truncated: true,
         reason: SIZE_LIMIT_EXCEEDED_REASON,
       },
     },
@@ -189,7 +189,7 @@ function buildMinimalArtifactForSizeLimit(artifact: CallLogArtifact) {
     error: preserveErrorForSizeLimit(artifact.error),
     pipeline: {
       error: {
-        _omniroute_truncated: true,
+        _cheaproute_truncated: true,
         reason: SIZE_LIMIT_EXCEEDED_REASON,
       },
     },
@@ -279,7 +279,7 @@ function serializeArtifactForStorage(artifact: CallLogArtifact): string {
   // the size-limit fallbacks exist to remove.
   return JSON.stringify({
     schemaVersion: artifact.schemaVersion,
-    _omniroute_truncated: true,
+    _cheaproute_truncated: true,
     reason: SIZE_LIMIT_EXCEEDED_REASON,
     error: preserveErrorForSizeLimit(artifact.error),
   });

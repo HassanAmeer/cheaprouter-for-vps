@@ -1,4 +1,4 @@
-import { parseTraeApiHost, resolveTraeApiHost } from "@omniroute/open-sse/utils/traeHost.ts";
+import { parseTraeApiHost, resolveTraeApiHost } from "@cheaproute/open-sse/utils/traeHost.ts";
 
 /**
  * Pure parser for the Trae SOLO /authorize callback query string. Extracted

@@ -1,5 +1,5 @@
 /**
- * Ensure Cursor catalog listings always expose OmniRoute's public auto-router
+ * Ensure Cursor catalog listings always expose CheapRoute's public auto-router
  * ids (`auto` + Cost/Balance/Intelligence variants). Live AvailableModels /
  * cursor-agent often return wire id `default` only.
  */

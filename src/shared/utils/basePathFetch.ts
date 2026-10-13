@@ -2,7 +2,7 @@
  * Install a same-origin fetch + EventSource rewrite for Next.js basePath deploys.
  *
  * Pattern mirrors `installDashboardCsrfFetch` (ref-counted global wrap).
- * Only activates when `NEXT_PUBLIC_OMNIROUTE_BASE_PATH` / `OMNIROUTE_BASE_PATH` is set.
+ * Only activates when `NEXT_PUBLIC_CHEAPROUTE_BASE_PATH` / `CHEAPROUTE_BASE_PATH` is set.
  */
 
 import { getDeployBasePath, withBasePath } from "./basePath";

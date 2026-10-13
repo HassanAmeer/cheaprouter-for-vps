@@ -68,8 +68,8 @@ export function isAllAccountsRateLimitedResponse(
   return ALL_ACCOUNTS_RATE_LIMITED_PATTERNS.some((p) => p.test(errorText));
 }
 
-// #1731v2 guard: a provider circuit-breaker-open response (503 + `X-OmniRoute-Provider-Breaker`
-// header / `provider_circuit_open` error code, see providerCircuitOpenResponse) is an OmniRoute
+// #1731v2 guard: a provider circuit-breaker-open response (503 + `X-CheapRoute-Provider-Breaker`
+// header / `provider_circuit_open` error code, see providerCircuitOpenResponse) is an CheapRoute
 // resilience signal, NOT a per-connection upstream failure. It must keep being treated as an
 // ordinary target failure (try the next target, including same-provider ones) — so it must NOT
 // poison exhaustedConnections/exhaustedProviders, otherwise remaining same-provider targets get
@@ -78,7 +78,7 @@ export function isProviderCircuitOpenResult(
   result: { headers?: Headers | null; status?: number },
   errorText: string
 ): boolean {
-  const breakerHeader = result.headers?.get?.("x-omniroute-provider-breaker");
+  const breakerHeader = result.headers?.get?.("x-cheaproute-provider-breaker");
   if (typeof breakerHeader === "string" && breakerHeader.toLowerCase() === "open") return true;
   return /provider_circuit_open/i.test(errorText);
 }
@@ -230,7 +230,7 @@ const PROVIDER_BREAKER_FAILURE_STATUSES = new Set([408, 500, 502, 503, 504]);
  *   homogeneous same-provider combo pool never trips the breaker and instead burns every
  *   attempt against the same dead proxy until it hits the 503 max-retry limit.
  * - G-02 / #2743: when the fallback result carries `skipProviderBreaker` (an embedded
- *   service supervisor outage signalled via `X-Omni-Fallback-Hint: connection_cooldown`)
+ *   service supervisor outage signalled via `X-Cheap-Fallback-Hint: connection_cooldown`)
  *   apply connection cooldown ONLY — never trip the whole-provider breaker.
  *
  * #7907/#7908: also skip the breaker trip when the failure is a local stream lifecycle
@@ -552,7 +552,7 @@ export function isTokenLimitBreachErrorBody(errorBody: unknown): boolean {
 }
 
 /**
- * A local per-API-key POLICY breach: this OmniRoute instance refused the
+ * A local per-API-key POLICY breach: this CheapRoute instance refused the
  * candidate before dispatch because of the key's own limits, not because an
  * upstream said no. Today that is the token-limit 429 above and the metered
  * dollar-budget 429 ("BUDGET_EXCEEDED", see handleSingleModelChat in

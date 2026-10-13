@@ -4,7 +4,7 @@
  * Chat/LLM models stay in syntxModels.ts. This file is image / video / audio /
  * music / upscale / transcribe only so chat generation is untouched.
  *
- * Model ids are `{ai_name}/{model_type}` so OmniRoute `syntx/{id}` parses as
+ * Model ids are `{ai_name}/{model_type}` so CheapRoute `syntx/{id}` parses as
  * provider=syntx, model=`sora-images/gpt-image-2`.
  *
  * Each seed row carries the selectable params the SPA/MCP actually send

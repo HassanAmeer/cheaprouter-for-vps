@@ -6,12 +6,12 @@ import { isFeatureFlagEnabled } from "@/shared/utils/featureFlags";
 import {
   calendarWeekWindowMs,
   isValidIanaTimeZone,
-} from "@omniroute/open-sse/services/dailyQuotaReset.ts";
+} from "@cheaproute/open-sse/services/dailyQuotaReset.ts";
 import {
   errorResponse,
   resolveRetryAfterInstant,
   sanitizeErrorMessage,
-} from "@omniroute/open-sse/utils/error.ts";
+} from "@cheaproute/open-sse/utils/error.ts";
 
 const FORTALEZA_UTC_OFFSET_MS = 3 * 60 * 60 * 1000;
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -415,21 +415,21 @@ function getProcessTimeZone(): string {
  * - `provider` (default): end at the earliest weekly reset among the upstream
  *   connections the key can reach; rolling 7 days when none is known.
  * - `calendar`: the local week starting Monday 00:00 in
- *   OMNIROUTE_API_KEY_WEEKLY_WINDOW_TIMEZONE, or in the process timezone when unset.
+ *   CHEAPROUTE_API_KEY_WEEKLY_WINDOW_TIMEZONE, or in the process timezone when unset.
  */
 export function getApiKeyWeeklyWindowSetting(
   env: Record<string, string | undefined> = process.env
 ): ApiKeyWeeklyWindowSetting {
-  const rawMode = (env.OMNIROUTE_API_KEY_WEEKLY_WINDOW ?? "").trim().toLowerCase();
+  const rawMode = (env.CHEAPROUTE_API_KEY_WEEKLY_WINDOW ?? "").trim().toLowerCase();
   if (rawMode && rawMode !== "provider" && rawMode !== "calendar") {
     warnWeeklyWindowValueOnce(
-      `OMNIROUTE_API_KEY_WEEKLY_WINDOW="${rawMode}" is not provider|calendar; using provider`
+      `CHEAPROUTE_API_KEY_WEEKLY_WINDOW="${rawMode}" is not provider|calendar; using provider`
     );
   }
-  const rawTimeZone = (env.OMNIROUTE_API_KEY_WEEKLY_WINDOW_TIMEZONE ?? "").trim();
+  const rawTimeZone = (env.CHEAPROUTE_API_KEY_WEEKLY_WINDOW_TIMEZONE ?? "").trim();
   if (rawTimeZone && !isValidIanaTimeZone(rawTimeZone)) {
     warnWeeklyWindowValueOnce(
-      `OMNIROUTE_API_KEY_WEEKLY_WINDOW_TIMEZONE="${rawTimeZone}" is not an IANA timezone; using the process timezone`
+      `CHEAPROUTE_API_KEY_WEEKLY_WINDOW_TIMEZONE="${rawTimeZone}" is not an IANA timezone; using the process timezone`
     );
   }
   return {

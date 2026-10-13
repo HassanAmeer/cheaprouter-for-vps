@@ -2,7 +2,7 @@ import {
   DEFAULT_API_LIMITS,
   PROVIDER_PROFILES,
   STREAM_THROUGHPUT_WATCHDOG,
-} from "@omniroute/open-sse/config/constants";
+} from "@cheaproute/open-sse/config/constants";
 
 import type { JsonRecord, ResilienceSettings, ResilienceSettingsPatch } from "./settings/types";
 import {

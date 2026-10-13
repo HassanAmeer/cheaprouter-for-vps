@@ -9,14 +9,14 @@ const CLOUD_URL =
     ? configuredCloudUrl.trim()
     : undefined;
 const CLOUD_SYNC_TIMEOUT_MS = Number(process.env.CLOUD_SYNC_TIMEOUT_MS || 12000);
-const CLOUD_SYNC_SECRET = process.env.OMNIROUTE_CLOUD_SYNC_SECRET || "";
+const CLOUD_SYNC_SECRET = process.env.CHEAPROUTE_CLOUD_SYNC_SECRET || "";
 
 // Opt-in: only when explicitly set to "true" will updateLocalTokens overwrite
 // accessToken/refreshToken/providerSpecificData from the Cloud response. Default
 // behaviour from v3.8.6 onward syncs only non-credential metadata (expiresAt,
 // status, lastError*, rateLimitedUntil, updatedAt) so a misconfigured or
 // hostile CLOUD_URL cannot silently swap user OAuth tokens.
-const CLOUD_SYNC_SECRETS_ENABLED = process.env.OMNIROUTE_CLOUD_SYNC_SECRETS === "true";
+const CLOUD_SYNC_SECRETS_ENABLED = process.env.CHEAPROUTE_CLOUD_SYNC_SECRETS === "true";
 
 // #13679 PR A — opt-in early enforcement of the "no secret configured" branch
 // below. Bringing the v3.9 enforce-by-default switch forward as an explicit
@@ -24,7 +24,7 @@ const CLOUD_SYNC_SECRETS_ENABLED = process.env.OMNIROUTE_CLOUD_SYNC_SECRETS === 
 // haven't rotated in a shared secret yet (an unsigned payload still passes).
 // Set to "true" to reject even an unsigned payload when no local secret is
 // configured — the default flips to enforced in v3.9.
-const CLOUD_SYNC_ENFORCE_SIGNATURE = process.env.OMNIROUTE_CLOUD_SYNC_ENFORCE_SIGNATURE === "true";
+const CLOUD_SYNC_ENFORCE_SIGNATURE = process.env.CHEAPROUTE_CLOUD_SYNC_ENFORCE_SIGNATURE === "true";
 
 type JsonRecord = Record<string, unknown>;
 
@@ -48,17 +48,17 @@ function toDateMs(value: unknown): number {
 // Closes the silent-credential-swap surface flagged by Socket.dev (finding for
 // `app/.next/server/app/api/keys/[id]/route.js`). Two-leg defence:
 //   1. The Cloud endpoint signs each response body with
-//      `HMAC-SHA256(OMNIROUTE_CLOUD_SYNC_SECRET, rawBody)` and returns the hex
+//      `HMAC-SHA256(CHEAPROUTE_CLOUD_SYNC_SECRET, rawBody)` and returns the hex
 //      digest in `X-Cloud-Sig`.
 //   2. We verify the signature with `crypto.timingSafeEqual` before parsing the
 //      JSON, so a MITM on the CLOUD_URL channel — or a misconfigured CLOUD_URL
 //      pointing at an attacker — cannot inject providers/tokens.
-// If `OMNIROUTE_CLOUD_SYNC_SECRET` is unset, a PRESENT signature is always
+// If `CHEAPROUTE_CLOUD_SYNC_SECRET` is unset, a PRESENT signature is always
 // rejected (#13679 PR A — we have no key to check it against, so a signature
 // we cannot verify is treated as invalid rather than blindly trusted) and an
 // ABSENT signature falls through in legacy unverified mode by default
 // (back-compat for users on v3.8.x who haven't issued a shared secret yet;
-// opt in early via `OMNIROUTE_CLOUD_SYNC_ENFORCE_SIGNATURE=true`). The
+// opt in early via `CHEAPROUTE_CLOUD_SYNC_ENFORCE_SIGNATURE=true`). The
 // enforce-by-default switch for the absent-signature case will flip in v3.9.
 export function verifyCloudSignature(rawBody: string, sigHeader: string | null): boolean {
   if (!CLOUD_SYNC_SECRET) {
@@ -67,7 +67,7 @@ export function verifyCloudSignature(rawBody: string, sigHeader: string | null):
       // treated as invalid rather than passed through (#13679 PR A item (b) —
       // closes the "forge any X-Cloud-Sig and it's accepted" fail-open case).
       console.warn(
-        "[cloudSync] OMNIROUTE_CLOUD_SYNC_SECRET is not set but the Cloud response carries an " +
+        "[cloudSync] CHEAPROUTE_CLOUD_SYNC_SECRET is not set but the Cloud response carries an " +
           "X-Cloud-Sig header — rejecting an unverifiable signature. Set the secret to enable " +
           "verification."
       );
@@ -75,15 +75,15 @@ export function verifyCloudSignature(rawBody: string, sigHeader: string | null):
     }
     if (CLOUD_SYNC_ENFORCE_SIGNATURE) {
       console.warn(
-        "[cloudSync] OMNIROUTE_CLOUD_SYNC_SECRET is not set and the Cloud response carries no " +
-          "X-Cloud-Sig, and OMNIROUTE_CLOUD_SYNC_ENFORCE_SIGNATURE=true — rejecting unsigned payload."
+        "[cloudSync] CHEAPROUTE_CLOUD_SYNC_SECRET is not set and the Cloud response carries no " +
+          "X-Cloud-Sig, and CHEAPROUTE_CLOUD_SYNC_ENFORCE_SIGNATURE=true — rejecting unsigned payload."
       );
       return false;
     }
     console.warn(
-      "[cloudSync] OMNIROUTE_CLOUD_SYNC_SECRET is not set and the Cloud response carries no X-Cloud-Sig. " +
+      "[cloudSync] CHEAPROUTE_CLOUD_SYNC_SECRET is not set and the Cloud response carries no X-Cloud-Sig. " +
         "Token sync runs in legacy unverified mode — set the secret (or " +
-        "OMNIROUTE_CLOUD_SYNC_ENFORCE_SIGNATURE=true) to enforce HMAC verification. This legacy " +
+        "CHEAPROUTE_CLOUD_SYNC_ENFORCE_SIGNATURE=true) to enforce HMAC verification. This legacy " +
         "pass-through default will flip to enforced in v3.9."
     );
     return true;
@@ -200,7 +200,7 @@ export async function syncToCloud(
  * SECURITY-AUDITOR-NOTE: This function appears in Socket.dev finding for
  * `app/.next/server/app/api/keys/[id]/route.js`. From v3.8.6 onward,
  * `accessToken` / `refreshToken` / `providerSpecificData` are only synced when
- * `OMNIROUTE_CLOUD_SYNC_SECRETS=true`. The default mode syncs non-credential
+ * `CHEAPROUTE_CLOUD_SYNC_SECRETS=true`. The default mode syncs non-credential
  * metadata only. Combined with `verifyCloudSignature()` above, this closes the
  * silent-credential-overwrite path. See docs/security/SOCKET_DEV_FINDINGS.md §5.
  */

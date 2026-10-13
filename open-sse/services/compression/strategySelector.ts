@@ -37,7 +37,7 @@ import { resolveStepDetailConfig } from "./stepDetailConfig.ts";
 import { registerBuiltinCompressionEngines } from "./engines/index.ts";
 import { getCompressionEngine, getEngineEntry } from "./engines/registry.ts";
 import { codexResponsesEngine } from "./engines/codexResponses/index.ts";
-import { applyOmniglyphSingleMode } from "./engines/omniglyphSingleMode.ts";
+import { applyCheapglyphSingleMode } from "./engines/cheapglyphSingleMode.ts";
 import { applyRtkCompression } from "./engines/rtk/index.ts";
 import { adaptBodyForCompression } from "./bodyAdapter.ts";
 import {
@@ -368,8 +368,8 @@ function runCompression(
     });
     return adapter.adapted ? { ...result, body: adapter.restore(result.body) } : result;
   }
-  if (mode === "omniglyph") {
-    // omniglyph is async-only — use applyCompressionAsync. Safe no-op here.
+  if (mode === "cheapglyph") {
+    // cheapglyph is async-only — use applyCompressionAsync. Safe no-op here.
     return { body, compressed: false, stats: null };
   }
   const adapter = adaptBodyForCompression(
@@ -495,9 +495,9 @@ export async function applyCompressionAsync(
   options?: {
     model?: string;
     supportsVision?: boolean | null;
-    /** Direct-to-provider vs. aggregator transport (gates transport-sensitive engines like omniglyph). */
+    /** Direct-to-provider vs. aggregator transport (gates transport-sensitive engines like cheapglyph). */
     providerTransport?: "direct" | "aggregator";
-    /** Provider resolvido — a contabilidade do omniglyph depende dele. */
+    /** Provider resolvido — a contabilidade do cheapglyph depende dele. */
     provider?: string;
     imageTransportFidelity?: ImageTransportFidelity;
     sourceFormat?: CompressionWireFormat;
@@ -520,9 +520,9 @@ async function runCompressionAsync(
   options?: {
     model?: string;
     supportsVision?: boolean | null;
-    /** Direct-to-provider vs. aggregator transport (gates transport-sensitive engines like omniglyph). */
+    /** Direct-to-provider vs. aggregator transport (gates transport-sensitive engines like cheapglyph). */
     providerTransport?: "direct" | "aggregator";
-    /** Provider resolvido — a contabilidade do omniglyph depende dele. */
+    /** Provider resolvido — a contabilidade do cheapglyph depende dele. */
     provider?: string;
     imageTransportFidelity?: ImageTransportFidelity;
     sourceFormat?: CompressionWireFormat;
@@ -600,10 +600,10 @@ async function runCompressionAsync(
     memoStore(key, result);
     return result;
   }
-  // Single-mode omniglyph (async-only) — resolution lives in engines/omniglyphSingleMode.ts.
-  if (mode === "omniglyph") return applyOmniglyphSingleMode(body, options);
+  // Single-mode cheapglyph (async-only) — resolution lives in engines/cheapglyphSingleMode.ts.
+  if (mode === "cheapglyph") return applyCheapglyphSingleMode(body, options);
   if (mode === "stacked") {
-    // Post-translation format-sensitive engines (currently OmniGlyph) must see
+    // Post-translation format-sensitive engines (currently CheapGlyph) must see
     // the native provider wire shape. The generic adapter would turn Responses
     // `input[]` into Chat `messages[]` before the engine gets a chance to use its
     // native Responses transformer. Pre-translation callers retain the legacy
@@ -755,9 +755,9 @@ export interface StackedCompressionStep {
 interface StackOptions {
   model?: string;
   supportsVision?: boolean | null;
-  /** Direct-to-provider vs. aggregator transport (gates transport-sensitive engines like omniglyph). */
+  /** Direct-to-provider vs. aggregator transport (gates transport-sensitive engines like cheapglyph). */
   providerTransport?: "direct" | "aggregator";
-  /** Provider resolvido — a contabilidade do omniglyph depende dele. */
+  /** Provider resolvido — a contabilidade do cheapglyph depende dele. */
   provider?: string;
   imageTransportFidelity?: ImageTransportFidelity;
   sourceFormat?: CompressionWireFormat;

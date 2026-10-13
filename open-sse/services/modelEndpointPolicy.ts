@@ -3,7 +3,7 @@
  *
  * Upstream `/models` responses often omit endpoint/modality metadata. In that
  * case, specialty models can otherwise be imported as chat models simply
- * because "chat" is OmniRoute's historical default. Keep the exceptional
+ * because "chat" is CheapRoute's historical default. Keep the exceptional
  * provider knowledge here so discovery, import, and catalog projection agree.
  */
 

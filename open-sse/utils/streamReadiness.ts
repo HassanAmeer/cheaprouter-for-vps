@@ -12,7 +12,7 @@ type StreamReadinessLogger = {
  * from every client-facing rebuild below, so it never leaks downstream.
  * The value is always the generic `transient` qualifier.
  */
-export const PARKED_STREAM_HEADER = "x-omniroute-parked-stream";
+export const PARKED_STREAM_HEADER = "x-cheaproute-parked-stream";
 export const PARKED_STREAM_VALUE = "transient";
 
 /** True when the response carries the parked-stream marker (fail-closed: false). */

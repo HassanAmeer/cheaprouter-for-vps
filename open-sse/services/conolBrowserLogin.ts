@@ -42,7 +42,7 @@ export function extractConolBrowserCredentials(
 export async function launchConolLoginBrowser(
   playwright: BrowserLauncher
 ): Promise<import("playwright").Browser> {
-  const configuredPath = process.env.OMNIROUTE_LOGIN_BROWSER_PATH?.trim();
+  const configuredPath = process.env.CHEAPROUTE_LOGIN_BROWSER_PATH?.trim();
   const attempts: Array<Record<string, unknown>> = [
     ...(configuredPath ? [{ headless: false, executablePath: configuredPath }] : []),
     { headless: false, channel: "chrome" },

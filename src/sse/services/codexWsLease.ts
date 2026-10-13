@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import {
   acquire as acquireAccountSemaphore,
   buildAccountSemaphoreKey,
-} from "@omniroute/open-sse/services/accountSemaphore.ts";
+} from "@cheaproute/open-sse/services/accountSemaphore.ts";
 
 const leases = new Map<string, () => void>();
 

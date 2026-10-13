@@ -11,7 +11,7 @@
  */
 
 import { getProviderConnectionById, updateProviderConnection } from "@/lib/db/providers";
-import { refreshCopilotToken } from "@omniroute/open-sse/services/tokenRefresh.ts";
+import { refreshCopilotToken } from "@cheaproute/open-sse/services/tokenRefresh.ts";
 
 type HealthCheckLogger = {
   info: (tag: string, msg: string) => void;

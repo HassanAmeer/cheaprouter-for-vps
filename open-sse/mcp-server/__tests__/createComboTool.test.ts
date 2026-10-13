@@ -12,11 +12,11 @@ vi.mock("../audit.ts", () => ({
   logToolCall: mockLogToolCall,
 }));
 
-describe("omniroute_create_combo MCP tool schema", () => {
+describe("cheaproute_create_combo MCP tool schema", () => {
   it("should be registered in MCP_TOOLS and MCP_TOOL_MAP", () => {
-    const tool = MCP_TOOLS.find((t) => t.name === "omniroute_create_combo");
+    const tool = MCP_TOOLS.find((t) => t.name === "cheaproute_create_combo");
     expect(tool).toBeDefined();
-    expect(MCP_TOOL_MAP["omniroute_create_combo"]).toBeDefined();
+    expect(MCP_TOOL_MAP["cheaproute_create_combo"]).toBeDefined();
   });
 
   it("should require write:combos scope", () => {
@@ -66,7 +66,7 @@ describe("omniroute_create_combo MCP tool schema", () => {
   });
 });
 
-describe("omniroute_create_combo handler (via MCP dispatch)", () => {
+describe("cheaproute_create_combo handler (via MCP dispatch)", () => {
   let client: Client;
 
   beforeEach(async () => {
@@ -86,7 +86,7 @@ describe("omniroute_create_combo handler (via MCP dispatch)", () => {
 
   it("should appear in tools/list after registration", async () => {
     const { tools } = await client.listTools();
-    const tool = tools.find((t) => t.name === "omniroute_create_combo");
+    const tool = tools.find((t) => t.name === "cheaproute_create_combo");
     expect(tool).toBeDefined();
     expect(tool?.description).toContain("Registers new combo");
   });
@@ -105,7 +105,7 @@ describe("omniroute_create_combo handler (via MCP dispatch)", () => {
       models: [{ provider: "anthropic", model: "claude-sonnet" }],
     };
 
-    const result = await client.callTool({ name: "omniroute_create_combo", arguments: args });
+    const result = await client.callTool({ name: "cheaproute_create_combo", arguments: args });
 
     expect(result.isError).toBeFalsy();
     const content = result.content[0] as { type: string; text: string };
@@ -125,7 +125,7 @@ describe("omniroute_create_combo handler (via MCP dispatch)", () => {
 
     // Audit: the invocation must be logged to mcp_audit (via logToolCall).
     expect(mockLogToolCall).toHaveBeenCalledWith(
-      "omniroute_create_combo",
+      "cheaproute_create_combo",
       expect.objectContaining({ name: "My Combo" }),
       expect.objectContaining({ success: true }),
       expect.any(Number),
@@ -143,7 +143,7 @@ describe("omniroute_create_combo handler (via MCP dispatch)", () => {
     });
 
     await client.callTool({
-      name: "omniroute_create_combo",
+      name: "cheaproute_create_combo",
       arguments: {
         name: "Cost Saver",
         description: "Prefers cheaper models",
@@ -170,7 +170,7 @@ describe("omniroute_create_combo handler (via MCP dispatch)", () => {
     });
 
     const result = await client.callTool({
-      name: "omniroute_create_combo",
+      name: "cheaproute_create_combo",
       arguments: {
         name: "Duplicate Combo",
         models: [{ provider: "anthropic", model: "claude-sonnet" }],
@@ -182,7 +182,7 @@ describe("omniroute_create_combo handler (via MCP dispatch)", () => {
     expect(content.text).toContain("Error");
 
     expect(mockLogToolCall).toHaveBeenCalledWith(
-      "omniroute_create_combo",
+      "cheaproute_create_combo",
       expect.objectContaining({ name: "Duplicate Combo" }),
       null,
       expect.any(Number),

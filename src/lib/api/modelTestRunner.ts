@@ -14,18 +14,18 @@ import {
 import { getCustomModels } from "@/lib/db/models";
 import { getProviderNodeById } from "@/lib/db/providers";
 import { requiresWebSessionCredential } from "@/shared/providers/webSessionCredentials";
-import { sanitizeErrorMessage } from "@omniroute/open-sse/utils/error";
-import { withRateLimit } from "@omniroute/open-sse/services/rateLimitManager";
+import { sanitizeErrorMessage } from "@cheaproute/open-sse/utils/error";
+import { withRateLimit } from "@cheaproute/open-sse/services/rateLimitManager";
 import {
   isCreditsExhausted,
   isDailyQuotaExhausted,
-} from "@omniroute/open-sse/services/accountFallback";
+} from "@cheaproute/open-sse/services/accountFallback";
 import { looksLikeQuotaExhausted } from "@/shared/utils/classify429";
-import { getTrustedLocalRateLimitError } from "@omniroute/open-sse/services/rateLimitManager/errors";
+import { getTrustedLocalRateLimitError } from "@cheaproute/open-sse/services/rateLimitManager/errors";
 import { runAsProbe } from "@/shared/utils/probeOrigin";
 import { isConnectionUnavailableToAuxiliaryActivity } from "@/lib/exclusiveLeaseIsolation";
 
-const INTERNAL_ORIGIN = "http://omniroute.internal";
+const INTERNAL_ORIGIN = "http://cheaproute.internal";
 export const DEFAULT_MODEL_TEST_TIMEOUT_MS = 30_000;
 const CHATGPT_WEB_CLEAN_ROOM_PROVIDER_ID = "chatgpt-web";
 const DOLA_PRO_TEST_TIMEOUT_MS = 90_000;
@@ -180,12 +180,12 @@ export function buildInternalChatRequest(
       "Content-Type": "application/json",
       // Reuse the existing strict-mode internal bypass for live health checks.
       "X-Internal-Test": "combo-health-check",
-      "X-OmniRoute-No-Cache": "true",
+      "X-CheapRoute-No-Cache": "true",
       // #6240: a connection test must be clean — never let the operator's globally-enabled
       // Output Styles (e.g. "Ultra terse") leak a system prompt into a test-model call.
-      "X-OmniRoute-Compression": "off",
+      "X-CheapRoute-Compression": "off",
       "X-Request-Id": `model-test-${randomUUID()}`,
-      ...(connectionId ? { "X-OmniRoute-Connection": connectionId } : {}),
+      ...(connectionId ? { "X-CheapRoute-Connection": connectionId } : {}),
     },
     body: JSON.stringify(testBody),
     signal,
@@ -202,10 +202,10 @@ export function buildInternalResponsesRequest(
     headers: {
       "Content-Type": "application/json",
       "X-Internal-Test": "combo-health-check",
-      "X-OmniRoute-No-Cache": "true",
-      "X-OmniRoute-Compression": "off",
+      "X-CheapRoute-No-Cache": "true",
+      "X-CheapRoute-Compression": "off",
       "X-Request-Id": `model-test-${randomUUID()}`,
-      ...(connectionId ? { "X-OmniRoute-Connection": connectionId } : {}),
+      ...(connectionId ? { "X-CheapRoute-Connection": connectionId } : {}),
     },
     body: JSON.stringify(testBody),
     signal,
@@ -222,10 +222,10 @@ export function buildInternalRerankRequest(
     headers: {
       "Content-Type": "application/json",
       "X-Internal-Test": "combo-health-check",
-      "X-OmniRoute-No-Cache": "true",
-      "X-OmniRoute-Compression": "off",
+      "X-CheapRoute-No-Cache": "true",
+      "X-CheapRoute-Compression": "off",
       "X-Request-Id": `model-test-${randomUUID()}`,
-      ...(connectionId ? { "X-OmniRoute-Connection": connectionId } : {}),
+      ...(connectionId ? { "X-CheapRoute-Connection": connectionId } : {}),
     },
     body: JSON.stringify(testBody),
     signal,
@@ -241,7 +241,7 @@ function buildTinyWavFile(): File {
         0x00, 0x00, 0x02, 0x00, 0x10, 0x00, 0x64, 0x61, 0x74, 0x61, 0x00, 0x00, 0x00, 0x00,
       ]),
     ],
-    "omniroute-model-test.wav",
+    "cheaproute-model-test.wav",
     { type: "audio/wav" }
   );
 }
@@ -259,10 +259,10 @@ export function buildInternalAudioTranscriptionRequest(
     method: "POST",
     headers: {
       "X-Internal-Test": "combo-health-check",
-      "X-OmniRoute-No-Cache": "true",
-      "X-OmniRoute-Compression": "off",
+      "X-CheapRoute-No-Cache": "true",
+      "X-CheapRoute-Compression": "off",
       "X-Request-Id": `model-test-${randomUUID()}`,
-      ...(connectionId ? { "X-OmniRoute-Connection": connectionId } : {}),
+      ...(connectionId ? { "X-CheapRoute-Connection": connectionId } : {}),
     },
     body: formData,
     signal,
@@ -549,9 +549,9 @@ export async function runSingleModelTest(
   const testBody = isRerank
     ? {
         model: fullModelStr,
-        query: "What is OmniRoute?",
+        query: "What is CheapRoute?",
         documents: [
-          "OmniRoute routes AI requests across configured providers.",
+          "CheapRoute routes AI requests across configured providers.",
           "This document is unrelated to the test query.",
         ],
         top_n: 1,

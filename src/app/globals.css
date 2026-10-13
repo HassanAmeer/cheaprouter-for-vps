@@ -97,7 +97,7 @@
   --shadow-elevated: 0 12px 28px -4px rgba(20, 20, 40, 0.06);
 
   /* Graph-paper wallpaper grid — shared visual identity with the marketing site
-     (_mono_repo/omnirouteSite/css). Light theme values. Rendered by body::before.
+     (_mono_repo/cheaprouteSite/css). Light theme values. Rendered by body::before.
      Opacity tuned up from the site's 0.045 so the wallpaper is actually visible on
      the dense dashboard (cards/chrome cover most of the viewport). */
   --grid-line: rgba(0, 0, 0, 0.07);
@@ -617,6 +617,37 @@ button .material-symbols-outlined,
   animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
 
+/* Shimmer skeleton — a light sweep travelling left→right across the block
+   (works over both light and dark surfaces via the translucent highlight). */
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.shimmer {
+  background-color: var(--color-border);
+  background-image: linear-gradient(
+    100deg,
+    transparent 30%,
+    rgba(125, 125, 125, 0.18) 50%,
+    transparent 70%
+  );
+  background-size: 200% 100%;
+  background-repeat: no-repeat;
+  animation: shimmer 1.6s linear infinite;
+  border-radius: 0.5rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .shimmer {
+    animation: none;
+  }
+}
+
 @keyframes border-glow {
   0%,
   100% {
@@ -694,7 +725,7 @@ select option {
 /* React Flow loads its component stylesheet after this global file in some
    bundles, so direct background/fill declarations can lose to its shorthand
    rules. Override the supported theme variables on our canvas instead. */
-.react-flow.omniroute-flow {
+.react-flow.cheaproute-flow {
   --xy-controls-button-background-color: var(--color-surface);
   --xy-controls-button-background-color-hover: var(--color-bg-subtle);
   --xy-controls-button-color: var(--color-text-main);

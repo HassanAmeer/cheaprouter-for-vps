@@ -1001,20 +1001,20 @@
     "batchFileDownloadFull": "Download Full File"
   },
   "disabled": "Disabled",
-  "featureFlagOmnirouteEmergencyFallbackDescription": "Route budget-exhausted requests to the emergency free fallback provider/model.",
+  "featureFlagCheaprouteEmergencyFallbackDescription": "Route budget-exhausted requests to the emergency free fallback provider/model.",
   "featureFlagArenaEloSyncEnabledDescription": "Enable periodic Arena AI leaderboard ELO sync for model intelligence rankings.",
   "featureFlagUniversalContextHandoffEnabledDescription": "Generate and inject conversation summaries when combo routing switches models. Disable to treat model switches independently and prevent background handoff requests for all existing and future combos.",
   "featureFlagReasoningReplayEnabledDescription": "Cache and replay model reasoning across multi-turn conversations. Disable to stop storing and re-injecting reasoning.",
   "featureFlagExposeCcDiscoveryAliasesDescription": "Advertise claude/&lt;provider&gt;/&lt;model&gt; mirror ids on /v1/models so Claude Code gateway model discovery lists non-Claude models. Warning: doubles catalog entries for all clients when enabled globally.",
   "featureFlagNoThinkingAliasEnabledDescription": "Master switch for the no-think/&lt;provider&gt;/&lt;model&gt; gateway aliases. On (default): /v1/models advertises a no-thinking variant for every eligible thinking-capable Claude model, and a no-think/ id sent on a request resolves back to the real model with reasoning suppressed. Off: no variants are advertised and a no-think/ id is treated like any other unknown model id. The per-model ModelSpec.noThinkingAlias opt-in/opt-out still applies while this is on.",
-  "featureFlagChatVirtualLanesEnabledDescription": "Enable per-tenant adaptive virtual admission lanes for provider dispatch (#9654): one tenant's burst no longer 503s another. The OMNIROUTE_CHAT_VIRTUAL_LANES env var wins over this dashboard override; changes take effect at server restart.",
+  "featureFlagChatVirtualLanesEnabledDescription": "Enable per-tenant adaptive virtual admission lanes for provider dispatch (#9654): one tenant's burst no longer 503s another. The CHEAPROUTE_CHAT_VIRTUAL_LANES env var wins over this dashboard override; changes take effect at server restart.",
   "featureFlagFreeBadgeRequiresProviderFreeTierDescription": "Dashboard provider pages: show the Free badge only on signals the provider honors — drops the display-name heuristic, non-boolean free fields and :free suffixes on registered providers without a documented free tier. Off keeps the historical badge rule.",
   "featureFlagProxySkipRecentlyFailedDescription": "Proxy pools and the per-account rotation of opencode stop re-serving a proxy that just failed (refused TCP probe, or a 429 received through it) for a per-process period that doubles on each repeat, up to a cap. No proxy status is written; with every candidate set aside the choice is unchanged. On by default; `false` restores plain selection.",
   "featureFlagProxyPoolSharedEgressOrderDescription": "For providers whose quota is bucketed by egress address, rank a pool member sharing a recently refused member's observed egress address just below healthy members. Order only, never excluded. Needs PROXY_SKIP_RECENTLY_FAILED, which produces the refusal signal it reads. Off by default: selection order is exactly the plain rotation.",
   "featureFlagProxyPoolEgressObservationDescription": "Show, under a proxy pool in the dashboard, how many observed egress IPs served its members over the last 24 h, how many connections used them and the most seen behind one IP. Read-only, computed from the proxy log, never used for routing. Off by default: the pool editor is unchanged and the observation route answers null.",
   "featureFlagProxyOperatorEgressDescription": "Accept operator-pushed dated observed addresses per pool member and merge them with the journal read for display and pool order. Off by default: the push route answers 404 and pool reads behave exactly as before.",
   "featureFlagProxyHealthBlockedResetsStreakDescription": "In the proxy health sweep, let a probe the target refused (401/403/429: the proxy relayed, the destination refused this egress IP) reset the consecutive-failure streak of the proxy, like a served probe. Off by default: a refusal stays neutral and keeps the streak. A 5xx stays inconclusive either way, and a refusal never removes, disables or re-activates a proxy.",
-  "featureFlagBatchAndFileAutoCleanupEnabledDescription": "Let the automatic cleanup sweep delete terminal (completed/failed/cancelled/expired) Batch API jobs older than OMNIROUTE_BATCH_RETENTION_DAYS, along with their per-line checkpoints, and clear the BLOB content of uploaded files past their own expires_at. Off by default: every existing install keeps this data exactly as before until an operator opts in. The operator-triggered DELETE /api/v1/batches/delete-completed route is unaffected either way -- it is a separate, unconditional public API contract.",
+  "featureFlagBatchAndFileAutoCleanupEnabledDescription": "Let the automatic cleanup sweep delete terminal (completed/failed/cancelled/expired) Batch API jobs older than CHEAPROUTE_BATCH_RETENTION_DAYS, along with their per-line checkpoints, and clear the BLOB content of uploaded files past their own expires_at. Off by default: every existing install keeps this data exactly as before until an operator opts in. The operator-triggered DELETE /api/v1/batches/delete-completed route is unaffected either way -- it is a separate, unconditional public API contract.",
   "featureFlagXaiOauthLiveModelDiscoveryDescription": "Fetch the live xAI model catalog for xai-oauth connections from https://api.x.ai/v1/models using the OAuth bearer token, instead of the frozen static seed. Off by default: xai-oauth keeps serving the static seed unchanged. On any resolution error, discovery falls back to the seed.",
   "featureFlagDbHealthcheckStartupDeferredEnabledDescription": "Run the startup database integrity/health check after the server starts accepting requests instead of blocking startup until it completes. Off by default: startup blocks on the check exactly like before this change, so a corrupt database is still caught before the first request is served.",
   "sidebar": {
@@ -1038,7 +1038,7 @@
     "cloudAgents": "Cloud Agents",
     "memory": "Memory",
     "skills": "Skills",
-    "omniSkills": "OmniSkills",
+    "cheapSkills": "CheapSkills",
     "agentSkills": "AgentSkills",
     "chaosConfig": "Chaos Mode",
     "docs": "Docs",
@@ -1127,7 +1127,7 @@
     "contextLite": "Lite",
     "contextAggressive": "Aggressive",
     "contextUltra": "Ultra",
-    "contextOmniglyph": "OmniGlyph",
+    "contextCheapglyph": "CheapGlyph",
     "contextSettings": "Compression Settings",
     "contextHeadroom": "Headroom",
     "contextSessionDedup": "Session Dedup",
@@ -1145,7 +1145,7 @@
     "contextLiteSubtitle": "Fast whitespace cleanup",
     "contextAggressiveSubtitle": "Summary and aging",
     "contextUltraSubtitle": "Heuristic pruning",
-    "contextOmniglyphSubtitle": "Context as images",
+    "contextCheapglyphSubtitle": "Context as images",
     "compressionStudioSubtitle": "Live engine cascade",
     "compressionExclusionsSubtitle": "Per-model/endpoint bypass",
     "chaosConfigSubtitle": "Multi-model parallel execution",
@@ -1196,7 +1196,7 @@
     "settingsResilience": "Resilience",
     "modelLockout": "Model Lockout",
     "settingsAdvanced": "Advanced",
-    "omniProxySection": "OmniProxy",
+    "cheapProxySection": "CheapProxy",
     "quotaTracker": "Provider Quota",
     "providerQuota": "Provider Quota",
     "runtime": "Runtime",
@@ -1266,7 +1266,7 @@
     "playgroundSubtitle": "Test prompts live",
     "searchToolsSubtitle": "Search tool registry",
     "memorySubtitle": "Persistent agent memory",
-    "omniSkillsSubtitle": "Sandbox skill registry",
+    "cheapSkillsSubtitle": "Sandbox skill registry",
     "agentSkillsSubtitle": "A2A skill registry",
     "mcpSubtitle": "MCP server controls",
     "a2aSubtitle": "A2A protocol server",
@@ -1332,6 +1332,14 @@
     "resilienceConnectionsSubtitle": "Cooldown, breaker, lockout state",
     "resilienceCooldowns": "Cooldown Manager",
     "resilienceCooldownsSubtitle": "Clear cooldowns in bulk",
+    "resilienceConnectionsSection": "Resilience",
+    "multiTenantSection": "Reseller",
+    "multiTenantSubtitle": "Multi-tenant user management",
+    "users": "Users",
+    "usersSubtitle": "Reseller users, plans & BYOK keys",
+    "apiSection": "API",
+    "apiDocs": "API Docs",
+    "apiDocsSubtitle": "Interactive developer documentation",
     "settingsModalityBridge": "Modality Bridge",
     "settingsModalityBridgeSubtitle": "Image/audio → text fallback for text-only models",
     "commandPalette": {
@@ -1704,7 +1712,7 @@
     "settingsAdvancedDescription": "Advanced payload rules, request limits, and proxy API settings",
     "mitmProxyDescription": "Configure MITM proxy settings for traffic inspection and debugging",
     "oneProxyDescription": "Configure 1Proxy settings for advanced proxy chaining",
-    "omniSkillsDescription": "Install and manage sandbox skills for automated prompt and tool execution"
+    "cheapSkillsDescription": "Install and manage sandbox skills for automated prompt and tool execution"
   },
   "cloudSyncStatus": {
     "synced": "Synced",
@@ -1780,7 +1788,7 @@
     "headroom": "Headroom",
     "lite": "Lite",
     "llmlingua": "LLMLingua",
-    "omniglyph": "OmniGlyph",
+    "cheapglyph": "CheapGlyph",
     "rtk": "RTK",
     "sessionDedup": "Session Dedup",
     "ultra": "Ultra",
@@ -2848,7 +2856,7 @@
     "configurationSaved": "Configuration saved successfully.",
     "failedToSave": "Failed to save configuration.",
     "noApiKeysCreateOne": "No API keys - Create one in Keys page",
-    "defaultOmnirouteKey": "sk_omniroute (default)",
+    "defaultCheaprouteKey": "sk_cheaproute (default)",
     "selectModel": "Select Model",
     "selectModelForAlias": "Select model for {alias}",
     "selectModelForTool": "Select Model for {tool}",
@@ -2945,13 +2953,13 @@
     "applied": "Applied!",
     "failed": "Failed",
     "resetDone": "Reset!",
-    "omnirouteConfiguredOpenAiCompatible": "CheapRouter is configured as OpenAI-compatible provider",
+    "cheaprouteConfiguredOpenAiCompatible": "CheapRouter is configured as OpenAI-compatible provider",
     "provider": "Provider",
     "model": "Model",
     "providers": "Providers",
     "auth": "Auth",
     "noApiKeysAvailable": "No API keys available",
-    "usingDefaultOmniroute": "Using default: sk_omniroute",
+    "usingDefaultCheaproute": "Using default: sk_cheaproute",
     "updateConfig": "Update Config",
     "applyConfig": "Apply Config",
     "noBackupsAvailable": "No backups available.",
@@ -3173,7 +3181,7 @@
     "customCliNamePlaceholder": "e.g. My Team CLI",
     "customCliDefaultModelLabel": "Default model",
     "customCliDefaultModelHelp": "Use any CheapRouter model ID or combo. Most OpenAI-compatible CLIs only need the /v1 base URL plus a model string.",
-    "customCliKeyHelper": "For local installs CheapRouter can use sk_omniroute. In cloud mode, pick one of your management API keys.",
+    "customCliKeyHelper": "For local installs CheapRouter can use sk_cheaproute. In cloud mode, pick one of your management API keys.",
     "customCliAliasMappingsLabel": "Alias mappings",
     "customCliAliasMappingsHelp": "Optional helper aliases for wrapper scripts or config files that want stable shorthand names.",
     "customCliAddAlias": "Add alias",
@@ -3405,7 +3413,10 @@
     "httpError": "Request failed with HTTP {status}",
     "testFailedNoDetail": "Test failed without an error message",
     "additionalCapabilities": "Additional capabilities: {list}",
-    "comboRefMember": "Combo → {name}"
+    "comboRefMember": "Combo → {name}",
+    "manageModels": "Manage Models",
+    "manageModelsDesc": "Curate per-provider models: toggle availability, set custom display names and API call IDs, and live-test upstreams.",
+    "noConnectedProviders": "No providers with credentials are connected yet. Add a provider key to curate its models."
   },
   "combos": {
     "title": "Combos",
@@ -4116,6 +4127,12 @@
   "endpoint": {
     "title": "API Endpoint",
     "subtitle": "Use the OpenAI-compatible endpoint with most SDKs and tools.",
+    "byokTitle": "BYOK Providers",
+    "byokDesc": "Let reseller users route with their own upstream provider keys. When ON, a personal key sent via the x-upstream-key (or provider-scoped x-claude-key / x-deepseek-key) header is injected upstream in place of the operator's default key, and 0 tokens are deducted from the user's plan. When OFF, every pass-through key is rejected with 403.",
+    "byokToggle": "Enable BYOK Providers",
+    "byokOffHint": "OFF — pass-through keys are rejected with 403",
+    "byokOnHint": "ON — personal upstream keys are injected per request",
+    "byokSaveFailed": "Failed to save BYOK setting",
     "testEndpoint": "Test endpoint →",
     "apiSectionLabel": "API",
     "available": "Available Endpoints",
@@ -4237,9 +4254,9 @@
     "openMcpDashboard": "Open MCP management",
     "openA2aDashboard": "Open A2A management",
     "mcpQuickStartTitle": "MCP Quick Start",
-    "mcpQuickStartStep1": "Run the MCP server via `omniroute --mcp`.",
+    "mcpQuickStartStep1": "Run the MCP server via `cheaproute --mcp`.",
     "mcpQuickStartStep2": "Configure your MCP client to connect over stdio transport.",
-    "mcpQuickStartStep3": "Invoke tools such as `omniroute_get_health` and `omniroute_list_combos`.",
+    "mcpQuickStartStep3": "Invoke tools such as `cheaproute_get_health` and `cheaproute_list_combos`.",
     "a2aQuickStartTitle": "A2A Quick Start",
     "a2aQuickStartStep1": "Discover the agent card at `/.well-known/agent.json`.",
     "a2aQuickStartStep2": "Send JSON-RPC requests to `POST /a2a` using `message/send` or `message/stream`.",
@@ -4360,7 +4377,7 @@
     "vscodeAliasModelsLabel": "VS Code models",
     "vscodeAliasChatLabel": "VS Code chat",
     "localServer": "Local Server",
-    "cloudOmniroute": "Cloud CheapRouter",
+    "cloudCheaproute": "Cloud CheapRouter",
     "copyUrl": "Copy URL",
     "badgeLoopbackTooltip": "This endpoint is only accessible locally (loopback only)",
     "badgeAlwaysProtectedTooltip": "This endpoint is always protected and requires authorization",
@@ -4453,7 +4470,7 @@
     "disableLabel": "Disable {label}",
     "enableLabel": "Enable {label}",
     "transportMode": "Transport Mode",
-    "transportStdioDesc": "Local — IDE spawns process via omniroute --mcp",
+    "transportStdioDesc": "Local — IDE spawns process via cheaproute --mcp",
     "transportSseDesc": "Remote — Server-Sent Events over HTTP",
     "transportStreamableHttpDesc": "Remote — Modern bidirectional HTTP",
     "copy": "Copy",
@@ -5285,6 +5302,17 @@
         "failed": "failed"
       }
     }
+  },
+  "users": {
+    "title": "Users",
+    "addUser": "Add User",
+    "loadError": "Failed to load users.",
+    "empty": "No reseller users registered yet.",
+    "unlimited": "Unlimited",
+    "rpm": "RPM",
+    "joined": "Joined",
+    "byokKeys": "Attached BYOK Keys",
+    "noByokKeys": "No BYOK keys attached to this user."
   },
   "providers": {
     "codexReleaseCooldown": "Clear local cooldown",
@@ -6846,7 +6874,7 @@
     "routingBlockTextHint": "Full text of the new system block. Use a literal string; the system block stores text only.",
     "routingIdempotencyKeyHint": "Optional. If set, the op skips when a block whose text starts with this key is already present. Prevents double-prepend on retries.",
     "routingBillingEntrypointHint": "Value injected as 'cc_entrypoint='. Anthropic accepts 'sdk-cli' (Agent SDK), 'cli' (Claude Code CLI), or other documented values.",
-    "routingBillingVersionFormatHint": "How the 3-char build hash after cc_version= is computed. 'ex-machina' = sha256 of CCH_SALT+chars-from-first-user-msg+version (per-message). 'omniroute-daystamp' = sha256 of YYYY-MM-DD+version (stable per-day).",
+    "routingBillingVersionFormatHint": "How the 3-char build hash after cc_version= is computed. 'ex-machina' = sha256 of CCH_SALT+chars-from-first-user-msg+version (per-message). 'cheaproute-daystamp' = sha256 of YYYY-MM-DD+version (stable per-day).",
     "routingBillingCchAlgoHint": "How the 5-char cch= token is computed. 'sha256-first-user' = sha256 of first user message text. 'xxhash64-body' = body-level signing fills it later. 'static-zero' = literal '00000' placeholder.",
     "routingObfuscateWordsHint": "Lowercase words to obfuscate. ZWJ insertion is applied case-insensitively, so 'opencode' also matches 'OpenCode' and 'OPENCODE'.",
     "routingObfuscateTargetsHint": "Which body regions to scan for the words: system blocks, user/assistant messages, and/or tool descriptions.",
@@ -6924,7 +6952,7 @@
     "memoryDesc": "Persistent cross-session conversational memory",
     "memoryEnabled": "Enable Memory",
     "memoryEnabledDesc": "When enabled, CheapRouter will inject relevant past context.",
-    "memoryTokenCostWarning": "Heads up: with memory enabled, CheapRouter injects up to {tokens} tokens of retrieved context into every chat request — this increases token usage and cost. To skip injection for a specific request, send the \"x-omniroute-no-memory: true\" header.",
+    "memoryTokenCostWarning": "Heads up: with memory enabled, CheapRouter injects up to {tokens} tokens of retrieved context into every chat request — this increases token usage and cost. To skip injection for a specific request, send the \"x-cheaproute-no-memory: true\" header.",
     "maxTokens": "Max Tokens",
     "retentionDays": "Retention",
     "recent": "Recent",
@@ -7154,7 +7182,7 @@
         "SELECTOR_SWITCH_FAILED": "The proxy-core control call failed; the previous route stays active. Check the control URL and secret, then refresh.",
         "CORE_CONFIG_NOT_GENERATED": "The local-core config was not generated; the adopted file is unchanged. Check the path and refresh.",
         "CORE_CONFIG_NOT_APPLIED": "The generated core configuration could not replace the adopted file; the beside copy was kept instead.",
-        "CORE_RELOAD_UNDECLARED": "No reload channel is declared for the replaced core config. Declare one: a control URL on a compatible core, the OMNIROUTE_PROXY_CORE_RELOAD_COMMAND variable as a JSON argument array, or the value external for an outside observer.",
+        "CORE_RELOAD_UNDECLARED": "No reload channel is declared for the replaced core config. Declare one: a control URL on a compatible core, the CHEAPROUTE_PROXY_CORE_RELOAD_COMMAND variable as a JSON argument array, or the value external for an outside observer.",
         "CORE_RELOAD_FAILED": "The proxy core reload failed; the new config file stays in place. Check the reload command, then refresh.",
         "CORE_CONFIG_ENTRIES_SKIPPED": "Some entries were skipped during generation. See the server log."
       },
@@ -7244,7 +7272,7 @@
       "nextSwitch": "Next switch possible",
       "nextSwitchNow": "Now",
       "coreConfigPath": "Core config file",
-      "coreConfigPathPlaceholder": "/var/lib/omniroute/sing-box/config.json",
+      "coreConfigPathPlaceholder": "/var/lib/cheaproute/sing-box/config.json",
       "coreConfigPathDesc": "Absolute .json path (lowercase extension). Empty = no generation. Each sync writes '<path>'.generated beside the adopted file, never into it.",
       "lastSwitchKind": "Switch reason",
       "switchKind": {
@@ -7941,7 +7969,7 @@
     "qdrantEmbeddingModel": "Embedding model",
     "qdrantHelpTitle": "Quick setup help",
     "qdrantHelpQuickTitle": "Quick setup (Qdrant + OpenRouter)",
-    "qdrantHelpStep1": "1. Host: Qdrant IP/URL, Port: 6333, Collection: omniroute_memory.",
+    "qdrantHelpStep1": "1. Host: Qdrant IP/URL, Port: 6333, Collection: cheaproute_memory.",
     "qdrantHelpStep2": "2. If using nvidia/llama-nemotron-embed-vl-1b-v2:free, use collection dimension 2048.",
     "qdrantHelpStep3": "3. Model field: openrouter/nvidia/llama-nemotron-embed-vl-1b-v2:free.",
     "qdrantHelpStep4": "4. Save, test connection, then test search.",
@@ -8187,7 +8215,7 @@
     "redisLauncherRunning": "Running",
     "redisLauncherReachable": "Reachable",
     "redisLauncherError": "Error: {message}",
-    "redisLauncherHint": "Equivalent to running `omniroute redis up`. The container is named `omniroute-redis` and listens on 127.0.0.1:6379.",
+    "redisLauncherHint": "Equivalent to running `cheaproute redis up`. The container is named `cheaproute-redis` and listens on 127.0.0.1:6379.",
     "compressionSettingsAutoTriggerMode": "Auto trigger mode",
     "compressionSettingsMcpDescriptionCompression": "MCP description compression",
     "mcpAccessibilityTitle": "MCP accessibility output",
@@ -8266,8 +8294,8 @@
         "label": "Ultra",
         "description": "Heuristic token pruning with an optional SLM."
       },
-      "omniglyph": {
-        "label": "OmniGlyph",
+      "cheapglyph": {
+        "label": "CheapGlyph",
         "description": "Context as an image (Claude Fable 5, direct route)."
       }
     },
@@ -8814,7 +8842,7 @@
     "accessTokensCreateError": "Could not create token.",
     "accessTokensRevokeError": "Could not revoke token.",
     "accessTokensTitle": "Access Tokens",
-    "accessTokensDescription": "Scoped tokens that let the omniroute CLI manage this server remotely. Distinct from inference API keys. The secret is shown once. Automation guide: /docs/guides/MANAGEMENT-AUTH.",
+    "accessTokensDescription": "Scoped tokens that let the cheaproute CLI manage this server remotely. Distinct from inference API keys. The secret is shown once. Automation guide: /docs/guides/MANAGEMENT-AUTH.",
     "accessTokensCreateHeading": "Create a token",
     "accessTokensNamePlaceholder": "Name (e.g. laptop)",
     "accessTokensScopeRead": "Read — list/inspect",
@@ -9060,11 +9088,11 @@
       },
       "compressToolResults": {
         "label": "Proactively truncate long tool results",
-        "description": "Truncates long tool results during Lite compression. The Maximum tool-result length field (or OMNIROUTE_LITE_MAX_TOOL_LENGTH when that field is unset) sets the cap. Emergency overflow protection may still trim content when the context exceeds the model budget."
+        "description": "Truncates long tool results during Lite compression. The Maximum tool-result length field (or CHEAPROUTE_LITE_MAX_TOOL_LENGTH when that field is unset) sets the cap. Emergency overflow protection may still trim content when the context exceeds the model budget."
       },
       "maxToolLength": {
         "label": "Maximum tool-result length",
-        "description": "Character cap for proactive tool-result truncation. Default 2000. Override with OMNIROUTE_LITE_MAX_TOOL_LENGTH when this field is unset."
+        "description": "Character cap for proactive tool-result truncation. Default 2000. Override with CHEAPROUTE_LITE_MAX_TOOL_LENGTH when this field is unset."
       }
     },
     "engineFields": {
@@ -9220,9 +9248,9 @@
     "bytes": "bytes",
     "tokensCl100k": "tokens (cl100k)"
   },
-  "omniglyph": {
+  "cheapglyph": {
     "preview": "Preview",
-    "description": "Context-as-image compression. Renders the system prompt, tool documentation, and dense history as compact PNG pages for the measured Claude Fable 5 path. The published OmniGlyph package also exposes native GPT 5.6 transformers, but CheapRouter keeps those routes fail-closed until provider fidelity and reading receipts exist.",
+    "description": "Context-as-image compression. Renders the system prompt, tool documentation, and dense history as compact PNG pages for the measured Claude Fable 5 path. The published CheapGlyph package also exposes native GPT 5.6 transformers, but CheapRouter keeps those routes fail-closed until provider fidelity and reading receipts exist.",
     "economicsTitle": "The economics",
     "economics": {
       "fewerTokens": "fewer tokens on the converted block",
@@ -9261,7 +9289,7 @@
       }
     },
     "enableTitle": "Enable the engine",
-    "enableDescription": "Runs last in the stack after text engines clean the request, using the native provider wire; OpenAI Chat/Responses requests are compressed after translation so their shape is preserved. It also runs standalone through <code>omniglyph</code> mode. This is a preview and remains off by default until end-to-end validation is complete.",
+    "enableDescription": "Runs last in the stack after text engines clean the request, using the native provider wire; OpenAI Chat/Responses requests are compressed after translation so their shape is preserved. It also runs standalone through <code>cheapglyph</code> mode. This is a preview and remains off by default until end-to-end validation is complete.",
     "profileTitle": "Compression profile",
     "profileDescription": "The profile is a ceiling, not a floor: a stricter profile cannot be reopened by a per-step override. Measured on this codebase: with coding-safe or balanced, a session that has not accumulated history yet compresses nothing, because both raise the minimum-characters threshold and keep the system prompt, tool schemas and tool results native.",
     "profiles": {
@@ -9282,11 +9310,11 @@
         "description": "Routes without transforming. The engine is skipped and the request is forwarded untouched."
       }
     },
-    "profileAria": "Select the OmniGlyph compression profile",
+    "profileAria": "Select the CheapGlyph compression profile",
     "saved": "Saved.",
     "saveFailed": "Could not save.",
-    "enableAria": "Enable the OmniGlyph engine",
-    "title": "OmniGlyph"
+    "enableAria": "Enable the CheapGlyph engine",
+    "title": "CheapGlyph"
   },
   "embeddedServices": {
     "title": "Embedded Services",
@@ -10624,9 +10652,9 @@
     "protocolsDescription": "CheapRouter exposes two operational protocols in addition to OpenAI-compatible APIs: MCP for tool execution and A2A for agent-to-agent workflows.",
     "protocolMcpTitle": "MCP (Model Context Protocol)",
     "protocolMcpDesc": "Use MCP over stdio to let clients discover and call CheapRouter tools with audit visibility.",
-    "protocolMcpStep1": "Start MCP transport with `omniroute --mcp`.",
+    "protocolMcpStep1": "Start MCP transport with `cheaproute --mcp`.",
     "protocolMcpStep2": "Point your MCP client to stdio transport.",
-    "protocolMcpStep3": "Call `omniroute_get_health` and `omniroute_list_combos` to validate connectivity.",
+    "protocolMcpStep3": "Call `cheaproute_get_health` and `cheaproute_list_combos` to validate connectivity.",
     "protocolA2aTitle": "A2A (Agent2Agent)",
     "protocolA2aDesc": "Use A2A JSON-RPC to submit tasks synchronously or via SSE streaming.",
     "protocolA2aStep1": "Read `/.well-known/agent.json` for agent discovery.",
@@ -10897,7 +10925,7 @@
     "apiSkills": "API Skills",
     "cliSkills": "CLI Skills",
     "apiSkillsSubtitle": "{count} skills — control CheapRouter via REST / HTTP",
-    "cliSkillsSubtitle": "{count} skills — control CheapRouter via the omniroute terminal binary",
+    "cliSkillsSubtitle": "{count} skills — control CheapRouter via the cheaproute terminal binary",
     "howToUseStep1": "Click <bold>{copyUrl}</bold> on the skill you want your agent to know about.",
     "howToUseStep2": "In your AI agent (Claude, Cursor, Cline…), say:",
     "howToUseStep2Code": "Use the skill at [pasted-url]",
@@ -11210,7 +11238,7 @@
     "googleLoopbackTitle": "Google sign-in can't complete from this address",
     "googleLoopbackWhatHappens": "Google only releases the authorization code once <code>{redirectUri}</code> is reachable from the browser that approves the sign-in. Here that address points at this computer, not at the CheapRouter server — so the consent screen hangs instead of redirecting, and there is no callback URL to copy.",
     "googleLoopbackRecommended": "Recommended — run this on your own computer, then paste the result below:",
-    "googleLoopbackHelperNote": "It opens the Google consent locally (where 127.0.0.1 works) and prints a one-line omniroute-cred-v1.… blob. Paste that blob into the Step 2 field below — it accepts a credential blob as well as a callback URL.",
+    "googleLoopbackHelperNote": "It opens the Google consent locally (where 127.0.0.1 works) and prints a one-line cheaproute-cred-v1.… blob. Paste that blob into the Step 2 field below — it accepts a credential blob as well as a callback URL.",
     "googleLoopbackTunnelLabel": "Or forward the dashboard port over SSH and reload CheapRouter through the tunnel:",
     "googleLoopbackTunnelNote": "Replace {userPlaceholder} with your SSH username, keep the terminal open, then open {localUrl} and connect again from there.",
     "googleLoopbackHeadlessAlt": "For fully headless use with no local callback at all, <a>configure your own Google OAuth credentials</a> plus a public base URL.",
@@ -12272,7 +12300,7 @@
     "scanning": "Scanning...",
     "scanForPlugins": "Scan for Plugins",
     "noPlugins": "No plugins installed",
-    "noPluginsDescription": "Place plugin directories in ~/.omniroute/plugins/ and click Scan.",
+    "noPluginsDescription": "Place plugin directories in ~/.cheaproute/plugins/ and click Scan.",
     "activate": "Activate",
     "deactivate": "Deactivate",
     "uninstall": "Uninstall",
@@ -12302,7 +12330,7 @@
     "installedTab": "Installed",
     "marketplaceTab": "Marketplace",
     "marketplaceUrlLabel": "Custom Marketplace URL",
-    "marketplaceUrlPlaceholder": "Leave empty for official Omniroute registry",
+    "marketplaceUrlPlaceholder": "Leave empty for official Cheaproute registry",
     "saveMarketplaceUrl": "Save & Reload",
     "marketplaceUrlSaved": "Marketplace URL updated",
     "marketplaceEmpty": "No plugins found in marketplace.",
@@ -12798,20 +12826,20 @@
       "open": "Open →",
       "code": {
         "title": "Code tool",
-        "desc": "Points to Omni",
-        "flow": "you → CLI → Omni → provider",
+        "desc": "Points to Cheap",
+        "flow": "you → CLI → Cheap → provider",
         "examples": "e.g.: claude, codex"
       },
       "agent": {
         "title": "Broad autonomous agent",
-        "desc": "Points to Omni",
-        "flow": "you → agent → Omni",
+        "desc": "Points to Cheap",
+        "flow": "you → agent → Cheap",
         "examples": "e.g.: hermes, goose"
       },
       "acp": {
-        "title": "CLI used as backend by Omni",
+        "title": "CLI used as backend by Cheap",
         "desc": "Reverse execution",
-        "flow": "Omni → spawn CLI → resp",
+        "flow": "Cheap → spawn CLI → resp",
         "examples": "e.g.: claude, codex (ACP)"
       }
     },
@@ -12909,91 +12937,91 @@
   },
   "agentSkills": {
     "catalog": {
-      "omni-auth": {
+      "cheap-auth": {
         "name": "Authentication",
         "description": "Manage API key authentication and session tokens. Start here to authenticate requests via Bearer token, obtain session cookies, and configure login requirements for the CheapRouter API."
       },
-      "omni-providers": {
+      "cheap-providers": {
         "name": "Providers",
         "description": "Manage provider connections, API keys, OAuth flows, and connection tests via the REST API. List, add, update, remove, and test AI provider integrations (OpenAI, Anthropic, Gemini, and 160+)."
       },
-      "omni-models": {
+      "cheap-models": {
         "name": "Models",
         "description": "Query available AI models across all configured providers. List models, resolve model aliases, and browse the full model catalog including provider-specific variants."
       },
-      "omni-combos-routing": {
+      "cheap-combos-routing": {
         "name": "Combos & Routing",
         "description": "Create and manage routing combos with 14 strategies (priority, weighted, round-robin, Auto-combo, etc.). Configure fallback chains, test routing outcomes, and retrieve combo metrics."
       },
-      "omni-api-keys": {
+      "cheap-api-keys": {
         "name": "API Keys",
         "description": "Create, list, rotate, and revoke CheapRouter API keys. Control per-key scopes, spending limits, and expiration. Keys gate access to all proxy and management endpoints."
       },
-      "omni-usage-logs": {
+      "cheap-usage-logs": {
         "name": "Usage & Logs",
         "description": "Access detailed call logs and usage analytics. Filter by provider, model, time range, status, and cost. Export logs and aggregate token usage across all connections."
       },
-      "omni-budget": {
+      "cheap-budget": {
         "name": "Budget & Rate Limits",
         "description": "Configure spending limits, token quotas, and rate-limit policies per API key or globally. Inspect current consumption and enforce cost controls across providers."
       },
-      "omni-settings": {
+      "cheap-settings": {
         "name": "Settings",
         "description": "Read and update global application settings: system prompts, thinking budget, IP filters, payload rules, combo defaults, and require-login configuration."
       },
-      "omni-proxies": {
+      "cheap-proxies": {
         "name": "Proxy Configuration",
         "description": "Configure HTTP/HTTPS/SOCKS proxies for upstream provider requests. Set per-provider or global proxy rules, test connectivity, and manage proxy rotation."
       },
-      "omni-cache": {
+      "cheap-cache": {
         "name": "Cache",
         "description": "Manage the LLM response cache. View cache statistics, clear entries, configure TTL policies, and control semantic-similarity caching thresholds."
       },
-      "omni-compression": {
+      "cheap-compression": {
         "name": "Compression",
         "description": "Configure RTK (command output), Caveman (prose), and stacked compression modes. Manage language packs, custom rules, and test prompt compression reducing tokens by 60–90%."
       },
-      "omni-context-rtk": {
+      "cheap-context-rtk": {
         "name": "Context & RTK",
         "description": "Configure RTK filters, context engineering rules, and context relay settings. Test compression with real prompt samples and manage context transformation pipelines."
       },
-      "omni-resilience": {
+      "cheap-resilience": {
         "name": "Resilience & Monitoring",
         "description": "Monitor provider health, circuit-breaker states, p50/p95/p99 latency metrics, and budget guard alerts. Inspect connection cooldowns and model lockouts in real time."
       },
-      "omni-cli-tools": {
+      "cheap-cli-tools": {
         "name": "CLI Tools",
         "description": "Manage CLI tool integrations exposed via the API. List, configure, and invoke CLI tool plugins that extend CheapRouter's automation surface."
       },
-      "omni-tunnels": {
+      "cheap-tunnels": {
         "name": "Tunnels",
         "description": "Create and manage secure tunnels (ngrok, Cloudflare Tunnel, custom) to expose CheapRouter to the internet or share access with remote agents and CI pipelines."
       },
-      "omni-sync-cloud": {
+      "cheap-sync-cloud": {
         "name": "Cloud Sync",
         "description": "Synchronise CheapRouter configuration, provider connections, and settings to/from cloud storage. Manage cloud worker authentication and remote backup targets."
       },
-      "omni-db-backups": {
+      "cheap-db-backups": {
         "name": "Database & Backups",
         "description": "Trigger system backups, restore from backup files, and manage the SQLite database lifecycle. Supports export, import, and incremental snapshot strategies."
       },
-      "omni-webhooks": {
+      "cheap-webhooks": {
         "name": "Webhooks",
         "description": "Register, list, test, and remove webhook endpoints. Configure event subscriptions (request.completed, request.failed, quota.exceeded, etc.) and manage delivery retries."
       },
-      "omni-mcp": {
+      "cheap-mcp": {
         "name": "MCP Server",
         "description": "Connect to the CheapRouter MCP server (110 tools, 3 transports: SSE/stdio/HTTP). Covers routing, cache, compression, memory, skills, providers, and audit tools across 33 permission scopes."
       },
-      "omni-agents-a2a": {
+      "cheap-agents-a2a": {
         "name": "Agents & A2A Protocol",
         "description": "Interact with CheapRouter via JSON-RPC 2.0 agent-to-agent protocol. 6 built-in A2A skills: smart-routing, quota-management, provider-discovery, cost-analysis, health-report, list-capabilities."
       },
-      "omni-version-manager": {
+      "cheap-version-manager": {
         "name": "Version Manager",
         "description": "Install, start, stop, restart, and update embedded services (9Router, CLIProxyAPI). Monitor service status, retrieve logs, and configure auto-start for local-only service endpoints."
       },
-      "omni-inference": {
+      "cheap-inference": {
         "name": "Inference (OpenAI-compatible)",
         "description": "The core OpenAI-compatible inference endpoints: chat completions, embeddings, images, audio (TTS/STT), moderations, rerank, and the Responses API. The primary integration surface for AI agents."
       },
@@ -13071,7 +13099,7 @@
       },
       "cli-plugins-skills": {
         "name": "CLI: Plugins, Skills & Memory",
-        "description": "Manage Omni Skills (list, install, test, remove), plugins (create, configure), and persistent memory (search, add, clear) from the CLI."
+        "description": "Manage Cheap Skills (list, install, test, remove), plugins (create, configure), and persistent memory (search, add, clear) from the CLI."
       },
       "cli-setup": {
         "name": "CLI: Setup & Config",
@@ -13085,7 +13113,7 @@
         "name": "Config: Codex CLI",
         "description": "Step-by-step agent workflow to configure the OpenAI Codex CLI on any machine (Linux, macOS, Windows) to use CheapRouter as an OpenAI-compatible backend. Detects OS and shell, writes config.toml and 7 named profiles, sets environment variables, and verifies the setup."
       },
-      "omni-github-skills": {
+      "cheap-github-skills": {
         "name": "GitHub Skill Discovery",
         "description": "Search, score, scan, and import agent skills from GitHub repositories that contain SKILL.md, CLAUDE.md, .cursorrules, and similar agent skill files. Discover community skills across 160+ provider categories, evaluate relevance with heuristic scoring, check for malware or hardcoded secrets, and install into Hermes, Claude Code, Gemini CLI, or OpenCode agent directories."
       }
@@ -13099,13 +13127,13 @@
         "crossLinkLabel": "Understand the difference →"
       },
       "omni": {
-        "title": "Omni Skills — Inbound",
-        "description": "Omni Skills are sandbox tools that CheapRouter injects into the model's context on every request. They are executed by CheapRouter, not read by the agent.",
+        "title": "Cheap Skills — Inbound",
+        "description": "Cheap Skills are sandbox tools that CheapRouter injects into the model's context on every request. They are executed by CheapRouter, not read by the agent.",
         "crossLinkLabel": "Understand the difference →"
       },
       "comparison": {
         "colAgent": "Agent Skills",
-        "colOmni": "Omni Skills",
+        "colOmni": "Cheap Skills",
         "whatIs": {
           "label": "What it is",
           "agent": "Machine-readable SKILL.md that teaches an external agent to operate CheapRouter",
@@ -13545,16 +13573,16 @@
       "PROXY_AUTO_SELECT_ENABLED": {
         "description": "When no proxy is assigned to a connection, automatically select the first working registry proxy. Off by default because otherwise one registry proxy becomes a global fallback for all traffic (#3332)."
       },
-      "OMNIROUTE_CONTROL_PLANE_PROXY_DIRECT_FALLBACK": {
+      "CHEAPROUTE_CONTROL_PLANE_PROXY_DIRECT_FALLBACK": {
         "description": "Allow OAuth and provider-validation flows to bypass a pinned proxy when proxy reachability checks fail. Off by default because this can change the account egress IP."
       },
       "MITM_DISABLE_TLS_VERIFY": {
         "description": "Disable TLS certificate verification for the MITM proxy."
       },
-      "OMNIROUTE_ALLOW_PRIVATE_PROVIDER_URLS": {
+      "CHEAPROUTE_ALLOW_PRIVATE_PROVIDER_URLS": {
         "description": "Allow provider URLs that point to private or internal networks."
       },
-      "OMNIROUTE_ALLOW_LOCAL_PROVIDER_URLS": {
+      "CHEAPROUTE_ALLOW_LOCAL_PROVIDER_URLS": {
         "description": "Allow providers on localhost, LAN, and private IP ranges. This is required for local OpenAI-compatible models and enabled by default. Cloud-metadata endpoints such as 169.254.169.254 remain blocked."
       },
       "ENABLE_CC_COMPATIBLE_PROVIDER": {
@@ -13576,28 +13604,28 @@
       "RESPONSES_PASSTHROUGH_DROP_COMMENTARY": {
         "description": "Remove internal commentary-phase output items from Responses API passthrough streams before forwarding them to clients. Disable this flag to receive raw upstream commentary."
       },
-      "OMNIROUTE_MCP_ENFORCE_SCOPES": {
+      "CHEAPROUTE_MCP_ENFORCE_SCOPES": {
         "description": "Enforce scope restrictions for MCP tool access."
       },
-      "OMNIROUTE_MCP_COMPRESS_DESCRIPTIONS": {
+      "CHEAPROUTE_MCP_COMPRESS_DESCRIPTIONS": {
         "description": "Compress MCP tool descriptions to reduce token usage."
       },
-      "OMNIROUTE_ENABLE_RUNTIME_BACKGROUND_TASKS": {
+      "CHEAPROUTE_ENABLE_RUNTIME_BACKGROUND_TASKS": {
         "description": "Enable background-task processing at runtime."
       },
-      "OMNIROUTE_DISABLE_BACKGROUND_SERVICES": {
+      "CHEAPROUTE_DISABLE_BACKGROUND_SERVICES": {
         "description": "Disable all background services, including quota refresh and synchronization."
       },
-      "OMNIROUTE_RTK_TRUST_PROJECT_FILTERS": {
+      "CHEAPROUTE_RTK_TRUST_PROJECT_FILTERS": {
         "description": "Trust project-level RTK filters without validation."
       },
-      "OMNIROUTE_ENABLE_LIVE_WS": {
+      "CHEAPROUTE_ENABLE_LIVE_WS": {
         "description": "Start the real-time dashboard WebSocket server on import at loopback port 20132. Set the flag to 0 or false to disable it. LAN exposure also requires LIVE_WS_HOST=0.0.0.0 and LIVE_WS_ALLOWED_ORIGINS."
       },
-      "OMNIROUTE_CODEX_WS_ENABLED": {
+      "CHEAPROUTE_CODEX_WS_ENABLED": {
         "description": "Allow Codex to use Responses over WebSocket. When disabled, Codex falls back to HTTP Responses."
       },
-      "OMNIROUTE_EMERGENCY_FALLBACK": {
+      "CHEAPROUTE_EMERGENCY_FALLBACK": {
         "description": "Route budget-exhausted requests to the emergency free fallback provider and model."
       },
       "STREAM_RECOVERY_ENABLED": {
@@ -13630,16 +13658,16 @@
       "PRICING_SYNC_ENABLED": {
         "description": "Synchronize pricing data automatically. The PRICING_SYNC_ENABLED environment variable must also be true."
       },
-      "OMNIROUTE_AUTO_SYNC_CODEX_PROFILES": {
+      "CHEAPROUTE_AUTO_SYNC_CODEX_PROFILES": {
         "description": "After provider-model synchronization, regenerate ~/.codex/*.config.toml profiles from the live catalog. This never changes the active or default Codex configuration and is off by default."
       },
-      "OMNIROUTE_AUTO_SYNC_CLAUDE_PROFILES": {
+      "CHEAPROUTE_AUTO_SYNC_CLAUDE_PROFILES": {
         "description": "After provider-model synchronization, regenerate ~/.claude/profiles/'<name>'/settings.json profiles from the live catalog. This never changes the active or default Claude configuration and is off by default."
       },
-      "OMNIROUTE_DISABLE_LOCAL_HEALTHCHECK": {
+      "CHEAPROUTE_DISABLE_LOCAL_HEALTHCHECK": {
         "description": "Disable the local instance health-check endpoint."
       },
-      "OMNIROUTE_DISABLE_TOKEN_HEALTHCHECK": {
+      "CHEAPROUTE_DISABLE_TOKEN_HEALTHCHECK": {
         "description": "Disable the token-validation health check."
       },
       "SKILLS_SANDBOX_NETWORK_ENABLED": {
@@ -14085,7 +14113,7 @@
   },
   "vscodeCopilotBanner": {
     "title": "CheapRouter now runs inside VS Code Copilot Chat",
-    "description": "Install the free OmniCopilot extension and every CheapRouter model shows up right in the Copilot Chat model picker you already use.",
+    "description": "Install the free CheapCopilot extension and every CheapRouter model shows up right in the Copilot Chat model picker you already use.",
     "cta": "Get the Extension",
     "secondaryNote": "Also on Open VSX (Cursor, Windsurf, VSCodium…)",
     "dismissAriaLabel": "Dismiss"
@@ -14714,7 +14742,7 @@
   },
   "conductor": {
     "title": "Conductor — CLI-agent fleet",
-    "subtitle": "OmniConductor hub: runners, task queue and councils, live",
+    "subtitle": "CheapConductor hub: runners, task queue and councils, live",
     "runners": "Runners",
     "tasks": "Tasks",
     "colName": "Name",
@@ -14905,7 +14933,7 @@
     "partnerLinkNote": "Partner link",
     "dismissAriaLabel": "Dismiss"
   },
-  "featureFlagOmnirouteDisableThinkingLevelVariantsDescription": "Disable the generation of thinking level variants (e.g. -low, -medium, -high) in the /v1/models catalog.",
+  "featureFlagCheaprouteDisableThinkingLevelVariantsDescription": "Disable the generation of thinking level variants (e.g. -low, -medium, -high) in the /v1/models catalog.",
   "connectionTest": {
     "title": "Test message",
     "description": "Send one real request through this account. This uses a small amount of quota and can start a usage window, depending on the provider.",

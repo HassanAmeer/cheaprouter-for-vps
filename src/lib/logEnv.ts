@@ -153,7 +153,7 @@ export function getChatLogTextLimit(): number {
  * (responsesContinuationStore.ts) reads this same bounded artifact back to
  * reconstruct `previous_response_id` history server-side: once a stored
  * conversation's input/output array crossed the cap, that reconstruction hit
- * the `_omniroute_truncated_array` sentinel and failed the call outright
+ * the `_cheaproute_truncated_array` sentinel and failed the call outright
  * (see the sentinel-detection guard in responsesContinuationStore.ts), not
  * just a diagnosability gap. Retention already bounds total on-disk size
  * (CALL_LOG_RETENTION_DAYS, default 7 days) independent of this per-item cap,

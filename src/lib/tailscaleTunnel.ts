@@ -288,7 +288,7 @@ function buildExecEnv() {
 
 /**
  * Probe which tailscaled socket is actually live.
- * Priority: system daemon socket → OmniRoute custom socket.
+ * Priority: system daemon socket → CheapRoute custom socket.
  * When the system daemon is running (e.g. via systemd), we MUST use its socket
  * because only one tailscaled can hold the TUN device.
  */
@@ -308,7 +308,7 @@ async function getActiveSocketPath(): Promise<string> {
     return systemSocket;
   }
 
-  // Fallback to OmniRoute custom socket
+  // Fallback to CheapRoute custom socket
   const customSocket = getTailscaleSocketPath();
   _cachedActiveSocket = customSocket;
   _cachedActiveSocketTimestamp = now;
@@ -433,14 +433,14 @@ export function extractTailscaleFunnelUrl(text: string) {
 async function getDefaultHostname() {
   try {
     const machineId = await getConsistentMachineId();
-    const normalized = `omniroute-${machineId.slice(0, 8)}`.replace(/[^a-zA-Z0-9-]/g, "-");
+    const normalized = `cheaproute-${machineId.slice(0, 8)}`.replace(/[^a-zA-Z0-9-]/g, "-");
     return normalized.toLowerCase();
   } catch {
     const hostname = os
       .hostname()
       .replace(/[^a-zA-Z0-9-]/g, "-")
       .toLowerCase();
-    return hostname || "omniroute";
+    return hostname || "cheaproute";
   }
 }
 

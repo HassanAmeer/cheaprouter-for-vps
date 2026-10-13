@@ -2,13 +2,13 @@ const DEFAULT_MAX_PEER_HOPS = 4;
 const MAX_TRACE_HEADER_LENGTH = 2048;
 const INSTANCE_ID_PATTERN = /^[A-Za-z0-9._:-]{1,64}$/;
 
-export const OMNIROUTE_PEER_TRACE_HEADER = "X-OmniRoute-Peer-Trace";
+export const CHEAPROUTE_PEER_TRACE_HEADER = "X-CheapRoute-Peer-Trace";
 
 type HeaderSource = Headers | Record<string, unknown> | null | undefined;
 type PeerEnvironment = {
-  OMNIROUTE_INSTANCE_ID?: string;
-  OMNIROUTE_PEER_URLS?: string;
-  OMNIROUTE_PEER_MAX_HOPS?: string;
+  CHEAPROUTE_INSTANCE_ID?: string;
+  CHEAPROUTE_PEER_URLS?: string;
+  CHEAPROUTE_PEER_MAX_HOPS?: string;
 };
 
 export type PeerRequestRejection = {
@@ -28,12 +28,12 @@ function readHeader(headers: HeaderSource, name: string): string | null {
 }
 
 function getInstanceId(env: PeerEnvironment): string | null {
-  const value = env.OMNIROUTE_INSTANCE_ID?.trim() ?? "";
+  const value = env.CHEAPROUTE_INSTANCE_ID?.trim() ?? "";
   return INSTANCE_ID_PATTERN.test(value) ? value : null;
 }
 
 function getMaxPeerHops(env: PeerEnvironment): number {
-  const parsed = Number.parseInt(env.OMNIROUTE_PEER_MAX_HOPS ?? "", 10);
+  const parsed = Number.parseInt(env.CHEAPROUTE_PEER_MAX_HOPS ?? "", 10);
   return Number.isInteger(parsed) && parsed > 0 && parsed <= 32 ? parsed : DEFAULT_MAX_PEER_HOPS;
 }
 
@@ -55,14 +55,14 @@ function normalizePeerUrl(value: string): URL | null {
   }
 }
 
-export function isConfiguredOmniRoutePeer(
+export function isConfiguredCheapRoutePeer(
   targetUrl: string,
   env: PeerEnvironment = process.env as PeerEnvironment
 ): boolean {
   const target = normalizePeerUrl(targetUrl);
   if (!target) return false;
 
-  return (env.OMNIROUTE_PEER_URLS ?? "")
+  return (env.CHEAPROUTE_PEER_URLS ?? "")
     .split(",")
     .map(normalizePeerUrl)
     .some((peer) => {
@@ -81,17 +81,17 @@ export function inspectPeerRequest(
   const instanceId = getInstanceId(env);
   if (!instanceId) return null;
 
-  const trace = parsePeerTrace(readHeader(headers, OMNIROUTE_PEER_TRACE_HEADER));
+  const trace = parsePeerTrace(readHeader(headers, CHEAPROUTE_PEER_TRACE_HEADER));
   if (trace.includes(instanceId)) {
     return {
       code: "peer_loop_detected",
-      message: "OmniRoute peer routing loop detected",
+      message: "CheapRoute peer routing loop detected",
     };
   }
   if (trace.length >= getMaxPeerHops(env)) {
     return {
       code: "peer_hop_limit_exceeded",
-      message: "OmniRoute peer routing hop limit exceeded",
+      message: "CheapRoute peer routing hop limit exceeded",
     };
   }
   return null;
@@ -110,7 +110,7 @@ export function rejectPeerRequest<T>(
 }
 
 /**
- * Append this instance to the peer trace for an explicitly allowlisted OmniRoute URL.
+ * Append this instance to the peer trace for an explicitly allowlisted CheapRoute URL.
  * Returns true when the header was applied. Other upstream providers are untouched.
  */
 export function applyPeerTraceHeader(
@@ -120,14 +120,14 @@ export function applyPeerTraceHeader(
   env: PeerEnvironment = process.env as PeerEnvironment
 ): boolean {
   const instanceId = getInstanceId(env);
-  if (!instanceId || !isConfiguredOmniRoutePeer(targetUrl, env)) return false;
+  if (!instanceId || !isConfiguredCheapRoutePeer(targetUrl, env)) return false;
 
-  const trace = parsePeerTrace(readHeader(clientHeaders, OMNIROUTE_PEER_TRACE_HEADER));
+  const trace = parsePeerTrace(readHeader(clientHeaders, CHEAPROUTE_PEER_TRACE_HEADER));
   if (!trace.includes(instanceId)) trace.push(instanceId);
-  const traceHeaderLower = OMNIROUTE_PEER_TRACE_HEADER.toLowerCase();
+  const traceHeaderLower = CHEAPROUTE_PEER_TRACE_HEADER.toLowerCase();
   for (const key of Object.keys(outgoingHeaders)) {
     if (key.toLowerCase() === traceHeaderLower) delete outgoingHeaders[key];
   }
-  outgoingHeaders[OMNIROUTE_PEER_TRACE_HEADER] = trace.join(",");
+  outgoingHeaders[CHEAPROUTE_PEER_TRACE_HEADER] = trace.join(",");
   return true;
 }

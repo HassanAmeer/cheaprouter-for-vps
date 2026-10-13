@@ -41,7 +41,7 @@ function isTinyBudgetTruncation(completionTokens: number): boolean {
  * turn), and a real observed failure mode of at least one free-tier
  * streaming model (minimax-m3:free via OpenRouter/GMICloud, 2026-09-02:
  * duplicated a heartbeat_respond call byte-for-byte, confirmed at the raw
- * SSE wire level -- an upstream bug, not an OmniRoute reconstruction
+ * SSE wire level -- an upstream bug, not an CheapRoute reconstruction
  * artifact). Used two ways: to fail a non-streaming response over to a
  * sibling combo target (see validateResponseQuality below), and, post-
  * stream, to flag an already-relayed streaming response as an on-spec

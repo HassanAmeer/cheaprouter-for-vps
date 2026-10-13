@@ -2,7 +2,7 @@
  * Auto-disable on permanent ban signals.
  *
  * Login seats (paid subscriptions and free accounts) can be locked by the
- * upstream if OmniRoute keeps retrying after a ToS / "verify your account"
+ * upstream if CheapRoute keeps retrying after a ToS / "verify your account"
  * 403. Paid prepaid API keys do not have that failure mode: a 429 is a
  * cooldown and an empty wallet is a failover, not a reason to flip
  * isActive=false.

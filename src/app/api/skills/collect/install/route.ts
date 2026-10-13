@@ -2,7 +2,7 @@
  * POST /api/skills/collect/install
  *
  * Install a discovered GitHub skill to detected CLI tools.
- * Uses OmniRoute's skill registry + CLI tool paths (no Skill Collector bridge).
+ * Uses CheapRoute's skill registry + CLI tool paths (no Skill Collector bridge).
  *
  * Body: {
  *   repoName: string,       // GitHub full name (e.g. "user/repo")
@@ -15,7 +15,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { validateBody, isValidationFailure } from "@/shared/validation/helpers";
-import { sanitizeErrorMessage, buildErrorBody } from "@omniroute/open-sse/utils/error";
+import { sanitizeErrorMessage, buildErrorBody } from "@cheaproute/open-sse/utils/error";
 import { requireManagementAuth } from "@/lib/api/requireManagementAuth";
 
 const installSchema = z.object({

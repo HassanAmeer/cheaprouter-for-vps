@@ -178,7 +178,7 @@ export function openaiResponsesToOpenAIRequest(
         !tool.function
       ) {
         throw unsupportedFeature(
-          `Unsupported Responses API feature: ${toolType} tool type is not supported by omniroute`
+          `Unsupported Responses API feature: ${toolType} tool type is not supported by cheaproute`
         );
       }
     }
@@ -234,7 +234,7 @@ export function openaiResponsesToOpenAIRequest(
 
   // background: true requests a deferred Responses API run (the upstream
   // returns 202 with response_id and the client polls GET /responses/<id>).
-  // OmniRoute is a forward proxy that streams responses synchronously —
+  // CheapRoute is a forward proxy that streams responses synchronously —
   // implementing the queue/poll contract would require persistence and a
   // separate retrieval surface. Degrade: log a marker when true was
   // actually requested (operators can observe clients that should be
@@ -558,7 +558,7 @@ export function openaiResponsesToOpenAIRequest(
 
     // Skip Responses-only search metadata. tool_search_call/tool_search_result
     // are Codex's dynamic tool-discovery items; web_search_call is emitted by
-    // OmniRoute's web-search fallback alongside function_call_output, which
+    // CheapRoute's web-search fallback alongside function_call_output, which
     // already carries the result for Chat Completions. Replayed metadata has no
     // lossless Chat representation and must not fail a follow-up turn.
     if (
@@ -819,7 +819,7 @@ export function openaiResponsesToOpenAIRequest(
       const mode = toString(tc.mode);
       if (mode !== "auto" && mode !== "required") {
         throw unsupportedFeature(
-          `Unsupported Responses API feature: allowed_tools mode '${mode || "missing"}' is not supported by omniroute`
+          `Unsupported Responses API feature: allowed_tools mode '${mode || "missing"}' is not supported by cheaproute`
         );
       }
       if (!Array.isArray(tc.tools) || tc.tools.length === 0) {
@@ -869,7 +869,7 @@ export function openaiResponsesToOpenAIRequest(
     } else if (tcType && tcType !== "function") {
       // Built-in tool types (web_search_preview, file_search, etc.) have no Chat equivalent
       throw unsupportedFeature(
-        `Unsupported Responses API feature: tool_choice type '${tcType}' is not supported by omniroute`
+        `Unsupported Responses API feature: tool_choice type '${tcType}' is not supported by cheaproute`
       );
     }
   }

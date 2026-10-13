@@ -15,7 +15,7 @@ import { randomUUID } from "crypto";
 
 import { emit } from "@/lib/events/eventBus";
 import { upsertA2ATask, appendA2ATaskEvent, purgeA2AHistory } from "@/lib/db/a2aTasks";
-import { logger } from "@omniroute/open-sse/utils/logger";
+import { logger } from "@cheaproute/open-sse/utils/logger";
 
 const log = logger("A2A_TASKS");
 
@@ -52,10 +52,10 @@ const TERMINAL = new Set(["completed", "failed", "cancelled"]);
 
 /**
  * Days of A2A task history to retain before `purgeA2AHistory` deletes a row. Reads
- * `OMNIROUTE_A2A_HISTORY_RETENTION_DAYS`; falls back to 30 when unset, non-numeric, or <= 0.
+ * `CHEAPROUTE_A2A_HISTORY_RETENTION_DAYS`; falls back to 30 when unset, non-numeric, or <= 0.
  */
 export function historyRetentionDays(): number {
-  const raw = Number.parseInt(process.env.OMNIROUTE_A2A_HISTORY_RETENTION_DAYS ?? "", 10);
+  const raw = Number.parseInt(process.env.CHEAPROUTE_A2A_HISTORY_RETENTION_DAYS ?? "", 10);
   return Number.isFinite(raw) && raw > 0 ? raw : 30;
 }
 
@@ -206,7 +206,7 @@ export class A2ATaskManager {
       // one reference made every runtime write leak back into `input` — and from
       // there into the persisted `a2a_tasks.input_json` and into the drawer's
       // "Repeat" body, so a repeated task was born carrying the previous run's
-      // memory snippets even with `OMNIROUTE_A2A_MEMORY_HITS=0`.
+      // memory snippets even with `CHEAPROUTE_A2A_MEMORY_HITS=0`.
       metadata: { ...(input.metadata ?? {}) },
       createdAt: now.toISOString(),
       updatedAt: now.toISOString(),

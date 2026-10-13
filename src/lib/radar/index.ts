@@ -9,7 +9,7 @@
  * All heavy lifting (sync, verify, schema, merge) lives in sibling files.
  */
 
-import { FREE_MODEL_BUDGETS } from "@omniroute/open-sse/config/freeModelCatalog";
+import { FREE_MODEL_BUDGETS } from "@cheaproute/open-sse/config/freeModelCatalog";
 import { RadarFeedSchema, type RadarFeed, type RadarReferral } from "./feedSchema";
 import { RadarReferralsFeedSchema, type RadarReferralsFeed } from "./referralsFeedSchema";
 import {

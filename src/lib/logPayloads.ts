@@ -1,8 +1,8 @@
 import {
   sanitizeErrorMessage,
   sanitizeUpstreamDetails,
-} from "@omniroute/open-sse/utils/errorSanitization.ts";
-import { projectResponsesFailureOutput } from "@omniroute/open-sse/utils/responsesFailureOutput.ts";
+} from "@cheaproute/open-sse/utils/errorSanitization.ts";
+import { projectResponsesFailureOutput } from "@cheaproute/open-sse/utils/responsesFailureOutput.ts";
 import { isPiiSanitizationEnabled, sanitizePII } from "./piiSanitizer";
 
 const SENSITIVE_KEYS = new Set([

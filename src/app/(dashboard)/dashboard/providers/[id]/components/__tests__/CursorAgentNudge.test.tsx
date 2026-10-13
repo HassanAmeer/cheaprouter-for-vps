@@ -34,7 +34,7 @@ import { renderToString } from "react-dom/server";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import CursorAgentNudge from "../CursorAgentNudge";
 
-const STORAGE_KEY = "omniroute.cursorAgentNudgeDismissed";
+const STORAGE_KEY = "cheaproute.cursorAgentNudgeDismissed";
 
 vi.mock("next-intl", () => ({ useTranslations: () => (k: string) => k }));
 

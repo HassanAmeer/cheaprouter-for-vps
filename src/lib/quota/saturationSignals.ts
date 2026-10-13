@@ -298,7 +298,7 @@ async function fetchCodexSaturation(
   connection?: Record<string, unknown>
 ): Promise<number> {
   // Dynamic import — codexQuotaFetcher lives in open-sse workspace
-  const mod = await import("@omniroute/open-sse/services/codexQuotaFetcher");
+  const mod = await import("@cheaproute/open-sse/services/codexQuotaFetcher");
   // #6379: pass the loaded connection snapshot through so fetchCodexQuota can
   // read its accessToken/workspaceId even when this connection was never
   // registered via registerCodexConnection() (e.g. during headroom ranking,
@@ -320,7 +320,7 @@ async function fetchCodexSaturation(
 }
 
 async function fetchBailianSaturation(connectionId: string, dim: DimensionSpec): Promise<number> {
-  const mod = await import("@omniroute/open-sse/services/bailianQuotaFetcher");
+  const mod = await import("@cheaproute/open-sse/services/bailianQuotaFetcher");
   const quota = await mod.fetchBailianQuota(connectionId);
   if (!quota) return 0;
 
@@ -378,7 +378,7 @@ export function __setAnthropicSaturationDepsForTests(deps: AnthropicSaturationDe
 async function defaultAnthropicDeps(): Promise<AnthropicSaturationDeps> {
   const [localDbMod, usageMod] = await Promise.all([
     import("@/lib/db/readCache"),
-    import("@omniroute/open-sse/services/usage"),
+    import("@cheaproute/open-sse/services/usage"),
   ]);
   return {
     loadConnection: (connectionId) =>
@@ -484,7 +484,7 @@ export function __setGenericUsageFetcherForTests(fetcher: GenericUsageFetcher | 
 }
 
 async function defaultGenericUsageFetch(connectionId: string, provider: string): Promise<unknown> {
-  const mod = await import("@omniroute/open-sse/services/usage");
+  const mod = await import("@cheaproute/open-sse/services/usage");
   const conn = { id: connectionId, provider } as Parameters<typeof mod.getUsageForProvider>[0];
   return mod.getUsageForProvider(conn);
 }
@@ -501,7 +501,7 @@ async function fetchGenericSaturation(connectionId: string, provider: string): P
       // Prefer the normalized quota shape (handles nested `quotas` map for
       // Antigravity / Claude / etc.). Fall back to legacy top-level fields.
       const { convertUsageToQuotaInfo } =
-        await import("@omniroute/open-sse/services/genericQuotaFetcher");
+        await import("@cheaproute/open-sse/services/genericQuotaFetcher");
       const quota = convertUsageToQuotaInfo(result);
       // An unlimited snapshot (#15347) has percentUsed 0 but is "no cap", not "0% used":
       // fall through to the token-header complement exactly as a null conversion did.

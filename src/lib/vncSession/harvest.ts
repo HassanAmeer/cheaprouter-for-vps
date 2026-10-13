@@ -18,7 +18,7 @@ export interface HarvestResult {
 }
 
 /** Header name the CDP bridge (docker/vnc-browser/chromium/cdp-bridge.py) requires (#12571). */
-const CDP_TOKEN_HEADER = "X-Omni-Cdp-Token";
+const CDP_TOKEN_HEADER = "X-Cheap-Cdp-Token";
 
 interface Pending {
   resolve: (value: any) => void;

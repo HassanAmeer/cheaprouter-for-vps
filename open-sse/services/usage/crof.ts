@@ -15,7 +15,7 @@ import { type UsageQuota } from "./quota.ts";
 type JsonRecord = Record<string, unknown>;
 
 // Quota / usage upstream URLs (overridable for testing or relays).
-const CROF_USAGE_URL = process.env.OMNIROUTE_CROF_USAGE_URL ?? "https://crof.ai/usage_api/";
+const CROF_USAGE_URL = process.env.CHEAPROUTE_CROF_USAGE_URL ?? "https://crof.ai/usage_api/";
 
 // CrofAI surfaces a tiny endpoint with two signals:
 //   GET https://crof.ai/usage_api/  →  { usable_requests: number|null, credits: number }

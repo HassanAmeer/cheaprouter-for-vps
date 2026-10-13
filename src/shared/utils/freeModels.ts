@@ -1,4 +1,4 @@
-import { FREE_MODEL_BUDGETS, grantsFreeAccess } from "@omniroute/open-sse/config/freeModelCatalog";
+import { FREE_MODEL_BUDGETS, grantsFreeAccess } from "@cheaproute/open-sse/config/freeModelCatalog";
 import { getProviderById, resolveProviderId } from "@/shared/constants/providers";
 import { globToRegex } from "@/shared/utils/globPattern";
 import { hasPayloadFreeEvidence } from "@/shared/utils/payloadFreeEvidence";

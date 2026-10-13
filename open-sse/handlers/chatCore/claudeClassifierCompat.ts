@@ -9,7 +9,7 @@
  *
  * When a combo/fallback route sends the classifier call to a cheap model that
  * returns 200 with empty content, the well-formed-but-empty Claude message
- * OmniRoute would normally produce still fails that parser — every gated action
+ * CheapRoute would normally produce still fails that parser — every gated action
  * (WebFetch, Bash, Edit, …) ends up fail-closed. With `claudeClassifierCompat` set
  * to "auto" or "always", handleChatCore detects the classifier request up front
  * and short-circuits with a synthetic ALLOW response, WITHOUT ever calling the
@@ -76,10 +76,10 @@ export function applyClaudeClassifierReasoningDefault(
   const outputConfig = asRecord(body.output_config);
   const templateKwargs = asRecord(body.chat_template_kwargs);
   const headers = context.headers as Record<string, unknown> | Headers | null | undefined;
-  const headerEffort = getHeaderValueCaseInsensitive(headers, "x-omniroute-effort")
+  const headerEffort = getHeaderValueCaseInsensitive(headers, "x-cheaproute-effort")
     ?.trim()
     .toLowerCase();
-  const headerThinking = getHeaderValueCaseInsensitive(headers, "x-omniroute-thinking")
+  const headerThinking = getHeaderValueCaseInsensitive(headers, "x-cheaproute-thinking")
     ?.trim()
     .toLowerCase();
   if (
@@ -89,7 +89,7 @@ export function applyClaudeClassifierReasoningDefault(
     outputConfig?.effort !== undefined ||
     templateKwargs?.thinking !== undefined ||
     templateKwargs?.enable_thinking !== undefined ||
-    body._omnirouteReasoningRule !== undefined ||
+    body._cheaprouteReasoningRule !== undefined ||
     (headerEffort !== undefined && EXPLICIT_EFFORT_HEADERS.has(headerEffort)) ||
     (headerThinking !== undefined && EXPLICIT_THINKING_HEADERS.has(headerThinking)) ||
     (typeof context.resolvedThinkingEffort === "string" &&

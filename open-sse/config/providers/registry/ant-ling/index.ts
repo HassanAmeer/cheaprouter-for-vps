@@ -14,7 +14,7 @@ export const ant_lingProvider: RegistryEntry = {
     // pricing page bills exactly these three. Ling-2.6-1T stays first so it
     // remains the provider default (flagship).
     //
-    // The Ming family (Ming-Flash-Omni, Ming-Light) is deliberately NOT listed:
+    // The Ming family (Ming-Flash-Cheap, Ming-Light) is deliberately NOT listed:
     // it is documented as open-source/Ling Studio only and does not appear on
     // the pricing page, i.e. it is not served over this chat-completions API.
     { id: "Ling-2.6-1T", name: "Ling 2.6 1T" },

@@ -257,7 +257,7 @@ export async function runChaosPanel(opts: {
  * Pull assistant text out of an OpenAI-style OR Anthropic-style Response body.
  * Clones the response first (body is single-consume; fusion.ts does the same),
  * then tries JSON first and falls back to SSE concat — content-type headers are
- * not reliable here because OmniRoute may force a streaming envelope internally.
+ * not reliable here because CheapRoute may force a streaming envelope internally.
  */
 async function extractText(res: Response): Promise<string> {
   // Include error status info when non-200, so the dispatch caller can log it.
@@ -310,7 +310,7 @@ function firstTextFromOpenAI(obj: unknown): string {
 /**
  * Concatenate assistant text out of an SSE byte stream.
  *
- * Supports BOTH wire formats OmniRoute may emit:
+ * Supports BOTH wire formats CheapRoute may emit:
  *   - OpenAI: `data: {"choices":[{"delta":{"content":"..."}}]}`
  *   - Anthropic: `data: {"type":"content_block_delta","delta":{"type":"text_delta","text":"..."}}`
  *     (also accepts the older `delta:{"content":"..."}` proxy shape and a
@@ -428,7 +428,7 @@ function describeAllPanelFailed(
  *   - a terminating `data: [DONE]`
  *
  * If no panel model succeeds, the stream still terminates cleanly with a
- * `x-omniroute-chaos-error` header and an error final chunk (status stays 200
+ * `x-cheaproute-chaos-error` header and an error final chunk (status stays 200
  * so the SSE envelope is well-formed; non-aware clients see the error text).
  */
 export async function handleChaosChat(opts: {
@@ -498,9 +498,9 @@ export async function handleChaosChat(opts: {
       })
     );
     const chaosHeaders = {
-      "X-OmniRoute-Chaos": "true",
-      "X-OmniRoute-Chaos-Panel": String(panel.length),
-      "X-OmniRoute-Chaos-Primary": primaryModel ?? "",
+      "X-CheapRoute-Chaos": "true",
+      "X-CheapRoute-Chaos-Panel": String(panel.length),
+      "X-CheapRoute-Chaos-Primary": primaryModel ?? "",
     };
     if (!allParts.some((p) => p.ok)) {
       const errResponse = errorResponse(502, describeAllPanelFailed(allParts, comboName, log));
@@ -611,9 +611,9 @@ export async function handleChaosChat(opts: {
       "Content-Type": "text/event-stream; charset=utf-8",
       "Cache-Control": "no-cache, no-transform",
       Connection: "keep-alive",
-      "X-OmniRoute-Chaos": "true",
-      "X-OmniRoute-Chaos-Panel": String(panel.length),
-      "X-OmniRoute-Chaos-Primary": primaryModel ?? "",
+      "X-CheapRoute-Chaos": "true",
+      "X-CheapRoute-Chaos-Panel": String(panel.length),
+      "X-CheapRoute-Chaos-Primary": primaryModel ?? "",
     },
   });
 }

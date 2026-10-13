@@ -3,8 +3,8 @@ import {
   getActiveSessions,
   getActiveSessionCount,
   getAllActiveSessionCountsByKey,
-} from "@omniroute/open-sse/services/sessionManager.ts";
-import { sanitizeErrorMessage } from "@omniroute/open-sse/utils/error";
+} from "@cheaproute/open-sse/services/sessionManager.ts";
+import { sanitizeErrorMessage } from "@cheaproute/open-sse/utils/error";
 import { getExclusiveLeaseConnectionIds } from "@/lib/db/apiKeys";
 import { getExclusiveLeaseOccupancy } from "@/lib/db/exclusiveConnectionLeases";
 import { getProviderConnectionDisplayMetadata } from "@/lib/db/providers";

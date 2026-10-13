@@ -1,12 +1,16 @@
 export const HIDEABLE_SIDEBAR_ITEM_IDS = [
   // Home
   "home",
-  // OmniProxy
-  "endpoints",
+  // API nav (top of sidebar)
+  "api-endpoints",
+  "api-docs",
+  // CheapProxy
   "api-manager",
   "providers",
   "model-catalog",
   "combos",
+  // Multi-tenant / reseller
+  "users",
   // Info
   "usage",
   "costs-pricing",
@@ -29,7 +33,9 @@ export type SidebarItemId = HideableSidebarItemId | AlwaysVisibleSidebarItemId;
 export type SidebarSectionId =
   | "home"
   | "pinned"
-  | "omni-proxy"
+  | "api"
+  | "cheap-proxy"
+  | "multi-tenant"
   | "costs"
   | "devtools"
   | "settings";

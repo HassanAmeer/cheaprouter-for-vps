@@ -1,5 +1,5 @@
-import { COOLDOWN_MS } from "@omniroute/open-sse/config/constants.ts";
-import { PROVIDER_ERROR_TYPES } from "@omniroute/open-sse/services/errorClassifier.ts";
+import { COOLDOWN_MS } from "@cheaproute/open-sse/config/constants.ts";
+import { PROVIDER_ERROR_TYPES } from "@cheaproute/open-sse/services/errorClassifier.ts";
 
 /**
  * Cooldown for an OAuth connection that keeps failing with a non-terminal 401: a still-valid

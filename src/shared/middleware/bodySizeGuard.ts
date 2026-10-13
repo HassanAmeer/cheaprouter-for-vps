@@ -35,7 +35,7 @@ export const MAX_BODY_BYTES_LLM_API = 50 * 1024 * 1024;
 export const MAX_BODY_BYTES_VIDEO_BRIDGE_BROKER = 50 * 1024 * 1024;
 
 /**
- * Media (image generate / edit / upscale / video) is not capped by OmniRoute.
+ * Media (image generate / edit / upscale / video) is not capped by CheapRoute.
  * JSON + base64 inflates payloads by roughly 33%, and provider limits vary by model,
  * so the provider should decide whether a media request is too large.
  */

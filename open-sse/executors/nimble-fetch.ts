@@ -5,7 +5,7 @@
  * POST https://sdk.nimbleway.com/v1/extract
  *
  * Extract returns the requested formats side by side under `data`, so one call
- * covers every OmniRoute fetch format: `markdown`, `html`, `links` and
+ * covers every CheapRoute fetch format: `markdown`, `html`, `links` and
  * `screenshot` (base64 PNG, surfaced as a data URL).
  *
  * Docs: https://docs.nimbleway.com/nimble-sdk/web-tools/extract/quickstart
@@ -34,7 +34,7 @@ const META_DESCRIPTION_DOUBLE_RE =
 const META_DESCRIPTION_SINGLE_RE =
   /<meta[^>]{0,200}name=["']description["'][^>]{0,200}content='([^']*)'/i;
 
-/** Map an OmniRoute fetch format onto the Nimble Extract format name. */
+/** Map an CheapRoute fetch format onto the Nimble Extract format name. */
 function mapFormat(format: WebFetchFormat): string {
   switch (format) {
     case "html":

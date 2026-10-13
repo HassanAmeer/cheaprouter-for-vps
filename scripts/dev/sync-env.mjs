@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * OmniRoute — Environment Sync
+ * CheapRoute — Environment Sync
  *
  * Ensures .env exists and contains the selected keys from .env.example.
  * Runs on installs and can be executed manually via `npm run env:sync`.
@@ -42,7 +42,7 @@ function resolveRootDir(rootDir) {
 // JWT_SECRET, API_KEY_SECRET and STORAGE_ENCRYPTION_KEY are deliberately NOT
 // here: the server owns them. It restores each one from its durable store, or
 // generates and persists it there on first use — STORAGE_ENCRYPTION_KEY in
-// bin/omniroute.mjs (guarded by bin/cli/utils/storageKeyProvision.mjs), the
+// bin/cheaproute.mjs (guarded by bin/cli/utils/storageKeyProvision.mjs), the
 // other two in src/instrumentation-node.ts::ensureSecrets(), which persists to
 // the `secrets` namespace of the database under DATA_DIR.
 //
@@ -54,7 +54,7 @@ function resolveRootDir(rootDir) {
 // (API_KEY_SECRET). STORAGE_ENCRYPTION_KEY was pulled out first, for the same
 // reason, when it cost users their encrypted credentials (issue #1622).
 const CRYPTO_SECRETS = {
-  MACHINE_ID_SALT: () => `omniroute-${randomBytes(8).toString("hex")}`,
+  MACHINE_ID_SALT: () => `cheaproute-${randomBytes(8).toString("hex")}`,
 };
 
 /**
@@ -62,22 +62,22 @@ const CRYPTO_SECRETS = {
  * Generating a new key would make all previously-encrypted credentials unrecoverable.
  *
  * Note: STORAGE_ENCRYPTION_KEY is no longer auto-generated in postinstall.
- * It's generated at server startup in bin/omniroute.mjs and persisted to
- * ~/.omniroute/.env to survive across upgrades.
- * @see https://github.com/diegosouzapw/OmniRoute/issues/1622
+ * It's generated at server startup in bin/cheaproute.mjs and persisted to
+ * ~/.cheaproute/.env to survive across upgrades.
+ * @see https://github.com/diegosouzapw/CheapRoute/issues/1622
  */
 const ENCRYPTION_BOUND_KEYS = new Set([]);
 
 // ── Resolve DATA_DIR (mirrors src/lib/dataPaths.ts::getDefaultDataDir) ─────────
 // Same self-contained copy as scripts/build/bootstrap-env.mjs (this file ships in the npm
-// package on its own). Order: explicit DATA_DIR → an EXISTING legacy ~/.omniroute →
-// %APPDATA% (Windows) → $XDG_CONFIG_HOME (when set) → ~/.omniroute.
+// package on its own). Order: explicit DATA_DIR → an EXISTING legacy ~/.cheaproute →
+// %APPDATA% (Windows) → $XDG_CONFIG_HOME (when set) → ~/.cheaproute.
 export function resolveDataDir(env = process.env) {
   const configured = env.DATA_DIR?.trim();
   if (configured) return resolve(configured);
 
   // Preserve an existing legacy dir so an upgrade never splits secrets from the database.
-  const legacyDir = join(homedir(), ".omniroute");
+  const legacyDir = join(homedir(), ".cheaproute");
   try {
     if (statSync(legacyDir).isDirectory()) return legacyDir;
   } catch {
@@ -86,11 +86,11 @@ export function resolveDataDir(env = process.env) {
 
   if (process.platform === "win32") {
     const appData = env.APPDATA || join(homedir(), "AppData", "Roaming");
-    return join(appData, "omniroute");
+    return join(appData, "cheaproute");
   }
 
   const xdg = env.XDG_CONFIG_HOME?.trim();
-  if (xdg) return join(resolve(xdg), "omniroute");
+  if (xdg) return join(resolve(xdg), "cheaproute");
 
   return legacyDir;
 }
@@ -337,7 +337,7 @@ export function syncEnv({ rootDir, quiet = false, scope = "full" } = {}) {
         if (ENCRYPTION_BOUND_KEYS.has(key) && dbHasEncrypted) {
           log(
             `⚠️  ${key} NOT generated — encrypted credentials exist in DB. ` +
-              `Restore your previous key via ~/.omniroute/server.env, ~/.omniroute/.env, ` +
+              `Restore your previous key via ~/.cheaproute/server.env, ~/.cheaproute/.env, ` +
               `or the STORAGE_ENCRYPTION_KEY environment variable.`
           );
           continue;
@@ -384,7 +384,7 @@ export function syncEnv({ rootDir, quiet = false, scope = "full" } = {}) {
     if (entry.blocked) {
       log(
         `⚠️  ${entry.key} NOT generated — encrypted credentials exist in DB. ` +
-          `Restore your previous key via ~/.omniroute/server.env, ~/.omniroute/.env, ` +
+          `Restore your previous key via ~/.cheaproute/server.env, ~/.cheaproute/.env, ` +
           `or the STORAGE_ENCRYPTION_KEY environment variable.`
       );
       continue;

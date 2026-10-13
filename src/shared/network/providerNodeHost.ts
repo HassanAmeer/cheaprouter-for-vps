@@ -5,7 +5,7 @@
  * selection step) answer two questions before forwarding a request:
  *
  *  1. Is the node loopback (operator's machine / Docker network), or a hostname the
- *     operator listed in `OMNIROUTE_LOCAL_PROVIDER_NODE_HOSTS` (e.g. a Compose service
+ *     operator listed in `CHEAPROUTE_LOCAL_PROVIDER_NODE_HOSTS` (e.g. a Compose service
  *     name, #14635)? Always eligible. See `./loopbackNodeHost.ts` and `./localNodeHosts.ts`.
  *
  *  2. Otherwise, may the route dispatch to a REMOTE node (a LAN box, a Tailscale peer,

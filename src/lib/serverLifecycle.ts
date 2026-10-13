@@ -1,23 +1,23 @@
 export type ServerLifecyclePhase = "starting" | "ready" | "stopping";
 
 declare global {
-  var __omnirouteServerLifecycle: ServerLifecyclePhase | undefined;
+  var __cheaprouteServerLifecycle: ServerLifecyclePhase | undefined;
 }
 
 export function getServerLifecyclePhase(): ServerLifecyclePhase {
-  return globalThis.__omnirouteServerLifecycle ?? "starting";
+  return globalThis.__cheaprouteServerLifecycle ?? "starting";
 }
 
 export function markServerStarting(): void {
-  globalThis.__omnirouteServerLifecycle = "starting";
+  globalThis.__cheaprouteServerLifecycle = "starting";
 }
 
 export function markServerReady(): void {
   if (getServerLifecyclePhase() !== "stopping") {
-    globalThis.__omnirouteServerLifecycle = "ready";
+    globalThis.__cheaprouteServerLifecycle = "ready";
   }
 }
 
 export function markServerStopping(): void {
-  globalThis.__omnirouteServerLifecycle = "stopping";
+  globalThis.__cheaprouteServerLifecycle = "stopping";
 }

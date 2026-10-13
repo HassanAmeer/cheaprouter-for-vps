@@ -20,7 +20,7 @@
  *    reload happens via signal SIGHUP / `ExecReload=/bin/kill -HUP $MAINPID`
  *    per the official systemd units and SagerNet/sing-box#23), so sing-box
  *    only reloads through the declared command below.
- * 2. Declared command — `OMNIROUTE_PROXY_CORE_RELOAD_COMMAND`, a JSON
+ * 2. Declared command — `CHEAPROUTE_PROXY_CORE_RELOAD_COMMAND`, a JSON
  *    argument array run with `execFile(argv[0], argv.slice(1),
  *    { shell: false, timeout: 30_000 })`. Never a shell string.
  * 3. External observer — the variable set to exactly `external`: nothing to
@@ -72,7 +72,7 @@ export function resolveCoreReloadMode(input: ResolveModeInput): CoreReloadMode {
 export type CommandDecl =
   { kind: "command"; argv: string[] } | { kind: "external" } | { kind: "absent" };
 
-const RELOAD_COMMAND_ENV = "OMNIROUTE_PROXY_CORE_RELOAD_COMMAND";
+const RELOAD_COMMAND_ENV = "CHEAPROUTE_PROXY_CORE_RELOAD_COMMAND";
 const RELOAD_WINDOW_MS = 60_000;
 const EXEC_TIMEOUT_MS = 30_000;
 
@@ -200,7 +200,7 @@ function checkArgv(argv: unknown[]): CommandDecl {
 export function readReloadCommandEnv(
   env: Record<string, string | undefined> = process.env
 ): CommandDecl {
-  const raw = env[RELOAD_COMMAND_ENV] ?? process.env.OMNIROUTE_PROXY_CORE_RELOAD_COMMAND;
+  const raw = env[RELOAD_COMMAND_ENV] ?? process.env.CHEAPROUTE_PROXY_CORE_RELOAD_COMMAND;
   return parseReloadCommand(raw);
 }
 

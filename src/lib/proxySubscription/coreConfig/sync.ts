@@ -147,7 +147,7 @@ export interface GenerateOptions {
  * feature is off (empty path). Never throws — sync must never fail because
  * generation did.
  *
- * With a core binary configured on the host (OMNIROUTE_PROXY_CORE_BINARY_PATH),
+ * With a core binary configured on the host (CHEAPROUTE_PROXY_CORE_BINARY_PATH),
  * the rendered text is verified with the core's native check before replacing
  * the adopted file (a pass swaps it in atomically, a miss writes
  * `<path>.generated` beside it and warns). Without one, the beside-file is
@@ -316,7 +316,7 @@ function finishBeside(
 }
 
 /** Host environment variable naming the core binary used for the native check. */
-export const CORE_BINARY_ENV = "OMNIROUTE_PROXY_CORE_BINARY_PATH";
+export const CORE_BINARY_ENV = "CHEAPROUTE_PROXY_CORE_BINARY_PATH";
 
 /**
  * The core binary is run with `execFile`, so its path comes from the host

@@ -1,5 +1,5 @@
 /**
- * OmniRoute — shared translation backend for the i18n tooling.
+ * CheapRoute — shared translation backend for the i18n tooling.
  *
  * Thin OpenAI-compatible chat-completions client used by
  * `scripts/i18n/sync-ui-keys.mjs` (and the locale bootstrap orchestrator that
@@ -7,11 +7,11 @@
  * environment only — this module never reads `.env` itself; the calling
  * script is responsible for loading it before `backendConfig()` runs:
  *
- *   OMNIROUTE_TRANSLATION_API_URL     base URL (…/v1) of the chat backend
- *   OMNIROUTE_TRANSLATION_API_KEY     bearer token
- *   OMNIROUTE_TRANSLATION_MODEL       model id
- *   OMNIROUTE_TRANSLATION_TIMEOUT_MS  per-request timeout (default 60000)
- *   OMNIROUTE_TRANSLATION_REASONING_EFFORT  optional, sent as-is when set
+ *   CHEAPROUTE_TRANSLATION_API_URL     base URL (…/v1) of the chat backend
+ *   CHEAPROUTE_TRANSLATION_API_KEY     bearer token
+ *   CHEAPROUTE_TRANSLATION_MODEL       model id
+ *   CHEAPROUTE_TRANSLATION_TIMEOUT_MS  per-request timeout (default 60000)
+ *   CHEAPROUTE_TRANSLATION_REASONING_EFFORT  optional, sent as-is when set
  *
  * Two translation modes are exposed:
  *   - `translateString(en, localeEntry, backend)` — one request per string.
@@ -42,11 +42,11 @@ export function requireEnv(name) {
 }
 
 export function backendConfig() {
-  const apiUrl = requireEnv("OMNIROUTE_TRANSLATION_API_URL").replace(/\/$/, "");
-  const apiKey = requireEnv("OMNIROUTE_TRANSLATION_API_KEY");
-  const model = requireEnv("OMNIROUTE_TRANSLATION_MODEL");
-  const timeoutMs = Number(process.env.OMNIROUTE_TRANSLATION_TIMEOUT_MS || 60000);
-  const reasoningEffort = process.env.OMNIROUTE_TRANSLATION_REASONING_EFFORT?.trim();
+  const apiUrl = requireEnv("CHEAPROUTE_TRANSLATION_API_URL").replace(/\/$/, "");
+  const apiKey = requireEnv("CHEAPROUTE_TRANSLATION_API_KEY");
+  const model = requireEnv("CHEAPROUTE_TRANSLATION_MODEL");
+  const timeoutMs = Number(process.env.CHEAPROUTE_TRANSLATION_TIMEOUT_MS || 60000);
+  const reasoningEffort = process.env.CHEAPROUTE_TRANSLATION_REASONING_EFFORT?.trim();
   return {
     apiUrl,
     apiKey,
@@ -173,7 +173,7 @@ export async function translateString(englishValue, localeEntry, backend) {
 
 export const BATCH_SYSTEM = (englishName, native) =>
   [
-    `You are a professional UI translator for a developer tool (OmniRoute).`,
+    `You are a professional UI translator for a developer tool (CheapRoute).`,
     `Translate every value of the JSON object the user sends from English into ${englishName} (native: ${native}).`,
     `Keep the keys EXACTLY as given. Keep ICU placeholders like {count} or {name}, HTML tags, product names, provider names, URLs, file paths and code unchanged.`,
     `Return ONLY a JSON object with the same keys and translated string values — no prose, no markdown fence.`,

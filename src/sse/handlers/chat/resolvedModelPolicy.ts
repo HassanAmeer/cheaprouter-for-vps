@@ -6,8 +6,8 @@
  * connection/reasoning overrides resolve to a concrete model afterwards, so the
  * same key must admit that concrete model too before any upstream dispatch.
  */
-import { errorResponse } from "@omniroute/open-sse/utils/error.ts";
-import { HTTP_STATUS } from "@omniroute/open-sse/config/constants.ts";
+import { errorResponse } from "@cheaproute/open-sse/utils/error.ts";
+import { HTTP_STATUS } from "@cheaproute/open-sse/config/constants.ts";
 import { isModelAllowedForKey } from "@/lib/db/apiKeys";
 import {
   checkResolvedModelPermission,

@@ -30,7 +30,7 @@ async function generateMitmCa(name) {
   const { default: selfsigned } = await import("selfsigned");
   const notAfter = new Date();
   notAfter.setFullYear(notAfter.getFullYear() + 10);
-  const pems = await selfsigned.generate([{ name: "commonName", value: name || "OmniRoute MITM CA" }], {
+  const pems = await selfsigned.generate([{ name: "commonName", value: name || "CheapRoute MITM CA" }], {
     keySize: 2048,
     algorithm: "sha256",
     notAfterDate: notAfter,
@@ -70,7 +70,7 @@ async function loadOrCreateMitmCa(certDir) {
     };
   }
 
-  const ca = await generateMitmCa("OmniRoute MITM CA");
+  const ca = await generateMitmCa("CheapRoute MITM CA");
 
   if (!fs.existsSync(certDir)) fs.mkdirSync(certDir, { recursive: true });
   fs.writeFileSync(keyPath, ca.key);

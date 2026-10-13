@@ -1,8 +1,8 @@
 {
   "common": {
     "error": "Feil: {message}",
-    "serverOffline": "OmniRoute-serveren er offline. Start med: omniroute serve",
-    "authRequired": "Autentisering kreves. Angi OMNIROUTE_API_KEY eller kjør: omniroute setup",
+    "serverOffline": "CheapRoute-serveren er offline. Start med: cheaproute serve",
+    "authRequired": "Autentisering kreves. Angi CHEAPROUTE_API_KEY eller kjør: cheaproute setup",
     "rateLimited": "Forespørselgrense overskredet. Prøv igjen om {seconds}s.",
     "timeout": "Forespørselen tidsavbrutt etter {ms}ms.",
     "success": "Ferdig.",
@@ -15,7 +15,7 @@
     "yesOpt": "Hopp over bekreftelse"
   },
   "setup": {
-    "title": "Oppsett av OmniRoute",
+    "title": "Oppsett av CheapRoute",
     "passwordPrompt": "Administratorpassord",
     "providerPrompt": "Standardleverandør (la stå tomt for å hoppe over)",
     "done": "Oppsett fullført",
@@ -27,22 +27,22 @@
     "loginEnabled": "Innlogging: aktivert (passord oppdatert)",
     "loginDisabled": "Innlogging: deaktivert",
     "providerInfo": "Leverandør: {info}",
-    "opencode": "Installer og konfigurer den medfølgende @omniroute/opencode-plugin for OpenCode"
+    "opencode": "Installer og konfigurer den medfølgende @cheaproute/opencode-plugin for OpenCode"
   },
   "doctor": {
-    "title": "OmniRoute-diagnostikk",
+    "title": "CheapRoute-diagnostikk",
     "dbOk": "Database: OK ({path})",
-    "dbMissing": "Database: ikke initialisert — kjør `omniroute setup`",
+    "dbMissing": "Database: ikke initialisert — kjør `cheaproute setup`",
     "portOk": "Port {port}: tilgjengelig",
     "portConflict": "Port {port}: brukes av en annen prosess",
     "encryptionOk": "Krypteringsnøkkel: konfigurert",
-    "encryptionMissing": "Krypteringsnøkkel mangler — kjør `omniroute setup`",
+    "encryptionMissing": "Krypteringsnøkkel mangler — kjør `cheaproute setup`",
     "allGood": "Alle kontroller bestått.",
     "warnings": "{count} advarsel/advarsler — se ovenfor."
   },
   "providers": {
     "title": "Leverandører",
-    "noProviders": "Ingen leverandører er konfigurert. Kjør: omniroute setup",
+    "noProviders": "Ingen leverandører er konfigurert. Kjør: cheaproute setup",
     "testing": "Tester {name} ...",
     "available": "{count} leverandør(er) tilgjengelig(e)",
     "connected": "Tilkoblet",
@@ -71,7 +71,7 @@
       "dryRunOpt": "Vis hva som ville blitt endret uten å skrive",
       "confirmPrompt": "Erstatt API-nøkkelen for tilkoblingen «{name}» ({id})? [y/N]",
       "dryRunResult": "[dry-run] Ville ha rotert nøkkelen for «{name}» ({id}). Ingen endringer utført.",
-      "oauthHint": "OAuth-tilkobling – kjør: omniroute oauth {provider}",
+      "oauthHint": "OAuth-tilkobling – kjør: cheaproute oauth {provider}",
       "envVarEmpty": "Miljøvariabelen {var} er ikke angitt eller er tom.",
       "success": "Nøkkelen for «{name}» er rotert. Kjør `providers test {id}` for å bekrefte.",
       "testPassed": "Testen etter rotering var vellykket.",
@@ -82,7 +82,7 @@
       "providerOpt": "Filtrer etter leverandørnavn",
       "header": "ID         Leverandør     Navn                     Utløpsstatus  Teststatus  Nedkjøling til",
       "noData": "Ingen data om leverandørtilkoblinger er tilgjengelige.",
-      "requiresServer": "providers status krever at OmniRoute-serveren kjører."
+      "requiresServer": "providers status krever at CheapRoute-serveren kjører."
     }
   },
   "keys": {
@@ -90,8 +90,8 @@
     "addDescription": "Legg til eller oppdater en API-nøkkel for en leverandør",
     "listDescription": "Vis alle konfigurerte API-nøkler",
     "removeDescription": "Fjern en API-nøkkel for en leverandør",
-    "regenerateDescription": "Generer en OmniRoute-API-nøkkel på nytt",
-    "revokeDescription": "Tilbakekall en OmniRoute-API-nøkkel",
+    "regenerateDescription": "Generer en CheapRoute-API-nøkkel på nytt",
+    "revokeDescription": "Tilbakekall en CheapRoute-API-nøkkel",
     "revealDescription": "Vis den umaskerte API-nøkkelverdien",
     "usageDescription": "Vis nylig bruk av en API-nøkkel",
     "usageLimitOpt": "Antall nylige forespørsler",
@@ -142,7 +142,7 @@
     "warning": "⚠ Dette skriver ut/lagrer DEKRYPTERTE API-nøkler og OAuth-tokener i klartekst. Sørg for at skjermen, skallhistorikken og eventuelle utdatafiler forblir private.",
     "confirmHeading": "⚠ ADVARSEL: Dette eksporterer DEKRYPTERT leverandørlegitimasjon i klartekst",
     "confirmBody": "Denne kommandoen dekrypterer og skriver ut/lagrer apiKey, accessToken, refreshToken og\nidToken for de valgte tilkoblingene. Behandle utdataene som en hemmelighet.",
-    "confirmFooter": "Kjør følgende for å bekrefte:\n  omniroute auth export --force",
+    "confirmFooter": "Kjør følgende for å bekrefte:\n  cheaproute auth export --force",
     "missingKey": "STORAGE_ENCRYPTION_KEY er påkrevd for å eksportere legitimasjon.",
     "notFound": "Tilkobling ikke funnet: {id}",
     "invalidFormat": "Ugyldig format: {format}. Bruk json eller env."
@@ -220,10 +220,10 @@
     "reasoning": "Nivå for resonneringsinnsats (low|medium|high)",
     "thinking": "Tokenbudsjett for utvidet tenkning",
     "explain": "Skriv reservetreet og kostnadsintervallet til stderr",
-    "noCombo": "Ingen samsvarende kombinasjon funnet. Konfigurer en med: omniroute combo create"
+    "noCombo": "Ingen samsvarende kombinasjon funnet. Konfigurer en med: cheaproute combo create"
   },
   "chat": {
-    "description": "Send en engangs-chatmelding til OmniRoute",
+    "description": "Send en engangs-chatmelding til CheapRoute",
     "file": "Les melding fra fil",
     "stdin": "Les melding fra standard inndata",
     "system": "Systemmelding",
@@ -236,14 +236,14 @@
     "combo": "Tving en bestemt kombinasjon etter navn",
     "responses_api": "Bruk /v1/responses i stedet for /v1/chat/completions",
     "stream": "Strøm svaret trinnvis",
-    "no_history": "Ikke lagre i ~/.omniroute/cli-history.jsonl",
+    "no_history": "Ikke lagre i ~/.cheaproute/cli-history.jsonl",
     "error": {
       "empty_prompt": "Feil: melding er påkrevd (posisjonsargument, --file eller --stdin)"
     }
   },
   "serve": {
-    "description": "Start OmniRoute-serveren (standardhandling)",
-    "starting": "Starter OmniRoute-serveren på port {port}...",
+    "description": "Start CheapRoute-serveren (standardhandling)",
+    "starting": "Starter CheapRoute-serveren på port {port}...",
     "ready": "Klar på http://localhost:{port}",
     "stopping": "Stopper serveren (PID {pid})...",
     "stopped": "Serveren er stoppet.",
@@ -256,13 +256,13 @@
     "max_restarts": "Maksimalt antall omstarter etter krasj innen 30 s før det gis opp (standard: 2)",
     "tray": "Start i systemstatusfeltet (kun skrivebord, må aktiveres)",
     "no_tray": "Deaktiver ikonet i systemstatusfeltet",
-    "ready_timeout": "Tidsavbrudd for klarhetssjekk i ms (også OMNIROUTE_READY_TIMEOUT_MS, standard 60000)",
-    "tls_cert": "Bane til et TLS-sertifikat (PEM) for å levere HTTPS (også OMNIROUTE_TLS_CERT)",
-    "tls_key": "Bane til den private TLS-nøkkelen (PEM) for å levere HTTPS (også OMNIROUTE_TLS_KEY)"
+    "ready_timeout": "Tidsavbrudd for klarhetssjekk i ms (også CHEAPROUTE_READY_TIMEOUT_MS, standard 60000)",
+    "tls_cert": "Bane til et TLS-sertifikat (PEM) for å levere HTTPS (også CHEAPROUTE_TLS_CERT)",
+    "tls_key": "Bane til den private TLS-nøkkelen (PEM) for å levere HTTPS (også CHEAPROUTE_TLS_KEY)"
   },
   "backup": {
     "title": "Sikkerhetskopi",
-    "description": "Opprett en sikkerhetskopi av OmniRoute-data",
+    "description": "Opprett en sikkerhetskopi av CheapRoute-data",
     "creating": "Oppretter sikkerhetskopi...",
     "done": "Sikkerhetskopien ble lagret i {path}",
     "noFiles": "Ingen filer å sikkerhetskopiere (databasen er ikke initialisert)",
@@ -274,7 +274,7 @@
     "noBackups": "Fant ingen sikkerhetskopier.",
     "notFound": "Fant ikke sikkerhetskopien: {name}",
     "confirmRestore": "Vil du overskrive gjeldende data med sikkerhetskopien fra {ts}?",
-    "createDescription": "Opprett en sikkerhetskopi av OmniRoute-data",
+    "createDescription": "Opprett en sikkerhetskopi av CheapRoute-data",
     "nameOpt": "Egendefinert navn på sikkerhetskopi",
     "cloudOpt": "Last opp sikkerhetskopien til skylagring",
     "encryptOpt": "Krypter sikkerhetskopien med AES-256-GCM",
@@ -292,14 +292,14 @@
       "statusDescription": "Vis gjeldende status for tidsplanen for sikkerhetskopiering",
       "cronOpt": "Cron-uttrykk for tidsplanen (standard: daglig kl. 03:00)",
       "enabled": "Automatisk sikkerhetskopiering aktivert (cron: {cron}).",
-      "hint": "Tidsplanen leses av omniroute serve ved oppstart.",
+      "hint": "Tidsplanen leses av cheaproute serve ved oppstart.",
       "disabled": "Automatisk sikkerhetskopiering deaktivert.",
       "notConfigured": "Ingen tidsplan for sikkerhetskopiering er konfigurert."
     }
   },
   "health": {
     "description": "Kontroller servertilstand og komponentstatus",
-    "noServer": "Serveren kjører ikke. Start den med: omniroute serve",
+    "noServer": "Serveren kjører ikke. Start den med: cheaproute serve",
     "title": "Tilstand",
     "status": "Status: {status}",
     "uptime": "Oppetid: {uptime}",
@@ -308,21 +308,21 @@
   },
   "quota": {
     "description": "Vis bruk av leverandørkvoter",
-    "noServer": "Serveren kjører ikke. Start den med: omniroute serve",
+    "noServer": "Serveren kjører ikke. Start den med: cheaproute serve",
     "noData": "Ingen kvoteinformasjon er tilgjengelig."
   },
   "cache": {
     "description": "Administrer svarhurtigbuffer",
-    "noServer": "Serveren kjører ikke. Start den med: omniroute serve",
+    "noServer": "Serveren kjører ikke. Start den med: cheaproute serve",
     "cleared": "Hurtigbufferen er tømt.",
     "clearFailed": "Kunne ikke tømme hurtigbufferen."
   },
   "redis": {
-    "description": "Start en lokal Redis-beholder med ett klikk (Podman eller Docker) for OmniRoute-hurtigbufring og kvotesporing"
+    "description": "Start en lokal Redis-beholder med ett klikk (Podman eller Docker) for CheapRoute-hurtigbufring og kvotesporing"
   },
   "test": {
     "description": "Test en leverandørtilkobling",
-    "noServer": "Serveren kjører ikke. Start med: omniroute serve",
+    "noServer": "Serveren kjører ikke. Start med: cheaproute serve",
     "testing": "Tester {provider} / {model}...",
     "passed": "Tilkoblingen var vellykket!",
     "failed": "Tilkoblingen mislyktes: {error}",
@@ -334,7 +334,7 @@
     "saved": "Resultatene ble lagret i {path}",
     "compareTitle": "Modellsammenligning",
     "compareMinTwo": "Minst to modeller kreves for --compare (kommaseparert)",
-    "noProviders": "Ingen leverandører er konfigurert. Legg til en med: omniroute keys add"
+    "noProviders": "Ingen leverandører er konfigurert. Legg til en med: cheaproute keys add"
   },
   "update": {
     "checking": "Ser etter oppdateringer...",
@@ -348,7 +348,7 @@
     "running": "MCP-serveren kjører ({transport})",
     "stopped": "MCP-serveren er stoppet.",
     "restarted": "MCP-serveren er startet på nytt.",
-    "stoppedHint": "Kjør `omniroute mcp enable` for å slå den på.",
+    "stoppedHint": "Kjør `cheaproute mcp enable` for å slå den på.",
     "enabled": "MCP-serveren er aktivert.",
     "disabled": "MCP-serveren er deaktivert.",
     "enable": {
@@ -416,7 +416,7 @@
     }
   },
   "policy": {
-    "description": "Administrer autorisasjonspolicyer for OmniRoute",
+    "description": "Administrer autorisasjonspolicyer for CheapRoute",
     "list": {
       "description": "List policyer",
       "kind": "Filtrer etter type (allow|deny|rate-limit|cost-cap)",
@@ -453,7 +453,7 @@
     }
   },
   "compression": {
-    "description": "Konfigurer og inspiser komprimeringsforløpet i OmniRoute",
+    "description": "Konfigurer og inspiser komprimeringsforløpet i CheapRoute",
     "status": {
       "description": "Vis gjeldende komprimeringsstatus og -innstillinger"
     },
@@ -507,18 +507,18 @@
     "confirmRotate": "Rotere tunnelen {type}? (en ny URL blir generert)"
   },
   "stop": {
-    "description": "Stopp OmniRoute-serveren",
+    "description": "Stopp CheapRoute-serveren",
     "stopping": "Stopper serveren (PID {pid})...",
     "stopped": "Serveren er stoppet.",
     "notRunning": "Ingen server kjører.",
     "portFallback": "Ingen PID-fil ble funnet. Forsøker portbasert stopp..."
   },
   "restart": {
-    "description": "Start OmniRoute-serveren på nytt",
-    "restarting": "Starter OmniRoute-serveren på nytt..."
+    "description": "Start CheapRoute-serveren på nytt",
+    "restarting": "Starter CheapRoute-serveren på nytt..."
   },
   "dashboard": {
-    "description": "Åpne OmniRoute-kontrollpanelet i en nettleser",
+    "description": "Åpne CheapRoute-kontrollpanelet i en nettleser",
     "opening": "Åpner kontrollpanelet på {url}",
     "urlOnly": "Skriv ut URL-en til kontrollpanelet uten å åpne nettleseren",
     "tui": "Åpne interaktivt TUI-kontrollpanel (terminalgrensesnitt, 7 faner)"
@@ -526,7 +526,7 @@
   "models": {
     "description": "Vis tilgjengelige modeller (krever server)",
     "search": "Filtrer modeller etter ID, navn, leverandør eller beskrivelse",
-    "noServer": "Serveren kjører ikke. Start med: omniroute serve",
+    "noServer": "Serveren kjører ikke. Start med: cheaproute serve",
     "noModels": "Ingen modeller funnet."
   },
   "audit": {
@@ -558,7 +558,7 @@
     }
   },
   "skills": {
-    "description": "Administrer OmniRoute-ferdigheter (sandbox, builtin, custom, hybrid, skillssh)",
+    "description": "Administrer CheapRoute-ferdigheter (sandbox, builtin, custom, hybrid, skillssh)",
     "list": {
       "description": "Vis installerte ferdigheter",
       "type": "Filtrer etter type (sandbox|custom|builtin|hybrid|skillssh)",
@@ -631,7 +631,7 @@
     }
   },
   "memory": {
-    "description": "Administrer samtaleminnet i OmniRoute (FTS5 + vector)",
+    "description": "Administrer samtaleminnet i CheapRoute (FTS5 + vector)",
     "search": {
       "description": "Søk i minneoppføringer med semantisk spørring",
       "type": "Filtrer etter minnetype (user|feedback|project|reference)",
@@ -789,7 +789,7 @@
     }
   },
   "webhooks": {
-    "description": "Administrer OmniRoute-webhooks",
+    "description": "Administrer CheapRoute-webhooks",
     "events": {
       "description": "List alle tilgjengelige hendelsestyper for webhooks"
     },
@@ -821,16 +821,16 @@
     }
   },
   "program": {
-    "description": "OmniRoute — Smart AI-ruter med automatisk fallback",
+    "description": "CheapRoute — Smart AI-ruter med automatisk fallback",
     "version": "Skriv ut versjon og avslutt",
     "output": "Utdataformat (table, json, jsonl, csv)",
     "quiet": "Undertrykk ikke-essensiell utdata",
     "no_color": "Deaktiver farget utdata",
     "timeout": "HTTP-forespørsel timeout i millisekunder",
-    "api_key": "API-nøkkel for OmniRoute-serveren",
-    "base_url": "OmniRoute-serverens basis-URL",
+    "api_key": "API-nøkkel for CheapRoute-serveren",
+    "base_url": "CheapRoute-serverens basis-URL",
     "context": "Serverkontekst/profil for denne kommandoen",
-    "lang": "Angi CLI-visningsspråk (overstyrer OMNIROUTE_LANG)"
+    "lang": "Angi CLI-visningsspråk (overstyrer CHEAPROUTE_LANG)"
   },
   "files": {
     "description": "Administrer filer (last opp, list, hent, last ned, slett)",
@@ -1079,7 +1079,7 @@
     }
   },
   "openapi": {
-    "description": "Få tilgang til og test OmniRoute OpenAPI-spesifikasjonen",
+    "description": "Få tilgang til og test CheapRoute OpenAPI-spesifikasjonen",
     "dump": {
       "description": "Skriv OpenAPI-spesifikasjonen til stdout eller en fil",
       "format": "Utdataformat: yaml|json (standard: yaml)",
@@ -1149,7 +1149,7 @@
     }
   },
   "open": {
-    "description": "Åpne en bestemt OmniRoute-dashboardside i nettleseren",
+    "description": "Åpne en bestemt CheapRoute-dashboardside i nettleseren",
     "url": "Skriv bare ut URL-en, ikke åpne nettleseren"
   },
   "telemetry": {
@@ -1166,7 +1166,7 @@
     }
   },
   "sync": {
-    "description": "Synkroniser konfigurasjon mellom OmniRoute-forekomster",
+    "description": "Synkroniser konfigurasjon mellom CheapRoute-forekomster",
     "push": {
       "description": "Send konfigurasjon til skyen eller en ekstern forekomst",
       "target": "Mål (cloud eller context:name)",
@@ -1222,10 +1222,10 @@
       "listTitle": "Tilgjengelige språk",
       "current": "Språk: {code} ({name})",
       "saved": "Språket er satt til {code} ({name}).",
-      "noCode": "Språkkode er påkrevd. Kjør 'omniroute config lang list' for å se tilgjengelige koder.",
-      "unknown": "Ukjent språkkode: {code}. Kjør 'omniroute config lang list' for å se tilgjengelige koder.",
+      "noCode": "Språkkode er påkrevd. Kjør 'cheaproute config lang list' for å se tilgjengelige koder.",
+      "unknown": "Ukjent språkkode: {code}. Kjør 'cheaproute config lang list' for å se tilgjengelige koder.",
       "alreadySet": "Språket er allerede satt til {code}.",
-      "envHint": "Tips: Du kan også angi OMNIROUTE_LANG={code} i miljøet ditt."
+      "envHint": "Tips: Du kan også angi CHEAPROUTE_LANG={code} i miljøet ditt."
     }
   },
   "completion": {
@@ -1242,7 +1242,7 @@
     "filter": "Filtrer etter nivå (error,warn,info) – kommaseparert",
     "lines": "Antall linjer som skal hentes",
     "timeout": "Tidsavbrudd for tilkobling i ms",
-    "baseUrl": "Basis-URL for OmniRoute API",
+    "baseUrl": "Basis-URL for CheapRoute API",
     "requestId": "Filtrer etter forespørsels-ID",
     "apiKey": "Filtrer etter API-nøkkel",
     "combo": "Filtrer etter kombinasjonsnavn",
@@ -1258,10 +1258,10 @@
     "description": "Kontroller systemstatusfeltikonet",
     "show": "Vis statusfeltikonet (hvis serveren kjører med --tray)",
     "hide": "Skjul statusfeltikonet",
-    "quit": "Avslutt OmniRoute via statusfeltet"
+    "quit": "Avslutt CheapRoute via statusfeltet"
   },
   "autostart": {
-    "description": "Administrer automatisk oppstart av OmniRoute ved systemoppstart (Linux: systemd-brukertjeneste)",
+    "description": "Administrer automatisk oppstart av CheapRoute ved systemoppstart (Linux: systemd-brukertjeneste)",
     "enable": "Aktiver automatisk oppstart ved systemoppstart",
     "disable": "Deaktiver automatisk oppstart ved systemoppstart",
     "toggle": "Slå automatisk oppstart ved systemoppstart av eller på",
@@ -1283,7 +1283,7 @@
     "resume": "Gjenoppta en lagret økt etter navn"
   },
   "plugin": {
-    "description": "Administrer CLI-programtillegg (omniroute-cmd-*)",
+    "description": "Administrer CLI-programtillegg (cheaproute-cmd-*)",
     "list": "Vis installerte programtillegg",
     "install": "Installer et programtillegg fra npm eller en lokal bane",
     "remove": "Fjern et installert programtillegg",
@@ -1293,19 +1293,19 @@
     "scaffold": "Opprett en grunnstruktur for et nytt programtillegg"
   },
   "launch": {
-    "description": "Start Claude Code koblet til OmniRoute (lokalt eller eksternt, med --profile)",
+    "description": "Start Claude Code koblet til CheapRoute (lokalt eller eksternt, med --profile)",
     "token": "Tokenet som Claude-klienten skal sende (ANTHROPIC_AUTH_TOKEN)",
-    "notRunning": "OmniRoute er ikke tilgjengelig på {port}. Start den med 'omniroute serve'.",
+    "notRunning": "CheapRoute er ikke tilgjengelig på {port}. Start den med 'cheaproute serve'.",
     "notFound": "'claude'-CLI-en ble ikke funnet i PATH."
   },
   "run": {
-    "description": "Start et støttet CLI-mål gjennom OmniRoute"
+    "description": "Start et støttet CLI-mål gjennom CheapRoute"
   },
   "setupClaude": {
-    "description": "Generer Claude Code-profiler i ~/.claude/profiles fra OmniRoute-modellkatalogen"
+    "description": "Generer Claude Code-profiler i ~/.claude/profiles fra CheapRoute-modellkatalogen"
   },
   "connect": {
-    "description": "Koble til en ekstern OmniRoute-server og gå inn i ekstern modus"
+    "description": "Koble til en ekstern CheapRoute-server og gå inn i ekstern modus"
   },
   "tokens": {
     "description": "Administrer omfangsbegrensede CLI-tilgangstokener (ekstern modus)"
@@ -1314,10 +1314,10 @@
     "description": "Velg en leverandør og modell fra den aktive serveren, og konfigurer en støttet lokal CLI"
   },
   "launchCodex": {
-    "description": "Start Codex CLI koblet til OmniRoute (lokalt eller på ekstern VPS)"
+    "description": "Start Codex CLI koblet til CheapRoute (lokalt eller på ekstern VPS)"
   },
   "setupCodex": {
-    "description": "Generer profilfiler i ~/.codex fra OmniRoutes aktive modellkatalog"
+    "description": "Generer profilfiler i ~/.codex fra CheapRoutes aktive modellkatalog"
   },
   "packs": {
     "description": "Administrer valgfrie kjøretidspakker (ML / nettleserautomatisering)",
@@ -1330,7 +1330,7 @@
     "errUnknown": "ukjent pakke: {name}",
     "errNoIndex": "pakkeindeksen ble ikke funnet; angi --source <dir> som inneholder pakkenyttelasten (skrivebordspakker inkluderer den ved siden av appen)",
     "installed": "pakken «{name}» er installert og verifisert i {dir}",
-    "restartHint": "start OmniRoute-serveren (eller skrivebordsappen) på nytt, slik at kjøremiljøet registrerer pakken",
+    "restartHint": "start CheapRoute-serveren (eller skrivebordsappen) på nytt, slik at kjøremiljøet registrerer pakken",
     "removed": "pakken «{name}» ble fjernet",
     "notInstalled": "pakken «{name}» var ikke installert",
     "verifyOk": "alle installerte pakker er verifisert",

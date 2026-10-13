@@ -25,7 +25,7 @@ const encoders = new Map<TokenizerEncoding, Tiktoken>();
  * Above this many characters the exact tokenizer is skipped in favor of the
  * char-heuristic (chars/4). js-tiktoken's pure-JS encoder is near-quadratic on
  * large inputs — a 10 MB base64 image payload can block the event loop for
- * tens of seconds (OmniRoute worker wedge incident). Token counting is used for
+ * tens of seconds (CheapRoute worker wedge incident). Token counting is used for
  * compression stats/estimates only, so a heuristic on oversized inputs is
  * acceptable and keeps the loop responsive.
  */

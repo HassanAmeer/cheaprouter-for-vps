@@ -6,7 +6,7 @@ import {
   isOpenAICompatibleProvider,
   NOAUTH_PROVIDERS,
 } from "@/shared/constants/providers";
-import { getRegistryEntry } from "@omniroute/open-sse/config/providerRegistry.ts";
+import { getRegistryEntry } from "@cheaproute/open-sse/config/providerRegistry.ts";
 import { getModelsByProviderId } from "@/shared/constants/models";
 import { resolveAlibabaProviderModelsUrl } from "@/shared/constants/alibabaProviderRegions";
 import { getStaticModelsForProvider } from "@/lib/providers/staticModels";
@@ -26,64 +26,64 @@ import {
   getProviderOutboundGuard,
   getProviderValidationGuard,
 } from "@/shared/network/outboundUrlGuardPolicy";
-import { errorResponse, sanitizeErrorMessage } from "@omniroute/open-sse/utils/error";
-import "@omniroute/open-sse/services/qoderCli.ts";
+import { errorResponse, sanitizeErrorMessage } from "@cheaproute/open-sse/utils/error";
+import "@cheaproute/open-sse/services/qoderCli.ts";
 import { deriveConfigFromRegistryModelsUrl } from "./discoveryConfig";
 import {
   buildTokenPlanCatalogRequest,
   isTokenPlanCatalogProvider,
   parseTokenPlanCatalog,
 } from "@/lib/providerModels/tokenPlanModelDiscovery";
-import { resolveZedModels } from "@omniroute/open-sse/shared/zedAuth.ts";
+import { resolveZedModels } from "@cheaproute/open-sse/shared/zedAuth.ts";
 import {
   fetchGitHubCopilotModels,
   fetchGheCopilotModels,
-} from "@omniroute/open-sse/services/githubCopilotModels.ts";
-import { fetchKiroAvailableModels } from "@omniroute/open-sse/services/kiroModels.ts";
+} from "@cheaproute/open-sse/services/githubCopilotModels.ts";
+import { fetchKiroAvailableModels } from "@cheaproute/open-sse/services/kiroModels.ts";
 import {
   buildGlmCodingHeaders,
   buildGlmModelsUrl,
-} from "@omniroute/open-sse/config/glmProvider.ts";
-import "@omniroute/open-sse/config/imageRegistry.ts";
-import "@omniroute/open-sse/config/videoRegistry.ts";
+} from "@cheaproute/open-sse/config/glmProvider.ts";
+import "@cheaproute/open-sse/config/imageRegistry.ts";
+import "@cheaproute/open-sse/config/videoRegistry.ts";
 import {
   discoverBedrockNativeModels,
   isBedrockNativeApiError,
-} from "@omniroute/open-sse/services/bedrock.ts";
+} from "@cheaproute/open-sse/services/bedrock.ts";
 import {
   discoverPromptQlModels,
   PROMPTQL_FALLBACK_MODELS,
-} from "@omniroute/open-sse/services/promptqlModels.ts";
+} from "@cheaproute/open-sse/services/promptqlModels.ts";
 import {
   discoverNotionWebModels,
   NOTION_WEB_FALLBACK_MODELS,
-} from "@omniroute/open-sse/services/notionWebModels.ts";
+} from "@cheaproute/open-sse/services/notionWebModels.ts";
 import {
   discoverMaxaiModels,
   MAXAI_REGISTRY_MODELS,
-} from "@omniroute/open-sse/services/maxaiModels.ts";
+} from "@cheaproute/open-sse/services/maxaiModels.ts";
 import {
   AZURE_AI_DEFAULT_BASE_URL,
   buildAzureAiModelsUrl,
-} from "@omniroute/open-sse/config/azureAi.ts";
+} from "@cheaproute/open-sse/config/azureAi.ts";
 import {
   DATAROBOT_DEFAULT_BASE_URL,
   buildDataRobotCatalogUrl,
   isDataRobotDeploymentUrl,
-} from "@omniroute/open-sse/config/datarobot.ts";
-import { OCI_DEFAULT_BASE_URL, buildOciModelsUrl } from "@omniroute/open-sse/config/oci.ts";
+} from "@cheaproute/open-sse/config/datarobot.ts";
+import { OCI_DEFAULT_BASE_URL, buildOciModelsUrl } from "@cheaproute/open-sse/config/oci.ts";
 import {
   SAP_DEFAULT_BASE_URL,
   buildSapModelsUrl,
   getSapResourceGroup,
-} from "@omniroute/open-sse/config/sap.ts";
+} from "@cheaproute/open-sse/config/sap.ts";
 import {
   WATSONX_DEFAULT_BASE_URL,
   buildWatsonxModelsUrl,
-} from "@omniroute/open-sse/config/watsonx.ts";
-import "@omniroute/open-sse/config/embeddingRegistry.ts";
-import "@omniroute/open-sse/config/rerankRegistry.ts";
-import "@omniroute/open-sse/config/audioRegistry.ts";
+} from "@cheaproute/open-sse/config/watsonx.ts";
+import "@cheaproute/open-sse/config/embeddingRegistry.ts";
+import "@cheaproute/open-sse/config/rerankRegistry.ts";
+import "@cheaproute/open-sse/config/audioRegistry.ts";
 import {
   getCachedDiscoveredModels,
   isAutoFetchModelsEnabled,
@@ -97,7 +97,7 @@ import { AUTHZ_HEADER_PEER_LOCALITY } from "@/server/authz/headers";
 import { fetchCursorAgentModels } from "@/lib/providerModels/cursorAgent";
 import { fetchCursorAvailableModels } from "@/lib/providerModels/cursorAvailableModels";
 import { ensureCursorAutoCatalogEntry } from "@/lib/providerModels/cursorAutoCatalog";
-import { resolveCursorBearerToken } from "@omniroute/open-sse/services/cursorApiKeyAuth.ts";
+import { resolveCursorBearerToken } from "@cheaproute/open-sse/services/cursorApiKeyAuth.ts";
 import { resolveCopilotDiscoveryToken } from "@/lib/providerModels/copilotDiscoveryToken";
 import {
   asRecord,
@@ -159,7 +159,7 @@ export async function GET(
     const includeCandidates = searchParams.get("includeCandidates") === "true";
     const chatOnly =
       searchParams.get("chatOnly") === "true" ||
-      request.headers.get("x-omniroute-model-surface")?.toLowerCase() === "chat";
+      request.headers.get("x-cheaproute-model-surface")?.toLowerCase() === "chat";
 
     const connection = await getCachedProviderConnectionById(id);
     const connectionProvider =
@@ -2400,11 +2400,11 @@ export async function GET(
 
     if (getProviderConnectionFamilyIds("alibaba").includes(provider)) {
       const { shouldUseLiveAlibabaFreeModelDiscovery } =
-        await import("@omniroute/open-sse/services/alibabaFreeTier.ts");
+        await import("@cheaproute/open-sse/services/alibabaFreeTier.ts");
       const { scheduleAlibabaFreeTierProbeRefresh } =
-        await import("@omniroute/open-sse/services/alibabaFreeTierDiscovery.ts");
+        await import("@cheaproute/open-sse/services/alibabaFreeTierDiscovery.ts");
       const { scheduleAlibabaFreeTierQuotaRefresh, hasAlibabaConsoleFreeTierAuth } =
-        await import("@omniroute/open-sse/services/alibabaFreeTierQuotaFetcher.ts");
+        await import("@cheaproute/open-sse/services/alibabaFreeTierQuotaFetcher.ts");
       const { resolveAlibabaProviderBaseUrl } =
         await import("@/shared/constants/alibabaProviderRegions.ts");
       const providerSpecificData = connection.providerSpecificData as Record<

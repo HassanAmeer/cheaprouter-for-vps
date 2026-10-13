@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireManagementAuth } from "@/lib/api/requireManagementAuth";
 import { bindVolcenginePlansFromConsoleCredentials } from "@/lib/providers/volcenginePlanBinding";
-import { sanitizeErrorMessage } from "@omniroute/open-sse/utils/error.ts";
+import { sanitizeErrorMessage } from "@cheaproute/open-sse/utils/error.ts";
 import { formatValidationMessage, validateBody } from "@/shared/validation/helpers";
 import { volcenginePlanConnectSchema } from "@/shared/validation/schemas/volcenginePlan";
 
@@ -23,7 +23,7 @@ export async function POST(request: Request): Promise<NextResponse> {
   if (phone) {
     try {
       const { volcengineConsoleAutoLoginService } = await import(
-        "@omniroute/open-sse/services/volcengineConsoleAutoLogin.ts"
+        "@cheaproute/open-sse/services/volcengineConsoleAutoLogin.ts"
       );
       const started = await volcengineConsoleAutoLoginService.startLogin(phone, { timeout });
       if (started.ok === false) {
@@ -41,7 +41,7 @@ export async function POST(request: Request): Promise<NextResponse> {
 
   // Legacy manual flow: headful browser login on the server machine.
   try {
-    const { inAppLoginService } = await import("@omniroute/open-sse/services/inAppLoginService.ts");
+    const { inAppLoginService } = await import("@cheaproute/open-sse/services/inAppLoginService.ts");
     const login = await inAppLoginService.startLogin("volcengine-console", { timeout });
     if (!login.success || !login.credentials) {
       return NextResponse.json(

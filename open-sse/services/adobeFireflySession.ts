@@ -1,7 +1,7 @@
 /**
  * Adobe Firefly durable session manager.
  *
- * Goal: same as other OmniRoute web-cookie providers (notion-web, perplexity-web):
+ * Goal: same as other CheapRoute web-cookie providers (notion-web, perplexity-web):
  * paste Cookie (+ optional IMS JWT) once and use pure HTTP — **no browser window**.
  *
  *  1) Extract / cache IMS user JWT from paste (or short-lived memory/disk cache)
@@ -140,7 +140,7 @@ const SESSION_DIR_NAME = "adobe-firefly-sessions";
 
 function dataDir(): string {
   return (
-    String(process.env.DATA_DIR || process.env.OMNIROUTE_DATA_DIR || "").trim() ||
+    String(process.env.DATA_DIR || process.env.CHEAPROUTE_DATA_DIR || "").trim() ||
     join(process.cwd(), ".data")
   );
 }
@@ -507,7 +507,7 @@ async function writeBackAdobeFireflyCredentials(
   if (!connectionId || connectionId === "legacy-default") return;
   if (!isAdobeUserAccessToken(session.accessToken)) return;
   // Skip when connectionId looks like a credential fingerprint (32 hex) without a real UUID.
-  // Real OmniRoute connection ids are UUIDs; still attempt write-back for any non-empty key.
+  // Real CheapRoute connection ids are UUIDs; still attempt write-back for any non-empty key.
   try {
     const { updateProviderConnection } = await import("@/lib/db/providers");
     const credential = serializeAdobeFireflyCredential(session);

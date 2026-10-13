@@ -1,7 +1,7 @@
 {
   "version": 1,
   "locale": "ko",
-  "description": "Canonical ko terminology for recurring OmniRoute concepts. Consumed by scripts/i18n/check-glossary-consistency.mjs. Each concept lists the canonical translation plus any non-canonical synonym that is actively normalized (drift enforced by the consistency gate). Concepts whose `synonyms` array is empty are seeded for documentation only — the catalog still uses more than one legitimate rendering for them today (e.g. 공급자/제공자, 폴백/대체), so enforcement is deferred to a follow-up normalization pass. Every enforced synonym and mistranslation below was verified to have zero legitimate occurrences in the real src + bin/cli ko catalogs before being added (collision policy mirrors the KNOWN_MISTRANSLATIONS note in the checker script — e.g. 안타 (Hits) is deliberately NOT enforced because it is a substring of the legitimate 안타깝게도).",
+  "description": "Canonical ko terminology for recurring CheapRoute concepts. Consumed by scripts/i18n/check-glossary-consistency.mjs. Each concept lists the canonical translation plus any non-canonical synonym that is actively normalized (drift enforced by the consistency gate). Concepts whose `synonyms` array is empty are seeded for documentation only — the catalog still uses more than one legitimate rendering for them today (e.g. 공급자/제공자, 폴백/대체), so enforcement is deferred to a follow-up normalization pass. Every enforced synonym and mistranslation below was verified to have zero legitimate occurrences in the real src + bin/cli ko catalogs before being added (collision policy mirrors the KNOWN_MISTRANSLATIONS note in the checker script — e.g. 안타 (Hits) is deliberately NOT enforced because it is a substring of the legitimate 안타깝게도).",
   "terms": {
     "provider": {
       "canonical": "공급자",
@@ -46,7 +46,7 @@
     "Claude": ["클로드"],
     "Gemini": ["쌍둥이자리"],
     "Antigravity": ["반중력"],
-    "OmniRoute": ["옴니루트"],
+    "CheapRoute": ["옴니루트"],
     "Tailscale": ["꼬리비늘"],
     "VACUUM": ["진공"],
     "socks5": ["양말5"],

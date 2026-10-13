@@ -296,14 +296,14 @@ export function zaiImageFileName(mimeType: string, index: number): string {
         : normalized.startsWith("image/")
           ? normalized.slice("image/".length).replace(/[^a-z0-9]/g, "") || "png"
           : "png";
-  return `omniroute-image-${index + 1}.${extension}`;
+  return `cheaproute-image-${index + 1}.${extension}`;
 }
 
 export function unprefixedModelId(modelId: string): string {
   return modelId.trim().split("/").at(-1) || modelId.trim();
 }
 
-/** Map OmniRoute's public Flash id to the opaque id used by chat.z.ai's wire API. */
+/** Map CheapRoute's public Flash id to the opaque id used by chat.z.ai's wire API. */
 export function zaiUpstreamModelId(modelId: string): string {
   const unprefixed = unprefixedModelId(modelId);
   return unprefixed.toLowerCase() === "glm-5.3-flash" ? "x-preview-l" : unprefixed;

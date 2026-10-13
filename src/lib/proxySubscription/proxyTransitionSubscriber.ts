@@ -18,7 +18,7 @@ import { maybeSwitchOnSetAside } from "./selectorTrigger";
 import {
   onProxyTransition,
   type ProxyTransition,
-} from "@omniroute/open-sse/utils/proxyTransitionListeners.ts";
+} from "@cheaproute/open-sse/utils/proxyTransitionListeners.ts";
 
 function handleTransition(transition: ProxyTransition): void {
   void maybeSwitchOnSetAside(transition.key, { kind: transition.kind }).catch((e) => {

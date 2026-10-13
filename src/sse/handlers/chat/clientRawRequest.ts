@@ -8,8 +8,8 @@
  * chat.ts re-exports both, so the public surface and tests/unit/chat-build-client-raw-request
  * are unchanged.
  */
-import { mergeAbortSignals } from "@omniroute/open-sse/executors/base.ts";
-import { cloneBoundedForLog } from "@omniroute/open-sse/utils/requestLogger.ts";
+import { mergeAbortSignals } from "@cheaproute/open-sse/executors/base.ts";
+import { cloneBoundedForLog } from "@cheaproute/open-sse/utils/requestLogger.ts";
 
 export function buildClientRawRequest(
   request: Request,
@@ -18,8 +18,8 @@ export function buildClientRawRequest(
 ) {
   const url = new URL(request.url);
   const headers = Object.fromEntries(request.headers.entries());
-  delete headers["x-omniroute-lease-owner"];
-  delete headers["x-omniroute-lease-generation"];
+  delete headers["x-cheaproute-lease-owner"];
+  delete headers["x-cheaproute-lease-generation"];
   // Internal slow-keepalive deadline routing token (never client-sent, never
   // upstream-bound): set by withDeadlineSignal, consumed by getDeadlineController.
   delete headers["x-deadline-token"];

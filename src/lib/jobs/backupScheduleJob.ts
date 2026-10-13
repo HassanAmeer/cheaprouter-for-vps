@@ -2,7 +2,7 @@ import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { matchesCron } from "@/lib/jobs/cronMatch";
 // Reuses the CLI's own backup implementation rather than duplicating it — the
-// `omniroute backup auto enable` schedule this job executes is written by
+// `cheaproute backup auto enable` schedule this job executes is written by
 // exactly that CLI, with the exact same cloud/encrypt/retention semantics.
 // `runBackupCommand`/`resolveDataDir` are plain functions with no Commander
 // or process.exit() coupling (verified), and `resolveDataDir()` here is
@@ -17,7 +17,7 @@ const DEFAULT_INTERVAL_MS = 30 * 1000;
 let timer: NodeJS.Timeout | null = null;
 
 function getIntervalMs() {
-  const raw = process.env.OMNIROUTE_BACKUP_SCHEDULE_JOB_INTERVAL_MS;
+  const raw = process.env.CHEAPROUTE_BACKUP_SCHEDULE_JOB_INTERVAL_MS;
   const parsed = raw ? Number(raw) : Number.NaN;
   // Floor at 5s (not the usual 60s+ floor used by the other jobs in this
   // directory): cron granularity is 1 minute, so the tick must be

@@ -6,7 +6,7 @@
  * tokenHealthCheck.ts, which is already at its size ceiling.
  *
  * Disable semantics are unchanged: isHealthCheckDisabled() still honours
- * OMNIROUTE_DISABLE_TOKEN_HEALTHCHECK, NEXT_PHASE=phase-production-build and
+ * CHEAPROUTE_DISABLE_TOKEN_HEALTHCHECK, NEXT_PHASE=phase-production-build and
  * isAutomatedTestProcess(). The registry only fires the interval; the handler
  * decides whether there is anything to do.
  */

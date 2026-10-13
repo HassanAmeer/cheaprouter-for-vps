@@ -1,6 +1,6 @@
 import { updateProviderConnection } from "@/lib/db/providers";
 import { shouldIsolateProbeFailures } from "@/shared/utils/probeOrigin";
-import { sanitizeErrorMessage } from "@omniroute/open-sse/utils/errorSanitization.ts";
+import { sanitizeErrorMessage } from "@cheaproute/open-sse/utils/errorSanitization.ts";
 
 type Patch = {
   testStatus: string;

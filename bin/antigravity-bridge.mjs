@@ -1,10 +1,10 @@
 #!/usr/bin/env node
 /**
- * OmniRoute Antigravity Bridge Proxy
+ * CheapRoute Antigravity Bridge Proxy
  *
  * Intercepts Antigravity CLI and IDE requests:
  * - Directs Gemini 3.8 models directly to Google backend (100% native, untouched).
- * - Directs other models (Claude Sonnet 4.5/4.6, Opus, Gemini 3.7, GPT-OSS, etc.) to OmniRoute /v1/antigravity.
+ * - Directs other models (Claude Sonnet 4.5/4.6, Opus, Gemini 3.7, GPT-OSS, etc.) to CheapRoute /v1/antigravity.
  * - Passes all non-model Google requests (auth, onboarding, telemetry) directly to Google backend.
  * - Transparently forwards all other non-target internet traffic.
  */
@@ -20,7 +20,7 @@ import { fileURLToPath } from "node:url";
 const PORT = parseInt(process.env.BRIDGE_PORT || "20129", 10);
 const ROUTER_URL = process.env.ROUTER_URL || "http://127.0.0.1:20128/v1/antigravity";
 const ROUTER_API_KEY =
-  process.env.ROUTER_API_KEY || process.env.OMNIROUTE_API_KEY || "sk-omniroute-bridge-local";
+  process.env.ROUTER_API_KEY || process.env.CHEAPROUTE_API_KEY || "sk-cheaproute-bridge-local";
 
 // Connection pool agents with TCP keep-alive
 const httpAgent = new http.Agent({
@@ -43,7 +43,7 @@ let cachedSslOptions = null;
 function getSslOptions() {
   if (cachedSslOptions) return cachedSslOptions;
   const certDir =
-    process.env.CERT_DIR || path.join(process.env.HOME || process.cwd(), ".omniroute", "mitm");
+    process.env.CERT_DIR || path.join(process.env.HOME || process.cwd(), ".cheaproute", "mitm");
   const serverKey = path.join(certDir, "server.key");
   const serverCrt = path.join(certDir, "server.crt");
 
@@ -98,7 +98,7 @@ function extractModel(body, url) {
 }
 
 const MODEL_ROUTING_MAP = {
-  // Official OmniRoute Auto Groups
+  // Official CheapRoute Auto Groups
   "auto/best-fast": "groq/openai/gpt-oss-120b",
   "auto/best-coding": "mistral/codestral-latest",
   "auto/best-reasoning": "nvidia/nvidia/nemotron-3-super-120b-a12b",
@@ -117,22 +117,22 @@ const MODEL_ROUTING_MAP = {
   "auto/gemma": "groq/qwen/qwen3.8-27b",
 
   // Human-readable Display Names (in case CLI sends displayName in envelope)
-  "Auto: Best Fast (OmniRoute)": "groq/openai/gpt-oss-120b",
-  "Auto: Best Coding (OmniRoute)": "mistral/codestral-latest",
-  "Auto: Best Reasoning (OmniRoute)": "nvidia/nvidia/nemotron-3-super-120b-a12b",
-  "Auto: Best Free (OmniRoute)": "groq/qwen/qwen3.8-27b",
-  "Auto: Best Vision (OmniRoute)": "nvidia/meta/llama-3.2-90b-vision-instruct",
-  "Auto: Coding Pro (OmniRoute)": "mistral/codestral-latest",
-  "Auto: Coding Fast (OmniRoute)": "groq/openai/gpt-oss-120b",
-  "Auto: Coding Free (OmniRoute)": "groq/qwen/qwen3.8-27b",
-  "Auto: Coding Reliable (OmniRoute)": "mistral/codestral-latest",
-  "Auto: Reasoning Pro (OmniRoute)": "nvidia/nvidia/nemotron-3-super-120b-a12b",
-  "Auto: Smart (OmniRoute)": "nvidia/nvidia/nemotron-3-super-120b-a12b",
-  "Auto: Claude Sonnet (OmniRoute)": "mistral/codestral-latest",
-  "Auto: Claude Opus (OmniRoute)": "nvidia/nvidia/nemotron-3-super-120b-a12b",
-  "Auto: Gemini (OmniRoute)": "gemini/gemini-2.5-flash",
-  "Auto: Llama (OmniRoute)": "groq/openai/gpt-oss-120b",
-  "Auto: Gemma (OmniRoute)": "groq/qwen/qwen3.8-27b",
+  "Auto: Best Fast (CheapRoute)": "groq/openai/gpt-oss-120b",
+  "Auto: Best Coding (CheapRoute)": "mistral/codestral-latest",
+  "Auto: Best Reasoning (CheapRoute)": "nvidia/nvidia/nemotron-3-super-120b-a12b",
+  "Auto: Best Free (CheapRoute)": "groq/qwen/qwen3.8-27b",
+  "Auto: Best Vision (CheapRoute)": "nvidia/meta/llama-3.2-90b-vision-instruct",
+  "Auto: Coding Pro (CheapRoute)": "mistral/codestral-latest",
+  "Auto: Coding Fast (CheapRoute)": "groq/openai/gpt-oss-120b",
+  "Auto: Coding Free (CheapRoute)": "groq/qwen/qwen3.8-27b",
+  "Auto: Coding Reliable (CheapRoute)": "mistral/codestral-latest",
+  "Auto: Reasoning Pro (CheapRoute)": "nvidia/nvidia/nemotron-3-super-120b-a12b",
+  "Auto: Smart (CheapRoute)": "nvidia/nvidia/nemotron-3-super-120b-a12b",
+  "Auto: Claude Sonnet (CheapRoute)": "mistral/codestral-latest",
+  "Auto: Claude Opus (CheapRoute)": "nvidia/nvidia/nemotron-3-super-120b-a12b",
+  "Auto: Gemini (CheapRoute)": "gemini/gemini-2.5-flash",
+  "Auto: Llama (CheapRoute)": "groq/openai/gpt-oss-120b",
+  "Auto: Gemma (CheapRoute)": "groq/qwen/qwen3.8-27b",
 
   // Fail-safe self-healing for dead/retired models
   "nvidia/deepseek-ai/deepseek-v4-pro-0813": "groq/openai/gpt-oss-120b",
@@ -164,88 +164,88 @@ function resolveTargetModel(model) {
   return clean;
 }
 
-const OMNIROUTE_BUILTIN_GROUPS = [
+const CHEAPROUTE_BUILTIN_GROUPS = [
   {
     id: "auto/best-coding",
-    displayName: "Auto: Best Coding (OmniRoute)",
+    displayName: "Auto: Best Coding (CheapRoute)",
     descriptionText:
-      "OmniRoute dynamic routing to the highest benchmark coding model available (Mistral Codestral)",
+      "CheapRoute dynamic routing to the highest benchmark coding model available (Mistral Codestral)",
   },
   {
     id: "auto/best-reasoning",
-    displayName: "Auto: Best Reasoning (OmniRoute)",
+    displayName: "Auto: Best Reasoning (CheapRoute)",
     descriptionText:
-      "OmniRoute dynamic routing to the highest benchmark reasoning model available (Nemotron 3 Super 120B)",
+      "CheapRoute dynamic routing to the highest benchmark reasoning model available (Nemotron 3 Super 120B)",
   },
   {
     id: "auto/best-fast",
-    displayName: "Auto: Best Fast (OmniRoute)",
-    descriptionText: "OmniRoute sub-second lowest latency high-throughput model (Groq LPUs)",
+    displayName: "Auto: Best Fast (CheapRoute)",
+    descriptionText: "CheapRoute sub-second lowest latency high-throughput model (Groq LPUs)",
   },
   {
     id: "auto/best-vision",
-    displayName: "Auto: Best Vision (OmniRoute)",
-    descriptionText: "OmniRoute multimodal & computer vision routing",
+    displayName: "Auto: Best Vision (CheapRoute)",
+    descriptionText: "CheapRoute multimodal & computer vision routing",
   },
   {
     id: "auto/best-free",
-    displayName: "Auto: Best Free (OmniRoute)",
-    descriptionText: "OmniRoute 100% unmetered free tier model routing (Qwen 3.8 27B)",
+    displayName: "Auto: Best Free (CheapRoute)",
+    descriptionText: "CheapRoute 100% unmetered free tier model routing (Qwen 3.8 27B)",
   },
   {
     id: "auto/coding:pro",
-    displayName: "Auto: Coding Pro (OmniRoute)",
-    descriptionText: "OmniRoute frontier pro-tier coding model (Codestral)",
+    displayName: "Auto: Coding Pro (CheapRoute)",
+    descriptionText: "CheapRoute frontier pro-tier coding model (Codestral)",
   },
   {
     id: "auto/coding:fast",
-    displayName: "Auto: Coding Fast (OmniRoute)",
-    descriptionText: "OmniRoute fast sub-second daily coding model (Groq 120B)",
+    displayName: "Auto: Coding Fast (CheapRoute)",
+    descriptionText: "CheapRoute fast sub-second daily coding model (Groq 120B)",
   },
   {
     id: "auto/coding:free",
-    displayName: "Auto: Coding Free (OmniRoute)",
-    descriptionText: "OmniRoute zero-cost free coding model",
+    displayName: "Auto: Coding Free (CheapRoute)",
+    descriptionText: "CheapRoute zero-cost free coding model",
   },
   {
     id: "auto/coding:reliable",
-    displayName: "Auto: Coding Reliable (OmniRoute)",
-    descriptionText: "OmniRoute maximum uptime and reliability coding model",
+    displayName: "Auto: Coding Reliable (CheapRoute)",
+    descriptionText: "CheapRoute maximum uptime and reliability coding model",
   },
   {
     id: "auto/reasoning:pro",
-    displayName: "Auto: Reasoning Pro (OmniRoute)",
-    descriptionText: "OmniRoute deep reasoning frontier model",
+    displayName: "Auto: Reasoning Pro (CheapRoute)",
+    descriptionText: "CheapRoute deep reasoning frontier model",
   },
   {
     id: "auto/smart",
-    displayName: "Auto: Smart (OmniRoute)",
-    descriptionText: "OmniRoute highest intelligence general-purpose model",
+    displayName: "Auto: Smart (CheapRoute)",
+    descriptionText: "CheapRoute highest intelligence general-purpose model",
   },
   {
     id: "auto/claude-sonnet",
-    displayName: "Auto: Claude Sonnet (OmniRoute)",
-    descriptionText: "OmniRoute automated routing across Claude Sonnet providers",
+    displayName: "Auto: Claude Sonnet (CheapRoute)",
+    descriptionText: "CheapRoute automated routing across Claude Sonnet providers",
   },
   {
     id: "auto/claude-opus",
-    displayName: "Auto: Claude Opus (OmniRoute)",
-    descriptionText: "OmniRoute automated routing across Claude Opus providers",
+    displayName: "Auto: Claude Opus (CheapRoute)",
+    descriptionText: "CheapRoute automated routing across Claude Opus providers",
   },
   {
     id: "auto/gemini",
-    displayName: "Auto: Gemini (OmniRoute)",
-    descriptionText: "OmniRoute automated routing across Gemini providers",
+    displayName: "Auto: Gemini (CheapRoute)",
+    descriptionText: "CheapRoute automated routing across Gemini providers",
   },
   {
     id: "auto/llama",
-    displayName: "Auto: Llama (OmniRoute)",
-    descriptionText: "OmniRoute automated routing across Llama providers",
+    displayName: "Auto: Llama (CheapRoute)",
+    descriptionText: "CheapRoute automated routing across Llama providers",
   },
   {
     id: "auto/gemma",
-    displayName: "Auto: Gemma (OmniRoute)",
-    descriptionText: "OmniRoute automated routing across Gemma providers",
+    displayName: "Auto: Gemma (CheapRoute)",
+    descriptionText: "CheapRoute automated routing across Gemma providers",
   },
   // Active, verified provider models
   {
@@ -280,12 +280,12 @@ const OMNIROUTE_BUILTIN_GROUPS = [
   },
 ];
 
-const OMNIROUTE_CUSTOM_MODELS = new Set([
-  ...OMNIROUTE_BUILTIN_GROUPS.map((g) => g.id),
+const CHEAPROUTE_CUSTOM_MODELS = new Set([
+  ...CHEAPROUTE_BUILTIN_GROUPS.map((g) => g.id),
   ...Object.keys(MODEL_ROUTING_MAP),
 ]);
 
-function shouldInterceptToOmniRoute(model, url) {
+function shouldInterceptToCheapRoute(model, url) {
   if (!model) return false;
 
   // Never intercept non-streaming unary RPCs (Antigravity expects raw JSON/Protobuf, not SSE)
@@ -309,14 +309,14 @@ function shouldInterceptToOmniRoute(model, url) {
     return false;
   }
 
-  // Intercept any OmniRoute auto group, provider model, or mapped alias
+  // Intercept any CheapRoute auto group, provider model, or mapped alias
   const clean = model.replace(/^models\//, "").trim();
   if (
     clean.startsWith("auto/") ||
-    clean.toLowerCase().includes("omniroute") ||
+    clean.toLowerCase().includes("cheaproute") ||
     clean.includes("/") ||
-    OMNIROUTE_CUSTOM_MODELS.has(model) ||
-    OMNIROUTE_CUSTOM_MODELS.has(clean) ||
+    CHEAPROUTE_CUSTOM_MODELS.has(model) ||
+    CHEAPROUTE_CUSTOM_MODELS.has(clean) ||
     Boolean(MODEL_ROUTING_MAP[model]) ||
     Boolean(MODEL_ROUTING_MAP[clean])
   ) {
@@ -345,12 +345,12 @@ const internalApp = http.createServer(async (req, res) => {
   }
 
   const model = extractModel(bodyJson, url);
-  const shouldIntercept = shouldInterceptToOmniRoute(model, url);
+  const shouldIntercept = shouldInterceptToCheapRoute(model, url);
 
   if (shouldIntercept) {
     const resolvedModel = resolveTargetModel(model);
     console.log(
-      `[Bridge] 🔀 INTERCEPTING -> OmniRoute: "${model || "default"}" => "${resolvedModel}" (${url})`
+      `[Bridge] 🔀 INTERCEPTING -> CheapRoute: "${model || "default"}" => "${resolvedModel}" (${url})`
     );
 
     let outgoingBuffer = bodyBuffer;
@@ -363,15 +363,15 @@ const internalApp = http.createServer(async (req, res) => {
       outgoingBuffer = Buffer.from(JSON.stringify(cloned), "utf-8");
     }
 
-    // Forward to OmniRoute /v1/antigravity
+    // Forward to CheapRoute /v1/antigravity
     try {
       const forwardHeaders = {
         "Content-Type": "application/json",
         "Content-Length": Buffer.byteLength(outgoingBuffer),
         Authorization: `Bearer ${ROUTER_API_KEY}`,
-        "x-omniroute-source": "agent-bridge",
-        "x-omniroute-agent": "antigravity",
-        "x-omniroute-skip-usage": "true", // Skip usage tracking for default models
+        "x-cheaproute-source": "agent-bridge",
+        "x-cheaproute-agent": "antigravity",
+        "x-cheaproute-skip-usage": "true", // Skip usage tracking for default models
       };
 
       const upstreamReq = http.request(
@@ -389,10 +389,10 @@ const internalApp = http.createServer(async (req, res) => {
       upstreamReq.setNoDelay(true);
 
       upstreamReq.on("error", (err) => {
-        console.error(`[Bridge] ❌ Error forwarding to OmniRoute: ${err.message}`);
+        console.error(`[Bridge] ❌ Error forwarding to CheapRoute: ${err.message}`);
         if (!res.headersSent) {
           res.writeHead(502, { "Content-Type": "application/json" });
-          res.end(JSON.stringify({ error: { message: `OmniRoute bridge error: ${err.message}` } }));
+          res.end(JSON.stringify({ error: { message: `CheapRoute bridge error: ${err.message}` } }));
         }
       });
 
@@ -400,7 +400,7 @@ const internalApp = http.createServer(async (req, res) => {
       upstreamReq.end();
       return;
     } catch (err) {
-      console.error(`[Bridge] ❌ Failed to invoke OmniRoute: ${err.message}`);
+      console.error(`[Bridge] ❌ Failed to invoke CheapRoute: ${err.message}`);
     }
   }
 
@@ -434,7 +434,7 @@ const internalApp = http.createServer(async (req, res) => {
           try {
             const data = JSON.parse(respBuffer.toString("utf-8"));
             if (data && data.models) {
-              // Inject OmniRoute built-in auto groups and models
+              // Inject CheapRoute built-in auto groups and models
               const baseTemplate =
                 data.models["claude-sonnet-4-6"] ||
                 data.models["gpt-oss-120b-medium"] ||
@@ -442,7 +442,7 @@ const internalApp = http.createServer(async (req, res) => {
                 {};
 
               const injectedIds = [];
-              for (const group of OMNIROUTE_BUILTIN_GROUPS) {
+              for (const group of CHEAPROUTE_BUILTIN_GROUPS) {
                 data.models[group.id] = {
                   ...baseTemplate,
                   id: group.id,
@@ -453,7 +453,7 @@ const internalApp = http.createServer(async (req, res) => {
                 injectedIds.push(group.id);
               }
 
-              // Prepend OmniRoute groups to agentModelSorts recommended group
+              // Prepend CheapRoute groups to agentModelSorts recommended group
               if (
                 Array.isArray(data.agentModelSorts) &&
                 data.agentModelSorts[0]?.groups?.[0]?.modelIds
@@ -510,7 +510,7 @@ internalApp.headersTimeout = 66000;
 const proxyServer = http.createServer((req, res) => {
   // Plain HTTP request (non-CONNECT)
   res.writeHead(200, { "Content-Type": "text/plain" });
-  res.end("OmniRoute Antigravity Bridge Proxy Active\n");
+  res.end("CheapRoute Antigravity Bridge Proxy Active\n");
 });
 
 proxyServer.keepAliveTimeout = 65000;
@@ -564,9 +564,9 @@ proxyServer.on("connect", (req, clientSocket, head) => {
 export {
   resolveTargetModel,
   MODEL_ROUTING_MAP,
-  shouldInterceptToOmniRoute,
+  shouldInterceptToCheapRoute,
   extractModel,
-  OMNIROUTE_BUILTIN_GROUPS,
+  CHEAPROUTE_BUILTIN_GROUPS,
   proxyServer,
   internalApp,
 };
@@ -575,7 +575,7 @@ const isMain = process.argv[1] && path.resolve(process.argv[1]) === fileURLToPat
 
 if (isMain) {
   proxyServer.listen(PORT, "127.0.0.1", () => {
-    console.log(`🚀 OmniRoute Antigravity Bridge listening on 127.0.0.1:${PORT}`);
+    console.log(`🚀 CheapRoute Antigravity Bridge listening on 127.0.0.1:${PORT}`);
     console.log(`   Routing non-Gemini 3.8 model traffic -> ${ROUTER_URL}`);
     console.log(`   Preserving Gemini 3.8 native traffic -> Google`);
   });

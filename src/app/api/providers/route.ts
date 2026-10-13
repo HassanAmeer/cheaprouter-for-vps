@@ -30,12 +30,12 @@ import {
   batchUpdateProviderConnectionsSchema,
 } from "@/shared/validation/schemas";
 import { isValidationFailure, validateBody } from "@/shared/validation/helpers";
-import { normalizeQoderPatProviderData } from "@omniroute/open-sse/services/qoderCli";
-import { projectCodexAccountPool } from "@omniroute/open-sse/services/codexAccount/index.ts";
+import { normalizeQoderPatProviderData } from "@cheaproute/open-sse/services/qoderCli";
+import { projectCodexAccountPool } from "@cheaproute/open-sse/services/codexAccount/index.ts";
 import {
   CODEX_SPARK_QUOTA_SESSION,
   CODEX_SPARK_QUOTA_WEEKLY,
-} from "@omniroute/open-sse/config/codexQuotaScopes.ts";
+} from "@cheaproute/open-sse/config/codexQuotaScopes.ts";
 import {
   normalizeProviderSpecificData,
   sanitizeProviderSpecificDataForResponse,
@@ -65,7 +65,7 @@ import { rejectRetiredCommonChatGptWebProvider } from "@/lib/providers/chatgptWe
 import {
   chatGptWebStorageStateFromCookieHeader,
   normalizeChatGptWebStorageState,
-} from "@omniroute/open-sse/utils/chatgptWebExecutorAdapter.ts";
+} from "@cheaproute/open-sse/utils/chatgptWebExecutorAdapter.ts";
 import { applyOperatorActivationIntent } from "@/lib/providers/operatorDisable";
 import { getRequestPeerLocality } from "@/shared/utils/apiAuth";
 
@@ -259,7 +259,7 @@ export async function POST(request: Request) {
           : "";
       try {
         const { finalizeValidatedChatGptWebCodexSecrets } =
-          await import("@omniroute/open-sse/services/chatgptWebCodexAdmin.ts");
+          await import("@cheaproute/open-sse/services/chatgptWebCodexAdmin.ts");
         const finalized = finalizeValidatedChatGptWebCodexSecrets(apiKey || "", validationId);
         persistedApiKey = finalized.encodedCredential;
         providerSpecificData = { ...(providerSpecificData || {}) };

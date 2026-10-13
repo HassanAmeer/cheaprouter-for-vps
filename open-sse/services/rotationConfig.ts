@@ -1,7 +1,7 @@
 /**
  * Runtime rotation configuration.
  *
- * OmniRoute's account-fallback engine (accountFallback.ts) historically rotated accounts using
+ * CheapRoute's account-fallback engine (accountFallback.ts) historically rotated accounts using
  * only hardcoded constants (COOLDOWN_MS / BACKOFF_CONFIG / ERROR_RULES): every retryable error
  * cooled the account down immediately, on a fixed exponential backoff, with no operator control.
  *
@@ -12,11 +12,11 @@
  * `providerSpecificData.rotationOverrides`).
  *
  * Config surface (all optional — defaults preserve the pre-existing engine behavior):
- *   - master enable                            OMNIROUTE_ROTATION_ENABLED               (default true)
- *   - rate-limit reset/cooldown seconds        OMNIROUTE_ROTATION_RATE_LIMIT_RESET_SECONDS (0 => engine default)
- *   - per-status fallback enable               OMNIROUTE_ROTATE_ON_{429,500,502,400}    (429/500/502 default true, 400 default false)
- *   - per-status threshold (errors in window)  OMNIROUTE_ROTATE_{status}_THRESHOLD      (default 1 => immediate, current behavior)
- *   - per-status window seconds                OMNIROUTE_ROTATE_{status}_WINDOW_SECONDS (default 120)
+ *   - master enable                            CHEAPROUTE_ROTATION_ENABLED               (default true)
+ *   - rate-limit reset/cooldown seconds        CHEAPROUTE_ROTATION_RATE_LIMIT_RESET_SECONDS (0 => engine default)
+ *   - per-status fallback enable               CHEAPROUTE_ROTATE_ON_{429,500,502,400}    (429/500/502 default true, 400 default false)
+ *   - per-status threshold (errors in window)  CHEAPROUTE_ROTATE_{status}_THRESHOLD      (default 1 => immediate, current behavior)
+ *   - per-status window seconds                CHEAPROUTE_ROTATE_{status}_WINDOW_SECONDS (default 120)
  *
  * Everything here is a pure function or a small in-memory sliding-window counter — no DB / IO on
  * the hot path — so it is cheap to consult per request and trivially unit-testable.
@@ -46,7 +46,7 @@ export interface RotationConfig {
   badRequest400: RotationErrorClassConfig;
 }
 
-const GLOBAL_KEY = "__omniroute_rotation_config__";
+const GLOBAL_KEY = "__cheaproute_rotation_config__";
 const DEFAULT_WINDOW_MS = 120_000;
 
 function envBool(name: string, dflt: boolean): boolean {
@@ -81,31 +81,31 @@ function buildClass(
 
 function buildFromEnv(): RotationConfig {
   return {
-    enabled: envBool("OMNIROUTE_ROTATION_ENABLED", true),
-    rateLimitResetMs: envInt("OMNIROUTE_ROTATION_RATE_LIMIT_RESET_SECONDS", 0, 0) * 1000,
-    disableTagWithoutReset: envBool("OMNIROUTE_ROTATION_DISABLE_TAG_WITHOUT_RESET", true),
+    enabled: envBool("CHEAPROUTE_ROTATION_ENABLED", true),
+    rateLimitResetMs: envInt("CHEAPROUTE_ROTATION_RATE_LIMIT_RESET_SECONDS", 0, 0) * 1000,
+    disableTagWithoutReset: envBool("CHEAPROUTE_ROTATION_DISABLE_TAG_WITHOUT_RESET", true),
     rateLimit429: buildClass(
-      "OMNIROUTE_ROTATE_ON_429",
-      "OMNIROUTE_ROTATE_429_THRESHOLD",
-      "OMNIROUTE_ROTATE_429_WINDOW_SECONDS",
+      "CHEAPROUTE_ROTATE_ON_429",
+      "CHEAPROUTE_ROTATE_429_THRESHOLD",
+      "CHEAPROUTE_ROTATE_429_WINDOW_SECONDS",
       true
     ),
     serverError500: buildClass(
-      "OMNIROUTE_ROTATE_ON_500",
-      "OMNIROUTE_ROTATE_500_THRESHOLD",
-      "OMNIROUTE_ROTATE_500_WINDOW_SECONDS",
+      "CHEAPROUTE_ROTATE_ON_500",
+      "CHEAPROUTE_ROTATE_500_THRESHOLD",
+      "CHEAPROUTE_ROTATE_500_WINDOW_SECONDS",
       true
     ),
     badGateway502: buildClass(
-      "OMNIROUTE_ROTATE_ON_502",
-      "OMNIROUTE_ROTATE_502_THRESHOLD",
-      "OMNIROUTE_ROTATE_502_WINDOW_SECONDS",
+      "CHEAPROUTE_ROTATE_ON_502",
+      "CHEAPROUTE_ROTATE_502_THRESHOLD",
+      "CHEAPROUTE_ROTATE_502_WINDOW_SECONDS",
       true
     ),
     badRequest400: buildClass(
-      "OMNIROUTE_ROTATE_ON_400",
-      "OMNIROUTE_ROTATE_400_THRESHOLD",
-      "OMNIROUTE_ROTATE_400_WINDOW_SECONDS",
+      "CHEAPROUTE_ROTATE_ON_400",
+      "CHEAPROUTE_ROTATE_400_THRESHOLD",
+      "CHEAPROUTE_ROTATE_400_WINDOW_SECONDS",
       false
     ),
   };
@@ -226,7 +226,7 @@ export function rateLimitCooldownOverrideMs(cfg: RotationConfig): number | null 
 
 // ── Sliding-window per-key error counter (for threshold-based fallback) ──────────────────────
 
-const COUNTER_KEY = "__omniroute_rotation_counters__";
+const COUNTER_KEY = "__cheaproute_rotation_counters__";
 
 function counters(): Map<string, number[]> {
   const g = globalThis as Record<string, unknown>;

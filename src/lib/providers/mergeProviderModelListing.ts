@@ -4,7 +4,7 @@
  * exclude retired static/imported rows while preserving operator-owned models.
  */
 
-import { appendSyncedEffortVariants } from "@omniroute/open-sse/utils/syncedEffortVariants";
+import { appendSyncedEffortVariants } from "@cheaproute/open-sse/utils/syncedEffortVariants";
 import { ensureCursorAutoCatalogEntry } from "@/lib/providerModels/cursorAutoCatalog";
 import { mergeModelsWithCustomPrecedence } from "@/lib/providers/modelMetadataPrecedence";
 import {

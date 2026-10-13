@@ -19,7 +19,7 @@ import {
 import {
   isValidIanaTimeZone,
   isValidResetHour,
-} from "@omniroute/open-sse/services/dailyQuotaReset.ts";
+} from "@cheaproute/open-sse/services/dailyQuotaReset.ts";
 import {
   upstreamHeadersRecordSchema,
   modelCompatPerProtocolSchema,

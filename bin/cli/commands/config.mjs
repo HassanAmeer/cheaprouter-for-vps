@@ -9,7 +9,7 @@ import { guardHostConfigTarget } from "../utils/config-home-guard.mjs";
 
 function ensureBackup(configPath) {
   if (!fs.existsSync(configPath)) return;
-  const backupDir = path.join(path.dirname(configPath), ".omniroute.bak");
+  const backupDir = path.join(path.dirname(configPath), ".cheaproute.bak");
   if (!fs.existsSync(backupDir)) fs.mkdirSync(backupDir, { recursive: true });
   const backupPath = path.join(backupDir, path.basename(configPath) + ".bak");
   fs.copyFileSync(configPath, backupPath);
@@ -63,7 +63,7 @@ async function runConfigListCommand(opts = {}) {
 
 async function runConfigGetCommand(toolId, opts = {}) {
   if (!toolId) {
-    printError("Tool ID required. Usage: omniroute config get <tool>");
+    printError("Tool ID required. Usage: cheaproute config get <tool>");
     return 1;
   }
   const { detectTool } = await import("../../../src/lib/cli-helper/tool-detector.ts");
@@ -90,7 +90,7 @@ async function runConfigGetCommand(toolId, opts = {}) {
 
 async function runConfigSetCommand(toolId, opts = {}) {
   if (!toolId) {
-    printError("Tool ID required. Usage: omniroute config set <tool> [options]");
+    printError("Tool ID required. Usage: cheaproute config set <tool> [options]");
     return 1;
   }
 
@@ -99,7 +99,7 @@ async function runConfigSetCommand(toolId, opts = {}) {
   const model = opts.model;
 
   if (!apiKey) {
-    printError("API key required. Use --api-key or set OMNIROUTE_API_KEY.");
+    printError("API key required. Use --api-key or set CHEAPROUTE_API_KEY.");
     return 1;
   }
 
@@ -113,7 +113,7 @@ async function runConfigSetCommand(toolId, opts = {}) {
 
   const guard = await guardHostConfigTarget(result.configPath, {
     toolLabel: toolId,
-    hostCommand: `omniroute config set ${toolId}`,
+    hostCommand: `cheaproute config set ${toolId}`,
     allowContainerWrite: Boolean(opts.allowContainerWrite ?? opts["allow-container-write"]),
   });
   if (guard !== 0) return guard;
@@ -155,7 +155,7 @@ async function runConfigSetCommand(toolId, opts = {}) {
 
 async function runConfigValidateCommand(toolId, opts = {}) {
   if (!toolId) {
-    printError("Tool ID required. Usage: omniroute config validate <tool>");
+    printError("Tool ID required. Usage: cheaproute config validate <tool>");
     return 1;
   }
 
@@ -246,7 +246,7 @@ export async function runConfigLangSetCommand(code, opts = {}) {
     return 0;
   }
   const envPath = getCliEnvPath();
-  upsertEnvLine(envPath, "OMNIROUTE_LANG", code);
+  upsertEnvLine(envPath, "CHEAPROUTE_LANG", code);
   setLocale(code);
   console.log(t("config.lang.saved", { code, name: entry.english }));
   console.log(t("config.lang.envHint", { code }));
@@ -309,14 +309,14 @@ export function registerConfig(program) {
     .option("--yes", "Skip confirmation prompt")
     .option(
       "--allow-container-write",
-      "Write the config even when OmniRoute runs in a container and the target is not mounted from the host"
+      "Write the config even when CheapRoute runs in a container and the target is not mounted from the host"
     )
     .action(async (tool, opts, cmd) => {
       const globalOpts = cmd.parent.optsWithGlobals();
       const exitCode = await runConfigSetCommand(tool, {
         ...opts,
-        apiKey: opts.apiKey || globalOpts.apiKey || process.env.OMNIROUTE_API_KEY,
-        baseUrl: opts.baseUrl || globalOpts.baseUrl || process.env.OMNIROUTE_BASE_URL,
+        apiKey: opts.apiKey || globalOpts.apiKey || process.env.CHEAPROUTE_API_KEY,
+        baseUrl: opts.baseUrl || globalOpts.baseUrl || process.env.CHEAPROUTE_BASE_URL,
         output: globalOpts.output,
       });
       if (exitCode !== 0) process.exit(exitCode);
@@ -331,8 +331,8 @@ export function registerConfig(program) {
       const globalOpts = cmd.parent.optsWithGlobals();
       const exitCode = await runConfigValidateCommand(tool, {
         ...opts,
-        apiKey: opts.apiKey || globalOpts.apiKey || process.env.OMNIROUTE_API_KEY,
-        baseUrl: opts.baseUrl || globalOpts.baseUrl || process.env.OMNIROUTE_BASE_URL,
+        apiKey: opts.apiKey || globalOpts.apiKey || process.env.CHEAPROUTE_API_KEY,
+        baseUrl: opts.baseUrl || globalOpts.baseUrl || process.env.CHEAPROUTE_BASE_URL,
         output: globalOpts.output,
       });
       if (exitCode !== 0) process.exit(exitCode);
@@ -348,14 +348,14 @@ export function registerConfig(program) {
     .option("--yes", "Skip confirmation prompt")
     .option(
       "--allow-container-write",
-      "Write the config even when OmniRoute runs in a container and the target is not mounted from the host"
+      "Write the config even when CheapRoute runs in a container and the target is not mounted from the host"
     )
     .action(async (opts, cmd) => {
       const globalOpts = cmd.parent.optsWithGlobals();
       const exitCode = await runConfigSetCommand("opencode", {
         ...opts,
-        apiKey: opts.apiKey || globalOpts.apiKey || process.env.OMNIROUTE_API_KEY,
-        baseUrl: opts.baseUrl || globalOpts.baseUrl || process.env.OMNIROUTE_BASE_URL,
+        apiKey: opts.apiKey || globalOpts.apiKey || process.env.CHEAPROUTE_API_KEY,
+        baseUrl: opts.baseUrl || globalOpts.baseUrl || process.env.CHEAPROUTE_BASE_URL,
         output: globalOpts.output,
       });
       if (exitCode !== 0) process.exit(exitCode);

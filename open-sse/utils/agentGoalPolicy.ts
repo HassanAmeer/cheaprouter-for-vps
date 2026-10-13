@@ -79,7 +79,7 @@ export function resolveAgentGoalPolicy(
   // timeouts or stream recovery, regardless of request body/headers. This
   // mitigates client-controlled timeout amplification when an operator does
   // not want request bodies/headers to influence upstream timeout budgets.
-  const policyEnabled = parseEnvBoolean(env.OMNIROUTE_AGENT_GOAL_POLICY_ENABLED, true);
+  const policyEnabled = parseEnvBoolean(env.CHEAPROUTE_AGENT_GOAL_POLICY_ENABLED, true);
   if (!policyEnabled) {
     return {
       detected: false,
@@ -88,15 +88,15 @@ export function resolveAgentGoalPolicy(
     };
   }
 
-  const forcedByHeader = parseEnvBoolean(readHeader(headers, "x-omniroute-agent-goal"), false);
+  const forcedByHeader = parseEnvBoolean(readHeader(headers, "x-cheaproute-agent-goal"), false);
   const detected = forcedByHeader || isAgentGoalRequestBody(body);
   const readinessMaxTimeoutMs = readPositiveMs(
     env,
-    "OMNIROUTE_AGENT_GOAL_READINESS_MAX_TIMEOUT_MS",
+    "CHEAPROUTE_AGENT_GOAL_READINESS_MAX_TIMEOUT_MS",
     DEFAULT_AGENT_GOAL_READINESS_MAX_TIMEOUT_MS
   );
   const streamRecoveryEnabled =
-    detected && parseEnvBoolean(env.OMNIROUTE_AGENT_GOAL_STREAM_RECOVERY, true);
+    detected && parseEnvBoolean(env.CHEAPROUTE_AGENT_GOAL_STREAM_RECOVERY, true);
 
   return {
     detected,

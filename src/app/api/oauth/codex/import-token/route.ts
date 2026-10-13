@@ -4,7 +4,7 @@ import { extractCodexAccountInfo } from "@/lib/oauth/services/codexImport";
 import { parseCodexSessionJson } from "@/lib/oauth/utils/codexSessionImport";
 import { createProviderConnection } from "@/models";
 import { requireManagementAuth } from "@/lib/api/requireManagementAuth";
-import { buildErrorBody, sanitizeErrorMessage } from "@omniroute/open-sse/utils/error.ts";
+import { buildErrorBody, sanitizeErrorMessage } from "@cheaproute/open-sse/utils/error.ts";
 
 /**
  * POST /api/oauth/codex/import-token

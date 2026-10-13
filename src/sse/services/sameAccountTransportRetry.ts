@@ -14,7 +14,7 @@
  * pays twice for the same verdict.
  */
 
-import { UPSTREAM_RESPONDED_ERROR_TYPE } from "@omniroute/open-sse/utils/diagnostics.ts";
+import { UPSTREAM_RESPONDED_ERROR_TYPE } from "@cheaproute/open-sse/utils/diagnostics.ts";
 
 export const SAME_ACCOUNT_TRANSPORT_RETRY_MAX = 1;
 export const SAME_ACCOUNT_TRANSPORT_RETRY_MIN_DELAY_MS = 2000;

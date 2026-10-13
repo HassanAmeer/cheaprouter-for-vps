@@ -23,7 +23,7 @@ const PENDING_PAYLOAD_KEYS = [
 ] as const;
 
 function omitVideoSensitivePendingPayload(payload: unknown, sensitive: boolean): unknown {
-  return sensitive ? { _omniroute_omitted: "video-transcript" } : payload;
+  return sensitive ? { _cheaproute_omitted: "video-transcript" } : payload;
 }
 
 export function initialPendingBody(

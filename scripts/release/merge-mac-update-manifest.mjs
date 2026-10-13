@@ -16,7 +16,7 @@
 //       [it.url.pathname, it.info.url].some(n => n.includes(process.arch))
 //     ) ?? filteredFiles.shift();
 //
-// The Intel dmg is named `OmniRoute-X.Y.Z.dmg` — no arch suffix. On an Intel Mac
+// The Intel dmg is named `CheapRoute-X.Y.Z.dmg` — no arch suffix. On an Intel Mac
 // `process.arch` is `"x64"`, no file URL contains "x64", the find misses, and the fallback
 // takes the FIRST entry. With an arm64-only manifest that is the ARM dmg.
 //

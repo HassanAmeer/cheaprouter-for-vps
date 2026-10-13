@@ -83,7 +83,7 @@ async function resolveVertexDiscoveryAuth(options: {
   accessToken: unknown;
 }): Promise<{ queryKey: string | null; bearerToken: string | null }> {
   const { parseSAFromApiKey, getAccessToken, looksLikeServiceAccountJson } =
-    await import("@omniroute/open-sse/executors/vertex.ts");
+    await import("@cheaproute/open-sse/executors/vertex.ts");
   const credential = (typeof options.apiKey === "string" ? options.apiKey : "").trim();
   if (typeof options.accessToken === "string" && options.accessToken) {
     return { queryKey: null, bearerToken: options.accessToken };
@@ -113,7 +113,7 @@ async function handleVertexApiKeyCatalog(
 ): Promise<Response> {
   const { discoverVertexModelsWithApiKey } =
     await import("@/lib/providerModels/vertexModelDiscovery");
-  const { isVertexExpressModel } = await import("@omniroute/open-sse/config/vertexModels.ts");
+  const { isVertexExpressModel } = await import("@cheaproute/open-sse/config/vertexModels.ts");
   const discovery = await discoverVertexModelsWithApiKey({
     apiKey: queryKey,
     fetchImpl: vertexFetch(options.proxy),

@@ -26,13 +26,13 @@ export async function materializeAutoCombo(modelStr: string) {
   }
   if (modelStr === "auto") {
     const { createVirtualAutoCombo } =
-      await import("@omniroute/open-sse/services/autoCombo/virtualFactory");
+      await import("@cheaproute/open-sse/services/autoCombo/virtualFactory");
     const combo = await createVirtualAutoCombo(undefined);
     combo.name = modelStr;
     combo.id = modelStr;
     return combo;
   }
   const { createBuiltinAutoCombo } =
-    await import("@omniroute/open-sse/services/autoCombo/builtinCatalog");
+    await import("@cheaproute/open-sse/services/autoCombo/builtinCatalog");
   return createBuiltinAutoCombo(modelStr, modelStr.slice("auto/".length));
 }

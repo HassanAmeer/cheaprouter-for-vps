@@ -419,8 +419,8 @@ const EXISTING_README_CODES = new Set(["pt-BR", "es", "fr", "it", "ru", "zh-CN",
 const RTL_LOCALES = new Set(["ar", "fa", "he", "ur"]);
 
 const URL_MAX_TEXT_LENGTH = 1800;
-const DELIMITER = "\n__OMNIROUTE_I18N_SEPARATOR__\n";
-const DELIMITER_REGEX = /\n\s*__OMNIROUTE_I18N_SEPARATOR__\s*\n/g;
+const DELIMITER = "\n__CHEAPROUTE_I18N_SEPARATOR__\n";
+const DELIMITER_REGEX = /\n\s*__CHEAPROUTE_I18N_SEPARATOR__\s*\n/g;
 const TRANSLATION_CACHE = new Map();
 const REQUEST_TIMEOUT_MS = 20000;
 
@@ -565,7 +565,7 @@ async function translateTextRaw(text, targetLanguage, sourceLanguage = "en", att
     response = await fetch(url, {
       signal: controller.signal,
       headers: {
-        "User-Agent": "Mozilla/5.0 OmniRoute-I18N",
+        "User-Agent": "Mozilla/5.0 CheapRoute-I18N",
       },
     });
   } catch (error) {

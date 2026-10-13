@@ -1,5 +1,5 @@
 /**
- * Ponte de telemetria do OmniGlyph — allowlist positiva.
+ * Ponte de telemetria do CheapGlyph — allowlist positiva.
  *
  * `TransformInfo` mistura contadores inofensivos com material que NUNCA pode
  * ser persistido: bytes PNG, `imageSourceText(s)`, `recoverable[].text`, os
@@ -10,7 +10,7 @@
  * Este módulo não filtra por denylist — ele MONTA um objeto novo, campo a
  * campo, só com número e enum. Um campo novo no upstream não entra sozinho.
  *
- * `normalizeAccounting()` (OmniGlyph 1.4.0) faz a parte difícil: classifica o
+ * `normalizeAccounting()` (CheapGlyph 1.4.0) faz a parte difícil: classifica o
  * grau de evidência da economia e resolve a semântica de cache por provider —
  * Anthropic reporta input/cache-create/cache-read em buckets DISJUNTOS,
  * enquanto OpenAI e xAI reportam `cached` como SUBCONJUNTO do input. Somar à
@@ -20,12 +20,12 @@
 import {
   normalizeAccounting,
   type AccountingProvider,
-  type OmniGlyphTransformInfo,
+  type CheapGlyphTransformInfo,
   type SavingsEvidence,
-} from "omniglyph";
+} from "cheapglyph";
 
-/** Contabilidade segura de uma execução do OmniGlyph. Só número e enum. */
-export interface OmniGlyphAccounting {
+/** Contabilidade segura de uma execução do CheapGlyph. Só número e enum. */
+export interface CheapGlyphAccounting {
   provider: AccountingProvider;
   model?: string;
   bytes: {
@@ -82,14 +82,14 @@ function count(value: unknown): number | undefined {
   return typeof value === "number" && Number.isFinite(value) && value >= 0 ? value : undefined;
 }
 
-export function buildOmniGlyphAccounting(params: {
+export function buildCheapGlyphAccounting(params: {
   provider: string | null | undefined;
   model?: string;
   originalBytes: number;
   transformedBytes: number;
-  info?: OmniGlyphTransformInfo | null;
+  info?: CheapGlyphTransformInfo | null;
   durationMs?: number;
-}): OmniGlyphAccounting {
+}): CheapGlyphAccounting {
   const { info } = params;
   const provider = toAccountingProvider(params.provider);
 

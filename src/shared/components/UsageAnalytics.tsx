@@ -30,7 +30,7 @@ import {
 // Main Component
 // ============================================================================
 
-const TOKEN_DISPLAY_MODE_KEY = "omniroute:analytics-token-display-mode";
+const TOKEN_DISPLAY_MODE_KEY = "cheaproute:analytics-token-display-mode";
 export type TokenDisplayMode = "compact" | "exact";
 
 const tokenDisplayListeners = new Set<() => void>();

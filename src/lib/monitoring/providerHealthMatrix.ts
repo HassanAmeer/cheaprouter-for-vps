@@ -2,9 +2,9 @@ import { getSyncedAvailableModelsByConnection } from "@/lib/db/models";
 import { getProviderConnections } from "@/lib/db/providers";
 import { getDbInstance } from "@/lib/db/core";
 import { getAllCircuitBreakerStatuses } from "@/shared/utils/circuitBreaker";
-import { getAllModelLockouts } from "@omniroute/open-sse/services/accountFallback";
-import { resolveProviderAlias } from "@omniroute/open-sse/services/model";
-import { getWebSessionPoolHealth } from "@omniroute/open-sse/services/webSessionPoolHealth";
+import { getAllModelLockouts } from "@cheaproute/open-sse/services/accountFallback";
+import { resolveProviderAlias } from "@cheaproute/open-sse/services/model";
+import { getWebSessionPoolHealth } from "@cheaproute/open-sse/services/webSessionPoolHealth";
 
 type JsonRecord = Record<string, unknown>;
 

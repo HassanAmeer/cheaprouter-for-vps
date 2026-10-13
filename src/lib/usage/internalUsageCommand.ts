@@ -3,12 +3,12 @@ import {
   buildApiKeyUsageLimitPercentText,
   type ApiKeyUsageLimitStatus,
 } from "@/lib/usage/apiKeyUsageLimits";
-import { buildErrorBody } from "@omniroute/open-sse/utils/error";
+import { buildErrorBody } from "@cheaproute/open-sse/utils/error";
 
 export const INTERNAL_USAGE_COMMAND = "@@om-usage";
 export const USAGE_COMMAND_DISABLED_MESSAGE = "Usage command is disabled for this API key.";
 const USAGE_COMMAND_AUTH_REQUIRED_MESSAGE = "Usage command requires an authenticated API key.";
-const LOCAL_USAGE_MODEL = "omniroute/local-usage";
+const LOCAL_USAGE_MODEL = "cheaproute/local-usage";
 const TEXT_PLAIN_HEADERS = { "Content-Type": "text/plain; charset=utf-8" } as const;
 
 type JsonRecord = Record<string, unknown>;
@@ -527,7 +527,7 @@ function appendQuotaBlock(
 
 /**
  * Structured form of the usage command — what {@link buildUsageCommandText}
- * renders as text, exposed as data for API consumers (the OmniCopilot panel
+ * renders as text, exposed as data for API consumers (the CheapCopilot panel
  * asks for it via `?format=json`). Text and JSON share the exact same
  * collectors, so the two can never disagree about a number.
  *
@@ -625,13 +625,13 @@ function inferHttpUsageCommandSelection(request: Request): UsageCommandSelection
     return {
       preferredConnectionId:
         url.searchParams.get("connectionId")?.trim() ||
-        readHeader(request, "x-omniroute-connection")?.trim() ||
+        readHeader(request, "x-cheaproute-connection")?.trim() ||
         null,
       preferredProvider: url.searchParams.get("provider")?.trim() || null,
     };
   } catch {
     return {
-      preferredConnectionId: readHeader(request, "x-omniroute-connection")?.trim() || null,
+      preferredConnectionId: readHeader(request, "x-cheaproute-connection")?.trim() || null,
       preferredProvider: null,
     };
   }

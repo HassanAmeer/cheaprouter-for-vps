@@ -14,7 +14,7 @@ const { handleTestCombo } = await import("../tools/advancedTools.ts");
 describe("MCP Advanced Tools", () => {
   beforeEach(() => {
     mockFetch.mockReset();
-    // Re-assert the stub: importing advancedTools.ts triggers OmniRoute's own
+    // Re-assert the stub: importing advancedTools.ts triggers CheapRoute's own
     // startup side effects (DB init, global fetch proxy patch) that overwrite
     // globalThis.fetch after the top-level vi.stubGlobal() above ran.
     vi.stubGlobal("fetch", mockFetch);

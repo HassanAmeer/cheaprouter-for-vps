@@ -1,4 +1,4 @@
-import { getModelsByProviderId } from "@omniroute/open-sse/config/providerModels.ts";
+import { getModelsByProviderId } from "@cheaproute/open-sse/config/providerModels.ts";
 import { getProviderConnectionFamilyIds } from "@/shared/constants/providers";
 import { safePercentage } from "@/shared/utils/formatting";
 

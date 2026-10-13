@@ -1,17 +1,17 @@
 /**
- * omniroute fcc-claude — FCC (Free-Claude-Code) style launcher, ported from the
+ * cheaproute fcc-claude — FCC (Free-Claude-Code) style launcher, ported from the
  * "plan one" PoC.
  *
  * Features:
- *   1. Launch the claude binary pointed at a local or remote OmniRoute instance
+ *   1. Launch the claude binary pointed at a local or remote CheapRoute instance
  *      (supports e.g. omni.paibao.ai)
  *   2. Anthropic Messages API streaming client with a built-in fallback chain
- *   3. Dual-upstream version tracking (OmniRoute + FCC GitHub)
+ *   3. Dual-upstream version tracking (CheapRoute + FCC GitHub)
  *
  * Usage:
- *   omniroute fcc-claude [options] [claude args...]
- *   omniroute fcc-claude --remote https://omni.paibao.ai
- *   omniroute fcc-claude --fallback models.json "help me fix a bug"
+ *   cheaproute fcc-claude [options] [claude args...]
+ *   cheaproute fcc-claude --remote https://omni.paibao.ai
+ *   cheaproute fcc-claude --fallback models.json "help me fix a bug"
  */
 
 import { spawn } from "node:child_process";
@@ -28,7 +28,7 @@ import {
   quoteClaudeArgs,
 } from "./launch.mjs";
 
-// Own subdirectory under the shared OmniRoute data dir (honours the DATA_DIR env
+// Own subdirectory under the shared CheapRoute data dir (honours the DATA_DIR env
 // override, same as every other CLI command — see bin/cli/data-dir.mjs) rather
 // than a standalone ~/.omni-fcc-poc directory.
 function getFccDataDir() {
@@ -71,7 +71,7 @@ export function loadFallbackChain(opts = {}) {
  *
  * @param {Array} messages  Anthropic messages array
  * @param {string} model    primary model ID
- * @param {string} baseUrl  OmniRoute base URL (without /v1)
+ * @param {string} baseUrl  CheapRoute base URL (without /v1)
  * @param {string|undefined} authToken  Bearer token
  * @param {string[]} fallbackModels  fallback model chain
  * @param {object} options  extra body params (max_tokens, temperature, reasoning_effort, etc.)
@@ -158,7 +158,7 @@ export async function* streamMessages(
 /**
  * Direct streaming smoke test (CLI mode): like fcc-claude itself but for
  * non-interactive testing.
- * Usage: omniroute fcc-claude --test "hello"
+ * Usage: cheaproute fcc-claude --test "hello"
  */
 export async function runTestCommand(opts = {}) {
   const { baseUrl, authToken } = resolveLaunchTarget(opts);
@@ -191,7 +191,7 @@ export async function runTestCommand(opts = {}) {
 
 /**
  * Fetch the latest version from both upstreams and cache it (1h TTL).
- * Returns a { omniRoute, fcc } structure.
+ * Returns a { cheapRoute, fcc } structure.
  */
 export async function fetchUpstreamVersions() {
   const now = Date.now();
@@ -207,15 +207,15 @@ export async function fetchUpstreamVersions() {
     /* fresh start */
   }
 
-  // Upstream 1: local/remote OmniRoute version
-  let omniVersion = null;
+  // Upstream 1: local/remote CheapRoute version
+  let cheapVersion = null;
   try {
     const res = await fetch("http://localhost:20128/api/monitoring/health", {
       signal: AbortSignal.timeout(3000),
     });
     if (res.ok) {
       const json = await res.json();
-      omniVersion = json.version || json.system?.version || null;
+      cheapVersion = json.version || json.system?.version || null;
     }
   } catch {
     /* unreachable */
@@ -249,7 +249,7 @@ export async function fetchUpstreamVersions() {
 
   cache = {
     _fetchedAt: now,
-    omniRoute: { running: omniVersion, source: "health-api" },
+    cheapRoute: { running: cheapVersion, source: "health-api" },
     fcc: { latestRelease: fccVersion, source: "github-api" },
   };
 
@@ -266,8 +266,8 @@ export async function fetchUpstreamVersions() {
 
 export async function runVersionStatusCommand() {
   const cache = await fetchUpstreamVersions();
-  console.log("\n=== OmniRoute × FCC dual-upstream version status ===\n");
-  console.log(`OmniRoute running: ${cache.omniRoute.running || "unreachable"}`);
+  console.log("\n=== CheapRoute × FCC dual-upstream version status ===\n");
+  console.log(`CheapRoute running: ${cache.cheapRoute.running || "unreachable"}`);
   console.log(`FCC latest: ${cache.fcc.latestRelease || "unreachable"}`);
   console.log();
 }
@@ -275,9 +275,9 @@ export async function runVersionStatusCommand() {
 // ─── Main launcher (reuses launch.mjs's buildClaudeEnv + resolveLaunchTarget) ─
 
 /**
- * `omniroute fcc-claude [options] [claude args...]`
+ * `cheaproute fcc-claude [options] [claude args...]`
  *
- * Differs from `omniroute launch` by:
+ * Differs from `cheaproute launch` by:
  *   - a built-in fallback chain (automatic model switch on failure)
  *   - a --test mode (non-interactive streaming smoke test)
  *   - a --check-updates mode (dual-upstream version check)
@@ -307,7 +307,7 @@ export async function runFccClaude(opts = {}, claudeArgs = []) {
     if (!res.ok) throw new Error(`status ${res.status}`);
   } catch {
     console.error(
-      (t("launch.notRunning") || "OmniRoute is not reachable at {url}.").replace("{url}", baseUrl)
+      (t("launch.notRunning") || "CheapRoute is not reachable at {url}.").replace("{url}", baseUrl)
     );
     return 1;
   }
@@ -356,8 +356,8 @@ export function registerFccClaude(program) {
     .description(
       "FCC-style launcher: Claude Code with built-in fallback chain and dual-upstream version tracking"
     )
-    .option("--port <port>", "OmniRoute port (default: 20128)", "20128")
-    .option("--remote <url>", "Remote OmniRoute URL (e.g. https://omni.paibao.ai)")
+    .option("--port <port>", "CheapRoute port (default: 20128)", "20128")
+    .option("--remote <url>", "Remote CheapRoute URL (e.g. https://omni.paibao.ai)")
     .option("--token <token>", "Auth token (ANTHROPIC_AUTH_TOKEN)")
     .option("--api-key <key>", "Alias for --token")
     .option(

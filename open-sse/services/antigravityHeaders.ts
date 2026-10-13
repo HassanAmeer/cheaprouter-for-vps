@@ -11,7 +11,7 @@ import {
 //
 // Live comparison (same Google account, same host, 2026-08-25): 9Router
 // (this exact metadata shape, including a Linux platform enum) succeeded
-// against loadCodeAssist/onboardUser; OmniRoute (ideType as the bare string
+// against loadCodeAssist/onboardUser; CheapRoute (ideType as the bare string
 // "ANTIGRAVITY", no platform/pluginType) got 403 on both from the identical
 // account. Sending an incomplete client identity reads to Google's backend
 // as untrusted and gets rejected.
@@ -54,7 +54,7 @@ export const ANTIGRAVITY_IDE_NODE_X_GOOG_API_CLIENT = "gl-node/22.21.1";
 
 // Antigravity presents the native macOS desktop client fingerprint: the upstream
 // backend expects the Mac build, so the OS/arch token is pinned to darwin/arm64
-// regardless of the host OmniRoute happens to run on (#8098). The IDE / CLI /
+// regardless of the host CheapRoute happens to run on (#8098). The IDE / CLI /
 // IDE-Node User-Agent split (#8013) is preserved — only the platform token is fixed.
 const ANTIGRAVITY_OS_TYPE = "darwin";
 const ANTIGRAVITY_ARCH = "arm64";

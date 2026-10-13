@@ -375,7 +375,7 @@ async function __wbg_init(module_or_path) {
 
     if (module_or_path === undefined) {
         // Upstream wasm-bindgen glue defaults to a sidecar binary resolved via
-        // `new URL(<sidecar>, import.meta.url)`. OmniRoute ships the module inlined as
+        // `new URL(<sidecar>, import.meta.url)`. CheapRoute ships the module inlined as
         // WASM_BASE64 instead — no sidecar exists in the repo — and the only caller,
         // initTinyCmsWasm(), always passes that decoded Buffer explicitly, so this
         // branch is unreachable. The literal URL still had to go: Turbopack resolves

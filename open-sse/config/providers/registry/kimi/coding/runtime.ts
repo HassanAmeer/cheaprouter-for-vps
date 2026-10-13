@@ -141,7 +141,7 @@ export function refreshKimiCodeCliVersion(): Promise<string> {
         const response = await fetchImpl(NPM_KIMI_CODE_LATEST_URL, {
           headers: {
             Accept: "application/json",
-            "User-Agent": "OmniRoute-KimiCodeVersion/1.0",
+            "User-Agent": "CheapRoute-KimiCodeVersion/1.0",
           },
           signal: controller.signal,
         });

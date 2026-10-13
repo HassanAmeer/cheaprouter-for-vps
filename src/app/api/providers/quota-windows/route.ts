@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getAllProviderQuotaWindows } from "@omniroute/open-sse/services/quotaPreflight.ts";
+import { getAllProviderQuotaWindows } from "@cheaproute/open-sse/services/quotaPreflight.ts";
 import { getCachedSettings } from "@/lib/db/readCache";
 import { resolveResilienceSettings } from "@/lib/resilience/settings";
 import { requireManagementAuth } from "@/lib/api/requireManagementAuth";

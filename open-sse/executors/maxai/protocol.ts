@@ -4,7 +4,7 @@
  * translation/openai_in.py, translation/turn_render.py) and live-verified against
  * the real `/gpt/cwc/chat` endpoint.
  *
- * MaxAI is a stateless-full-history provider on the OmniRoute side: we send the
+ * MaxAI is a stateless-full-history provider on the CheapRoute side: we send the
  * ENTIRE flattened transcript in `message_content[0].text` every turn, always
  * with `chat_history: []`, and mint a fresh `conversation_id` per request. The
  * live probe proved a bare `/gpt/cwc/chat` (no upsert/add_messages bookkeeping)

@@ -197,7 +197,7 @@ export const OAUTH_PROVIDERS = {
     subscriptionRisk: true,
     riskNoticeVariant: "oauth",
     authHint:
-      "Sign in with your Zed account (native-app sign-in). OmniRoute generates a one-time RSA keypair and opens zed.dev to authorize it — on a remote/headless install, copy the resulting 127.0.0.1 callback URL from your browser's address bar and paste it back here. Distinct from the 'Zed IDE' credential-import entry above: this proxies chat completions through Zed's own hosted model aggregator (cloud.zed.dev), fronting Anthropic/OpenAI/Google/xAI models under your Zed plan.",
+      "Sign in with your Zed account (native-app sign-in). CheapRoute generates a one-time RSA keypair and opens zed.dev to authorize it — on a remote/headless install, copy the resulting 127.0.0.1 callback URL from your browser's address bar and paste it back here. Distinct from the 'Zed IDE' credential-import entry above: this proxies chat completions through Zed's own hosted model aggregator (cloud.zed.dev), fronting Anthropic/OpenAI/Google/xAI models under your Zed plan.",
   },
   trae: {
     id: "trae",
@@ -221,11 +221,11 @@ export const OAUTH_PROVIDERS = {
     textIcon: "KC",
     // Kimi official-partnership aff link (2026-07) — the "Kimi Coding Plan"
     // tracking link. Was previously unset (no header link rendered at all).
-    website: "https://www.kimi.ai/code?aff=omniroute",
+    website: "https://www.kimi.ai/code?aff=cheaproute",
     subscriptionRisk: true,
     riskNoticeVariant: "oauth",
     authHint:
-      "Sign in with the same Kimi account used by Kimi Code CLI. OmniRoute uses the CLI OAuth flow and Kimi Coding Plan endpoints.",
+      "Sign in with the same Kimi account used by Kimi Code CLI. CheapRoute uses the CLI OAuth flow and Kimi Coding Plan endpoints.",
   },
   kilocode: {
     id: "kilocode",
@@ -326,7 +326,7 @@ export const OAUTH_PROVIDERS = {
     // Tencent agent platform on its own host and account system, and a
     // CodeBuddy account does not work here.
     authHint:
-      "Tencent WorkBuddy (www.workbuddy.ai). Authorize the CLI device flow in the popup; OmniRoute then polls for the token and attaches the required X-Product: SaaS header. The model roster is served by the authenticated catalogue, so it is discovered live rather than listed here. WorkBuddy only accepts streaming requests, which OmniRoute accumulates back into a JSON response for non-streaming callers.",
+      "Tencent WorkBuddy (www.workbuddy.ai). Authorize the CLI device flow in the popup; CheapRoute then polls for the token and attaches the required X-Product: SaaS header. The model roster is served by the authenticated catalogue, so it is discovered live rather than listed here. WorkBuddy only accepts streaming requests, which CheapRoute accumulates back into a JSON response for non-streaming callers.",
   },
   "muse-code": {
     id: "muse-code",

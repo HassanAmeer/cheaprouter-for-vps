@@ -30,7 +30,7 @@ export { shouldBuildStandalone } from "./backendOnlyPages.mjs";
 
 const projectRoot = process.cwd();
 const distDir = path.resolve(process.env.NEXT_DIST_DIR || ".build/next");
-const backupRoot = path.join(os.tmpdir(), `omniroute-build-isolated-${process.pid}-${Date.now()}`);
+const backupRoot = path.join(os.tmpdir(), `cheaproute-build-isolated-${process.pid}-${Date.now()}`);
 
 export function getTransientBuildPaths(rootDir = projectRoot, env = process.env) {
   const paths = [
@@ -41,7 +41,7 @@ export function getTransientBuildPaths(rootDir = projectRoot, env = process.env)
     },
   ];
 
-  if (env.OMNIROUTE_BUILD_MOVE_TASKS === "1") {
+  if (env.CHEAPROUTE_BUILD_MOVE_TASKS === "1") {
     paths.push({
       label: "task planning workspace",
       sourcePath: path.join(rootDir, "_tasks"),
@@ -136,12 +136,12 @@ function runNextBuild() {
 }
 
 export function resolveNextBuildBundlerFlag(baseEnv = process.env) {
-  // Turbopack is the default; OMNIROUTE_USE_TURBOPACK=0 is the documented escape hatch
+  // Turbopack is the default; CHEAPROUTE_USE_TURBOPACK=0 is the documented escape hatch
   // to webpack (Windows, native-binding trouble, RAM-constrained machines — #6409, and
   // docs/reference/ENVIRONMENT.md). The choice is env-only ON PURPOSE: the variable is
   // the operator's control and CI sets it explicitly, so sniffing the runtime here would
   // silently override an operator who asked for Turbopack.
-  if (baseEnv.OMNIROUTE_USE_TURBOPACK === "0") {
+  if (baseEnv.CHEAPROUTE_USE_TURBOPACK === "0") {
     return "--webpack";
   }
   return "--turbopack";
@@ -155,7 +155,7 @@ export function resolveNextBuildBundlerFlag(baseEnv = process.env) {
  * once per real build without re-deriving the path.
  */
 export function getWindowsBuildProfileDir() {
-  return path.join(os.tmpdir(), `omniroute-build-winhome-${process.pid}`);
+  return path.join(os.tmpdir(), `cheaproute-build-winhome-${process.pid}`);
 }
 
 export function resolveNextBuildEnv(baseEnv = process.env, platform = process.platform) {
@@ -164,10 +164,10 @@ export function resolveNextBuildEnv(baseEnv = process.env, platform = process.pl
     NEXT_PRIVATE_BUILD_WORKER: baseEnv.NEXT_PRIVATE_BUILD_WORKER || "0",
     // Reliable build signal inherited by every spawned `next build` worker.
     // Next.js workers sometimes drop NEXT_PHASE, so DB entry points key off
-    // OMNIROUTE_BUILDING=1 to stub out SQLite and never load the native
+    // CHEAPROUTE_BUILDING=1 to stub out SQLite and never load the native
     // better-sqlite3 addon (its Statement destructor SIGABRTs at worker
     // teardown: node::RemoveEnvironmentCleanupHook). (#10060)
-    OMNIROUTE_BUILDING: "1",
+    CHEAPROUTE_BUILDING: "1",
     // No telemetry, anywhere: disable Next.js's anonymous build-time telemetry
     // on every build path (local, CI, Docker), not just the image build.
     NEXT_TELEMETRY_DISABLED: baseEnv.NEXT_TELEMETRY_DISABLED || "1",
@@ -201,10 +201,10 @@ export function resolveNextBuildEnv(baseEnv = process.env, platform = process.pl
   // stalling/OOMing local `npm run build` (npm-global installs). #4076/#4104 fixed
   // this only in the Docker builder stage (ENV NODE_OPTIONS); the local/native path
   // was left unprotected. Respect an existing --max-old-space-size (Docker already
-  // sets one — don't clobber/duplicate) and let OMNIROUTE_BUILD_MEMORY_MB override.
+  // sets one — don't clobber/duplicate) and let CHEAPROUTE_BUILD_MEMORY_MB override.
   // NOTE (#6409): --max-old-space-size only bounds V8's JS heap — it does NOT bound
   // Turbopack's native (Rust, off-V8-heap) memory, which is the default bundler as of
-  // #6283. On memory-constrained machines, set OMNIROUTE_USE_TURBOPACK=0 (webpack
+  // #6283. On memory-constrained machines, set CHEAPROUTE_USE_TURBOPACK=0 (webpack
   // fallback) instead of raising this heap value; see docs/reference/ENVIRONMENT.md.
   if (!/--max-old-space-size/.test(env.NODE_OPTIONS || "")) {
     // Default 8 GB (was 4 GB): the clean module graph peaks ~3.9 GB during the webpack
@@ -212,7 +212,7 @@ export function resolveNextBuildEnv(baseEnv = process.env, platform = process.pl
     // headroom without risk. NOTE: heap size does NOT fix a poisoned scope — if the build
     // OOMs/livelocks far above this, check for worktrees/cruft leaking into the tsconfig
     // scope (run `npm run check:build-scope`), not for "more heap". See incident 2026-06-25.
-    const heapMb = Number(baseEnv.OMNIROUTE_BUILD_MEMORY_MB) || 8192;
+    const heapMb = Number(baseEnv.CHEAPROUTE_BUILD_MEMORY_MB) || 8192;
     env.NODE_OPTIONS = `${env.NODE_OPTIONS || ""} --max-old-space-size=${heapMb}`.trim();
   }
 
@@ -296,7 +296,7 @@ export async function main() {
 
     if (isBackendOnlyBuild()) {
       console.log(
-        "[build-next-isolated] OMNIROUTE_BUILD_BACKEND_ONLY set — building API only (dashboard UI stubbed)"
+        "[build-next-isolated] CHEAPROUTE_BUILD_BACKEND_ONLY set — building API only (dashboard UI stubbed)"
       );
       stubbedPages = stubDashboardPages(projectRoot);
       if (isContributorBuild()) {
@@ -374,7 +374,7 @@ export async function main() {
         );
         if (basePathWrite.status !== 0) {
           console.warn(
-            "[build-next-isolated] Non-fatal error writing BUILD_OMNIROUTE_BASE_PATH sentinel"
+            "[build-next-isolated] Non-fatal error writing BUILD_CHEAPROUTE_BASE_PATH sentinel"
           );
         }
       } catch (assembleErr) {

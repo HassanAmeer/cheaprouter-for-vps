@@ -115,7 +115,7 @@ async function prepareJinaInput(
 
 /**
  * Mixed batches: keep Jina-native docs / strings intact and only translate
- * OmniRoute canonical `{ type, source }` items into Jina ImageDoc/TextDoc.
+ * CheapRoute canonical `{ type, source }` items into Jina ImageDoc/TextDoc.
  */
 export async function prepareJinaMixedEmbeddingInput(
   input: unknown[],
@@ -169,7 +169,7 @@ function toLlamaCppContentPart(
 
 /**
  * llama-server (`--embedding --mmproj …`) takes one `{ content: [part] }` object per
- * input element, using the `/v1/chat/completions` content parts. Translate OmniRoute
+ * input element, using the `/v1/chat/completions` content parts. Translate CheapRoute
  * canonical items into that shape — one item stays one vector — and keep plain strings
  * and canonical text items as strings. Remote sources are fetched (and size-capped)
  * here, so llama-server only ever sees inline data.
@@ -337,7 +337,7 @@ function normalizeEmbeddingInputItems(input: unknown): unknown[] {
 }
 
 /**
- * Translate OmniRoute's provider-neutral structured input into a documented
+ * Translate CheapRoute's provider-neutral structured input into a documented
  * provider-native transport. Each top-level input array element is one
  * embedding. Gemini Embedding 2 fuses multiple parts inside one Content;
  * N OpenAI `input` items must become N vectors via batchEmbedContents.

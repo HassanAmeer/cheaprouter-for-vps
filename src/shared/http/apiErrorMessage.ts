@@ -1,7 +1,7 @@
 /**
  * Extract a human-readable message from an API error response body.
  *
- * OmniRoute's structured error envelope is `{ error: { code, message,
+ * CheapRoute's structured error envelope is `{ error: { code, message,
  * correlation_id } }`, but some routes return `{ error: "string" }` and
  * validation failures return `{ error: { message, details:
  * [{ field, message }] } }`. Rendering the raw `error` object in the

@@ -4,7 +4,7 @@
  */
 
 import { NextResponse } from "next/server";
-import { sanitizeErrorMessage } from "@omniroute/open-sse/utils/error";
+import { sanitizeErrorMessage } from "@cheaproute/open-sse/utils/error";
 import { requireManagementAuth } from "@/lib/api/requireManagementAuth";
 import { getLogExportDestination } from "@/lib/db/logExportDestinations";
 import { createClientForDestination } from "@/lib/logExport/runner";

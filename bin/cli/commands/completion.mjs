@@ -7,7 +7,7 @@ import { resolveDataDir } from "../data-dir.mjs";
 import { listManifestTargets } from "../cli-manifest.mjs";
 import { loadModelCatalog, ModelCommandError } from "./model-api.mjs";
 
-// Target lists shared with `omniroute run` / `omniroute configure` — always
+// Target lists shared with `cheaproute run` / `cheaproute configure` — always
 // derived from the canonical manifest so the completion scripts cannot drift.
 const RUN_TARGET_WORDS = listManifestTargets("run").join(" ");
 const CONFIGURE_TARGET_WORDS = listManifestTargets("configure").join(" ");
@@ -23,8 +23,8 @@ function readCache() {
     const raw = JSON.parse(readFileSync(cachePath(), "utf8"));
     if (raw && typeof raw.ts === "number" && Date.now() - raw.ts < CACHE_TTL_MS) return raw;
   } catch (err) {
-    if (process.env.OMNIROUTE_DEBUG_COMPLETION) {
-      console.error("[omniroute completion] readCache failed:", err?.message ?? err);
+    if (process.env.CHEAPROUTE_DEBUG_COMPLETION) {
+      console.error("[cheaproute completion] readCache failed:", err?.message ?? err);
     }
   }
   return null;
@@ -49,8 +49,8 @@ async function refreshCache(opts = {}) {
       providers = (j.providers || j.items || []).map((p) => p.id || p.name).filter(Boolean);
     }
   } catch (err) {
-    if (process.env.OMNIROUTE_DEBUG_COMPLETION) {
-      console.error("[omniroute completion] refreshCache failed:", err?.message ?? err);
+    if (process.env.CHEAPROUTE_DEBUG_COMPLETION) {
+      console.error("[cheaproute completion] refreshCache failed:", err?.message ?? err);
     }
   }
   const data = { combos, providers, models, ts: Date.now() };
@@ -58,8 +58,8 @@ async function refreshCache(opts = {}) {
     mkdirSync(dirname(cachePath()), { recursive: true });
     writeFileSync(cachePath(), JSON.stringify(data));
   } catch (err) {
-    if (process.env.OMNIROUTE_DEBUG_COMPLETION) {
-      console.error("[omniroute completion] writeCache failed:", err?.message ?? err);
+    if (process.env.CHEAPROUTE_DEBUG_COMPLETION) {
+      console.error("[cheaproute completion] writeCache failed:", err?.message ?? err);
     }
   }
   return data;
@@ -74,9 +74,9 @@ function detectShell() {
 
 function installPath(shell) {
   const home = homedir();
-  if (shell === "zsh") return join(home, ".zsh", "completions", "_omniroute");
-  if (shell === "fish") return join(home, ".config", "fish", "completions", "omniroute.fish");
-  return join(home, ".bash_completion.d", "omniroute");
+  if (shell === "zsh") return join(home, ".zsh", "completions", "_cheaproute");
+  if (shell === "fish") return join(home, ".config", "fish", "completions", "cheaproute.fish");
+  return join(home, ".bash_completion.d", "cheaproute");
 }
 
 function modelSubcommandWords(program) {
@@ -85,32 +85,32 @@ function modelSubcommandWords(program) {
 }
 
 function generateZshScript(modelCommands) {
-  return `#compdef omniroute
+  return `#compdef cheaproute
 
-# OmniRoute zsh completion (dynamic)
-_omniroute_get_cache() {
+# CheapRoute zsh completion (dynamic)
+_cheaproute_get_cache() {
   local key="$1"
-  local cache="$HOME/.omniroute/completion-cache.json"
+  local cache="$HOME/.cheaproute/completion-cache.json"
   local now=$(date +%s 2>/dev/null || echo 0)
   local mtime=0
   if [[ -f "$cache" ]]; then
     mtime=$(stat -c %Y "$cache" 2>/dev/null || stat -f %m "$cache" 2>/dev/null || echo 0)
   fi
   if [[ $((now - mtime)) -gt 3600 ]]; then
-    omniroute completion refresh --quiet >/dev/null 2>&1
+    cheaproute completion refresh --quiet >/dev/null 2>&1
   fi
   if command -v python3 &>/dev/null && [[ -f "$cache" ]]; then
     python3 -c "import json,sys;d=json.load(open('$cache'));print(' '.join(d.get('$key',[])))" 2>/dev/null
   fi
 }
 
-_omniroute() {
+_cheaproute() {
   local -a commands
   commands=(
-    'serve:Start the OmniRoute server'
+    'serve:Start the CheapRoute server'
     'stop:Stop the server'
     'restart:Restart the server'
-    'setup:Configure OmniRoute'
+    'setup:Configure CheapRoute'
     'doctor:Run health diagnostics'
     'status:Show server status'
     'logs:View application logs'
@@ -137,12 +137,12 @@ _omniroute() {
     'completion:Shell completion'
     'memory:Manage memory store'
     'skills:Manage skills'
-    'connect:Connect to a local or remote OmniRoute server'
+    'connect:Connect to a local or remote CheapRoute server'
     'contexts:Manage local and remote server contexts'
     'configure:Configure a supported AI CLI'
-    'launch:Launch an AI CLI through OmniRoute'
-    'launch-codex:Launch Codex through OmniRoute'
-    'run:Run a supported AI CLI through OmniRoute'
+    'launch:Launch an AI CLI through CheapRoute'
+    'launch-codex:Launch Codex through CheapRoute'
+    'run:Run a supported AI CLI through CheapRoute'
     'runtime:Inspect CLI runtime capabilities'
     'repair:Repair native runtime dependencies'
   )
@@ -159,7 +159,7 @@ _omniroute() {
           case $words[2] in
             switch|delete|show)
               local -a combos
-              combos=($(_omniroute_get_cache combos))
+              combos=($(_cheaproute_get_cache combos))
               _describe 'combo' combos ;;
             *) _arguments '1:subcommand:(list switch create delete show suggest)' ;;
           esac ;;
@@ -167,7 +167,7 @@ _omniroute() {
           case $words[2] in
             add|remove|test)
               local -a providers
-              providers=($(_omniroute_get_cache providers))
+              providers=($(_cheaproute_get_cache providers))
               _describe 'provider' providers ;;
             *) _arguments '1:subcommand:(available list test test-all validate rotate status add import auth remove edit metrics metric)' ;;
           esac ;;
@@ -193,40 +193,40 @@ _omniroute() {
       case $state in
         models)
           local -a models
-          models=($(_omniroute_get_cache models))
+          models=($(_cheaproute_get_cache models))
           _describe 'model' models ;;
         combos)
           local -a combos
-          combos=($(_omniroute_get_cache combos))
+          combos=($(_cheaproute_get_cache combos))
           _describe 'combo' combos ;;
       esac ;;
   esac
 }
 
-compdef _omniroute omniroute
+compdef _cheaproute cheaproute
 `;
 }
 
 function generateBashScript(modelCommands) {
   return `#!/bin/bash
-# OmniRoute CLI bash completion (dynamic)
+# CheapRoute CLI bash completion (dynamic)
 
-_omniroute_get_cache() {
+_cheaproute_get_cache() {
   local key="$1"
-  local cache="$HOME/.omniroute/completion-cache.json"
+  local cache="$HOME/.cheaproute/completion-cache.json"
   local now
   now=$(date +%s 2>/dev/null || echo 0)
   local mtime=0
   [[ -f "$cache" ]] && mtime=$(stat -c %Y "$cache" 2>/dev/null || stat -f %m "$cache" 2>/dev/null || echo 0)
   if (( now - mtime > 3600 )); then
-    omniroute completion refresh --quiet >/dev/null 2>&1
+    cheaproute completion refresh --quiet >/dev/null 2>&1
   fi
   if command -v python3 &>/dev/null && [[ -f "$cache" ]]; then
     python3 -c "import json,sys;d=json.load(open('$cache'));print(' '.join(d.get('$key',[])))" 2>/dev/null
   fi
 }
 
-_omniroute() {
+_cheaproute() {
   local cur prev cmds
   COMPREPLY=()
   cur="\${COMP_WORDS[COMP_CWORD]}"
@@ -247,66 +247,66 @@ _omniroute() {
     runtime)     COMPREPLY=($(compgen -W "check repair clean" -- "\${cur}")); return 0 ;;
     --model)
       local models
-      models=$(_omniroute_get_cache models)
+      models=$(_cheaproute_get_cache models)
       COMPREPLY=($(compgen -W "\${models}" -- "\${cur}")); return 0 ;;
     --combo)
       local combos
-      combos=$(_omniroute_get_cache combos)
+      combos=$(_cheaproute_get_cache combos)
       COMPREPLY=($(compgen -W "\${combos}" -- "\${cur}")); return 0 ;;
     switch|delete)
       local combos
-      combos=$(_omniroute_get_cache combos)
+      combos=$(_cheaproute_get_cache combos)
       COMPREPLY=($(compgen -W "\${combos}" -- "\${cur}")); return 0 ;;
     *)
       COMPREPLY=($(compgen -W "\${cmds} --help --version --output --quiet" -- "\${cur}")); return 0 ;;
   esac
 }
 
-complete -F _omniroute omniroute
+complete -F _cheaproute cheaproute
 `;
 }
 
 function generateFishScript(modelCommands) {
-  return `# OmniRoute CLI fish completion (dynamic)
-complete -c omniroute -f
+  return `# CheapRoute CLI fish completion (dynamic)
+complete -c cheaproute -f
 
 set -l commands serve stop restart setup doctor status logs providers config keys models combo chat stream completion dashboard open backup restore health quota cache mcp a2a tunnel env memory skills connect contexts configure launch launch-codex update test run runtime repair
 
 for cmd in $commands
-  complete -c omniroute -n '__fish_is_nth_token 1' -a $cmd
+  complete -c cheaproute -n '__fish_is_nth_token 1' -a $cmd
 end
 
 # Subcommands
-complete -c omniroute -n '__fish_seen_subcommand_from combo' -a 'list switch create delete show suggest'
-complete -c omniroute -n '__fish_seen_subcommand_from keys' -a 'add list remove regenerate revoke reveal usage'
-complete -c omniroute -n '__fish_seen_subcommand_from providers' -a 'available list test test-all validate rotate status add import auth remove edit metrics metric'
-complete -c omniroute -n '__fish_seen_subcommand_from config' -a 'list get set validate contexts'
-complete -c omniroute -n '__fish_seen_subcommand_from models' -a '${modelCommands}'
-complete -c omniroute -n '__fish_seen_subcommand_from completion' -a 'zsh bash fish install refresh'
-complete -c omniroute -n '__fish_seen_subcommand_from open' -a 'combos providers api-manager cli-tools agents settings logs memory skills evals audit cost resilience'
-complete -c omniroute -n '__fish_seen_subcommand_from contexts' -a 'list add use current show remove rename export import migrate'
-complete -c omniroute -n '__fish_seen_subcommand_from configure' -a '${CONFIGURE_TARGET_WORDS}'
-complete -c omniroute -n '__fish_seen_subcommand_from run' -a '${RUN_TARGET_WORDS}'
-complete -c omniroute -n '__fish_seen_subcommand_from runtime' -a 'check repair clean'
+complete -c cheaproute -n '__fish_seen_subcommand_from combo' -a 'list switch create delete show suggest'
+complete -c cheaproute -n '__fish_seen_subcommand_from keys' -a 'add list remove regenerate revoke reveal usage'
+complete -c cheaproute -n '__fish_seen_subcommand_from providers' -a 'available list test test-all validate rotate status add import auth remove edit metrics metric'
+complete -c cheaproute -n '__fish_seen_subcommand_from config' -a 'list get set validate contexts'
+complete -c cheaproute -n '__fish_seen_subcommand_from models' -a '${modelCommands}'
+complete -c cheaproute -n '__fish_seen_subcommand_from completion' -a 'zsh bash fish install refresh'
+complete -c cheaproute -n '__fish_seen_subcommand_from open' -a 'combos providers api-manager cli-tools agents settings logs memory skills evals audit cost resilience'
+complete -c cheaproute -n '__fish_seen_subcommand_from contexts' -a 'list add use current show remove rename export import migrate'
+complete -c cheaproute -n '__fish_seen_subcommand_from configure' -a '${CONFIGURE_TARGET_WORDS}'
+complete -c cheaproute -n '__fish_seen_subcommand_from run' -a '${RUN_TARGET_WORDS}'
+complete -c cheaproute -n '__fish_seen_subcommand_from runtime' -a 'check repair clean'
 
 # Dynamic completions from cache (requires python3)
-function __omniroute_cache_get
+function __cheaproute_cache_get
   set -l key $argv[1]
-  set -l cache "$HOME/.omniroute/completion-cache.json"
+  set -l cache "$HOME/.cheaproute/completion-cache.json"
   set -l now (date +%s 2>/dev/null; or echo 0)
   set -l mtime 0
   test -f $cache; and set mtime (stat -c %Y $cache 2>/dev/null; or stat -f %m $cache 2>/dev/null; or echo 0)
   if test (math $now - $mtime) -gt 3600
-    omniroute completion refresh --quiet >/dev/null 2>&1
+    cheaproute completion refresh --quiet >/dev/null 2>&1
   end
   if command -q python3; and test -f $cache
     python3 -c "import json,sys;d=json.load(open('$cache'));print('\\n'.join(d.get('$key',[])))" 2>/dev/null
   end
 end
 
-complete -c omniroute -n '__fish_seen_subcommand_from combo; and __fish_seen_subcommand_from switch delete' -a '(__omniroute_cache_get combos)'
-complete -c omniroute -l model -a '(__omniroute_cache_get models)'
-complete -c omniroute -l combo -a '(__omniroute_cache_get combos)'
+complete -c cheaproute -n '__fish_seen_subcommand_from combo; and __fish_seen_subcommand_from switch delete' -a '(__cheaproute_cache_get combos)'
+complete -c cheaproute -l model -a '(__cheaproute_cache_get models)'
+complete -c cheaproute -l combo -a '(__cheaproute_cache_get combos)'
 `;
 }
 
@@ -375,7 +375,7 @@ export function registerCompletion(program) {
       }
     });
 
-  // Backward-compat: `omniroute completion <shell>` (positional arg form)
+  // Backward-compat: `cheaproute completion <shell>` (positional arg form)
   comp
     .command("<shell>")
     .description("Print completion script for shell (bash, zsh, fish)")

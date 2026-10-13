@@ -1,4 +1,4 @@
-import { errorResponse } from "@omniroute/open-sse/utils/error";
+import { errorResponse } from "@cheaproute/open-sse/utils/error";
 import { requireManagementAuth } from "@/lib/api/requireManagementAuth";
 import { readPoolEgressObservation } from "@/lib/proxyPoolEgressObservation";
 import { proxyPoolEgressObservationQuerySchema } from "@/shared/validation/schemas";

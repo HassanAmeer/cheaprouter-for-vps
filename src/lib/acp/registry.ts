@@ -31,7 +31,7 @@ export interface CliAgentInfo {
   version: string | null;
   /** Whether the agent is installed and available */
   installed: boolean;
-  /** Provider ID that this agent maps to in OmniRoute */
+  /** Provider ID that this agent maps to in CheapRoute */
   providerAlias: string;
   /** Arguments to pass when spawning for ACP */
   spawnArgs: string[];

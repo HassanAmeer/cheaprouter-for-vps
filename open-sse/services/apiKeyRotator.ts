@@ -74,10 +74,10 @@ const FAILURE_THRESHOLD = 2; // Mark as invalid after 2 consecutive failures
 
 /**
  * Default per-key cooldown when a 429 carries no Retry-After (#14573).
- * Overridable via OMNIROUTE_API_KEY_COOLDOWN_MS (milliseconds).
+ * Overridable via CHEAPROUTE_API_KEY_COOLDOWN_MS (milliseconds).
  */
 export const DEFAULT_KEY_COOLDOWN_MS = (() => {
-  const raw = Number(process.env.OMNIROUTE_API_KEY_COOLDOWN_MS);
+  const raw = Number(process.env.CHEAPROUTE_API_KEY_COOLDOWN_MS);
   return Number.isFinite(raw) && raw > 0 ? raw : 60_000;
 })();
 

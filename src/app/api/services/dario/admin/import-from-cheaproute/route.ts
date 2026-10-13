@@ -1,9 +1,9 @@
 /**
- * GET/POST /api/services/dario/admin/import-from-omniroute
+ * GET/POST /api/services/dario/admin/import-from-cheaproute
  *
- * Imports an existing OmniRoute `claude` provider connection's OAuth tokens
+ * Imports an existing CheapRoute `claude` provider connection's OAuth tokens
  * directly into Dario's account store, skipping the interactive browser OAuth
- * flow entirely. This works because OmniRoute's native `claude` provider and
+ * flow entirely. This works because CheapRoute's native `claude` provider and
  * Dario both authenticate against the identical public Claude Code OAuth
  * client (client_id 9d1c250a-e61b-44d9-88ed-5944d1962f5e,
  * platform.claude.com/v1/oauth/token) — a refresh token minted for that
@@ -18,13 +18,13 @@
  * src/accounts.ts: `{alias, accessToken, refreshToken, expiresAt, scopes,
  * deviceId, accountUuid}`, a plain unencrypted JSON file dario itself
  * round-trips via JSON.stringify/parse) — far lower-risk than reimplementing
- * PKCE/token-exchange ourselves, since OmniRoute's own decrypt() already
+ * PKCE/token-exchange ourselves, since CheapRoute's own decrypt() already
  * hands us a live, valid access+refresh token pair for this exact client_id.
  *
  * Dario has no live filesystem watch on ~/.dario/accounts (confirmed against
  * its source — the running proxy only re-reads that directory on its own
  * boot, or via an admin login-start+complete round trip). So after writing
- * the file we stop+start the OmniRoute-managed supervisor to force a clean
+ * the file we stop+start the CheapRoute-managed supervisor to force a clean
  * pickup, rather than relying on any undocumented hot-reload behavior.
  */
 
@@ -38,7 +38,7 @@ import { getOrInitSupervisor } from "../../_lib";
 import { getProviderConnections, getProviderConnectionById } from "@/lib/db/providers";
 import { getDarioHomeDir } from "@/lib/services/installers/dario";
 import { createErrorResponse } from "@/lib/api/errorResponse";
-import { sanitizeErrorMessage } from "@omniroute/open-sse/utils/error";
+import { sanitizeErrorMessage } from "@cheaproute/open-sse/utils/error";
 
 const ImportBodySchema = z.object({
   connectionId: z.string().trim().min(1).optional(),
@@ -48,10 +48,10 @@ const ImportBodySchema = z.object({
 const ALIAS_PATTERN = /^[A-Za-z0-9][A-Za-z0-9_\-.]{0,63}$/;
 
 function safeAliasFromSource(email: string | null | undefined, connectionId: string): string {
-  const base = (email || connectionId || "omniroute").toLowerCase();
+  const base = (email || connectionId || "cheaproute").toLowerCase();
   const cleaned = base.replace(/[^a-z0-9_.-]/g, "-").replace(/^[^a-z0-9]+/, "");
-  const alias = cleaned || "omniroute";
-  return `omniroute-${alias}`.slice(0, 64);
+  const alias = cleaned || "cheaproute";
+  return `cheaproute-${alias}`.slice(0, 64);
 }
 
 export async function GET(request: Request): Promise<Response> {

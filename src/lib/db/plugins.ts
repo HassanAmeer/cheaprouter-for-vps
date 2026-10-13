@@ -174,7 +174,7 @@ export function updatePluginStatus(
 /**
  * Refresh the persisted manifest snapshot (and the derived hooks list) for a plugin.
  *
- * The `manifest` column is a snapshot validated by the Zod schema of the OmniRoute
+ * The `manifest` column is a snapshot validated by the Zod schema of the CheapRoute
  * version that INSTALLED the plugin; when a later version adds a manifest field
  * (e.g. hooks.onStreamComplete, #11934), activate() re-reads plugin.json from disk
  * and calls this to bring the row up to date without requiring a version-bump upgrade.

@@ -8,7 +8,7 @@ export const compressionModeSchema = z.enum([
   "ultra",
   "rtk",
   "codex-responses",
-  "omniglyph",
+  "cheapglyph",
   "stacked",
 ]);
 
@@ -277,7 +277,7 @@ export const stackedPipelineStepSchema = z.discriminatedUnion("engine", [
     .strict(),
   z
     .object({
-      engine: z.literal("omniglyph"),
+      engine: z.literal("cheapglyph"),
       intensity: z.string().optional(),
       config: structuralStepConfigSchema,
     })
@@ -307,7 +307,7 @@ export const STACKED_PIPELINE_ENGINE_INTENSITIES: Record<string, readonly string
   caveman: ["lite", "full", "ultra"],
   aggressive: ["standard", "ultra"],
   llmlingua: [],
-  omniglyph: [],
+  cheapglyph: [],
   ultra: ["ultra"],
 };
 
@@ -351,13 +351,13 @@ export const contextBudgetConfigSchema = z
   .strict();
 
 /**
- * Perfil semântico do OmniGlyph. O perfil é um TETO: o pacote não deixa um
+ * Perfil semântico do CheapGlyph. O perfil é um TETO: o pacote não deixa um
  * override reabrir uma lane que o perfil fechou. `aggressive` é o default e a
  * política que os recibos publicados mediram; `coding-safe`/`balanced` mantêm
  * system, schemas de tools e tool results nativos, e não comprimem nada até a
  * sessão acumular histórico.
  */
-export const omniglyphConfigSchema = z
+export const cheapglyphConfigSchema = z
   .object({
     profile: z.enum(["coding-safe", "balanced", "aggressive", "passthrough"]),
   })
@@ -390,7 +390,7 @@ export const compressionSettingsUpdateSchema = z
     ccr: ccrConfigSchema.optional(),
     contextBudget: contextBudgetConfigSchema.optional(),
     contextEditing: contextEditingConfigSchema.optional(),
-    omniglyph: omniglyphConfigSchema.optional(),
+    cheapglyph: cheapglyphConfigSchema.optional(),
     liveZone: z.object({ enabled: z.boolean() }).strict().optional(),
     engines: z.record(z.string(), engineToggleSchema).optional(),
     enginesExplicit: z.boolean().optional(),

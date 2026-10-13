@@ -13,7 +13,7 @@ import {
   type CcrConfig,
   type CompressionConfig,
   type SessionDedupConfig,
-} from "@omniroute/open-sse/services/compression/types.ts";
+} from "@cheaproute/open-sse/services/compression/types.ts";
 
 function toRecord(value: unknown): Record<string, unknown> {
   return value && typeof value === "object" ? (value as Record<string, unknown>) : {};

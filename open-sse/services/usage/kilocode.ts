@@ -21,7 +21,7 @@ const BALANCE_PATH = "/api/profile/balance";
 const BALANCE_URL = `${KILO_API_BASE}${BALANCE_PATH}`;
 const PASS_PATH = "/api/trpc/kiloPass.getState";
 
-const KILO_EDITOR_NAME = "OmniRoute";
+const KILO_EDITOR_NAME = "CheapRoute";
 const FETCH_TIMEOUT_MS = 8_000;
 
 /** Fallback token for Kilo's anonymous freetier (registry anonymousApiKey).
@@ -120,7 +120,7 @@ export function parseKiloPassState(value: unknown): KiloPassState | null {
     currentPeriodBaseCreditsUsd: passUsd(sub.currentPeriodBaseCreditsUsd),
     currentPeriodUsageUsd: passUsd(sub.currentPeriodUsageUsd),
     currentPeriodBonusCreditsUsd: passUsd(sub.currentPeriodBonusCreditsUsd),
-    // Normalize to the ISO format OmniRoute expects; invalid dates must not
+    // Normalize to the ISO format CheapRoute expects; invalid dates must not
     // break the whole fetch (parseResetTime returns null instead).
     nextBillingAt: parseResetTime(typeof next === "string" ? next : null),
   };

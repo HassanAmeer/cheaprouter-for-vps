@@ -156,8 +156,8 @@ function deriveTargetFailure(
     opts.fallbackResult.retryHintSource
   );
   const selectedConnectionId =
-    opts.result.headers?.get("X-OmniRoute-Selected-Connection-Id") ||
-    opts.result.headers?.get("x-omniroute-selected-connection-id") ||
+    opts.result.headers?.get("X-CheapRoute-Selected-Connection-Id") ||
+    opts.result.headers?.get("x-cheaproute-selected-connection-id") ||
     undefined;
   const effectiveTarget = selectedConnectionId
     ? { ...target, connectionId: selectedConnectionId }
@@ -390,7 +390,7 @@ function isProviderQuotaExhausted(
     requestScopedFailure,
   } = opts;
   const canonicalProvider = provider ? resolveProviderId(provider) : provider;
-  // OmniRoute's own local model cooldown reuses CLIProxyAPI's `model_cooldown`
+  // CheapRoute's own local model cooldown reuses CLIProxyAPI's `model_cooldown`
   // wording, which #14190 classifies as quota (both in classifyErrorText and in the
   // fallbackResult derived from it). Ours is a local, transient cooldown — never a
   // provider quota signal — so it must not skip the remaining same-provider targets.
@@ -538,7 +538,7 @@ function markAgentrouterConnectionQuotaExhaustion(
 }
 
 /**
- * #1731v2: connection-level errors (408/5xx, excluding the OmniRoute circuit-open signal) suggest
+ * #1731v2: connection-level errors (408/5xx, excluding the CheapRoute circuit-open signal) suggest
  * the provider connection itself is bad → skip remaining same-connection (or same-provider, when
  * no connectionId) targets this request. Only runs when the provider was NOT already marked fully
  * exhausted above. Split out to keep applyComboTargetExhaustion under the complexity ceiling.

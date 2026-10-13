@@ -13,7 +13,7 @@ import { getCachedSettings } from "@/lib/db/readCache";
 import { isTrustedLoopbackInternalServiceRequest } from "@/lib/api/internalServiceAuth";
 import { isAuthenticated, isCacheScopedKey } from "@/shared/utils/apiAuth";
 import { CACHE_READ_SCOPE, CACHE_WRITE_SCOPE } from "@/shared/constants/managementScopes";
-import { sanitizeErrorMessage } from "@omniroute/open-sse/utils/error";
+import { sanitizeErrorMessage } from "@cheaproute/open-sse/utils/error";
 
 function errorMessage(error: unknown): string {
   return sanitizeErrorMessage(error);

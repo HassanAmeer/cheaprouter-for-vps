@@ -20,7 +20,7 @@ import { testSingleConnection } from "../[id]/test/route";
 import { providersBatchTestSchema } from "@/shared/validation/schemas";
 import { isValidationFailure, validateBody } from "@/shared/validation/helpers";
 import { requireManagementAuth } from "@/lib/api/requireManagementAuth";
-import { sanitizeErrorMessage } from "@omniroute/open-sse/utils/error";
+import { sanitizeErrorMessage } from "@cheaproute/open-sse/utils/error";
 import { getRequestPeerLocality } from "@/shared/utils/apiAuth";
 
 // Determine auth type group for a provider id

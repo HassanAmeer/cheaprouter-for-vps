@@ -275,7 +275,7 @@ export const obsidianTools = [
   },
   {
     name: "obsidian_sync_status",
-    description: "Get the OmniRoute sync plugin status: whether the server is running, vault name, port, uptime, and last sync results. Requires the sync auth token to be configured in OmniRoute settings.",
+    description: "Get the CheapRoute sync plugin status: whether the server is running, vault name, port, uptime, and last sync results. Requires the sync auth token to be configured in CheapRoute settings.",
     scopes: ["read:obsidian"],
     inputSchema: z.object({}),
     handler: async (_args: unknown, extra?: McpExtra) => {
@@ -286,7 +286,7 @@ export const obsidianTools = [
   },
   {
     name: "obsidian_sync_trigger",
-    description: "Trigger an immediate bidirectional sync between desktop and mobile Obsidian vaults. Returns the sync result (files pulled, pushed, deleted, conflicts). Requires the sync auth token to be configured in OmniRoute settings.",
+    description: "Trigger an immediate bidirectional sync between desktop and mobile Obsidian vaults. Returns the sync result (files pulled, pushed, deleted, conflicts). Requires the sync auth token to be configured in CheapRoute settings.",
     scopes: ["write:obsidian"],
     inputSchema: z.object({}),
     handler: async (_args: unknown, extra?: McpExtra) => {
@@ -298,7 +298,7 @@ export const obsidianTools = [
   },
   {
     name: "obsidian_sync_conflicts",
-    description: "List unresolved sync conflicts. Each conflict shows the file path, conflict file path, and when it was detected. Requires the sync auth token to be configured in OmniRoute settings.",
+    description: "List unresolved sync conflicts. Each conflict shows the file path, conflict file path, and when it was detected. Requires the sync auth token to be configured in CheapRoute settings.",
     scopes: ["read:obsidian"],
     inputSchema: z.object({}),
     handler: async (_args: unknown, extra?: McpExtra) => {
@@ -309,7 +309,7 @@ export const obsidianTools = [
   },
   {
     name: "obsidian_sync_resolve_conflict",
-    description: "Resolve a sync conflict by choosing which version to keep. Use 'local' for the mobile version, 'remote' for the desktop version, or 'keep-both' to preserve both. Requires the sync auth token to be configured in OmniRoute settings.",
+    description: "Resolve a sync conflict by choosing which version to keep. Use 'local' for the mobile version, 'remote' for the desktop version, or 'keep-both' to preserve both. Requires the sync auth token to be configured in CheapRoute settings.",
     scopes: ["write:obsidian"],
     inputSchema: z.object({
       path: z.string().min(1).describe("Vault-relative path of the conflicting file (without .conflict- suffix)"),

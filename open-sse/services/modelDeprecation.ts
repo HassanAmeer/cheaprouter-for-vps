@@ -85,7 +85,7 @@ const BUILT_IN_ALIASES: Record<string, string> = {
 // symptom #5777 patched at the route layer. Migrating the store to globalThis fixes the
 // root cause (both instances read/write one store), mirroring the #5312 pattern already
 // applied to thinkingBudget.ts and backgroundTaskDetector.ts (and systemPrompt.ts #2470).
-const CUSTOM_ALIASES_GLOBAL_KEY = "__omniroute_customAliases__";
+const CUSTOM_ALIASES_GLOBAL_KEY = "__cheaproute_customAliases__";
 const _aliasStore = globalThis as unknown as Record<string, Record<string, string> | undefined>;
 
 function customAliases(): Record<string, string> {

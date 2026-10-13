@@ -1,7 +1,7 @@
 import { countCallLogsSince, iterateCallLogsSince } from "@/lib/usage/callLogs";
 import { requireManagementAuth } from "@/lib/api/requireManagementAuth";
 import { countProxyLogsSince, iterateProxyLogsSince } from "@/lib/db/proxyLogs";
-import { sanitizeErrorMessage } from "@omniroute/open-sse/utils/error";
+import { sanitizeErrorMessage } from "@cheaproute/open-sse/utils/error";
 import { logger } from "@/shared/utils/logger";
 import {
   LOG_EXPORT_DEFAULT_ROWS,
@@ -147,7 +147,7 @@ export async function GET(request: Request) {
 
     const capped = totalAvailable > limit;
     const count = Math.min(totalAvailable, limit);
-    const filename = `omniroute-${tableName}-${hours}h-${new Date().toISOString().slice(0, 10)}.json`;
+    const filename = `cheaproute-${tableName}-${hours}h-${new Date().toISOString().slice(0, 10)}.json`;
 
     const stream = buildLogExportStream({
       rows,

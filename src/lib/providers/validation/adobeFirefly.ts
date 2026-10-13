@@ -11,7 +11,7 @@
  * it was rejected (expired/guest/invalid), and thrown transport errors are mapped
  * through the shared toValidationErrorResult() helper.
  */
-import { getAdobeFireflyUsage } from "@omniroute/open-sse/services/usage/adobeFirefly.ts";
+import { getAdobeFireflyUsage } from "@cheaproute/open-sse/services/usage/adobeFirefly.ts";
 import { toValidationErrorResult } from "./transport";
 
 export async function validateAdobeFireflyProvider({

@@ -9,8 +9,8 @@ import {
   resolvePayloadRuleProtocols,
 } from "../../services/payloadRules.ts";
 import { getEffectiveToolLimit, getKnownToolLimit } from "../../services/toolLimitDetector.ts";
-import { OMNIROUTE_WEB_SEARCH_FALLBACK_TOOL_NAME } from "../../services/webSearchFallback.ts";
-import { OMNIROUTE_WEB_FETCH_FALLBACK_TOOL_NAME } from "../../services/webFetchInterception.ts";
+import { CHEAPROUTE_WEB_SEARCH_FALLBACK_TOOL_NAME } from "../../services/webSearchFallback.ts";
+import { CHEAPROUTE_WEB_FETCH_FALLBACK_TOOL_NAME } from "../../services/webFetchInterception.ts";
 import { CLAUDE_OAUTH_TOOL_PREFIX } from "../../translator/request/openai-to-claude.ts";
 import {
   providerSupportsCaching,
@@ -149,8 +149,8 @@ function applyConfiguredReasoningControl(
 // cap and was cut: the model never saw a search tool. Keep it; the rest fills the room
 // that is left, in order.
 const FALLBACK_TOOL_NAMES = new Set([
-  OMNIROUTE_WEB_SEARCH_FALLBACK_TOOL_NAME,
-  OMNIROUTE_WEB_FETCH_FALLBACK_TOOL_NAME,
+  CHEAPROUTE_WEB_SEARCH_FALLBACK_TOOL_NAME,
+  CHEAPROUTE_WEB_FETCH_FALLBACK_TOOL_NAME,
 ]);
 
 function isFallbackTool(tool: unknown): boolean {
@@ -315,7 +315,7 @@ type PrepareUpstreamBodyOptions = {
   isOpencodeClient?: boolean;
   /** Raw (pre-translation) request body — turn-scoped signals for adaptive effort (#13448). */
   rawBody?: { messages?: unknown } | undefined;
-  /** Incoming client request — read for the x-omniroute-effort header (#13448). */
+  /** Incoming client request — read for the x-cheaproute-effort header (#13448). */
   clientRawRequest?: { headers?: unknown } | undefined;
   log?: LoggerLike;
 };
@@ -356,7 +356,7 @@ function normalizeAttemptBody(opts: PrepareUpstreamBodyOptions): Body {
       isOriginModel ? opts.defaultThinkingEffort : undefined
     );
   }
-  // #13448: resolve an "auto" effort (X-OmniRoute-Effort header or ModelSpec default) to a
+  // #13448: resolve an "auto" effort (X-CheapRoute-Effort header or ModelSpec default) to a
   // concrete level. Runs per attempt, right after applyDefaultReasoningEffort — the same
   // position it held inline in chatCore.ts before this chain moved here (#13720); it
   // self-scopes to FORMATS.OPENAI and no-ops when the body carries explicit reasoning.
@@ -383,7 +383,7 @@ function normalizeAttemptBody(opts: PrepareUpstreamBodyOptions): Body {
   bodyToSend = stripGpt5ReasoningWhenTools(bodyToSend, provider, modelToCall, targetFormat, log);
 
   // All models, including universal/context-handoff summary models, pass through
-  // this shared pre-executor boundary. Remove OmniRoute-only routing markers here
+  // this shared pre-executor boundary. Remove CheapRoute-only routing markers here
   // so custom executors that serialize their own request bodies cannot leak them.
   // keepExecutorMarkers: `_native*Passthrough` is read by the executor further down
   // (codex.ts/xai.ts) and deleted there; applyFingerprint() strips it at

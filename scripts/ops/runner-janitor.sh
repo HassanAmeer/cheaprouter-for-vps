@@ -25,7 +25,7 @@
 #      (stopped runners cannot be mid-job; active ones are never touched)
 #   4) alert: root disk >= DISK_ALERT_PCT, memory PSI full/avg60 >= threshold,
 #      Runner.Listener count above the ceiling (with a per-project breakdown —
-#      the box also hosts OmniHeuris and OmniMind runners)
+#      the box also hosts CheapHeuris and CheapMind runners)
 #
 # Usage: runner-janitor.sh [--dry-run] [--help]
 # Exit codes: 0 healthy · 1 attention needed (printed to stdout for the log).
@@ -99,7 +99,7 @@ sweep() {
     if is_busy "$p"; then say "busy, kept: $p"; continue; fi
     if [ "$DRY_RUN" -eq 1 ]; then say "would remove ($(( max_min / 60 ))h+): $p"; else rm -rf -- "$p" && say "removed ($(( max_min / 60 ))h+): $p"; fi
   done < <(find -P "$base" -xdev -mindepth 1 -maxdepth 1 \
-      \( -name 'runner-*' -o -name 'omniroute-*' -o -name 'next-build*' -o -name 'e2e-build.tar.gz' \) \
+      \( -name 'runner-*' -o -name 'cheaproute-*' -o -name 'next-build*' -o -name 'e2e-build.tar.gz' \) \
       ! -type l -mmin "+$max_min" -print0 2>/dev/null || true)
 }
 
@@ -160,12 +160,12 @@ fi
 # 4c) concurrency ceiling — alert with a breakdown; the fix is fewer/labelled
 #     runners (an operator decision), not killing listeners from cron.
 ACTIVE=$(pgrep -fc "Runner.Listener" || true)
-OMNI=$(pgrep -fc "actions-runner-omniroute[^ ]*/bin[^ ]*/Runner.Listener" || true)
+CHEAP=$(pgrep -fc "actions-runner-cheaproute[^ ]*/bin[^ ]*/Runner.Listener" || true)
 if [ "${ACTIVE:-0}" -gt "$MAX_ACTIVE_RUNNERS" ]; then
-  say "⚠ ${ACTIVE} Runner.Listener processes (omniroute=${OMNI:-0}, other=$(( ${ACTIVE:-0} - ${OMNI:-0} ))) > ceiling ${MAX_ACTIVE_RUNNERS} — stop idle extras: systemctl stop <unit> only when it has no Runner.Worker child"
+  say "⚠ ${ACTIVE} Runner.Listener processes (cheaproute=${CHEAP:-0}, other=$(( ${ACTIVE:-0} - ${CHEAP:-0} ))) > ceiling ${MAX_ACTIVE_RUNNERS} — stop idle extras: systemctl stop <unit> only when it has no Runner.Worker child"
   STATUS=1
 else
-  say "runners active: ${ACTIVE:-0}/${MAX_ACTIVE_RUNNERS} (omniroute=${OMNI:-0}) OK"
+  say "runners active: ${ACTIVE:-0}/${MAX_ACTIVE_RUNNERS} (cheaproute=${CHEAP:-0}) OK"
 fi
 
 say "done status=$STATUS"

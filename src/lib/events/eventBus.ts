@@ -24,7 +24,7 @@ import {
 // ── State (globalThis singleton) ──────────────────────────────────────────
 
 declare global {
-  var __omnirouteEventBus:
+  var __cheaprouteEventBus:
     | {
         initialized: boolean;
         listeners: Map<DashboardEventName, Set<Function>>;
@@ -37,8 +37,8 @@ declare global {
 }
 
 function getBusState() {
-  if (!globalThis.__omnirouteEventBus) {
-    globalThis.__omnirouteEventBus = {
+  if (!globalThis.__cheaprouteEventBus) {
+    globalThis.__cheaprouteEventBus = {
       initialized: false,
       listeners: new Map(),
       wildcardListeners: new Set(),
@@ -47,7 +47,7 @@ function getBusState() {
       emitCount: 0,
     };
   }
-  return globalThis.__omnirouteEventBus;
+  return globalThis.__cheaprouteEventBus;
 }
 
 // ── Event History ─────────────────────────────────────────────────────────

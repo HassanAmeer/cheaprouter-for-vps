@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * OmniRoute — Co-locate runtime workers into the raw Next standalone build.
+ * CheapRoute — Co-locate runtime workers into the raw Next standalone build.
  *
  * WHY: `npm run build` produces `.build/next/standalone/` and THIS machine's PM2
  * deployment runs `server.js` from that directory directly (not the assembled
@@ -23,12 +23,12 @@ import { runBuildTool } from "./buildToolRunner.mjs";
 import { computeDependencyClosure } from "./colocateOptionals.mjs";
 
 const ROOT = dirname(dirname(dirname(fileURLToPath(import.meta.url))));
-// STANDALONE defaults to the real build output; OMNIROUTE_STANDALONE_DIR overrides
+// STANDALONE defaults to the real build output; CHEAPROUTE_STANDALONE_DIR overrides
 // it so tests can drive the co-location logic against a synthetic tree without a
-// full `next build`. Mirrors the OMNIROUTE_* override seams in the sibling build
+// full `next build`. Mirrors the CHEAPROUTE_* override seams in the sibling build
 // scripts (write-build-sha.mjs, write-build-base-path.mjs, optionalPackStaging.mjs).
-const STANDALONE = process.env.OMNIROUTE_STANDALONE_DIR
-  ? process.env.OMNIROUTE_STANDALONE_DIR
+const STANDALONE = process.env.CHEAPROUTE_STANDALONE_DIR
+  ? process.env.CHEAPROUTE_STANDALONE_DIR
   : join(ROOT, ".build", "next", "standalone");
 
 const CALL_LOG_WORKER_REL = join("src", "lib", "usage", "callLogArtifactWorker.js");

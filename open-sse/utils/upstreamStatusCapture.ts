@@ -32,7 +32,7 @@ export type AttemptSink = {
 };
 
 /** Marker for the in-flight record, so two stacked wrappers complete one row, not two. */
-const IN_FLIGHT = "omniroute.attempt.in-flight";
+const IN_FLIGHT = "cheaproute.attempt.in-flight";
 
 type FlightSink = AttemptSink & Record<string, AttemptRecord | undefined>;
 

@@ -31,7 +31,7 @@ import {
   isProviderConnectionUsable,
   hasUsableCredentialsForModel,
 } from "./visionBridgeCredentials";
-import { MAX_COMBO_DEPTH } from "@omniroute/open-sse/services/combo/comboPredicates.ts";
+import { MAX_COMBO_DEPTH } from "@cheaproute/open-sse/services/combo/comboPredicates.ts";
 
 export { isProviderConnectionUsable, hasUsableCredentialsForModel };
 
@@ -395,7 +395,7 @@ export class VisionBridgeGuardrail extends BaseGuardrail {
     // For a bare id, getResolvedModelCapabilities resolves `provider` to null,
     // so getRegistryModel() and getSyncedCapabilityForResolved() are both
     // skipped and only MODEL_SPECS / isVisionModelId() can produce a verdict.
-    // `supportsVision === null` therefore means OmniRoute has no static
+    // `supportsVision === null` therefore means CheapRoute has no static
     // knowledge of that wire id at all. Providers rename and upgrade wire
     // models faster than the static spec table tracks, so that is a
     // stale-catalog condition, NOT proof the model is text-only. Hijacking
@@ -595,7 +595,7 @@ export class VisionBridgeGuardrail extends BaseGuardrail {
     // Collect descriptions maintaining original order. A failed describe yields
     // `null` so the original image is preserved downstream (#4012) — replacing it
     // with an "(unavailable)" stub silently destroyed images for vision-capable
-    // upstreams whose capability OmniRoute couldn't prove from the registry.
+    // upstreams whose capability CheapRoute couldn't prove from the registry.
     const descriptions: (string | null)[] = results.map((result, i) => {
       if (result.status === "fulfilled") {
         return result.value;

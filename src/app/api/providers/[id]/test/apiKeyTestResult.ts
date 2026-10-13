@@ -1,7 +1,7 @@
 import {
   getReasoningControlEndpointFingerprint,
   normalizeDetectedReasoningControl,
-} from "@omniroute/open-sse/utils/reasoningControl.ts";
+} from "@cheaproute/open-sse/utils/reasoningControl.ts";
 
 export interface ApiKeyValidationResult {
   valid: boolean;

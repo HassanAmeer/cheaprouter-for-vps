@@ -15,7 +15,7 @@ import { saveCliToolLastConfigured, deleteCliToolLastConfigured } from "@/lib/db
 import { cliModelConfigSchema } from "@/shared/validation/schemas";
 import { isValidationFailure, validateBody } from "@/shared/validation/helpers";
 import { resolveApiKey } from "@/shared/services/apiKeyResolver";
-import { sanitizeErrorMessage } from "@omniroute/open-sse/utils/error.ts";
+import { sanitizeErrorMessage } from "@cheaproute/open-sse/utils/error.ts";
 
 const TOOL_ID = "jcode";
 
@@ -25,11 +25,11 @@ const TOOL_ID = "jcode";
  * wrote a ~/.jcode/config.json that jcode never reads). Reference:
  * https://github.com/1jehuang/jcode#openai-compatible-providers
  *
- * The OmniRoute-managed profile is kept inside a marker-delimited block so
+ * The CheapRoute-managed profile is kept inside a marker-delimited block so
  * apply/reset round-trips without disturbing the rest of the user's config.
  */
-const MANAGED_BEGIN = "# >>> managed by OmniRoute (jcode provider profile) >>>";
-const MANAGED_END = "# <<< managed by OmniRoute <<<";
+const MANAGED_BEGIN = "# >>> managed by CheapRoute (jcode provider profile) >>>";
+const MANAGED_END = "# <<< managed by CheapRoute <<<";
 
 const getJcodeConfigPath = (): string =>
   getCliPrimaryConfigPath(TOOL_ID) ?? path.join(process.env.HOME ?? "~", ".jcode", "config.toml");
@@ -39,7 +39,7 @@ const getJcodeDir = () => path.dirname(getJcodeConfigPath());
 const tomlString = (value: string): string => JSON.stringify(String(value));
 
 /**
- * Render the managed `[providers.omniroute]` block. The API key is stored
+ * Render the managed `[providers.cheaproute]` block. The API key is stored
  * inline via jcode's `api_key` field; `requires_api_key = false` keeps a
  * keyless local gateway working.
  */
@@ -47,7 +47,7 @@ function renderManagedBlock(baseUrl: string, apiKey: string, model: string): str
   const normalizedBaseUrl = baseUrl.endsWith("/v1") ? baseUrl : `${baseUrl}/v1`;
   const lines = [
     MANAGED_BEGIN,
-    "[providers.omniroute]",
+    "[providers.cheaproute]",
     'type = "openai-compatible"',
     `base_url = ${tomlString(normalizedBaseUrl)}`,
   ];
@@ -56,7 +56,7 @@ function renderManagedBlock(baseUrl: string, apiKey: string, model: string): str
   return lines.join("\n");
 }
 
-const hasOmniRouteConfig = (content: string | null): boolean =>
+const hasCheapRouteConfig = (content: string | null): boolean =>
   Boolean(content && content.includes(MANAGED_BEGIN));
 
 /** Strip the managed block (including surrounding blank padding) from config text. */
@@ -114,7 +114,7 @@ export async function GET(request: Request) {
       runtimeMode: runtime.runtimeMode,
       reason: runtime.reason,
       config,
-      hasOmniRoute: hasOmniRouteConfig(config),
+      hasCheapRoute: hasCheapRouteConfig(config),
       configPath: getJcodeConfigPath(),
     });
   } catch (err) {
@@ -122,7 +122,7 @@ export async function GET(request: Request) {
   }
 }
 
-// POST — write the OmniRoute provider profile into jcode's config.toml
+// POST — write the CheapRoute provider profile into jcode's config.toml
 export async function POST(request: Request) {
   const authError = await requireCliToolsAuth(request);
   if (authError) return authError;
@@ -168,18 +168,18 @@ export async function POST(request: Request) {
     }
 
     // Refuse to double-define the table if the user hand-wrote a
-    // [providers.omniroute] profile outside our managed block — duplicate
+    // [providers.cheaproute] profile outside our managed block — duplicate
     // TOML tables would make the whole config unparseable for jcode.
     const unmanaged = stripManagedBlock(existing);
     try {
       if (unmanaged.trim()) {
         const parsed = parseToml(unmanaged) as { providers?: Record<string, unknown> };
-        if (parsed.providers && Object.hasOwn(parsed.providers, "omniroute")) {
+        if (parsed.providers && Object.hasOwn(parsed.providers, "cheaproute")) {
           return NextResponse.json(
             {
               error: {
                 message:
-                  "config.toml already defines [providers.omniroute] outside the OmniRoute-managed block; remove it or manage it manually",
+                  "config.toml already defines [providers.cheaproute] outside the CheapRoute-managed block; remove it or manage it manually",
               },
             },
             { status: 409 }
@@ -191,7 +191,7 @@ export async function POST(request: Request) {
         {
           error: {
             message:
-              "existing ~/.jcode/config.toml is not valid TOML; fix it before applying OmniRoute settings",
+              "existing ~/.jcode/config.toml is not valid TOML; fix it before applying CheapRoute settings",
           },
         },
         { status: 409 }
@@ -214,7 +214,7 @@ export async function POST(request: Request) {
     return NextResponse.json({
       success: true,
       message:
-        "jcode settings applied! Start jcode with `jcode --provider-profile omniroute` or pick the profile with /model.",
+        "jcode settings applied! Start jcode with `jcode --provider-profile cheaproute` or pick the profile with /model.",
       configPath,
     });
   } catch (err) {
@@ -222,7 +222,7 @@ export async function POST(request: Request) {
   }
 }
 
-// DELETE — remove the OmniRoute-managed block from jcode's config.toml
+// DELETE — remove the CheapRoute-managed block from jcode's config.toml
 export async function DELETE(request: Request) {
   const authError = await requireCliToolsAuth(request);
   if (authError) return authError;
@@ -263,7 +263,7 @@ export async function DELETE(request: Request) {
       /* non-critical */
     }
 
-    return NextResponse.json({ success: true, message: "jcode OmniRoute settings removed" });
+    return NextResponse.json({ success: true, message: "jcode CheapRoute settings removed" });
   } catch (err) {
     return NextResponse.json({ error: { message: sanitizeErrorMessage(err) } }, { status: 500 });
   }

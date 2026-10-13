@@ -3,7 +3,7 @@ import { getMcpAccessibilityConfig, setMcpAccessibilityConfig } from "@/lib/db/c
 import { isAuthenticated } from "@/shared/utils/apiAuth";
 import { isValidationFailure, validateBody } from "@/shared/validation/helpers";
 import { mcpAccessibilityConfigSchema } from "@/shared/validation/compressionConfigSchemas";
-import { sanitizeErrorMessage } from "@omniroute/open-sse/utils/error";
+import { sanitizeErrorMessage } from "@cheaproute/open-sse/utils/error";
 
 // Read/update the mcpAccessibility engine config (compression/mcpAccessibility DB key) that the
 // MCP server consumes on every tool call to trim oversized tool outputs. Kept as a dedicated

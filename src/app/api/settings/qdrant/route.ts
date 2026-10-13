@@ -5,7 +5,7 @@ import { QdrantSettingsUpdateSchema } from "@/shared/schemas/qdrant";
 import { normalizeQdrantConfig } from "@/lib/memory/qdrant";
 import { updateSettings, getSettings } from "@/lib/db/settings";
 import { invalidateMemorySettingsCache } from "@/lib/memory/settings";
-import { sanitizeErrorMessage } from "@omniroute/open-sse/utils/error.ts";
+import { sanitizeErrorMessage } from "@cheaproute/open-sse/utils/error.ts";
 
 function maskApiKey(apiKey: string | null): { hasApiKey: boolean; apiKeyMasked: string | null } {
   if (!apiKey || apiKey.trim().length === 0) {

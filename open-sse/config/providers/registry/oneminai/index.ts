@@ -6,7 +6,7 @@ import type { RegistryEntry } from "../../shared.ts";
 // event:/data: framing instead of raw text deltas, "API-KEY" auth header
 // instead of Authorization: Bearer) — see open-sse/executors/oneminai.ts for
 // the request/response translation. `format: "openai"` here describes the
-// client-facing surface OmniRoute exposes, not 1min.ai's actual wire format.
+// client-facing surface CheapRoute exposes, not 1min.ai's actual wire format.
 export const oneminaiProvider: RegistryEntry = {
   id: "oneminai",
   alias: "1min",

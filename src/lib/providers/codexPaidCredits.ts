@@ -1,4 +1,4 @@
-import { getCodexModelScope } from "@omniroute/open-sse/config/codexQuotaScopes.ts";
+import { getCodexModelScope } from "@cheaproute/open-sse/config/codexQuotaScopes.ts";
 import { isCodexQuotaFilteringDisabled } from "@/lib/providers/codexQuotaFiltering";
 
 export interface CodexPaidCredits {

@@ -3,7 +3,7 @@
  *
  * The private key lives ONLY on the signing server.  The public key is safe
  * to commit — it lets clients verify that a feed was signed by the real
- * OmniRoute Radar server without any CA or PKI infrastructure.
+ * CheapRoute Radar server without any CA or PKI infrastructure.
  *
  * Fork operators can override the key via the `RADAR_FEED_PUBKEY` env var
  * (base64-DER or PEM) so they can point at their own feed server.

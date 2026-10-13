@@ -32,7 +32,7 @@ function getStatusForCode(code: TrustedLocalRateLimitErrorCode): 429 | 503 | 504
 }
 
 /**
- * Brand an error created by OmniRoute's local limiter. The WeakMap identity,
+ * Brand an error created by CheapRoute's local limiter. The WeakMap identity,
  * not the public code string, is the trusted provenance signal.
  */
 export function markLocalRateLimitError<T extends Error>(

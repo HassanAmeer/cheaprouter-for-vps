@@ -875,13 +875,13 @@ export function compactStructuredStreamPayload(payload: unknown): unknown {
   if (summary && typeof summary === "object" && !Array.isArray(summary)) {
     return {
       ...(summary as JsonRecord),
-      _omniroute_stream: streamMeta,
+      _cheaproute_stream: streamMeta,
     };
   }
 
   return {
     summary,
-    _omniroute_stream: streamMeta,
+    _cheaproute_stream: streamMeta,
   };
 }
 

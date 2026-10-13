@@ -17,7 +17,7 @@ async function dispatchBatchApiRequest({
   }
 
   const { dashboardPort } = getRuntimePorts();
-  const basePath = normalizeBasePath(process.env.OMNIROUTE_BASE_PATH);
+  const basePath = normalizeBasePath(process.env.CHEAPROUTE_BASE_PATH);
   const url = `http://127.0.0.1:${dashboardPort}${basePath}${endpoint}`;
 
   return await globalThis.fetch(url, {

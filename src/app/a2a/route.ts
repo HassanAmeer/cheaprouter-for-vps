@@ -22,7 +22,7 @@ import { authenticateA2ARequest, resolveA2AOwner } from "@/lib/a2a/authenticate"
 // A2A 1.0 renamed the JSON-RPC methods (message/send → SendMessage,
 // message/stream → SendStreamingMessage) and changed the synchronous
 // response shape: a 1.0 client reads the reply from
-// `task.status.message.parts[].text` (and `task.artifacts`), whereas OmniRoute's
+// `task.status.message.parts[].text` (and `task.artifacts`), whereas CheapRoute's
 // v0.3 server returns top-level `artifacts`/`metadata`. This layer aliases the
 // 1.0 method names and reshapes the synchronous response so 1.0 clients
 // (a2a-sdk 1.x, Hermes, …) can call the endpoint unchanged. v0.3 clients are
@@ -125,7 +125,7 @@ function toMessageArray(raw: unknown): A2AMessage[] | null {
 async function authenticate(req: NextRequest): Promise<boolean> {
   // /a2a is outside the authz proxy matcher, so the REQUIRE_API_KEY posture the
   // pipeline enforces for /v1 never ran here — the route accepted every caller
-  // whenever OMNIROUTE_API_KEY was unset, which is the shipped default
+  // whenever CHEAPROUTE_API_KEY was unset, which is the shipped default
   // (GHSA-v54m-6rm3-p565). The shared helper applies the same posture on both
   // the JSON-RPC and the REST task surfaces (GHSA-jcm5-6wpp-wjj8).
   return authenticateA2ARequest(req);

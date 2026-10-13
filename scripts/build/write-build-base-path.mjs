@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 
 /**
- * Writes BUILD_OMNIROUTE_BASE_PATH into the standalone bundle so container start
- * can compare the baked Next.js basePath against OMNIROUTE_BASE_PATH.
+ * Writes BUILD_CHEAPROUTE_BASE_PATH into the standalone bundle so container start
+ * can compare the baked Next.js basePath against CHEAPROUTE_BASE_PATH.
  */
 
 import fs from "node:fs";
@@ -15,8 +15,8 @@ const ROOT = path.resolve(__dirname, "..", "..");
 const NEXT_DIST = process.env.NEXT_DIST_DIR || ".build/next";
 
 function writeSentinel(targetDir) {
-  const basePath = normalizeBasePath(process.env.OMNIROUTE_BASE_PATH);
-  const sentinel = path.join(targetDir, "BUILD_OMNIROUTE_BASE_PATH");
+  const basePath = normalizeBasePath(process.env.CHEAPROUTE_BASE_PATH);
+  const sentinel = path.join(targetDir, "BUILD_CHEAPROUTE_BASE_PATH");
   fs.writeFileSync(sentinel, `${basePath}\n`);
   return { basePath, sentinel };
 }

@@ -26,8 +26,8 @@ const readGlobalState = async () => readJsoncConfig(GLOBAL_STATE_PATH);
 // Read secrets.json (same JSONC-tolerant behaviour; defaults to {} for compat).
 const readSecrets = async () => readJsoncConfig<Record<string, unknown>>(SECRETS_PATH, {});
 
-// Check if OmniRoute is configured as OpenAI-compatible provider
-const hasOmniRouteConfig = (globalState: any) => {
+// Check if CheapRoute is configured as OpenAI-compatible provider
+const hasCheapRouteConfig = (globalState: any) => {
   if (!globalState) return false;
   const isOpenAi =
     globalState.actModeApiProvider === "openai" || globalState.planModeApiProvider === "openai";
@@ -36,7 +36,7 @@ const hasOmniRouteConfig = (globalState: any) => {
     isOpenAi &&
     (baseUrl.includes("localhost") ||
       baseUrl.includes("127.0.0.1") ||
-      baseUrl.includes("omniroute"))
+      baseUrl.includes("cheaproute"))
   );
 };
 
@@ -81,7 +81,7 @@ export async function GET(request: Request) {
         openAiModelId: globalState?.openAiModelId,
         planModeOpenAiModelId: globalState?.planModeOpenAiModelId,
       },
-      hasOmniRoute: hasOmniRouteConfig(globalState),
+      hasCheapRoute: hasCheapRouteConfig(globalState),
       globalStatePath: GLOBAL_STATE_PATH,
       secretsPath: SECRETS_PATH,
     });
@@ -91,7 +91,7 @@ export async function GET(request: Request) {
   }
 }
 
-// POST - Configure Cline to use OmniRoute as OpenAI-compatible provider
+// POST - Configure Cline to use CheapRoute as OpenAI-compatible provider
 export async function POST(request: Request) {
   const authError = await requireCliToolsAuth(request);
   if (authError) return authError;
@@ -165,7 +165,7 @@ export async function POST(request: Request) {
       /* No existing secrets */
     }
 
-    secrets.openAiApiKey = apiKey || "sk_omniroute";
+    secrets.openAiApiKey = apiKey || "sk_cheaproute";
 
     await fs.writeFile(SECRETS_PATH, JSON.stringify(secrets, null, 2));
 
@@ -187,7 +187,7 @@ export async function POST(request: Request) {
   }
 }
 
-// DELETE - Remove OmniRoute OpenAI-compatible provider config
+// DELETE - Remove CheapRoute OpenAI-compatible provider config
 export async function DELETE(request: Request) {
   const authError = await requireCliToolsAuth(request);
   if (authError) return authError;
@@ -247,7 +247,7 @@ export async function DELETE(request: Request) {
 
     return NextResponse.json({
       success: true,
-      message: "OmniRoute settings removed from Cline",
+      message: "CheapRoute settings removed from Cline",
     });
   } catch (error) {
     console.log("Error resetting cline settings:", error);

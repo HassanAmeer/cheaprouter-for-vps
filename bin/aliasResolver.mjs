@@ -1,18 +1,18 @@
 /**
  * ESM path-alias resolver for global installs.
  *
- * Problem (#7791): when OmniRoute is installed via `npm i -g omniroute`, the
- * package files live under `node_modules/omniroute/`. tsx's tsconfig-path
+ * Problem (#7791): when CheapRoute is installed via `npm i -g cheaproute`, the
+ * package files live under `node_modules/cheaproute/`. tsx's tsconfig-path
  * resolution does not apply there, so specifiers like `@/shared/utils/featureFlags`
  * (declared in tsconfig.json `paths` as `@/* → ./src/*`) or
- * `@omniroute/open-sse/services/usage` fail with `ERR_MODULE_NOT_FOUND`.
+ * `@cheaproute/open-sse/services/usage` fail with `ERR_MODULE_NOT_FOUND`.
  * The CLI crashes before any command can run.
  *
  * Fix: register a Node ESM `resolve` hook that rewrites alias specifiers to
  * absolute file URLs. Covers all tsconfig.json `paths` entries:
  *   - `@/*`             → `./src/*`
- *   - `@omniroute/open-sse`    → `./open-sse/index.ts`
- *   - `@omniroute/open-sse/*`  → `./open-sse/*`
+ *   - `@cheaproute/open-sse`    → `./open-sse/index.ts`
+ *   - `@cheaproute/open-sse/*`  → `./open-sse/*`
  * The hook runs after tsx so `.ts` extensions are already handled, and only
  * intercepts matched prefixes — everything else falls through to Node's
  * default resolver.
@@ -30,18 +30,18 @@ import { fileURLToPath, pathToFileURL } from "node:url";
  * Processed top-to-bottom; first matching prefix wins.
  *
  * Each entry:
- *   prefix  — specifier prefix to match (e.g. `"@/"`, `"@omniroute/open-sse/"`)
+ *   prefix  — specifier prefix to match (e.g. `"@/"`, `"@cheaproute/open-sse/"`)
  *   target  — directory name under the package root (e.g. `"src"`, `"open-sse"`)
  *   exact   — if true, the prefix also matches when the specifier equals the
- *             prefix *without* a trailing slash (e.g. `@omniroute/open-sse` →
+ *             prefix *without* a trailing slash (e.g. `@cheaproute/open-sse` →
  *             `<root>/open-sse/index.ts`).
  *
  * Exported for tests/consumers.
  */
 export const ALIAS_MAP = [
   { prefix: "@/", target: "src", exact: false },
-  { prefix: "@omniroute/open-sse/", target: "open-sse", exact: false },
-  { prefix: "@omniroute/open-sse", target: "open-sse", exact: true },
+  { prefix: "@cheaproute/open-sse/", target: "open-sse", exact: false },
+  { prefix: "@cheaproute/open-sse", target: "open-sse", exact: true },
 ];
 
 /** @deprecated Use ALIAS_MAP instead. Kept for backward compat. */
@@ -57,8 +57,8 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
  *
  * Rules mirror tsconfig.json `paths` via `ALIAS_MAP`:
  *   "@/..."                     → <root>/src/...
- *   "@omniroute/open-sse/..."   → <root>/open-sse/...
- *   "@omniroute/open-sse"       → <root>/open-sse/index.*
+ *   "@cheaproute/open-sse/..."   → <root>/open-sse/...
+ *   "@cheaproute/open-sse"       → <root>/open-sse/index.*
  *
  * - Strips the matched alias prefix and joins the remainder against the
  *   corresponding target directory.
@@ -100,7 +100,7 @@ export function resolveAlias(specifier, root) {
 
   const targetDir = join(root, matchedEntry.target);
 
-  // Exact match (e.g. `@omniroute/open-sse` with no trailing path) →
+  // Exact match (e.g. `@cheaproute/open-sse` with no trailing path) →
   // resolve to `<target>/index.*`.
   if (rest === "" || rest === undefined) {
     return probeIndex(targetDir);

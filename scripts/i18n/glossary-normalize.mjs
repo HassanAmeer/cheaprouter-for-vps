@@ -1,5 +1,5 @@
 /**
- * OmniRoute — shared glossary terminology normalization.
+ * CheapRoute — shared glossary terminology normalization.
  *
  * Single implementation of the "canonical term" rules declared in
  * scripts/i18n/glossary/<locale>.json, used by three call sites so they can

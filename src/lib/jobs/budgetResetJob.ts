@@ -4,7 +4,7 @@ import type { JobRegistry } from "../jobRegistry/registry";
 const DEFAULT_INTERVAL_MS = 10 * 60 * 1000;
 
 function getIntervalMs() {
-  const raw = process.env.OMNIROUTE_BUDGET_RESET_JOB_INTERVAL_MS;
+  const raw = process.env.CHEAPROUTE_BUDGET_RESET_JOB_INTERVAL_MS;
   const parsed = raw ? Number(raw) : Number.NaN;
   return Number.isFinite(parsed) && parsed >= 10_000 ? parsed : DEFAULT_INTERVAL_MS;
 }

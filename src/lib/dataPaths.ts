@@ -2,7 +2,7 @@ import path from "path";
 import os from "os";
 import fs from "fs";
 
-export const APP_NAME = "omniroute";
+export const APP_NAME = "cheaproute";
 
 function fallbackHomeDir() {
   const envHome = process.env.HOME || process.env.USERPROFILE;
@@ -107,7 +107,7 @@ export function isTestContext(): boolean {
  * Such a process has no application entry point from which to establish storage intent,
  * so defaulting it to the operator's durable database is unsafe. A deliberate production
  * inspection can still opt in with an explicit DATA_DIR (preferred) or
- * OMNIROUTE_ALLOW_DEFAULT_DATA_DIR=1.
+ * CHEAPROUTE_ALLOW_DEFAULT_DATA_DIR=1.
  */
 function isEvalProbeContext(): boolean {
   return process.execArgv.some(
@@ -135,15 +135,15 @@ export function resolveWritableDataDir({ isCloud = false }: { isCloud?: boolean 
   if (isCloud) return resolved;
 
   // #10428: a test/eval-probe run that never chose a DATA_DIR would otherwise open the
-  // OPERATOR'S REAL database (~/.omniroute/storage.sqlite — live provider credentials).
+  // OPERATOR'S REAL database (~/.cheaproute/storage.sqlite — live provider credentials).
   // Redirect to a throwaway dir instead of throwing: the documented single-file command
   // (`node --import tsx/esm --test tests/unit/x.test.ts`) does not load the isolation
   // setup, and a hard failure there would only teach people to disable the guard.
-  // `OMNIROUTE_ALLOW_DEFAULT_DATA_DIR=1` opts back in, so the intent is recorded.
+  // `CHEAPROUTE_ALLOW_DEFAULT_DATA_DIR=1` opts back in, so the intent is recorded.
   if (
     !configured &&
     (isTestContext() || isEvalProbeContext()) &&
-    process.env.OMNIROUTE_ALLOW_DEFAULT_DATA_DIR !== "1"
+    process.env.CHEAPROUTE_ALLOW_DEFAULT_DATA_DIR !== "1"
   ) {
     if (!testContextDataDir) {
       testContextDataDir = fs.mkdtempSync(path.join(os.tmpdir(), `${APP_NAME}-testctx-`));

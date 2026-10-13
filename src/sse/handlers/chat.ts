@@ -6,8 +6,8 @@ export { buildClientRawRequest, resolveDispatchClientRawRequest };
 import { normalizeReasoningRequest } from "@/shared/reasoning/effortStandardization";
 import { isDetailedLoggingEnabled } from "@/lib/db/detailedLogs";
 import { resolvePreviousResponseState } from "@/lib/db/responsesContinuationStore";
-import { normalizeResponsesPreviousResponseIdMode } from "@omniroute/open-sse/utils/responsesStatePolicy.ts";
-import { FORMATS } from "@omniroute/open-sse/translator/formats.ts";
+import { normalizeResponsesPreviousResponseIdMode } from "@cheaproute/open-sse/utils/responsesStatePolicy.ts";
+import { FORMATS } from "@cheaproute/open-sse/translator/formats.ts";
 import { resolveRoutingModel, RoutingModelOps } from "./resolveRoutingModel";
 import {
   getProviderCredentialsWithQuotaPreflight,
@@ -21,45 +21,46 @@ import {
   clearModelLock,
   recordModelLockoutFailure,
   isDailyQuotaExhausted,
-} from "@omniroute/open-sse/services/accountFallback.ts";
+} from "@cheaproute/open-sse/services/accountFallback.ts";
 import { getCombo, getComboForModel, getModelInfo } from "../services/model";
-import { stripContextWindowSuffix } from "@omniroute/open-sse/services/model.ts";
-import { resolveBareModelToConnectionDefault } from "@omniroute/open-sse/services/model.ts";
-import { errorResponse } from "@omniroute/open-sse/utils/error.ts";
-import { getImageModelEntry } from "@omniroute/open-sse/config/imageRegistry.ts";
-import { acceptHeaderForcesStream } from "@omniroute/open-sse/utils/aiSdkCompat.ts";
-import { applyNoThinkingAlias } from "@omniroute/open-sse/utils/noThinkingAlias.ts";
+import { stripContextWindowSuffix } from "@cheaproute/open-sse/services/model.ts";
+import { resolveBareModelToConnectionDefault } from "@cheaproute/open-sse/services/model.ts";
+import { errorResponse } from "@cheaproute/open-sse/utils/error.ts";
+import { getImageModelEntry } from "@cheaproute/open-sse/config/imageRegistry.ts";
+import { acceptHeaderForcesStream } from "@cheaproute/open-sse/utils/aiSdkCompat.ts";
+import { applyNoThinkingAlias } from "@cheaproute/open-sse/utils/noThinkingAlias.ts";
 import { resolveCcDiscoveryAliasStrip } from "@/lib/ccDiscoveryAliasResolve";
+import { extractByokKey } from "@/lib/byok";
 import {
   handleComboChat,
   resolveComboTargets,
   shouldSkipConnDisable,
-} from "@omniroute/open-sse/services/combo.ts";
-import type { ComboLike, SingleModelTarget } from "@omniroute/open-sse/services/combo/types.ts";
-import "@omniroute/open-sse/executors/base.ts";
-import { resolveRequestAutoControls } from "@omniroute/open-sse/services/autoCombo/requestControls.ts";
-import { isVerifiedNativeCodexRequest } from "@omniroute/open-sse/config/codexIdentity.ts";
-import { resolveCompressionSettings } from "@omniroute/open-sse/handlers/chatCore/compressionSettings.ts";
-import type { CompressionExclusions } from "@omniroute/open-sse/services/compression/exclusions.ts";
-import { resolveComboConfig } from "@omniroute/open-sse/services/comboConfig.ts";
+} from "@cheaproute/open-sse/services/combo.ts";
+import type { ComboLike, SingleModelTarget } from "@cheaproute/open-sse/services/combo/types.ts";
+import "@cheaproute/open-sse/executors/base.ts";
+import { resolveRequestAutoControls } from "@cheaproute/open-sse/services/autoCombo/requestControls.ts";
+import { isVerifiedNativeCodexRequest } from "@cheaproute/open-sse/config/codexIdentity.ts";
+import { resolveCompressionSettings } from "@cheaproute/open-sse/handlers/chatCore/compressionSettings.ts";
+import type { CompressionExclusions } from "@cheaproute/open-sse/services/compression/exclusions.ts";
+import { resolveComboConfig } from "@cheaproute/open-sse/services/comboConfig.ts";
 import { comboPinAllowlist } from "@/lib/combos/steps.ts";
-import { injectHandoffIntoBody } from "@omniroute/open-sse/services/contextHandoff.ts";
-import { runWithTransientBackendRetry } from "@omniroute/open-sse/services/transientBackendRetry.ts";
+import { injectHandoffIntoBody } from "@cheaproute/open-sse/services/contextHandoff.ts";
+import { runWithTransientBackendRetry } from "@cheaproute/open-sse/services/transientBackendRetry.ts";
 import {
   HTTP_STATUS,
   ANTIGRAVITY_PRE_RESPONSE_TIMEOUT_CODE,
-} from "@omniroute/open-sse/config/constants.ts";
+} from "@cheaproute/open-sse/config/constants.ts";
 import {
   getTargetFormat,
   detectFormatFromEndpoint,
   detectFormatFromUrl,
-} from "@omniroute/open-sse/services/provider.ts";
+} from "@cheaproute/open-sse/services/provider.ts";
 import {
   getModelsByProviderId,
   getModelTargetFormat,
   PROVIDER_ID_TO_ALIAS,
-} from "@omniroute/open-sse/config/providerModels.ts";
-import { getPassthroughProviders } from "@omniroute/open-sse/config/providerRegistry.ts";
+} from "@cheaproute/open-sse/config/providerModels.ts";
+import { getPassthroughProviders } from "@cheaproute/open-sse/config/providerRegistry.ts";
 import * as log from "../utils/logger";
 import { checkAndRefreshToken } from "../services/tokenRefresh";
 import { createHookContext, runHooks, initPreRequestRegistry } from "@/lib/middleware/registry";
@@ -112,16 +113,16 @@ import {
 import { buildModalityBridgeHeader } from "@/lib/guardrails/modalityBridge/bridgeStats";
 import type { VideoBridgeLogRedactionEntry } from "@/lib/guardrails/videoBridge";
 import { reanchorVideoBridgeRedaction } from "@/lib/guardrails/videoBridge";
-import { resolveConversationId } from "@omniroute/open-sse/services/conversationTracker.ts";
+import { resolveConversationId } from "@cheaproute/open-sse/services/conversationTracker.ts";
 import {
   classifyProviderBreakerResult,
   isAntigravityMissingProjectError,
   isProviderBreakerFailureStatus,
   resolveStreamReadinessClassificationError,
 } from "./chatPredicates";
-import { markAntigravityMissingCloudCodeProject } from "@omniroute/open-sse/services/antigravityProjectPersistence.ts";
-import { connectionHasExtraKeys } from "@omniroute/open-sse/services/apiKeyRotator.ts";
-import { wrapResponseWithOAuthSessionRelease } from "@omniroute/open-sse/services/oauthSessionOccupancy.ts";
+import { markAntigravityMissingCloudCodeProject } from "@cheaproute/open-sse/services/antigravityProjectPersistence.ts";
+import { connectionHasExtraKeys } from "@cheaproute/open-sse/services/apiKeyRotator.ts";
+import { wrapResponseWithOAuthSessionRelease } from "@cheaproute/open-sse/services/oauthSessionOccupancy.ts";
 import { inheritProviderProbeResponse } from "@/shared/utils/providerProbeResult";
 import { resolveProviderId } from "@/shared/constants/providers";
 import {
@@ -140,7 +141,7 @@ import { logAdmissionRejection, logHandlerRejection } from "./admissionRejection
 
 // Pipeline integration — wired modules
 import { classify429FromError, type FailureKind } from "@/shared/utils/classify429";
-import { isSubscriptionQuotaText } from "@omniroute/open-sse/services/quotaTextCooldowns.ts";
+import { isSubscriptionQuotaText } from "@cheaproute/open-sse/services/quotaTextCooldowns.ts";
 import { resolveUseUpstream429BreakerHints } from "@/shared/utils/providerHints";
 import { isFeatureFlagEnabled, isRotationAttributionEnabled } from "@/shared/utils/featureFlags";
 import * as agyLease from "../services/antigravityLeaseLifecycle";
@@ -156,16 +157,16 @@ import { enforceApiKeyPolicy } from "../../shared/utils/apiKeyPolicy";
 import { rejectIfMeteredBudgetExceeded } from "@/lib/usage/meteredBudgetPolicy";
 import { hasProviderQuotaBypassScope } from "../../shared/constants/apiKeyPolicyScopes";
 import { isMicrosoftDesignerWebProviderRetiredError } from "../../shared/constants/designerWebRetirement";
-import "@omniroute/open-sse/utils/requestLogger.ts";
+import "@cheaproute/open-sse/utils/requestLogger.ts";
 import { handleInternalUsageCommand } from "@/lib/usage/internalUsageCommand";
 import {
   applyTaskAwareRouting,
   getTaskRoutingConfig,
-} from "@omniroute/open-sse/services/taskAwareRouter.ts";
+} from "@cheaproute/open-sse/services/taskAwareRouter.ts";
 import {
   hasNativeWebSearchTool,
   resolveWebSearchRouteOverride,
-} from "@omniroute/open-sse/services/webSearchRouting.ts";
+} from "@cheaproute/open-sse/services/webSearchRouting.ts";
 import {
   generateSessionId as generateStableSessionId,
   touchSession,
@@ -173,29 +174,29 @@ import {
   checkSessionLimit,
   registerKeySession,
   isSessionRegisteredForKey,
-} from "@omniroute/open-sse/services/sessionManager.ts";
-import { startQuotaMonitor } from "@omniroute/open-sse/services/quotaMonitor.ts";
+} from "@cheaproute/open-sse/services/sessionManager.ts";
+import { startQuotaMonitor } from "@cheaproute/open-sse/services/quotaMonitor.ts";
 import {
   isFallbackDecision,
   shouldUseFallback,
-} from "@omniroute/open-sse/services/emergencyFallback.ts";
+} from "@cheaproute/open-sse/services/emergencyFallback.ts";
 import {
   registerCodexConnection,
   registerCodexQuotaFetcher,
-} from "@omniroute/open-sse/services/codexQuotaFetcher.ts";
-import { registerBailianCodingPlanQuotaFetcher } from "@omniroute/open-sse/services/bailianQuotaFetcher.ts";
-import { registerQwenTokenPlanQuotaFetcher } from "@omniroute/open-sse/services/qwenTokenPlanQuotaFetcher.ts";
-import { registerCrofUsageFetcher } from "@omniroute/open-sse/services/crofUsageFetcher.ts";
-import { registerDeepseekQuotaFetcher } from "@omniroute/open-sse/services/deepseekQuotaFetcher.ts";
+} from "@cheaproute/open-sse/services/codexQuotaFetcher.ts";
+import { registerBailianCodingPlanQuotaFetcher } from "@cheaproute/open-sse/services/bailianQuotaFetcher.ts";
+import { registerQwenTokenPlanQuotaFetcher } from "@cheaproute/open-sse/services/qwenTokenPlanQuotaFetcher.ts";
+import { registerCrofUsageFetcher } from "@cheaproute/open-sse/services/crofUsageFetcher.ts";
+import { registerDeepseekQuotaFetcher } from "@cheaproute/open-sse/services/deepseekQuotaFetcher.ts";
 import {
   registerMoonshotQuotaFetcher,
   registerMoonshotFetchersForNodes,
-} from "@omniroute/open-sse/services/moonshotQuotaFetcher.ts";
-import { registerOpenrouterQuotaFetcher } from "@omniroute/open-sse/services/openrouterQuotaFetcher.ts";
-import { registerOpencodeQuotaFetcher } from "@omniroute/open-sse/services/opencodeQuotaFetcher.ts";
-import { registerGrokWebQuotaFetcher } from "@omniroute/open-sse/services/grokQuotaFetcher.ts";
-import { registerGenericQuotaFetchers } from "@omniroute/open-sse/services/genericQuotaFetcher.ts";
-import { registerQuotaTrackersBatch } from "@omniroute/open-sse/services/quotaTrackersBatch.ts";
+} from "@cheaproute/open-sse/services/moonshotQuotaFetcher.ts";
+import { registerOpenrouterQuotaFetcher } from "@cheaproute/open-sse/services/openrouterQuotaFetcher.ts";
+import { registerOpencodeQuotaFetcher } from "@cheaproute/open-sse/services/opencodeQuotaFetcher.ts";
+import { registerGrokWebQuotaFetcher } from "@cheaproute/open-sse/services/grokQuotaFetcher.ts";
+import { registerGenericQuotaFetchers } from "@cheaproute/open-sse/services/genericQuotaFetcher.ts";
+import { registerQuotaTrackersBatch } from "@cheaproute/open-sse/services/quotaTrackersBatch.ts";
 import {
   disableCooldownAwareRetry,
   getCooldownAwareRetryDecision,
@@ -438,6 +439,16 @@ async function handleChatImplementation(
   const peerRejection = rejectPeerRequest(request?.headers, log.warn, errorResponse);
   if (peerRejection) return peerRejection;
 
+  // BYOK pass-through key (spec §7) — extracted once from the
+  // request headers and threaded to credential selection so the
+  // caller's personal upstream key overrides the operator's default
+  // key. `byokProviderId` is "" for the generic `x-upstream-key`
+  // header (applies to whichever provider routing selects) or a
+  // concrete provider id for provider-scoped headers.
+  const byok = extractByokKey(request);
+  const byokKey = byok?.key;
+  const byokProviderId = byok?.providerId ?? "";
+
   // Pipeline: Start request telemetry
   const reqId = correlationId || generateRequestId();
   const telemetry = new RequestTelemetry(reqId);
@@ -469,15 +480,15 @@ async function handleChatImplementation(
   // Discard lookalike JSON fields supplied by callers before evaluating any rule.
   if (body && typeof body === "object") {
     body = { ...body };
-    delete body._omnirouteReasoningRule;
-    delete body._omnirouteReasoningRouteTrace;
-    delete body._omniroutePreviousResponseResumed;
+    delete body._cheaprouteReasoningRule;
+    delete body._cheaprouteReasoningRouteTrace;
+    delete body._cheaproutePreviousResponseResumed;
   }
 
   const sourceFormat = detectFormatFromUrl(body, request.url);
 
   // Early guard: an invalid `messages` field is rejected here with a clear
-  // OmniRoute-level 400 before any routing or upstream call (#5110, #6402).
+  // CheapRoute-level 400 before any routing or upstream call (#5110, #6402).
   // Without this guard, schema-invalid bodies fell through to model resolution
   // and surfaced as a misleading 404 `model_not_found` from chatHelpers.ts (#6402).
   // Cases covered:
@@ -759,7 +770,7 @@ async function handleChatImplementation(
   const externalSessionId = extractExternalSessionId(request.headers);
   const sessionId = externalSessionId || generateStableSessionId(body);
   const sessionAffinityKey = extractSessionAffinityKey(body, request.headers) || sessionId;
-  const requestedConnectionId = request.headers.get("x-omniroute-connection")?.trim() || null;
+  const requestedConnectionId = request.headers.get("x-cheaproute-connection")?.trim() || null;
   if (sessionId) {
     touchSession(sessionId);
   }
@@ -798,15 +809,15 @@ async function handleChatImplementation(
   const bypassProviderQuotaPolicy = hasProviderQuotaBypassScope(apiKeyInfo?.scopes);
   telemetry.endPhase();
 
-  // OmniRoute-native `previous_response_id` continuation: reconstruct the
+  // CheapRoute-native `previous_response_id` continuation: reconstruct the
   // full input server-side before ANY downstream validation/translation
   // sees this request, so everything after this point (message-shape
   // guards, token-budget checks, provider translation) treats it exactly
   // like an ordinary full-history request. This works regardless of
   // whether the eventually-selected upstream provider itself understands
-  // Responses-API state -- OmniRoute always forwards the full reconstructed
+  // Responses-API state -- CheapRoute always forwards the full reconstructed
   // history upstream, exactly as it does today for a non-continued request.
-  // Client<->OmniRoute traffic shrinks to the new delta; OmniRoute<->
+  // Client<->CheapRoute traffic shrinks to the new delta; CheapRoute<->
   // provider traffic is unchanged. See src/lib/db/responsesContinuationStore.ts.
   //
   // Skipped entirely when the operator has set responsesPreviousResponseIdMode
@@ -859,7 +870,7 @@ async function handleChatImplementation(
     body = { ...body, input: [...stored.input, ...stored.output, ...deltaInput] };
     delete (body as { previous_response_id?: unknown }).previous_response_id;
     // resume flag for the attempt store in handleChatCore (inherited downstream via body).
-    (body as { _omniroutePreviousResponseResumed?: boolean })._omniroutePreviousResponseResumed =
+    (body as { _cheaproutePreviousResponseResumed?: boolean })._cheaproutePreviousResponseResumed =
       true;
   }
 
@@ -954,7 +965,7 @@ async function handleChatImplementation(
   // incoming HTTP request, before combo dispatch / credential retries, so
   // every attempt for this request shares the same id and the
   // agentic_conversations row is only touched once.
-  const clientConversationHeader = request.headers.get("x-omniroute-session-id")?.trim() || null;
+  const clientConversationHeader = request.headers.get("x-cheaproute-session-id")?.trim() || null;
   let conversationId: string | null = null;
   try {
     ({ conversationId } = await resolveConversationId({
@@ -1206,12 +1217,16 @@ async function handleChatImplementation(
           ...(target?.connectionId ? { forcedConnectionId: target.connectionId } : {}),
           ...(bypassProviderQuotaPolicy ? { bypassQuotaPolicy: true } : {}),
           ...(managedLease ? { lease: credentialLease(managedLease) } : {}),
+          ...(byokKey && (byokProviderId === "" || byokProviderId === provider)
+            ? { byokKey }
+            : {}),
         }
       );
       if (
         !creds ||
         ("allRateLimited" in creds && creds.allRateLimited) ||
-        ("waitingForCapacity" in creds && creds.waitingForCapacity)
+        ("waitingForCapacity" in creds && creds.waitingForCapacity) ||
+        ("byokPaused" in creds && creds.byokPaused)
       )
         return false;
 
@@ -1482,8 +1497,8 @@ async function handleChatImplementation(
       managedLease,
       videoBridgeLog,
       previousResponseResumed:
-        (body as { _omniroutePreviousResponseResumed?: unknown })
-          ._omniroutePreviousResponseResumed === true || undefined,
+        (body as { _cheaproutePreviousResponseResumed?: unknown })
+          ._cheaproutePreviousResponseResumed === true || undefined,
     },
     null,
     false
@@ -1553,6 +1568,15 @@ async function handleSingleModelChat(
   comboStrategy: string | null = null,
   isCombo: boolean = false
 ): Promise<Response> {
+  // BYOK pass-through key (spec §7) — re-extracted here
+  // because single-model dispatch runs in its own function
+  // scope. The generic `x-upstream-key` applies to whichever
+  // provider routing selects; provider-scoped headers apply
+  // only to their named provider.
+  const byok = extractByokKey(request);
+  const byokKey = byok?.key;
+  const byokProviderId = byok?.providerId ?? "";
+
   // 1. Resolve model → provider/model
   const resolved = await resolveModelOrError(
     modelStr,
@@ -1831,6 +1855,9 @@ async function handleSingleModelChat(
                 ...(runtimeOptions.managedLease
                   ? { lease: credentialLease(runtimeOptions.managedLease) }
                   : {}),
+                ...(byokKey && (byokProviderId === "" || byokProviderId === provider)
+                  ? { byokKey }
+                  : {}),
                 ...(() => {
                   const effectiveForcedId = resolveForcedConnectionForCredentialPool({
                     forcedConnectionId: forcedConnectionId || null,
@@ -1847,6 +1874,17 @@ async function handleSingleModelChat(
               }
             );
       preselectedCredentials = null;
+
+      // BYOK pass-through (spec §7): a paused personal key is
+      // rejected outright — no upstream traffic is sent on it,
+      // and the request does not silently fall back to the
+      // operator's default key.
+      if (credentials && "byokPaused" in credentials && credentials.byokPaused) {
+        return errorResponse(
+          HTTP_STATUS.FORBIDDEN,
+          "This BYOK key is paused. Resume it to continue routing."
+        );
+      }
 
       if (credentials && "leaseUnavailable" in credentials && credentials.leaseUnavailable) {
         excludedConnectionIds.add(agyLease.trackAntigravityLeaseBusy(agy, credentials));
@@ -1908,7 +1946,7 @@ async function handleSingleModelChat(
 
         const breakerFailureStatus = Number(lastStatus);
         // lastError is a string here — check for the proxy_unreachable tag embedded by
-        // tagProxyUnreachable (proxyFetch.ts) and OmniRoute's own queue timeouts. Both mean
+        // tagProxyUnreachable (proxyFetch.ts) and CheapRoute's own queue timeouts. Both mean
         // we never reached the provider, so they must not trip the provider breaker.
         const isNetworkError =
           typeof lastError === "string" &&
@@ -2037,7 +2075,7 @@ async function handleSingleModelChat(
         comboStrategy === "context-relay" &&
         comboName &&
         runtimeOptions.sessionId &&
-        body?._omnirouteSkipContextRelay !== true
+        body?._cheaprouteSkipContextRelay !== true
       ) {
         const handoff = getHandoff(runtimeOptions.sessionId, comboName);
         if (handoff && handoff.fromAccount !== credentials.connectionId) {
@@ -2083,7 +2121,7 @@ async function handleSingleModelChat(
           ...(workspaceId ? { workspaceId } : {}),
         });
       }
-      if (runtimeOptions.sessionId && body?._omnirouteInternalRequest !== "context-handoff") {
+      if (runtimeOptions.sessionId && body?._cheaprouteInternalRequest !== "context-handoff") {
         touchSession(runtimeOptions.sessionId, credentials.connectionId);
         startQuotaMonitor(
           runtimeOptions.sessionId,
@@ -2647,7 +2685,7 @@ async function handleSingleModelChat(
             })
           );
 
-      // An explicit pin (combo step `connectionId` / `x-omniroute-connection`) is an
+      // An explicit pin (combo step `connectionId` / `x-cheaproute-connection`) is an
       // operator instruction, not a suggestion: the account cooldown above is still
       // recorded, but selection must NOT silently rotate to a sibling account of the
       // same provider. Pinned steps fall through to combo orchestration, which moves

@@ -65,7 +65,7 @@ import { HTTP_STATUS, ANTIGRAVITY_PRE_RESPONSE_TIMEOUT_CODE } from "../../config
 import { applyStatusRestatement } from "../../config/upstreamStatusRestatement.ts";
 
 import { updateProviderConnection, getProviderConnectionById } from "@/lib/db/providers";
-import { wasRefreshTokenRotated } from "@omniroute/open-sse/services/refreshSerializer.ts";
+import { wasRefreshTokenRotated } from "@cheaproute/open-sse/services/refreshSerializer.ts";
 
 import {
   createSafeAbortError,

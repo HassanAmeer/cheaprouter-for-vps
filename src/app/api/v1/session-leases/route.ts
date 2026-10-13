@@ -24,7 +24,7 @@ import {
   validateExclusiveLeaseKeyConfiguration,
 } from "@/sse/services/leaseContext";
 import { getModelInfo } from "@/sse/services/model";
-import { buildErrorBody } from "@omniroute/open-sse/utils/error.ts";
+import { buildErrorBody } from "@cheaproute/open-sse/utils/error.ts";
 
 const action = <T extends string>(name: T, shape: z.ZodRawShape) =>
   z.object({ action: z.literal(name), ...shape });

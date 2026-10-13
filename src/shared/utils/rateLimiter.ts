@@ -4,9 +4,9 @@ import type Redis from "ioredis";
 // instead of probing localhost on every API request.
 const REDIS_URL = process.env.REDIS_URL?.trim() || "";
 
-// Namespace prefix for all OmniRoute Redis keys. Prevents key collisions when
-// OmniRoute shares a Redis instance with other apps (e.g. on 127.0.0.1:6379).
-const REDIS_KEY_PREFIX = process.env.REDIS_KEY_PREFIX?.trim() || "omniroute:";
+// Namespace prefix for all CheapRoute Redis keys. Prevents key collisions when
+// CheapRoute shares a Redis instance with other apps (e.g. on 127.0.0.1:6379).
+const REDIS_KEY_PREFIX = process.env.REDIS_KEY_PREFIX?.trim() || "cheaproute:";
 if (process.env.NODE_ENV === "production" && !REDIS_URL) {
   console.warn("[REDIS] REDIS_URL is not set in production. Using in-memory rate limiting.");
 }

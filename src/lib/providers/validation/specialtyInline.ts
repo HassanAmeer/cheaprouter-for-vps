@@ -3,7 +3,7 @@
 // functions taking `isLocal` where the original closure captured it; behavior is byte-identical
 // to the original inline defs. The host dispatcher still owns the SPECIALTY_VALIDATORS map
 // construction + dispatch — these are just the leaf validator bodies.
-import { validateQoderCliPat } from "@omniroute/open-sse/services/qoderCli.ts";
+import { validateQoderCliPat } from "@cheaproute/open-sse/services/qoderCli.ts";
 import { KiroService } from "@/lib/oauth/services/kiro";
 import { resolveNvidiaValidationModel } from "@/lib/providers/nvidiaValidationModel";
 import { normalizeBaseUrl } from "./urlHelpers";
@@ -50,7 +50,7 @@ export async function validateV0VercelProvider({ apiKey, providerSpecificData, i
 // key to check upstream. The only meaningful validation is confirming the
 // `auggie` binary is installed and runnable on this machine.
 export async function validateAuggieProvider() {
-  const { checkAuggieCliVersion } = await import("@omniroute/open-sse/executors/auggie.ts");
+  const { checkAuggieCliVersion } = await import("@cheaproute/open-sse/executors/auggie.ts");
   const result = await checkAuggieCliVersion();
   if (!result.ok) {
     return {
@@ -64,7 +64,7 @@ export async function validateAuggieProvider() {
 
 export async function validateCursorApiProvider({ apiKey }: { apiKey?: string }) {
   const { exchangeCursorApiKey, CursorApiKeyExchangeError, isCursorApiKey } =
-    await import("@omniroute/open-sse/services/cursorApiKeyAuth.ts");
+    await import("@cheaproute/open-sse/services/cursorApiKeyAuth.ts");
   const key = (apiKey || "").trim();
   if (!isCursorApiKey(key)) {
     return {
@@ -168,7 +168,7 @@ export async function validateGitlabProvider({ apiKey, providerSpecificData, isL
 export async function validateVertexProvider({ apiKey }: any) {
   try {
     const { parseSAFromApiKey, getAccessToken, isExpressApiKey } =
-      await import("@omniroute/open-sse/executors/vertex.ts");
+      await import("@cheaproute/open-sse/executors/vertex.ts");
     // Express-mode API keys are opaque strings sent directly as the ?key= query param — there is
     // no JWT to mint, so accept any non-empty Express key (the live chat/media call validates it).
     if (isExpressApiKey(apiKey)) {
@@ -186,7 +186,7 @@ export async function validateVertexProvider({ apiKey }: any) {
 export async function validateVertexPartnerProvider({ apiKey }: any) {
   try {
     const { parseSAFromApiKey, getAccessToken, isExpressApiKey } =
-      await import("@omniroute/open-sse/executors/vertex.ts");
+      await import("@cheaproute/open-sse/executors/vertex.ts");
     if (isExpressApiKey(apiKey)) {
       return { valid: true, error: null };
     }

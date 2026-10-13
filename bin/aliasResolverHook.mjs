@@ -9,8 +9,8 @@
  * - Rewrites alias specifiers to absolute filesystem paths, mirroring
  *   tsconfig.json `paths`:
  *     - `@/*`                    → <root>/src/*
- *     - `@omniroute/open-sse`     → <root>/open-sse/index.*
- *     - `@omniroute/open-sse/*`   → <root>/open-sse/*
+ *     - `@cheaproute/open-sse`     → <root>/open-sse/index.*
+ *     - `@cheaproute/open-sse/*`   → <root>/open-sse/*
  * - Probes the usual source extensions (`.ts`, `.tsx`, `.js`, `.mjs`, `.cjs`,
  *   `.json`) plus `index.*` for directory imports.
  * - Returns `shortCircuit: true` only when a candidate file exists on disk;
@@ -42,8 +42,8 @@ const EXTENSIONS = [".ts", ".tsx", ".js", ".mjs", ".cjs", ".json"];
  */
 const ALIAS_TABLE = [
   { prefix: "@/", target: "src", exact: false },
-  { prefix: "@omniroute/open-sse/", target: "open-sse", exact: false },
-  { prefix: "@omniroute/open-sse", target: "open-sse", exact: true },
+  { prefix: "@cheaproute/open-sse/", target: "open-sse", exact: false },
+  { prefix: "@cheaproute/open-sse", target: "open-sse", exact: true },
 ];
 
 function tryResolveAliasFsPath(specifier) {
@@ -65,7 +65,7 @@ function tryResolveAliasFsPath(specifier) {
 
   const targetDir = join(ROOT, matchedEntry.target);
 
-  // Exact match (e.g. `@omniroute/open-sse`) → resolve to `<target>/index.*`.
+  // Exact match (e.g. `@cheaproute/open-sse`) → resolve to `<target>/index.*`.
   if (rest === "" || rest === undefined) {
     return probeIndex(targetDir);
   }

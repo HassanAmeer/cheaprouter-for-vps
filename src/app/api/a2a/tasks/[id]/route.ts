@@ -6,7 +6,7 @@ import {
   listA2ATaskEvents,
   type A2ATaskHistoryRow,
 } from "@/lib/db/a2aTasks";
-import { sanitizeErrorMessage } from "@omniroute/open-sse/utils/error";
+import { sanitizeErrorMessage } from "@cheaproute/open-sse/utils/error";
 
 /** JSON.parse with a fallback on malformed/absent input — persisted history rows are our own
  * writes (A2ATaskManager.persist()) but are still parsed defensively. */

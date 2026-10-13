@@ -21,7 +21,7 @@ import {
   decodeKvServerEvent,
   encodeRequestContextResponse,
   encodeMcpStateResponse,
-  OMNIROUTE_MCP_SERVER_IDENTIFIER,
+  CHEAPROUTE_MCP_SERVER_IDENTIFIER,
   encodeKvGetBlobResult,
   encodeKvSetBlobResult,
   encodeExecListMcpResourcesResult,
@@ -120,7 +120,7 @@ const TOOL_COMMIT_DIRECTIVE = [
 ].join("\n");
 
 // NOTE: composer-api primes the model into "agent mode" with a fabricated
-// prior switch_mode exchange (AGENT_MODE_PRIMER). On OmniRoute's native-tool
+// prior switch_mode exchange (AGENT_MODE_PRIMER). On CheapRoute's native-tool
 // agent endpoint that primer is counterproductive — it references a
 // non-existent switch_mode tool and measurably LOWERED the tool-call rate in
 // live A/B (56% vs 69%), so it is intentionally not ported.
@@ -673,7 +673,7 @@ export function processFrame(
         `[cursor-agent] unhandled exec variant field=${event.variantField} — no handler in this build`
       );
     } else if (event.kind === "exec_list_mcp_resources") {
-      // Blocking exec: answer with an empty success (OmniRoute exposes tools,
+      // Blocking exec: answer with an empty success (CheapRoute exposes tools,
       // not MCP resources) so the turn can finish.
       if (opts.h2Req) {
         try {
@@ -689,7 +689,7 @@ export function processFrame(
         try {
           const serverIdentifier =
             event.serverIdentifiers.find((id) => id.trim().length > 0) ??
-            OMNIROUTE_MCP_SERVER_IDENTIFIER;
+            CHEAPROUTE_MCP_SERVER_IDENTIFIER;
           opts.h2Req.write(
             encodeMcpStateResponse(
               event.execMsgId,
@@ -1344,7 +1344,7 @@ export class CursorExecutor extends BaseExecutor {
       return {
         response: buildErrorResponse(
           501,
-          "Cursor provider requires Node.js http2, which is unavailable in this runtime (Edge / Cloudflare Workers / similar). Run OmniRoute on a Node.js runtime to use cursor.",
+          "Cursor provider requires Node.js http2, which is unavailable in this runtime (Edge / Cloudflare Workers / similar). Run CheapRoute on a Node.js runtime to use cursor.",
           "unsupported_runtime"
         ),
         url,

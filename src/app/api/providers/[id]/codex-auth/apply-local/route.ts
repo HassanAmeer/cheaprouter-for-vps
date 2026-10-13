@@ -7,7 +7,7 @@ import {
   writeCodexAuthFileToLocalCliIfNeeded,
 } from "@/lib/oauth/utils/codexAuthFile";
 import { getAuditRequestContext, logAuditEvent } from "@/lib/compliance/index";
-import { sanitizeErrorMessage } from "@omniroute/open-sse/utils/error";
+import { sanitizeErrorMessage } from "@cheaproute/open-sse/utils/error";
 
 // Optional body { force?: boolean }. Unknown keys are stripped rather than
 // rejected so the endpoint stays tolerant of the empty/no-body calls it

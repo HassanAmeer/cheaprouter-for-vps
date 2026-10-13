@@ -1,4 +1,4 @@
-/** Configure Qwen Code's OpenAI-compatible provider for OmniRoute. */
+/** Configure Qwen Code's OpenAI-compatible provider for CheapRoute. */
 
 import {
   chmodSync,
@@ -28,7 +28,7 @@ export function resolveQwenTarget(opts = {}) {
 
   if (!root || !(opts.apiKey ?? opts["api-key"])) {
     try {
-      context = resolveActiveContext(opts.context ?? process.env.OMNIROUTE_CONTEXT);
+      context = resolveActiveContext(opts.context ?? process.env.CHEAPROUTE_CONTEXT);
     } catch {
       // An active context is optional for local setup.
     }
@@ -45,8 +45,8 @@ export function resolveQwenTarget(opts = {}) {
     opts["api-key"] ??
     context?.accessToken ??
     context?.apiKey ??
-    process.env.OMNIROUTE_API_KEY ??
-    "sk_omniroute";
+    process.env.CHEAPROUTE_API_KEY ??
+    "sk_cheaproute";
 
   return { baseUrl: normalizeQwenCodeBaseUrl(root), apiKey };
 }
@@ -100,13 +100,13 @@ export async function runSetupQwenCommand(opts = {}) {
     opts.configPath ?? opts["config-path"] ?? path.join(os.homedir(), ".qwen", "settings.json");
   const envPath = opts.envPath ?? opts["env-path"] ?? path.join(path.dirname(settingsPath), ".env");
 
-  printHeading("OmniRoute → Qwen Code (OpenAI-compatible)");
+  printHeading("CheapRoute → Qwen Code (OpenAI-compatible)");
   printInfo(`baseUrl: ${baseUrl}`);
 
   for (const target of [settingsPath, envPath]) {
     const guard = await guardHostConfigTarget(target, {
       toolLabel: "Qwen Code",
-      hostCommand: "omniroute setup-qwen",
+      hostCommand: "cheaproute setup-qwen",
       allowContainerWrite: Boolean(opts.allowContainerWrite ?? opts["allow-container-write"]),
       dryRun,
     });
@@ -140,7 +140,7 @@ export async function runSetupQwenCommand(opts = {}) {
     if (dryRun) {
       console.log(`\n${settingsText}`);
       printInfo(`[dry-run] settings → ${settingsPath}`);
-      printInfo(`[dry-run] credential → ${envPath} (OMNIROUTE_API_KEY)`);
+      printInfo(`[dry-run] credential → ${envPath} (CHEAPROUTE_API_KEY)`);
       return 0;
     }
 
@@ -149,7 +149,7 @@ export async function runSetupQwenCommand(opts = {}) {
     writeAtomic(settingsPath, settingsText);
     writeAtomic(envPath, envText, 0o600);
     printSuccess(`Wrote ${settingsPath}`);
-    printSuccess(`Updated ${envPath} (OMNIROUTE_API_KEY only)`);
+    printSuccess(`Updated ${envPath} (CHEAPROUTE_API_KEY only)`);
     printInfo('Run: qwen   (or headless: qwen -p "reply OK")');
     return 0;
   } catch (error) {
@@ -161,10 +161,10 @@ export async function runSetupQwenCommand(opts = {}) {
 export function registerSetupQwen(program) {
   program
     .command("setup-qwen")
-    .description("Configure Qwen Code's upstream V4 modelProviders format for OmniRoute")
-    .option("--port <port>", "Local OmniRoute port (ignored when --remote is set)", "20128")
-    .option("--remote <url>", "Remote OmniRoute URL")
-    .option("--api-key <key>", "OmniRoute API key")
+    .description("Configure Qwen Code's upstream V4 modelProviders format for CheapRoute")
+    .option("--port <port>", "Local CheapRoute port (ignored when --remote is set)", "20128")
+    .option("--remote <url>", "Remote CheapRoute URL")
+    .option("--api-key <key>", "CheapRoute API key")
     .option("--model <id>", "Model id for Qwen Code")
     .option("--config-path <path>", "Qwen Code settings.json path")
     .option("--env-path <path>", "Qwen Code .env path")

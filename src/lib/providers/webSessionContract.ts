@@ -1,7 +1,7 @@
 import {
   listExtractionConfigs,
   type TokenSource,
-} from "@omniroute/open-sse/services/tokenExtractionConfig.ts";
+} from "@cheaproute/open-sse/services/tokenExtractionConfig.ts";
 import { getWebSessionCredentialRequirement } from "@/shared/providers/webSessionCredentials";
 
 export const WEB_SESSION_CONTRACT_VERSION = 1;
@@ -26,7 +26,7 @@ export interface WebSessionContract {
 
 /**
  * Publish only the canonical, non-secret metadata needed by external
- * credential brokers to capture credentials in the same shape OmniRoute
+ * credential brokers to capture credentials in the same shape CheapRoute
  * accepts. Provider instructions, polling state, and credential values are
  * intentionally excluded.
  */

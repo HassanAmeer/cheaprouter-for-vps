@@ -14,8 +14,8 @@ import {
   cooldownUntilMs,
   getAllModelLockouts,
   type ModelLockoutInfo,
-} from "@omniroute/open-sse/services/accountFallback";
-import { clearRequestRejectedStreak } from "@omniroute/open-sse/services/requestRejectedStreak";
+} from "@cheaproute/open-sse/services/accountFallback";
+import { clearRequestRejectedStreak } from "@cheaproute/open-sse/services/requestRejectedStreak";
 
 // Explicit whitelist: getRawProviderConnections() defaults to SELECT *, which would include
 // tokens, keys, emails and provider_specific_data.

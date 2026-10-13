@@ -76,10 +76,10 @@ function getThreadStorePath(): string | null {
   try {
     const dataDir =
       process.env.DATA_DIR ||
-      process.env.OMNIROUTE_DATA_DIR ||
+      process.env.CHEAPROUTE_DATA_DIR ||
       process.env.VIBEPROXY_DATA_DIR ||
-      (process.env.USERPROFILE ? join(process.env.USERPROFILE, ".omniroute") : "") ||
-      (process.env.HOME ? join(process.env.HOME, ".omniroute") : "") ||
+      (process.env.USERPROFILE ? join(process.env.USERPROFILE, ".cheaproute") : "") ||
+      (process.env.HOME ? join(process.env.HOME, ".cheaproute") : "") ||
       "";
     if (!dataDir) return null;
     return join(dataDir, "notion-web-thread-sessions.json");

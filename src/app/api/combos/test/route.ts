@@ -10,12 +10,12 @@ import {
 } from "@/lib/api/modelTestRunner";
 import { getRuntimePorts } from "@/lib/runtime/ports";
 import { requiresWebSessionCredential } from "@/shared/providers/webSessionCredentials";
-import { resolveNestedComboTargets } from "@omniroute/open-sse/services/combo.ts";
-import type { ComboLike, ResolvedComboTarget } from "@omniroute/open-sse/services/combo/types.ts";
+import { resolveNestedComboTargets } from "@cheaproute/open-sse/services/combo.ts";
+import type { ComboLike, ResolvedComboTarget } from "@cheaproute/open-sse/services/combo/types.ts";
 import { testComboSchema } from "@/shared/validation/schemas";
 import { isValidationFailure, validateBody } from "@/shared/validation/helpers";
 import { requireManagementAuth } from "@/lib/api/requireManagementAuth";
-import { sanitizeErrorMessage } from "@omniroute/open-sse/utils/error";
+import { sanitizeErrorMessage } from "@cheaproute/open-sse/utils/error";
 import { isAutoComboId, materializeAutoCombo } from "@/lib/combos/autoVirtual";
 import type { ComboRecord } from "@/domain/persistence/comboRepositories";
 
@@ -166,10 +166,10 @@ async function testComboTarget(
         ...(internalApiKey ? { Authorization: `Bearer ${internalApiKey}` } : {}),
         "X-Internal-Test": "combo-health-check",
         // Force a fresh execution path so combo tests cannot be satisfied by
-        // OmniRoute's semantic cache or other request reuse layers.
-        "X-OmniRoute-No-Cache": "true",
-        "X-OmniRoute-Compression": "off",
-        ...(target.connectionId ? { "X-OmniRoute-Connection": target.connectionId } : {}),
+        // CheapRoute's semantic cache or other request reuse layers.
+        "X-CheapRoute-No-Cache": "true",
+        "X-CheapRoute-Compression": "off",
+        ...(target.connectionId ? { "X-CheapRoute-Connection": target.connectionId } : {}),
         "X-Request-Id": `combo-test-${randomUUID()}`,
       },
       body: JSON.stringify(testBody),

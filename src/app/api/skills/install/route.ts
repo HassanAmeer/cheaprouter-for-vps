@@ -3,7 +3,7 @@ import { z } from "zod";
 import { GLOBAL_SKILL_OWNER_ID, skillRegistry } from "@/lib/skills/registry";
 import { validateBody, isValidationFailure } from "@/shared/validation/helpers";
 import { requireManagementAuth } from "@/lib/api/requireManagementAuth";
-import { sanitizeErrorMessage } from "@omniroute/open-sse/utils/error";
+import { sanitizeErrorMessage } from "@cheaproute/open-sse/utils/error";
 
 const installManifestSchema = z.object({
   name: z.string().min(1).max(100),

@@ -1,4 +1,4 @@
-import { getClaudeCodeVersion } from "@omniroute/open-sse/executors/claudeIdentity.ts";
+import { getClaudeCodeVersion } from "@cheaproute/open-sse/executors/claudeIdentity.ts";
 
 export function buildClaudeModelsHeaders(input: {
   accessToken?: string | null;

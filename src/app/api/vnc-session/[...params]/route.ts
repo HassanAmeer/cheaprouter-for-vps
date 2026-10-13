@@ -9,7 +9,7 @@ import {
   stopSession,
   type VncSession,
 } from "@/lib/vncSession/service";
-import { buildErrorBody, sanitizeErrorMessage } from "@omniroute/open-sse/utils/error.ts";
+import { buildErrorBody, sanitizeErrorMessage } from "@cheaproute/open-sse/utils/error.ts";
 
 function publicSession(session: VncSession | undefined | null) {
   if (!session) return null;
@@ -88,7 +88,7 @@ export async function POST(
       return NextResponse.json({
         session: publicSession(session),
         note:
-          "The viewer is loopback-only. Open it on the OmniRoute host or forward its port over SSH, then harvest the session.",
+          "The viewer is loopback-only. Open it on the CheapRoute host or forward its port over SSH, then harvest the session.",
       });
     }
 

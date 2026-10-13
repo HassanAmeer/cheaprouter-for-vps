@@ -81,7 +81,7 @@ export default function LoginPage() {
       });
 
       if (res.ok) {
-        sessionStorage.setItem("omniroute_login_time", String(Date.now()));
+        sessionStorage.setItem("cheaproute_login_time", String(Date.now()));
         window.location.href = "/dashboard";
       } else {
         const data = await res.json();

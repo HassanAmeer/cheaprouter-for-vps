@@ -4,9 +4,9 @@ import {
   isModelCapacityOverloadError,
 } from "../../shared/utils/circuitBreaker";
 import { isRequestScopedUpstreamFailure } from "./comboFailureLogging";
-import { getTrustedLocalRateLimitResponse } from "@omniroute/open-sse/services/rateLimitManager/errors";
-import { TRANSLATION_FAILURE_CODE } from "@omniroute/open-sse/handlers/chatCore/translationFailure";
-import { isProviderCircuitOpenResult } from "@omniroute/open-sse/services/combo/comboPredicates.ts";
+import { getTrustedLocalRateLimitResponse } from "@cheaproute/open-sse/services/rateLimitManager/errors";
+import { TRANSLATION_FAILURE_CODE } from "@cheaproute/open-sse/handlers/chatCore/translationFailure";
+import { isProviderCircuitOpenResult } from "@cheaproute/open-sse/services/combo/comboPredicates.ts";
 
 export const PROVIDER_BREAKER_FAILURE_STATUSES = new Set([408, 500, 502, 503, 504]);
 
@@ -41,12 +41,12 @@ export function shouldTripProviderBreakerForResult(
     !isLocalStreamLifecycleError(result.error) &&
     !isLocalExecutionError(result.error) &&
     // Network-layer errors (ECONNREFUSED, ETIMEDOUT) never reached the provider —
-    // the provider may be healthy, only the network path is broken. OmniRoute's own
+    // the provider may be healthy, only the network path is broken. CheapRoute's own
     // rate-limit queue timeouts are backpressure we applied, not a provider failure.
     result.errorCode !== "proxy_unreachable" &&
     result.errorCode !== "RATE_LIMIT_QUEUE_TIMEOUT" &&
     result.errorCode !== "RATE_LIMIT_QUEUE_WEDGED" &&
-    // #14815: a request that failed translation never left OmniRoute.
+    // #14815: a request that failed translation never left CheapRoute.
     result.errorCode !== TRANSLATION_FAILURE_CODE &&
     !isModelCapacityOverloadError(result.error) &&
     !isModelCapacityOverloadError(result.status) &&

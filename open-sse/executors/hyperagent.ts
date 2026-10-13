@@ -168,7 +168,7 @@ function lastUserText(messages: ChatMessage[]): string {
 const memoryThreads = new Map<string, ThreadBinding>();
 
 function threadCachePath(): string | null {
-  const dataDir = process.env.DATA_DIR || process.env.OMNIROUTE_DATA_DIR;
+  const dataDir = process.env.DATA_DIR || process.env.CHEAPROUTE_DATA_DIR;
   if (!dataDir) return null;
   return join(dataDir, "hyperagent-thread-sessions.json");
 }

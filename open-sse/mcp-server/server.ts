@@ -113,7 +113,7 @@ import type { TextToolResult } from "./toolResult.ts";
 export { getMcpModelsCatalog } from "./catalog.ts";
 
 const MCP_ALLOWED_SCOPES = new Set(
-  (process.env.OMNIROUTE_MCP_SCOPES || "")
+  (process.env.CHEAPROUTE_MCP_SCOPES || "")
     .split(",")
     .map((s) => s.trim())
     .filter(Boolean)
@@ -173,9 +173,9 @@ function readMcpAccessibilityConfig(): McpAccessibilityConfig {
  * `radarCatalog.ts` can import it directly instead of reaching back into this file
  * through `import("./server.ts")`, which closed two cycles in the dependency graph.
  */
-import { omniRouteFetch } from "./internalFetch.ts";
+import { cheapRouteFetch } from "./internalFetch.ts";
 
-export { omniRouteFetch };
+export { cheapRouteFetch };
 
 function withScopeEnforcement(
   toolName: string,
@@ -243,7 +243,7 @@ export function createMcpServer(options?: CreateMcpServerOptions): McpServer {
   const dynamicWebSearchInput = buildWebSearchInputSchema(blockedProviders);
 
   const server = new McpServer({
-    name: "omniroute",
+    name: "cheaproute",
     version: APP_CONFIG.version,
   });
   const mcpDescriptionCompressionEnabled = readMcpDescriptionCompressionEnabled();
@@ -314,103 +314,103 @@ export function createMcpServer(options?: CreateMcpServerOptions): McpServer {
   ]);
 
   server.registerTool(
-    "omniroute_get_health",
+    "cheaproute_get_health",
     {
       description:
-        "Returns OmniRoute health status including uptime, memory, circuit breakers, rate limits, and cache stats",
+        "Returns CheapRoute health status including uptime, memory, circuit breakers, rate limits, and cache stats",
       inputSchema: getHealthInput,
     },
-    withScopeEnforcement("omniroute_get_health", async (args) => {
+    withScopeEnforcement("cheaproute_get_health", async (args) => {
       getHealthInput.parse(args ?? {});
       return handleGetHealth();
     })
   );
 
   server.registerTool(
-    "omniroute_list_combos",
+    "cheaproute_list_combos",
     {
       description:
         "Lists all configured combos (model chains) with strategies and optional metrics",
       inputSchema: listCombosInput,
     },
-    withScopeEnforcement("omniroute_list_combos", (args) =>
+    withScopeEnforcement("cheaproute_list_combos", (args) =>
       handleListCombos(listCombosInput.parse(args))
     )
   );
 
   server.registerTool(
-    "omniroute_get_combo_metrics",
+    "cheaproute_get_combo_metrics",
     {
       description: "Returns detailed performance metrics for a specific combo",
       inputSchema: getComboMetricsInput,
     },
-    withScopeEnforcement("omniroute_get_combo_metrics", (args) =>
+    withScopeEnforcement("cheaproute_get_combo_metrics", (args) =>
       handleGetComboMetrics(getComboMetricsInput.parse(args))
     )
   );
 
   server.registerTool(
-    "omniroute_switch_combo",
+    "cheaproute_switch_combo",
     {
       description: "Activates or deactivates a combo for routing",
       inputSchema: switchComboInput,
     },
-    withScopeEnforcement("omniroute_switch_combo", (args) =>
+    withScopeEnforcement("cheaproute_switch_combo", (args) =>
       handleSwitchCombo(switchComboInput.parse(args))
     )
   );
 
   server.registerTool(
-    "omniroute_create_combo",
+    "cheaproute_create_combo",
     {
       description: "Registers a new combo (model chain) with name, models, and strategy",
       inputSchema: createComboInput,
     },
-    withScopeEnforcement("omniroute_create_combo", (args) =>
+    withScopeEnforcement("cheaproute_create_combo", (args) =>
       handleCreateCombo(createComboInput.parse(args))
     )
   );
 
   server.registerTool(
-    "omniroute_check_quota",
+    "cheaproute_check_quota",
     {
       description: "Checks remaining API quota for one or all providers",
       inputSchema: checkQuotaInput,
     },
-    withScopeEnforcement("omniroute_check_quota", (args) =>
+    withScopeEnforcement("cheaproute_check_quota", (args) =>
       handleCheckQuota(checkQuotaInput.parse(args))
     )
   );
 
   server.registerTool(
-    "omniroute_route_request",
+    "cheaproute_route_request",
     {
-      description: "Sends a chat completion request through OmniRoute intelligent routing",
+      description: "Sends a chat completion request through CheapRoute intelligent routing",
       inputSchema: routeRequestInput,
     },
-    withScopeEnforcement("omniroute_route_request", (args) =>
+    withScopeEnforcement("cheaproute_route_request", (args) =>
       handleRouteRequest(routeRequestInput.parse(args))
     )
   );
 
   server.registerTool(
-    "omniroute_cost_report",
+    "cheaproute_cost_report",
     {
       description: "Generates a cost report for the specified period",
       inputSchema: costReportInput,
     },
-    withScopeEnforcement("omniroute_cost_report", (args) =>
+    withScopeEnforcement("cheaproute_cost_report", (args) =>
       handleCostReport(costReportInput.parse(args))
     )
   );
 
   server.registerTool(
-    "omniroute_list_models_catalog",
+    "cheaproute_list_models_catalog",
     {
       description: "Lists all available AI models across providers with capabilities and pricing",
       inputSchema: listModelsCatalogInput,
     },
-    withScopeEnforcement("omniroute_list_models_catalog", (args) =>
+    withScopeEnforcement("cheaproute_list_models_catalog", (args) =>
       handleListModelsCatalog(listModelsCatalogInput.parse(args))
     )
   );
@@ -418,156 +418,156 @@ export function createMcpServer(options?: CreateMcpServerOptions): McpServer {
   registerRadarCatalogTool(server, withScopeEnforcement);
 
   server.registerTool(
-    "omniroute_simulate_route",
+    "cheaproute_simulate_route",
     {
       description: "Simulates the routing path a request would take without executing it (dry-run)",
       inputSchema: simulateRouteInput,
     },
-    withScopeEnforcement("omniroute_simulate_route", (args) =>
+    withScopeEnforcement("cheaproute_simulate_route", (args) =>
       handleSimulateRoute(simulateRouteInput.parse(args))
     )
   );
 
   server.registerTool(
-    "omniroute_set_budget_guard",
+    "cheaproute_set_budget_guard",
     {
       description:
         "Sets a session budget limit with configurable action when exceeded (degrade/block/alert)",
       inputSchema: setBudgetGuardInput,
     },
-    withScopeEnforcement("omniroute_set_budget_guard", (args) =>
+    withScopeEnforcement("cheaproute_set_budget_guard", (args) =>
       handleSetBudgetGuard(setBudgetGuardInput.parse(args))
     )
   );
 
   server.registerTool(
-    "omniroute_set_routing_strategy",
+    "cheaproute_set_routing_strategy",
     {
       description:
         "Updates combo routing strategy at runtime (priority/weighted/round-robin/auto/etc.)",
       inputSchema: setRoutingStrategyInput,
     },
-    withScopeEnforcement("omniroute_set_routing_strategy", (args) =>
+    withScopeEnforcement("cheaproute_set_routing_strategy", (args) =>
       handleSetRoutingStrategy(setRoutingStrategyInput.parse(args))
     )
   );
 
   server.registerTool(
-    "omniroute_set_resilience_profile",
+    "cheaproute_set_resilience_profile",
     {
       description:
         "Applies a resilience profile controlling circuit breakers, retries, timeouts, and fallback depth",
       inputSchema: setResilienceProfileInput,
     },
-    withScopeEnforcement("omniroute_set_resilience_profile", (args) =>
+    withScopeEnforcement("cheaproute_set_resilience_profile", (args) =>
       handleSetResilienceProfile(setResilienceProfileInput.parse(args))
     )
   );
 
   server.registerTool(
-    "omniroute_test_combo",
+    "cheaproute_test_combo",
     {
       description:
         "Tests each provider in a combo with a real prompt, reporting latency, cost, and success per provider",
       inputSchema: testComboInput,
     },
-    withScopeEnforcement("omniroute_test_combo", (args) =>
+    withScopeEnforcement("cheaproute_test_combo", (args) =>
       handleTestCombo(testComboInput.parse(args))
     )
   );
 
   server.registerTool(
-    "omniroute_get_provider_metrics",
+    "cheaproute_get_provider_metrics",
     {
       description:
         "Returns detailed metrics for a specific provider including latency percentiles and circuit breaker state",
       inputSchema: getProviderMetricsInput,
     },
-    withScopeEnforcement("omniroute_get_provider_metrics", (args) =>
+    withScopeEnforcement("cheaproute_get_provider_metrics", (args) =>
       handleGetProviderMetrics(getProviderMetricsInput.parse(args))
     )
   );
 
   server.registerTool(
-    "omniroute_best_combo_for_task",
+    "cheaproute_best_combo_for_task",
     {
       description:
         "Recommends the best combo for a task type based on provider fitness and constraints",
       inputSchema: bestComboForTaskInput,
     },
-    withScopeEnforcement("omniroute_best_combo_for_task", (args) =>
+    withScopeEnforcement("cheaproute_best_combo_for_task", (args) =>
       handleBestComboForTask(bestComboForTaskInput.parse(args))
     )
   );
 
   server.registerTool(
-    "omniroute_explain_route",
+    "cheaproute_explain_route",
     {
       description:
         "Explains why a request was routed to a specific provider, showing scoring factors and fallbacks",
       inputSchema: explainRouteInput,
     },
-    withScopeEnforcement("omniroute_explain_route", (args) =>
+    withScopeEnforcement("cheaproute_explain_route", (args) =>
       handleExplainRoute(explainRouteInput.parse(args))
     )
   );
 
   server.registerTool(
-    "omniroute_pick_fastest_model",
+    "cheaproute_pick_fastest_model",
     {
       description: "Picks the fastest reliable provider-model pair from live telemetry.",
       inputSchema: pickFastestModelInput,
     },
-    withScopeEnforcement("omniroute_pick_fastest_model", (args) =>
+    withScopeEnforcement("cheaproute_pick_fastest_model", (args) =>
       handlePickFastestModel(pickFastestModelInput.parse(args))
     )
   );
 
   server.registerTool(
-    "omniroute_get_session_snapshot",
+    "cheaproute_get_session_snapshot",
     {
       description:
         "Returns a full snapshot of the current working session: cost, tokens, top models, errors, budget status",
       inputSchema: getSessionSnapshotInput,
     },
-    withScopeEnforcement("omniroute_get_session_snapshot", async (args) => {
+    withScopeEnforcement("cheaproute_get_session_snapshot", async (args) => {
       getSessionSnapshotInput.parse(args ?? {});
       return handleGetSessionSnapshot();
     })
   );
 
   server.registerTool(
-    "omniroute_db_health_check",
+    "cheaproute_db_health_check",
     {
       description:
-        "Diagnoses or repairs OmniRoute database drift, including broken combo references and orphan quota/domain rows",
+        "Diagnoses or repairs CheapRoute database drift, including broken combo references and orphan quota/domain rows",
       inputSchema: dbHealthCheckInput,
     },
-    withScopeEnforcement("omniroute_db_health_check", (args) =>
+    withScopeEnforcement("cheaproute_db_health_check", (args) =>
       handleDbHealthCheck(dbHealthCheckInput.parse(args ?? {}))
     )
   );
 
   server.registerTool(
-    "omniroute_sync_pricing",
+    "cheaproute_sync_pricing",
     {
       description:
-        "Syncs pricing data from external sources (LiteLLM) into OmniRoute without overwriting user-set prices",
+        "Syncs pricing data from external sources (LiteLLM) into CheapRoute without overwriting user-set prices",
       inputSchema: syncPricingInput,
     },
-    withScopeEnforcement("omniroute_sync_pricing", (args) =>
+    withScopeEnforcement("cheaproute_sync_pricing", (args) =>
       handleSyncPricing(syncPricingInput.parse(args))
     )
   );
 
   server.registerTool(
-    "omniroute_web_search",
+    "cheaproute_web_search",
     {
       description:
-        "Performs a web search using OmniRoute's search gateway. Supports multiple providers (Serper, Brave, Perplexity, Exa, Tavily) with automatic failover. Returns search results with titles, URLs, snippets, and position data.",
+        "Performs a web search using CheapRoute's search gateway. Supports multiple providers (Serper, Brave, Perplexity, Exa, Tavily) with automatic failover. Returns search results with titles, URLs, snippets, and position data.",
       inputSchema: dynamicWebSearchInput,
     },
-    withScopeEnforcement("omniroute_web_search", (args) =>
+    withScopeEnforcement("cheaproute_web_search", (args) =>
       // Resolve per invocation (not the startup snapshot above) so a resolver
       // function passed via CreateMcpServerOptions sees policy changes without
       // a server rebuild. The advertised inputSchema stays a creation-time
@@ -577,79 +577,79 @@ export function createMcpServer(options?: CreateMcpServerOptions): McpServer {
   );
 
   server.registerTool(
-    "omniroute_x_search",
+    "cheaproute_x_search",
     {
       description:
-        "Search X (Twitter) through OmniRoute using SuperGrok / xAI server-side x_search. Requires xai-oauth or an xAI API key. Not web search.",
+        "Search X (Twitter) through CheapRoute using SuperGrok / xAI server-side x_search. Requires xai-oauth or an xAI API key. Not web search.",
       inputSchema: xSearchInput,
     },
-    withScopeEnforcement("omniroute_x_search", (args) => handleXSearch(xSearchInput.parse(args)))
+    withScopeEnforcement("cheaproute_x_search", (args) => handleXSearch(xSearchInput.parse(args)))
   );
 
   server.registerTool(
-    "omniroute_web_fetch",
+    "cheaproute_web_fetch",
     {
       description:
-        "Fetches and extracts content from a URL using OmniRoute's web fetch gateway. Supports multiple providers (Firecrawl, Jina Reader, Tavily) with automatic failover. Returns the page content as markdown, HTML, links, or screenshot, along with metadata.",
+        "Fetches and extracts content from a URL using CheapRoute's web fetch gateway. Supports multiple providers (Firecrawl, Jina Reader, Tavily) with automatic failover. Returns the page content as markdown, HTML, links, or screenshot, along with metadata.",
       inputSchema: webFetchInput,
     },
-    withScopeEnforcement("omniroute_web_fetch", (args) => handleWebFetch(webFetchInput.parse(args)))
+    withScopeEnforcement("cheaproute_web_fetch", (args) => handleWebFetch(webFetchInput.parse(args)))
   );
 
   server.registerTool(
-    "omniroute_cache_stats",
+    "cheaproute_cache_stats",
     {
       description:
         "Returns cache statistics including semantic cache hit rate, prompt cache metrics by provider, and idempotency layer stats.",
       inputSchema: cacheStatsInput,
     },
-    withScopeEnforcement("omniroute_cache_stats", () => handleCacheStats())
+    withScopeEnforcement("cheaproute_cache_stats", () => handleCacheStats())
   );
 
   server.registerTool(
-    "omniroute_cache_flush",
+    "cheaproute_cache_flush",
     {
       description:
         "Flush cache entries. Provide signature to invalidate a single entry, model to invalidate all entries for a model, or omit both to clear all.",
       inputSchema: cacheFlushInput,
     },
-    withScopeEnforcement("omniroute_cache_flush", (args) =>
+    withScopeEnforcement("cheaproute_cache_flush", (args) =>
       handleCacheFlush(cacheFlushInput.parse(args))
     )
   );
 
   server.registerTool(
-    "omniroute_oneproxy_fetch",
+    "cheaproute_oneproxy_fetch",
     {
       description:
         "Fetch free proxies from the 1proxy marketplace with optional filters for protocol, country, and quality. Returns validated proxies with quality scores.",
       inputSchema: oneproxyFetchInput,
     },
-    withScopeEnforcement("omniroute_oneproxy_fetch", (args) =>
+    withScopeEnforcement("cheaproute_oneproxy_fetch", (args) =>
       handleOneproxyFetch(oneproxyFetchInput.parse(args))
     )
   );
 
   server.registerTool(
-    "omniroute_oneproxy_rotate",
+    "cheaproute_oneproxy_rotate",
     {
       description:
         "Get the next available free proxy from the 1proxy pool using the specified rotation strategy.",
       inputSchema: oneproxyRotateInput,
     },
-    withScopeEnforcement("omniroute_oneproxy_rotate", (args) =>
+    withScopeEnforcement("cheaproute_oneproxy_rotate", (args) =>
       handleOneproxyRotate(oneproxyRotateInput.parse(args))
     )
   );
 
   server.registerTool(
-    "omniroute_oneproxy_stats",
+    "cheaproute_oneproxy_stats",
     {
       description:
         "Returns 1proxy sync status and statistics: total proxies, average quality, sync history, and distribution by protocol and country.",
       inputSchema: oneproxyStatsInput,
     },
-    withScopeEnforcement("omniroute_oneproxy_stats", (args) =>
+    withScopeEnforcement("cheaproute_oneproxy_stats", (args) =>
       handleOneproxyStats(oneproxyStatsInput.parse(args))
     )
   );
@@ -1017,7 +1017,7 @@ export function createMcpServer(options?: CreateMcpServerOptions): McpServer {
 
 /**
  * Start the MCP server with stdio transport.
- * Called when `omniroute --mcp` is used.
+ * Called when `cheaproute --mcp` is used.
  */
 export async function startMcpStdio(): Promise<void> {
   await ensureDbInitialized();
@@ -1040,10 +1040,10 @@ export async function startMcpStdio(): Promise<void> {
   process.once("SIGINT", stopHeartbeatOnce);
   process.once("SIGTERM", stopHeartbeatOnce);
 
-  console.error("[MCP] OmniRoute MCP Server starting (stdio transport)...");
+  console.error("[MCP] CheapRoute MCP Server starting (stdio transport)...");
   try {
     await server.connect(transport);
-    console.error("[MCP] OmniRoute MCP Server connected and ready.");
+    console.error("[MCP] CheapRoute MCP Server connected and ready.");
   } finally {
     if (closeAuditDb()) {
       console.error("[MCP] Audit database checkpointed and closed.");

@@ -16,8 +16,8 @@ import {
   snapshotMemberSetAside,
   snapshotProxySetAside,
   TRANSPORT_EVIDENCE_WINDOW_MS,
-} from "@omniroute/open-sse/utils/proxyRefusalMemory.ts";
-import { listOpencodeFreeTierPauses } from "@omniroute/open-sse/services/opencodeFreeTierSkip.ts";
+} from "@cheaproute/open-sse/utils/proxyRefusalMemory.ts";
+import { listOpencodeFreeTierPauses } from "@cheaproute/open-sse/services/opencodeFreeTierSkip.ts";
 
 function freeTierPausesResponse(searchParams: URLSearchParams, now: number) {
   // Active free-tier pauses (in-process refusal memory, read-only): this

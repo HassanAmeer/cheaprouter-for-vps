@@ -416,7 +416,7 @@ function nonEmptyIds(value: unknown): string[] | null {
 
 /**
  * Credentials for the next empty-turn retry, or null when no connection can take
- * it. A managed lease, a pinned connection (`x-omniroute-connection` or a combo
+ * it. A managed lease, a pinned connection (`x-cheaproute-connection` or a combo
  * step pin) and a quota-scoped key (whose pool is not known here) replay the
  * connection that served the turn: the lease fence refuses any other connection,
  * and the others are routing constraints the retry must not escape. Otherwise

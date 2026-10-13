@@ -17,14 +17,14 @@ let _config = {
 };
 
 // Persistence (#6131): the config used to live in memory only, so every restart
-// (i.e. every OmniRoute update) reset it to Disabled + empty lists. It is now
+// (i.e. every CheapRoute update) reset it to Disabled + empty lists. It is now
 // persisted to the key_value table (namespace 'ipFilter', key 'config') and
 // lazily loaded on first access. better-sqlite3 is synchronous, so both the load
 // and the save stay in the sync hot path without extra startup wiring. tempBans
 // are intentionally NOT persisted — they are ephemeral, TTL-swept runtime state.
 //
 // D2 (#9033): the _loaded one-shot gate was removed so a config persisted by the
-// dashboard settings route (a separate module instance, since @omniroute/open-sse
+// dashboard settings route (a separate module instance, since @cheaproute/open-sse
 // is bundled per-entry via transpilePackages) propagates to the proxy runtime
 // without a restart. A DB failure still degrades to the in-memory defaults, and
 // tempBans remain in-memory-only as before.

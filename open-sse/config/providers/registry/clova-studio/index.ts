@@ -36,7 +36,7 @@ export const clova_studioProvider: RegistryEntry = {
    * The v3 API does answer non-streaming requests (`Accept: application/json`),
    * but only the streaming surface is expressed in the translator: CLOVA's SSE
    * frames carry incremental `token` events plus a terminal `result` event that
-   * repeats the full text. Forcing the upstream stream lets OmniRoute consume
+   * repeats the full text. Forcing the upstream stream lets CheapRoute consume
    * that single, well-tested path and accumulate it into a JSON body for
    * non-streaming clients, instead of maintaining a second parser for the
    * `{status, result}` envelope.

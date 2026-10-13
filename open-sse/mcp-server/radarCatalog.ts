@@ -5,7 +5,7 @@ import { radarCatalogInput, radarCatalogOutput } from "./schemas/radarCatalog.ts
 import type { McpToolExtraLike } from "./scopeEnforcement.ts";
 import type { TextToolResult } from "./toolResult.ts";
 import { sanitizeErrorMessage } from "../utils/error.ts";
-import { omniRouteFetch } from "./internalFetch.ts";
+import { cheapRouteFetch } from "./internalFetch.ts";
 
 type JsonRecord = Record<string, unknown>;
 
@@ -115,7 +115,7 @@ export async function getMcpRadarCatalog(
   // #15159 M-06: static import of the shared hop. See the same note in catalog.ts — the
   // `import("./server.ts")` workaround this replaces is what closed the
   // `server.ts -> radarCatalog.ts` edge (cycle 195).
-  const fetchJson = deps.fetchJson ?? omniRouteFetch;
+  const fetchJson = deps.fetchJson ?? cheapRouteFetch;
   const raw = record(await fetchJson("/api/radar/catalog"));
   const providerFilter = args.provider?.trim().toLowerCase();
   const familyFilter = args.familyId?.trim().toLowerCase();
@@ -141,7 +141,7 @@ async function handleRadarCatalog(args: {
   try {
     const result = radarCatalogOutput.parse(await getMcpRadarCatalog(args));
     await logToolCall(
-      "omniroute_radar_catalog",
+      "cheaproute_radar_catalog",
       args,
       { modelCount: result.models.length },
       Date.now() - start,
@@ -150,7 +150,7 @@ async function handleRadarCatalog(args: {
     return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
   } catch (error) {
     const message = sanitizeErrorMessage(error) || "Failed to read Radar catalog";
-    await logToolCall("omniroute_radar_catalog", args, null, Date.now() - start, false, message);
+    await logToolCall("cheaproute_radar_catalog", args, null, Date.now() - start, false, message);
     return { content: [{ type: "text", text: `Error: ${message}` }], isError: true };
   }
 }
@@ -160,12 +160,12 @@ export function registerRadarCatalogTool(
   withScopeEnforcement: ScopeEnforcer
 ): void {
   server.registerTool(
-    "omniroute_radar_catalog",
+    "cheaproute_radar_catalog",
     {
       description: "Reads the local signed Radar catalog with optional provider and family filters",
       inputSchema: radarCatalogInput,
     },
-    withScopeEnforcement("omniroute_radar_catalog", (args) =>
+    withScopeEnforcement("cheaproute_radar_catalog", (args) =>
       handleRadarCatalog(radarCatalogInput.parse(args))
     )
   );

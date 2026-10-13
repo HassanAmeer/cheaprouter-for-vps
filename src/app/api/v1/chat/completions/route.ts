@@ -5,22 +5,22 @@ import { handleChat } from "@/sse/handlers/chat";
 import { logAdmissionRejection } from "@/sse/handlers/admissionRejectionLog";
 import { generateRequestId } from "@/shared/utils/requestId";
 import { resolveIncomingCorrelationId } from "@/shared/utils/correlationPreserve.ts";
-import { errorResponse } from "@omniroute/open-sse/utils/error.ts";
+import { errorResponse } from "@cheaproute/open-sse/utils/error.ts";
 import {
   handleSelfHostedCompletions,
   isSelfHostedEntryConfigured,
-} from "@omniroute/open-sse/services/selfHostedEntry.ts";
-import { initTranslators } from "@omniroute/open-sse/translator/index.ts";
+} from "@cheaproute/open-sse/services/selfHostedEntry.ts";
+import { initTranslators } from "@cheaproute/open-sse/translator/index.ts";
 import { createInjectionGuard } from "@/middleware/promptInjectionGuard";
-import { acceptHeaderForcesStream } from "@omniroute/open-sse/utils/aiSdkCompat.ts";
+import { acceptHeaderForcesStream } from "@cheaproute/open-sse/utils/aiSdkCompat.ts";
 import {
   OPENAI_CHAT_ERROR_FRAME,
   OPENAI_KEEPALIVE_FRAME,
   OPENAI_STARTUP_FRAME,
   withEarlyStreamKeepalive,
-} from "@omniroute/open-sse/utils/earlyStreamKeepalive";
-import { createStreamDeadlineSignal } from "@omniroute/open-sse/utils/streamDeadlineSignal";
-import { resolveKeepaliveThreshold } from "@omniroute/open-sse/utils/keepaliveThreshold";
+} from "@cheaproute/open-sse/utils/earlyStreamKeepalive";
+import { createStreamDeadlineSignal } from "@cheaproute/open-sse/utils/streamDeadlineSignal";
+import { resolveKeepaliveThreshold } from "@cheaproute/open-sse/utils/keepaliveThreshold";
 import {
   admitChatRequest,
   admitChatStructure,
@@ -34,6 +34,7 @@ import {
   withCompressionHeaderEcho,
 } from "@/shared/utils/compressionHeaderEcho";
 import { resolveModelAliasWithSeedFallbackOnBody } from "@/lib/modelAliasResolver";
+import { assertByokAllowed } from "@/lib/byok";
 import { enforceApiKeyPolicy } from "@/shared/utils/apiKeyPolicy";
 import {
   assertRuntimeModelProviderAvailable,
@@ -145,10 +146,20 @@ export async function POST(request) {
     releaseChatAdmissionWhenDone(response, admission.lease, { signal: request.signal });
 
   try {
+    // BYOK pass-through gate (spec §7): when a request carries a
+    // personal upstream key (`x-upstream-key` / `x-claude-key` / …),
+    // reject it with 403 if the master BYOK switch is OFF or the
+    // provider-scoped key is paused. Runs before body parsing so a
+    // rejected pass-through never reaches provider lookup.
+    const byokRejection = await assertByokAllowed(request);
+    if (byokRejection) {
+      return finishAdmission(byokRejection);
+    }
+
     // One-line marker for diagnosing 413 / Server-Action interceptions.
     // Logs only when Content-Length is present so debug noise stays low for
-    // typical chat payloads. Opt-in via OMNIROUTE_LOG_REQUEST_SHAPE=1.
-    if (process.env.OMNIROUTE_LOG_REQUEST_SHAPE === "1") {
+    // typical chat payloads. Opt-in via CHEAPROUTE_LOG_REQUEST_SHAPE=1.
+    if (process.env.CHEAPROUTE_LOG_REQUEST_SHAPE === "1") {
       const ct = contentType;
       const cl = requestContentLengthHeader;
       if (cl && Number(cl) > 256 * 1024) {
@@ -188,7 +199,7 @@ export async function POST(request) {
           // #14485: the divert must still run the same key-policy enforcement as
           // the normal cloud pipeline (enforceApiKeyPolicy, called deep inside
           // handleChat() on that path) — otherwise a disabled/rate-limited/
-          // schedule-restricted OmniRoute API key reaches the self-hosted upstream
+          // schedule-restricted CheapRoute API key reaches the self-hosted upstream
           // unchecked. Run it ONLY when the divert is configured (it then answers
           // every request): the cloud path already runs it once in handleChat(),
           // and a second run would consume the rate-limit window twice, apply

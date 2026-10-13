@@ -9,7 +9,7 @@ interface SanitizedUpstreamErrorResponseOptions {
 
 /**
  * Preserve a provider's JSON error shape while applying the canonical recursive sanitizer.
- * Providers sometimes label plain text as JSON; those bodies use OmniRoute's canonical error
+ * Providers sometimes label plain text as JSON; those bodies use CheapRoute's canonical error
  * envelope so the advertised content type always matches the response bytes.
  */
 export function buildSanitizedUpstreamErrorResponse({

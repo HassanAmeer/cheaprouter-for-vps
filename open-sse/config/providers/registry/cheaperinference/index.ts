@@ -2,7 +2,7 @@ import type { RegistryEntry, RegistryModel } from "../../shared.ts";
 
 /**
  * Cheaper Inference (https://api.cheaperinference.com) — cost-ranked OpenAI-compatible
- * gateway, OmniRoute Open Source Friend.
+ * gateway, CheapRoute Open Source Friend.
  *
  * Catalog captured from a live `GET /v1/models` on 2026-07-31 (42 entries: these 39
  * `type:"text"` models plus 3 `type:"image"` models that live in imageRegistry.ts —

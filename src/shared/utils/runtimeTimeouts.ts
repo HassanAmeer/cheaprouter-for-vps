@@ -39,7 +39,7 @@ export const DEFAULT_API_BRIDGE_SERVER_SOCKET_TIMEOUT_MS = 0;
 export const DEFAULT_MAIN_SERVER_KEEPALIVE_TIMEOUT_MS = 65_000;
 export const DEFAULT_MAIN_SERVER_HEADERS_TIMEOUT_MS = 66_000;
 // A client that closes its connection right after reading a fully-completed
-// SSE stream can race OmniRoute's own completion bookkeeping (#9653): the
+// SSE stream can race CheapRoute's own completion bookkeeping (#9653): the
 // bytes already reached the client, but the disconnect handler can fire
 // before the stream's own completion callback finishes recording it,
 // persisting a false 499 with zero token usage. Before committing to that

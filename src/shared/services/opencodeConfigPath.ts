@@ -19,7 +19,7 @@ export const resolveOpencodeConfigDir = (
  * OpenCode treats `opencode.jsonc` as the preferred writable global config and
  * merges it after `opencode.json` when both exist. Match that precedence so an
  * existing JSONC document is never shadowed by a newly-created JSON file. Keep
- * `opencode.json` as OmniRoute's creation default for backwards compatibility
+ * `opencode.json` as CheapRoute's creation default for backwards compatibility
  * when neither native filename exists.
  */
 export const resolveOpencodeConfigPath = (

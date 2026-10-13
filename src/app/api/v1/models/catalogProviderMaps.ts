@@ -1,6 +1,6 @@
 import { PROVIDER_MODELS, PROVIDER_ID_TO_ALIAS } from "@/shared/constants/models";
 import { AI_PROVIDERS } from "@/shared/constants/providers";
-import { parseModel, resolveCanonicalProviderModel } from "@omniroute/open-sse/services/model";
+import { parseModel, resolveCanonicalProviderModel } from "@cheaproute/open-sse/services/model";
 
 // Alias <-> providerId resolution maps for the unified model catalog. Extracted
 // verbatim from ./catalog.ts. `FALLBACK_ALIAS_TO_PROVIDER` is also consumed directly by
@@ -101,7 +101,7 @@ export function resolveCanonicalProviderId(
 }
 
 /**
- * True when `${prefix}/__omniroute_probe__` parses back to the given
+ * True when `${prefix}/__cheaproute_probe__` parses back to the given
  * providerId EXACTLY. Kept strict on purpose: this is the anti-collision
  * guard (catalog.ts, #11433/7db430a3) that stops the catalog from publishing
  * a provider-prefixed model id that would actually route to a DIFFERENT
@@ -110,7 +110,7 @@ export function resolveCanonicalProviderId(
  * specifically built to fail for it (#13994).
  */
 export function prefixRoutesToProvider(prefix: string, providerId: string): boolean {
-  const parsed = parseModel(`${prefix}/__omniroute_probe__`);
+  const parsed = parseModel(`${prefix}/__cheaproute_probe__`);
   return parsed.provider === providerId;
 }
 
@@ -125,9 +125,9 @@ export function prefixRoutesToProvider(prefix: string, providerId: string): bool
  */
 export function prefixRoutesToCanonicalProvider(prefix: string, providerId: string): boolean {
   if (prefixRoutesToProvider(prefix, providerId)) return true;
-  const parsed = parseModel(`${prefix}/__omniroute_probe__`);
+  const parsed = parseModel(`${prefix}/__cheaproute_probe__`);
   if (!parsed.provider) return false;
-  const canonicalTarget = resolveCanonicalProviderModel(providerId, "__omniroute_probe__");
+  const canonicalTarget = resolveCanonicalProviderModel(providerId, "__cheaproute_probe__");
   return parsed.provider === canonicalTarget.provider;
 }
 

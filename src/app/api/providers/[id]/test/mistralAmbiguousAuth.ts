@@ -1,4 +1,4 @@
-import { isMistralAmbiguous401 } from "@omniroute/open-sse/services/accountFallback/mistralAmbiguousAuth.ts";
+import { isMistralAmbiguous401 } from "@cheaproute/open-sse/services/accountFallback/mistralAmbiguousAuth.ts";
 
 /**
  * #7638: Mistral's quota-exhausted response is `401 {"detail":"Unauthorized"}` — byte-identical

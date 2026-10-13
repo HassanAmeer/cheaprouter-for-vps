@@ -1,10 +1,10 @@
 /**
- * omniroute setup-kilo — configure Kilo Code to use OmniRoute.
+ * cheaproute setup-kilo — configure Kilo Code to use CheapRoute.
  *
  * Kilo Code (kilocode.kilo-code, a Cline/Roo descendant) has two surfaces:
  *   - CLI/standalone mode reads ~/.local/share/kilo/auth.json.
  *   - The VS Code extension reads `kilocode.*` keys from VS Code settings.json.
- * This writes BOTH (matching the OmniRoute dashboard) and prints the UI settings.
+ * This writes BOTH (matching the CheapRoute dashboard) and prints the UI settings.
  *
  * Unlike Cline, Kilo's openAi baseURL INCLUDES /v1 (it appends /chat/completions).
  */
@@ -29,7 +29,7 @@ export function resolveKiloTarget(opts = {}) {
   if (opts.remote) root = String(opts.remote).replace(/\/+$/, "");
   else {
     try {
-      root = resolveActiveContext(opts.context ?? process.env.OMNIROUTE_CONTEXT)?.baseUrl;
+      root = resolveActiveContext(opts.context ?? process.env.CHEAPROUTE_CONTEXT)?.baseUrl;
     } catch {
       /* none */
     }
@@ -38,22 +38,22 @@ export function resolveKiloTarget(opts = {}) {
   let apiKey = opts.apiKey ?? opts["api-key"];
   if (!apiKey) {
     try {
-      const c = resolveActiveContext(opts.context ?? process.env.OMNIROUTE_CONTEXT);
+      const c = resolveActiveContext(opts.context ?? process.env.CHEAPROUTE_CONTEXT);
       apiKey = c?.accessToken || c?.apiKey;
     } catch {
       /* none */
     }
   }
-  if (!apiKey) apiKey = process.env.OMNIROUTE_API_KEY || "";
+  if (!apiKey) apiKey = process.env.CHEAPROUTE_API_KEY || "";
   return { baseUrl: ensureV1(root), apiKey };
 }
 
-/** Merge the OmniRoute openai-compatible provider into Kilo's CLI auth.json. */
+/** Merge the CheapRoute openai-compatible provider into Kilo's CLI auth.json. */
 export function buildKiloAuth(existing, { apiKey, baseUrl, model }) {
   const auth = { ...(existing || {}) };
   auth["openai-compatible"] = {
     ...(auth["openai-compatible"] || {}),
-    apiKey: apiKey || "sk_omniroute",
+    apiKey: apiKey || "sk_cheaproute",
     baseUrl,
     model,
   };
@@ -64,9 +64,9 @@ export function buildKiloAuth(existing, { apiKey, baseUrl, model }) {
 export function buildKiloVscodeSettings(existing, { apiKey, baseUrl, model }) {
   const s = { ...(existing || {}) };
   s["kilocode.customProvider"] = {
-    name: "OmniRoute",
+    name: "CheapRoute",
     baseURL: baseUrl,
-    apiKey: apiKey || "sk_omniroute",
+    apiKey: apiKey || "sk_cheaproute",
   };
   s["kilocode.defaultModel"] = model;
   return s;
@@ -108,7 +108,7 @@ export async function runSetupKiloCommand(opts = {}) {
 
   const guard = await guardHostConfigTarget(authPath, {
     toolLabel: "Kilo Code",
-    hostCommand: "omniroute setup-kilo",
+    hostCommand: "cheaproute setup-kilo",
     allowContainerWrite: Boolean(opts.allowContainerWrite ?? opts["allow-container-write"]),
     dryRun,
   });
@@ -118,7 +118,7 @@ export async function runSetupKiloCommand(opts = {}) {
     opts["vscode-settings"] ??
     join(os.homedir(), ".config", "Code", "User", "settings.json");
 
-  printHeading("OmniRoute → Kilo Code (OpenAI-compatible)");
+  printHeading("CheapRoute → Kilo Code (OpenAI-compatible)");
   printInfo(`Server: ${baseUrl}`);
 
   let model = opts.model;
@@ -156,7 +156,7 @@ export async function runSetupKiloCommand(opts = {}) {
         {
           "openai-compatible": {
             ...auth["openai-compatible"],
-            apiKey: apiKey ? "set" : "sk_omniroute",
+            apiKey: apiKey ? "set" : "sk_cheaproute",
           },
         },
         null,
@@ -179,7 +179,7 @@ export async function runSetupKiloCommand(opts = {}) {
 
   printInfo("\nFor the Kilo Code VS Code extension, set Settings → Providers → OpenAI Compatible:");
   printInfo(`  Base URL:  ${baseUrl}        (Kilo expects /v1)`);
-  printInfo(`  API Key:   <your OMNIROUTE_API_KEY>`);
+  printInfo(`  API Key:   <your CHEAPROUTE_API_KEY>`);
   printInfo(`  Model:     ${model}`);
   return 0;
 }
@@ -188,11 +188,11 @@ export function registerSetupKilo(program) {
   program
     .command("setup-kilo")
     .description(
-      "Configure Kilo Code for OmniRoute: write ~/.local/share/kilo/auth.json (CLI) + VS Code kilocode.* settings"
+      "Configure Kilo Code for CheapRoute: write ~/.local/share/kilo/auth.json (CLI) + VS Code kilocode.* settings"
     )
-    .option("--port <port>", "Local OmniRoute port (ignored when --remote is set)", "20128")
-    .option("--remote <url>", "Remote OmniRoute URL, e.g. http://192.168.0.15:20128")
-    .option("--api-key <key>", "OmniRoute API key (defaults to OMNIROUTE_API_KEY env var)")
+    .option("--port <port>", "Local CheapRoute port (ignored when --remote is set)", "20128")
+    .option("--remote <url>", "Remote CheapRoute URL, e.g. http://192.168.0.15:20128")
+    .option("--api-key <key>", "CheapRoute API key (defaults to CHEAPROUTE_API_KEY env var)")
     .option("--model <id>", "Model id for Kilo (required unless picked interactively)")
     .option(
       "--auth-path <path>",

@@ -3,7 +3,7 @@ import { updateSettings } from "@/lib/db/settings";
 import {
   setThinkingBudgetConfig,
   getThinkingBudgetConfig,
-} from "@omniroute/open-sse/services/thinkingBudget.ts";
+} from "@cheaproute/open-sse/services/thinkingBudget.ts";
 import { updateThinkingBudgetSchema } from "@/shared/validation/schemas";
 import { isValidationFailure, validateBody } from "@/shared/validation/helpers";
 import { requireManagementAuth } from "@/lib/api/requireManagementAuth";

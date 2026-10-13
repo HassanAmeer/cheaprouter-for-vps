@@ -2,7 +2,7 @@
  * Stream-recovery primitives — opt-in transparent retry of truncated upstream streams.
  *
  * Ported from free-claude-code's always-on recovery (`core/anthropic/stream_recovery.py`).
- * OmniRoute keeps the holdback OFF by default (see ResilienceSettings.streamRecovery)
+ * CheapRoute keeps the holdback OFF by default (see ResilienceSettings.streamRecovery)
  * because holding the opening SSE window adds up to STREAM_RECOVERY.HOLDBACK_MS of
  * time-to-first-token latency on every streaming request. When enabled, an upstream
  * truncation that happens *before* any byte reaches the client is retried invisibly.
@@ -170,7 +170,7 @@ export function isRetryableStreamError(error: unknown): boolean {
   return false;
 }
 
-// Terminal SSE markers OmniRoute emits across formats: OpenAI `data: [DONE]`,
+// Terminal SSE markers CheapRoute emits across formats: OpenAI `data: [DONE]`,
 // Anthropic `event: message_stop`. Presence means the stream ended cleanly.
 const OPENAI_DONE_MARKER = "[DONE]";
 const ANTHROPIC_STOP_MARKER = "message_stop";
@@ -711,7 +711,7 @@ export function createRecoverableStream(
   // double-close of the underlying `ReadableStream` (`controller.close()` runs exactly once,
   // after `tryContinue` returns). An SSE client that treats a bare `finish_reason:"stop"` as an
   // unconditional end-of-turn (rather than waiting for `[DONE]`) may need updating separately —
-  // out of scope for this fix, which targets the observed opencode/OmniRoute pairing where the
+  // out of scope for this fix, which targets the observed opencode/CheapRoute pairing where the
   // client kept the connection open.
   const hallucinatedEmptyStop = () =>
     emittedFinishReason === "stop" &&

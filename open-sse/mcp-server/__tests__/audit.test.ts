@@ -29,7 +29,7 @@ it("uses the bundle-safe runtime loader for better-sqlite3", () => {
 });
 
 // The shutdown tests inject through the audit connection cache
-// (globalThis.__omnirouteMcpAuditDb), and the fallback test uses the
+// (globalThis.__cheaprouteMcpAuditDb), and the fallback test uses the
 // __setBetterSqliteLoaderForTests seam.
 describe("MCP audit shutdown", () => {
   let dataDir: string;
@@ -37,8 +37,8 @@ describe("MCP audit shutdown", () => {
 
   beforeEach(() => {
     vi.resetModules();
-    globalThis.__omnirouteMcpAuditDb = undefined;
-    dataDir = fs.mkdtempSync(path.join(os.tmpdir(), "omniroute-mcp-audit-"));
+    globalThis.__cheaprouteMcpAuditDb = undefined;
+    dataDir = fs.mkdtempSync(path.join(os.tmpdir(), "cheaproute-mcp-audit-"));
     dbFile = path.join(dataDir, "storage.sqlite");
     fs.writeFileSync(dbFile, "");
     process.env.DATA_DIR = dataDir;
@@ -46,7 +46,7 @@ describe("MCP audit shutdown", () => {
 
   afterEach(() => {
     delete process.env.DATA_DIR;
-    globalThis.__omnirouteMcpAuditDb = undefined;
+    globalThis.__cheaprouteMcpAuditDb = undefined;
     vi.doUnmock("../../../src/lib/db/adapters/runtimeRequire.ts");
     vi.restoreAllMocks();
   });
@@ -61,9 +61,9 @@ describe("MCP audit shutdown", () => {
 
     const audit = await import("../audit.ts");
     // Inject through the connection cache — the seam the module itself uses.
-    globalThis.__omnirouteMcpAuditDb = mockDb as unknown as typeof globalThis.__omnirouteMcpAuditDb;
+    globalThis.__cheaprouteMcpAuditDb = mockDb as unknown as typeof globalThis.__cheaprouteMcpAuditDb;
 
-    await audit.logToolCall("omniroute_get_health", { ok: true }, { ok: true }, 12, true);
+    await audit.logToolCall("cheaproute_get_health", { ok: true }, { ok: true }, 12, true);
     expect(mockDb.prepare).toHaveBeenCalledTimes(1);
 
     expect(audit.closeAuditDb()).toBe(true);
@@ -84,9 +84,9 @@ describe("MCP audit shutdown", () => {
     };
 
     const audit = await import("../audit.ts");
-    globalThis.__omnirouteMcpAuditDb = mockDb as unknown as typeof globalThis.__omnirouteMcpAuditDb;
+    globalThis.__cheaprouteMcpAuditDb = mockDb as unknown as typeof globalThis.__cheaprouteMcpAuditDb;
 
-    await audit.logToolCall("omniroute_get_health", {}, {}, 5, true);
+    await audit.logToolCall("cheaproute_get_health", {}, {}, 5, true);
     expect(audit.closeAuditDb()).toBe(true);
     expect(mockDb.close).toHaveBeenCalledTimes(1);
   });
@@ -104,7 +104,7 @@ describe("MCP audit shutdown", () => {
         }
         return {
           ...createStatementMock(),
-          all: vi.fn(() => [{ tool: "omniroute_get_health", count: 7 }]),
+          all: vi.fn(() => [{ tool: "cheaproute_get_health", count: 7 }]),
         };
       }
 
@@ -122,7 +122,7 @@ describe("MCP audit shutdown", () => {
       totalCalls: 7,
       successRate: 0.75,
       avgDurationMs: 12,
-      topTools: [{ tool: "omniroute_get_health", count: 7 }],
+      topTools: [{ tool: "cheaproute_get_health", count: 7 }],
     });
   });
 
@@ -159,7 +159,7 @@ describe("MCP audit shutdown", () => {
     });
 
     try {
-      await audit.logToolCall("omniroute_get_health", { ok: true }, { ok: true }, 4, true);
+      await audit.logToolCall("cheaproute_get_health", { ok: true }, { ok: true }, 4, true);
       expect(DatabaseSync).toHaveBeenCalledWith(dbFile);
       expect(mockNodeDb.prepare).toHaveBeenCalled();
 
@@ -198,7 +198,7 @@ describe("MCP audit shutdown", () => {
     audit.__setBetterSqliteLoaderForTests(() => ({ default: { notAConstructor: true } }));
 
     try {
-      await audit.logToolCall("omniroute_get_health", { ok: true }, { ok: true }, 4, true);
+      await audit.logToolCall("cheaproute_get_health", { ok: true }, { ok: true }, 4, true);
       expect(DatabaseSync).toHaveBeenCalledWith(dbFile);
       expect(mockNodeDb.prepare).toHaveBeenCalled();
     } finally {
@@ -208,7 +208,7 @@ describe("MCP audit shutdown", () => {
   });
 
   it("retries once the database file appears instead of caching the miss forever", async () => {
-    // An MCP server started before the app created ~/.omniroute/storage.sqlite must
+    // An MCP server started before the app created ~/.cheaproute/storage.sqlite must
     // pick the database up on a later call. Caching the "not found" miss would leave
     // that process without audit logging for its whole lifetime.
     fs.rmSync(dbFile);
@@ -229,11 +229,11 @@ describe("MCP audit shutdown", () => {
     const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
 
     try {
-      await audit.logToolCall("omniroute_get_health", { ok: true }, { ok: true }, 1, true);
+      await audit.logToolCall("cheaproute_get_health", { ok: true }, { ok: true }, 1, true);
       expect(mockDb.prepare).not.toHaveBeenCalled();
 
       fs.writeFileSync(dbFile, "");
-      await audit.logToolCall("omniroute_get_health", { ok: true }, { ok: true }, 1, true);
+      await audit.logToolCall("cheaproute_get_health", { ok: true }, { ok: true }, 1, true);
       expect(mockDb.prepare).toHaveBeenCalledTimes(1);
     } finally {
       errorSpy.mockRestore();

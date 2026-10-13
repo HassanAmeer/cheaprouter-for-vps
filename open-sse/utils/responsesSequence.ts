@@ -34,7 +34,7 @@ export function buildSyntheticResponsesFailedEvent(
  * string (never `null`) matters because strict Responses decoders validate
  * `response.id` as `string | undefined` and abort the stream on the first frame.
  */
-export const SYNTHETIC_RESPONSES_KEEPALIVE_ID = "resp_keepalive_omniroute";
+export const SYNTHETIC_RESPONSES_KEEPALIVE_ID = "resp_keepalive_cheaproute";
 
 /**
  * Build a fresh string id for a synthesized `response.failed` frame (#15202).

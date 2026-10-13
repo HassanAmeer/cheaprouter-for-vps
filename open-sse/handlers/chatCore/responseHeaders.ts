@@ -1,9 +1,9 @@
 import {
-  attachOmniRouteMetaHeaders,
-  buildOmniRouteResponseMetaHeaders,
-} from "@/domain/omnirouteResponseMeta";
-import { OMNIROUTE_RESPONSE_HEADERS } from "@/shared/constants/headers";
-import { defaultLogger } from "@omniroute/open-sse/utils/logger";
+  attachCheapRouteMetaHeaders,
+  buildCheapRouteResponseMetaHeaders,
+} from "@/domain/cheaprouteResponseMeta";
+import { CHEAPROUTE_RESPONSE_HEADERS } from "@/shared/constants/headers";
+import { defaultLogger } from "@cheaproute/open-sse/utils/logger";
 
 const STREAMING_RESPONSE_HEADER_DENYLIST = new Set([
   "content-type",
@@ -46,20 +46,20 @@ const CODEX_TURN_STATE_RESPONSE_HEADER = "x-codex-turn-state";
  * Diagnostic headers already win the budget via getForwardingPriority; this
  * covers the remainder so no drop is ever silent to the client.
  */
-export const DROPPED_UPSTREAM_HEADERS_RESPONSE_HEADER = "X-OmniRoute-Dropped-Upstream-Headers";
+export const DROPPED_UPSTREAM_HEADERS_RESPONSE_HEADER = "X-CheapRoute-Dropped-Upstream-Headers";
 
 const DEFAULT_FORWARDED_HEADER_BUDGET_BYTES = 768;
 
 /**
  * Resolve the forwarded upstream response-header budget from an optional string value
- * (typically `process.env.OMNIROUTE_FORWARDING_HEADER_BUDGET_BYTES`). Returns the
+ * (typically `process.env.CHEAPROUTE_FORWARDING_HEADER_BUDGET_BYTES`). Returns the
  * default of 768 when the input is unset, empty, or non-positive.
  * Extracted as a pure function so unit tests can pass values directly without
  * module-cache manipulation.
  */
 export function resolveForwardedHeaderBudget(env?: string): number {
   const parsed = Number.parseInt(
-    String(env ?? process.env.OMNIROUTE_FORWARDING_HEADER_BUDGET_BYTES),
+    String(env ?? process.env.CHEAPROUTE_FORWARDING_HEADER_BUDGET_BYTES),
     10
   );
   return Number.isFinite(parsed) && parsed > 0 ? parsed : DEFAULT_FORWARDED_HEADER_BUDGET_BYTES;
@@ -67,9 +67,9 @@ export function resolveForwardedHeaderBudget(env?: string): number {
 
 /**
  * Keep upstream-derived headers comfortably below common reverse-proxy response-header limits.
- * This budget includes each header name, separator, value, and trailing CRLF. OmniRoute's own
+ * This budget includes each header name, separator, value, and trailing CRLF. CheapRoute's own
  * response metadata and framework/security headers are added separately.
- * Override with `OMNIROUTE_FORWARDING_HEADER_BUDGET_BYTES`.
+ * Override with `CHEAPROUTE_FORWARDING_HEADER_BUDGET_BYTES`.
  */
 export const MAX_FORWARDED_UPSTREAM_RESPONSE_HEADER_BYTES = resolveForwardedHeaderBudget();
 const MAX_LOGGED_DROPPED_RESPONSE_HEADERS = 20;
@@ -106,8 +106,8 @@ function responseHeaderWireBytes(name: string, value: string): number {
   return responseHeaderEncoder.encode(`${name}: ${value}\r\n`).byteLength;
 }
 
-function isOmniRouteInternalHeader(headerName: string): boolean {
-  return headerName.toLowerCase().startsWith("x-omniroute-");
+function isCheapRouteInternalHeader(headerName: string): boolean {
+  return headerName.toLowerCase().startsWith("x-cheaproute-");
 }
 
 /**
@@ -171,7 +171,7 @@ function getForwardingPriority(headerName: string): number {
  * `x-middleware-next`, `x-middleware-override-headers`,
  * `x-middleware-set-cookie`, and the `x-middleware-request-*` family.
  *
- * If OmniRoute re-emits those headers from an App Router route handler, Next
+ * If CheapRoute re-emits those headers from an App Router route handler, Next
  * 16's `app-route` runtime
  * interprets `x-middleware-rewrite` as a `NextResponse.rewrite()` call and
  * throws `NextResponse.rewrite() was used in a app route handler` — turning a
@@ -209,17 +209,17 @@ export function stripNextMiddlewareControlHeaders(headers: Headers): void {
 
 /**
  * #14116: the `meta` accepted by {@link buildStreamingResponseHeaders} carries
- * the same fields as `buildOmniRouteResponseMetaHeaders`'s options PLUS the
+ * the same fields as `buildCheapRouteResponseMetaHeaders`'s options PLUS the
  * combo/pool account-identity triple needed to detect a foreign-account
  * response. All three are optional so every existing call site (direct path,
  * no combo) keeps behaving exactly as before.
  */
 export type StreamingResponseHeadersMeta = Parameters<
-  typeof buildOmniRouteResponseMetaHeaders
+  typeof buildCheapRouteResponseMetaHeaders
 >[0] & {
   /** Whether this request was served through combo/pool routing. */
   isCombo?: boolean;
-  /** The connection the caller pinned/requested, if any (e.g. `x-omniroute-connection`, a combo step's forced connectionId, or a sticky session-affinity pin). */
+  /** The connection the caller pinned/requested, if any (e.g. `x-cheaproute-connection`, a combo step's forced connectionId, or a sticky session-affinity pin). */
   requestedConnectionId?: string | null;
   /** The connection that ACTUALLY served this response (`credentials.connectionId`). */
   selectedConnectionId?: string | null;
@@ -269,7 +269,7 @@ export function buildStreamingResponseHeaders(
       STREAMING_RESPONSE_HEADER_DENYLIST.has(normalized) ||
       connectionScopedHeaders.has(normalized) ||
       isNextMiddlewareControlHeader(normalized) ||
-      isOmniRouteInternalHeader(normalized) ||
+      isCheapRouteInternalHeader(normalized) ||
       // Forwarded separately below, outside the byte budget.
       normalized === CODEX_TURN_STATE_RESPONSE_HEADER ||
       // #14116: this response was served by a combo/pool sibling account
@@ -341,13 +341,13 @@ export function buildStreamingResponseHeaders(
     "Cache-Control": "no-cache, no-transform",
     Connection: "keep-alive",
     "X-Accel-Buffering": "no",
-    [OMNIROUTE_RESPONSE_HEADERS.cache]: "MISS",
+    [CHEAPROUTE_RESPONSE_HEADERS.cache]: "MISS",
   };
   const codexTurnState = providerHeaders.get(CODEX_TURN_STATE_RESPONSE_HEADER)?.trim();
   if (codexTurnState) {
     responseHeaders[CODEX_TURN_STATE_RESPONSE_HEADER] = codexTurnState;
   }
-  attachOmniRouteMetaHeaders(responseHeaders, meta);
+  attachCheapRouteMetaHeaders(responseHeaders, meta);
   return responseHeaders;
 }
 

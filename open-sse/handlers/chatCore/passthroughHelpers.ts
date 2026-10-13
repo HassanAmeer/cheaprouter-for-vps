@@ -120,7 +120,7 @@ export function shouldUseNativeOpenAICompatibleResponsesPassthrough({
   if (body !== undefined && !isResponsesShapedBody(body)) return false;
   if (providerSpecificData && typeof providerSpecificData === "object") {
     const psd = providerSpecificData as Record<string, unknown>;
-    if (psd.apiType === "responses" || psd._omnirouteForceResponsesUpstream === true) {
+    if (psd.apiType === "responses" || psd._cheaprouteForceResponsesUpstream === true) {
       return true;
     }
   }

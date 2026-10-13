@@ -1,15 +1,15 @@
 #!/usr/bin/env python3
 """
-tcp-close-analyzer.py — dependency-free pcap analyzer for OmniRoute<->Caddy
+tcp-close-analyzer.py — dependency-free pcap analyzer for CheapRoute<->Caddy
 traffic, focused on ONE question: who closes the TCP connection first, the
 client (Caddy, on behalf of whoever it's proxying for) or the server
-(the omniroute-dev container)?
+(the cheaproute-dev container)?
 
 Why this exists: the dashboard's HTTP-level status (499 "Request aborted")
-only tells us OmniRoute's own executor detected a dropped connection — it
+only tells us CheapRoute's own executor detected a dropped connection — it
 doesn't tell us whether the underlying TCP socket was actually closed by the
-far end, or whether OmniRoute itself is the one tearing it down (e.g. an
-idle/read timeout on OmniRoute's side that then gets misreported as a client
+far end, or whether CheapRoute itself is the one tearing it down (e.g. an
+idle/read timeout on CheapRoute's side that then gets misreported as a client
 abort). Reading the raw TCP FIN/RST packets settles that unambiguously.
 
 No third-party dependencies (no scapy/dpkt/tshark) — just stdlib `struct`,
@@ -29,9 +29,9 @@ namespace — `tcpdump -i podman3` on the host will fail with "No such device
 exists" even though the container is clearly running. Attach to the
 container's OWN namespace via its PID instead:
 
-    PID=$(podman inspect omniroute-dev --format '{{.State.Pid}}')
-    sudo nsenter -t "$PID" -n tcpdump -i any -w /tmp/omniroute-capture.pcap \\
-        'host <omniroute-container-ip> and port 20128'
+    PID=$(podman inspect cheaproute-dev --format '{{.State.Pid}}')
+    sudo nsenter -t "$PID" -n tcpdump -i any -w /tmp/cheaproute-capture.pcap \\
+        'host <cheaproute-container-ip> and port 20128'
 
 Rootless alternative (NO sudo needed): a bare `nsenter -t $PID -n` fails
 with "Invalid argument" for a rootless container, because its network
@@ -41,20 +41,20 @@ container's netns path succeeds as a plain user — verified working live
 (captured a real `POST /v1/chat/completions` request body in cleartext this
 way, no root at any point):
 
-    NETNS=$(podman inspect omniroute-dev --format '{{.NetworkSettings.SandboxKey}}')
+    NETNS=$(podman inspect cheaproute-dev --format '{{.NetworkSettings.SandboxKey}}')
     podman unshare nsenter --net="$NETNS" -- \\
-        tcpdump -i any -w /tmp/omniroute-capture.pcap 'port 20128'
+        tcpdump -i any -w /tmp/cheaproute-capture.pcap 'port 20128'
 
 No `sudo chmod` needed afterward either, since the file was never
 root-owned. This is also what
 tests/integration/wireCapture.ts + liveContainerHarness.ts automate for the
 live wire-capture test suite (its own dedicated throwaway container, not
-omniroute-dev) — see RUN_LIVE_WIRE_CAPTURE=1 in that test file.
+cheaproute-dev) — see RUN_LIVE_WIRE_CAPTURE=1 in that test file.
 
 Find the container's IP first with:
-    podman inspect omniroute-dev --format '{{.NetworkSettings.Networks}}'
+    podman inspect cheaproute-dev --format '{{.NetworkSettings.Networks}}'
 
-That captures all traffic between Caddy and the omniroute-dev container on
+That captures all traffic between Caddy and the cheaproute-dev container on
 its bridge network — this is the UNENCRYPTED hop (Caddy terminates TLS
 before this point), so HTTP headers and bodies are visible in cleartext.
 `-i any` produces "Linux cooked" framing (linktype SLL/SLL2, not Ethernet)
@@ -63,11 +63,11 @@ before this point), so HTTP headers and bodies are visible in cleartext.
 Reproduce the issue (let the agentic client run its task until it happens
 again), then Ctrl+C the tcpdump. Make the file readable:
 
-    sudo chmod 644 /tmp/omniroute-capture.pcap
+    sudo chmod 644 /tmp/cheaproute-capture.pcap
 
 Then run this script against it:
 
-    python3 scripts/sre/tcp-close-analyzer.py /tmp/omniroute-capture.pcap
+    python3 scripts/sre/tcp-close-analyzer.py /tmp/cheaproute-capture.pcap
 
 ────────────────────────────────────────────────────────────────────────────
 USAGE
@@ -83,7 +83,7 @@ Output: one JSON object per TCP stream written to --out (default:
   - correlationId / requestId, if an `x-correlation-id:` / `x-request-id:`
     HTTP header was seen in either direction's reassembled byte stream
     (best-effort substring search, not a full HTTP parser). In practice
-    OmniRoute doesn't echo these on every hop, so this is a bonus, not the
+    CheapRoute doesn't echo these on every hop, so this is a bonus, not the
     primary way to find a stream — see --find below.
   - the HTTP request line / response status line, if found the same way
   - every FIN/RST seen on the stream, each tagged with which side sent it
@@ -489,27 +489,27 @@ Run this yourself (needs root/sudo — CAP_NET_RAW to open a packet socket).
 Rootless Podman: there is no host-visible `podmanN` bridge — attach to the
 container's own network namespace via its PID:
 
-    PID=$(podman inspect omniroute-dev --format '{{.State.Pid}}')
-    sudo nsenter -t "$PID" -n tcpdump -i any -w /tmp/omniroute-capture.pcap \\
-        'host <omniroute-container-ip> and port 20128'
+    PID=$(podman inspect cheaproute-dev --format '{{.State.Pid}}')
+    sudo nsenter -t "$PID" -n tcpdump -i any -w /tmp/cheaproute-capture.pcap \\
+        'host <cheaproute-container-ip> and port 20128'
 
 Find the container IP with:
-    podman inspect omniroute-dev --format '{{.NetworkSettings.Networks}}'
+    podman inspect cheaproute-dev --format '{{.NetworkSettings.Networks}}'
 
-That captures all traffic between Caddy and the omniroute-dev container —
+That captures all traffic between Caddy and the cheaproute-dev container —
 the UNENCRYPTED hop (Caddy terminates TLS before this point), so HTTP
 headers and bodies are visible in cleartext.
 
 Reproduce the issue (let the agentic client run its task until it happens
 again), then Ctrl+C the tcpdump. Make the file readable:
 
-    sudo chmod 644 /tmp/omniroute-capture.pcap
+    sudo chmod 644 /tmp/cheaproute-capture.pcap
 
 Then run:
 
-    python3 scripts/sre/tcp-close-analyzer.py /tmp/omniroute-capture.pcap
+    python3 scripts/sre/tcp-close-analyzer.py /tmp/cheaproute-capture.pcap
     # or, to find one specific request by a marker you typed into the chat:
-    python3 scripts/sre/tcp-close-analyzer.py /tmp/omniroute-capture.pcap --find "<marker>"
+    python3 scripts/sre/tcp-close-analyzer.py /tmp/cheaproute-capture.pcap --find "<marker>"
 """
     )
 

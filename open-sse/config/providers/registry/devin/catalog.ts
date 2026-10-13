@@ -67,7 +67,7 @@ function gptModels(id: string, name: string): RegistryModel[] {
 /**
  * Curated from the authenticated `devin models list --format json` response on
  * 2026-09-02. Keep this deliberately smaller than Devin's full live catalog:
- * these are the operator-selected models OmniRoute intends to expose.
+ * these are the operator-selected models CheapRoute intends to expose.
  */
 export const DEVIN_MODEL_CATALOG: RegistryModel[] = [
   ...effortModels("claude-fable-5-1", "Claude Fable 5.1", 128_000, 1_000_000),

@@ -1,12 +1,12 @@
-import { handleMusicGeneration } from "@omniroute/open-sse/handlers/musicGeneration.ts";
+import { handleMusicGeneration } from "@cheaproute/open-sse/handlers/musicGeneration.ts";
 import { withInjectionGuard } from "@/middleware/promptInjectionGuard";
 import {
   getProviderCredentialsWithQuotaPreflight,
   clearRecoveredProviderState,
 } from "@/sse/services/auth";
-import { parseMusicModel, getMusicProvider } from "@omniroute/open-sse/config/musicRegistry.ts";
-import { errorResponse } from "@omniroute/open-sse/utils/error.ts";
-import { HTTP_STATUS } from "@omniroute/open-sse/config/constants.ts";
+import { parseMusicModel, getMusicProvider } from "@cheaproute/open-sse/config/musicRegistry.ts";
+import { errorResponse } from "@cheaproute/open-sse/utils/error.ts";
+import { HTTP_STATUS } from "@cheaproute/open-sse/config/constants.ts";
 import * as log from "@/sse/utils/logger";
 import { enforceApiKeyPolicy } from "@/shared/utils/apiKeyPolicy";
 import {

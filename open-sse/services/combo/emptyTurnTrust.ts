@@ -9,7 +9,7 @@ export async function isTrustedEmptyTurn(
 ): Promise<boolean> {
   if (provider !== null && provider !== "claude" && provider !== "anthropic") return false;
 
-  const selectedConnectionId = response.headers.get("X-OmniRoute-Selected-Connection-Id");
+  const selectedConnectionId = response.headers.get("X-CheapRoute-Selected-Connection-Id");
   // An unresolved alias cannot use a planned connection as proof of actual dispatch.
   const connectionId = selectedConnectionId || (provider === null ? null : fallbackConnectionId);
   if (!connectionId) return false;

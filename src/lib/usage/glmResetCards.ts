@@ -17,12 +17,12 @@ import {
   parseGlmResetCards,
   redeemGlmResetCard,
   type GlmResetCard,
-} from "@omniroute/open-sse/services/usage/glmResetCards.ts";
-import { sanitizeErrorMessage } from "@omniroute/open-sse/utils/error.ts";
+} from "@cheaproute/open-sse/services/usage/glmResetCards.ts";
+import { sanitizeErrorMessage } from "@cheaproute/open-sse/utils/error.ts";
 import {
   runWithDirectFetchContext,
   runWithProxyContext,
-} from "@omniroute/open-sse/utils/proxyFetch.ts";
+} from "@cheaproute/open-sse/utils/proxyFetch.ts";
 
 type JsonRecord = Record<string, unknown>;
 
@@ -36,7 +36,7 @@ const MAX_ATTEMPTS = 500;
 // on (connection_id) WHERE state = 'ACTIVE' gives an atomic fence around the wire
 // operations that no check-then-act availability probe can provide.
 const OPERATION_LEASE_TTL_MS = 60_000;
-const OPERATION_LEASE_API_KEY_ID = "omniroute:glm-reset-card-operation";
+const OPERATION_LEASE_API_KEY_ID = "cheaproute:glm-reset-card-operation";
 const OPERATION_LEASE_OWNER_PREFIX = "vlo_";
 
 type ProxyLike = Parameters<typeof runWithProxyContext>[0];

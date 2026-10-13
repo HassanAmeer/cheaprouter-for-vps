@@ -7,7 +7,7 @@ export type CompressionWireFormat = "claude" | "openai" | "openai-responses" | s
 
 export type CompressionStage = "pre-translation" | "post-translation";
 
-/** Whether an upstream route preserves OmniGlyph PNG bytes and dimensions. */
+/** Whether an upstream route preserves CheapGlyph PNG bytes and dimensions. */
 export type ImageTransportFidelity = "byte-preserving" | "resizes" | "unknown";
 
 export interface EngineConfigField {
@@ -43,7 +43,7 @@ export interface CompressionEngineApplyOptions {
   model?: string;
   supportsVision?: boolean | null;
   /** Como o request chega ao provider: rota direta oficial ('direct') vs
-   *  agregador que pode reprocessar imagens ('aggregator'). O engine omniglyph
+   *  agregador que pode reprocessar imagens ('aggregator'). O engine cheapglyph
    *  exige 'direct' — medição 2026-07-06: agregadores redimensionam as páginas
    *  e destroem a legibilidade. A política de produção também informa
    *  imageTransportFidelity; chamadas legadas sem esse campo mantêm o gate direct. */
@@ -61,7 +61,7 @@ export interface CompressionEngineApplyOptions {
   stepConfig?: Record<string, unknown>;
   /** Authenticated principal (API key id) making the request. Used by CCR to scope its store. */
   principalId?: string;
-  /** Provider resolvido do alvo. A contabilidade do omniglyph depende dele:
+  /** Provider resolvido do alvo. A contabilidade do cheapglyph depende dele:
    *  Anthropic reporta input/cache em buckets disjuntos, OpenAI/xAI reportam
    *  cached como subconjunto do input. Ausente => `unknown` (falha fechado). */
   provider?: string;

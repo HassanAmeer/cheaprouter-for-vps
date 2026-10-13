@@ -5,7 +5,7 @@
  */
 
 import type { A2ATask, TaskArtifact } from "../taskManager";
-import { resolveOmniRouteBaseUrl } from "@/shared/utils/resolveOmniRouteBaseUrl";
+import { resolveCheapRouteBaseUrl } from "@/shared/utils/resolveCheapRouteBaseUrl";
 
 type JsonRecord = Record<string, unknown>;
 
@@ -16,14 +16,14 @@ type ProviderHealthEntry = {
   lastFailure?: string | null;
 };
 
-const OMNIROUTE_BASE_URL = resolveOmniRouteBaseUrl();
-const OMNIROUTE_API_KEY = process.env.OMNIROUTE_API_KEY || "";
+const CHEAPROUTE_BASE_URL = resolveCheapRouteBaseUrl();
+const CHEAPROUTE_API_KEY = process.env.CHEAPROUTE_API_KEY || "";
 
 async function healthFetch(path: string): Promise<JsonRecord> {
-  const url = `${OMNIROUTE_BASE_URL}${path}`;
+  const url = `${CHEAPROUTE_BASE_URL}${path}`;
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
-    ...(OMNIROUTE_API_KEY ? { Authorization: `Bearer ${OMNIROUTE_API_KEY}` } : {}),
+    ...(CHEAPROUTE_API_KEY ? { Authorization: `Bearer ${CHEAPROUTE_API_KEY}` } : {}),
   };
   const response = await fetch(url, { headers, signal: AbortSignal.timeout(10000) });
   if (!response.ok) {

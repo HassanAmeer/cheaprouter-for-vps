@@ -42,17 +42,17 @@ function isInternalModelSyncRequest(ctx: PolicyContext): boolean {
 }
 
 const WS_BRIDGE_INTERNAL_PATH = "/api/internal/codex-responses-ws";
-const WS_BRIDGE_SECRET_HEADER = "x-omniroute-ws-bridge-secret";
+const WS_BRIDGE_SECRET_HEADER = "x-cheaproute-ws-bridge-secret";
 
 // The in-process codex Responses-over-WebSocket proxy authenticates its internal
 // authenticate/prepare calls with a per-process, unguessable secret minted by
-// server-ws.mjs (OMNIROUTE_WS_BRIDGE_SECRET). Without this carve-out the MANAGEMENT
+// server-ws.mjs (CHEAPROUTE_WS_BRIDGE_SECRET). Without this carve-out the MANAGEMENT
 // classification 401s that loopback call, which then leaks chunked/security headers
 // back onto the upgrade socket. The internal route re-validates the secret timing-safe
 // (bridgeSecretMatches), so this is the same trust boundary, surfaced one layer up.
 function isValidWsBridgeRequest(ctx: PolicyContext): boolean {
   if (ctx.classification.normalizedPath !== WS_BRIDGE_INTERNAL_PATH) return false;
-  const expected = process.env.OMNIROUTE_WS_BRIDGE_SECRET || "";
+  const expected = process.env.CHEAPROUTE_WS_BRIDGE_SECRET || "";
   if (!expected) return false;
   const provided = ctx.request.headers?.get?.(WS_BRIDGE_SECRET_HEADER) ?? "";
   if (!provided) return false;

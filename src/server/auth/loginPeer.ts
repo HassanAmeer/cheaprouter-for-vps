@@ -17,13 +17,13 @@ const UNKNOWN_PEER_KEY = "__unknown_peer__";
  * Without a stamping server (direct handler calls) the forwarded address is all there is.
  */
 export function getLoginLockoutKey(request: Request, forwardedIp: string | null): string | null {
-  if (!process.env.OMNIROUTE_PEER_STAMP_TOKEN) return forwardedIp;
+  if (!process.env.CHEAPROUTE_PEER_STAMP_TOKEN) return forwardedIp;
   return request.headers.get(AUTHZ_HEADER_TRUSTED_PEER_IP) || UNKNOWN_PEER_KEY;
 }
 
 /** Origin tag for audit rows, from the stamped peer rather than a forwarded address. */
 export function getLoginSourceScope(request: Request, forwardedIp: string | null): IpScope {
-  if (!process.env.OMNIROUTE_PEER_STAMP_TOKEN) return classifyIpScope(forwardedIp);
+  if (!process.env.CHEAPROUTE_PEER_STAMP_TOKEN) return classifyIpScope(forwardedIp);
   const locality = getRequestPeerLocality(request);
   return locality === "loopback" ? "loopback" : locality === "lan" ? "private" : "public";
 }

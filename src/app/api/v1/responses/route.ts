@@ -15,16 +15,16 @@ import {
   releaseChatAdmissionWhenDone,
   resolveSessionId,
 } from "@/shared/middleware/chatBodyAdmission";
-import { SSE_HEARTBEAT_INTERVAL_MS } from "@omniroute/open-sse/config/constants";
-import { resolveStreamFlag } from "@omniroute/open-sse/utils/aiSdkCompat";
-import { errorResponse } from "@omniroute/open-sse/utils/error";
+import { SSE_HEARTBEAT_INTERVAL_MS } from "@cheaproute/open-sse/config/constants";
+import { resolveStreamFlag } from "@cheaproute/open-sse/utils/aiSdkCompat";
+import { errorResponse } from "@cheaproute/open-sse/utils/error";
 import {
   withEarlyStreamKeepalive,
   OPENAI_RESPONSES_ERROR_FRAME,
-} from "@omniroute/open-sse/utils/earlyStreamKeepalive";
-import { createStreamDeadlineSignal } from "@omniroute/open-sse/utils/streamDeadlineSignal";
-import { resolveKeepaliveThreshold } from "@omniroute/open-sse/utils/keepaliveThreshold";
-import { OPENAI_RESPONSES_IN_PROGRESS_FRAME } from "@omniroute/open-sse/utils/sseHeartbeat";
+} from "@cheaproute/open-sse/utils/earlyStreamKeepalive";
+import { createStreamDeadlineSignal } from "@cheaproute/open-sse/utils/streamDeadlineSignal";
+import { resolveKeepaliveThreshold } from "@cheaproute/open-sse/utils/keepaliveThreshold";
+import { OPENAI_RESPONSES_IN_PROGRESS_FRAME } from "@cheaproute/open-sse/utils/sseHeartbeat";
 
 // NOTE: We do NOT call initTranslators() here — the translator registry is
 // bootstrapped at module level inside open-sse/translator/index.ts when it
@@ -52,7 +52,7 @@ export async function OPTIONS() {
  * Rewrite a bare ChatGPT-style model id to the codex/ prefix when the model
  * resolves to a codex provider. This fixes the Codex CLI WS→HTTP fallback path:
  * the CLI sends bare "gpt-5.5" over HTTP after WS closes (1008 Policy), and
- * without this rewrite OmniRoute routes it to openrouter instead of codex.
+ * without this rewrite CheapRoute routes it to openrouter instead of codex.
  *
  * Accepts an optional `preParsedBody` so the route-level admission and injection
  * checks can parse once and avoid re-cloning the request on the hot path.

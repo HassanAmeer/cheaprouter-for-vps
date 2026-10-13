@@ -17,7 +17,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { requireManagementAuth } from "@/lib/api/requireManagementAuth";
 import { validateBody, isValidationFailure } from "@/shared/validation/helpers";
-import { buildErrorBody, sanitizeErrorMessage } from "@omniroute/open-sse/utils/error";
+import { buildErrorBody, sanitizeErrorMessage } from "@cheaproute/open-sse/utils/error";
 import { getChaosConfig } from "@/lib/chaos/chaosConfig";
 import { executeChaosRun, type ChaosRunResult } from "@/lib/chaos/chaosExecutor";
 import * as log from "@/sse/utils/logger";

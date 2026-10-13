@@ -20,7 +20,7 @@ import { getMcpModelsCatalog } from "../catalog.ts";
 import { toArray, toFiniteNumber, toRecord, toString, type JsonRecord } from "../coercions.ts";
 import { toSafeMcpErrorMessage } from "../errorMessage.ts";
 import { mcpFetchTimeoutSignal } from "../fetchTimeout.ts";
-import { omniRouteFetch } from "../internalFetch.ts";
+import { cheapRouteFetch } from "../internalFetch.ts";
 
 export async function handleRouteRequest(args: {
   model: string;
@@ -41,7 +41,7 @@ export async function handleRouteRequest(args: {
       body["x-combo"] = args.combo;
     }
 
-    const raw = (await omniRouteFetch("/v1/chat/completions", {
+    const raw = (await cheapRouteFetch("/v1/chat/completions", {
       method: "POST",
       body: JSON.stringify(body),
       // #9717: this hop waits on an upstream provider (and on auto-combo
@@ -77,7 +77,7 @@ export async function handleRouteRequest(args: {
     };
 
     await logToolCall(
-      "omniroute_route_request",
+      "cheaproute_route_request",
       { model: args.model, messageCount: args.messages.length },
       result.routing,
       Date.now() - start,
@@ -87,7 +87,7 @@ export async function handleRouteRequest(args: {
   } catch (err) {
     const msg = toSafeMcpErrorMessage(err);
     await logToolCall(
-      "omniroute_route_request",
+      "cheaproute_route_request",
       { model: args.model },
       null,
       Date.now() - start,
@@ -104,7 +104,7 @@ export async function handleCostReport(args: { period?: string }) {
     const period = args.period || "session";
     const range = analyticsRangeForPeriod(period);
     const raw = toRecord(
-      await omniRouteFetch(`/api/usage/analytics?range=${encodeURIComponent(range)}`)
+      await cheapRouteFetch(`/api/usage/analytics?range=${encodeURIComponent(range)}`)
     );
     const totals = readAnalyticsTotals(raw);
     const budget = toRecord(raw.budget);
@@ -125,11 +125,11 @@ export async function handleCostReport(args: { period?: string }) {
       },
     };
 
-    await logToolCall("omniroute_cost_report", args, result, Date.now() - start, true);
+    await logToolCall("cheaproute_cost_report", args, result, Date.now() - start, true);
     return { content: [{ type: "text" as const, text: JSON.stringify(result, null, 2) }] };
   } catch (err) {
     const msg = toSafeMcpErrorMessage(err);
-    await logToolCall("omniroute_cost_report", args, null, Date.now() - start, false, msg);
+    await logToolCall("cheaproute_cost_report", args, null, Date.now() - start, false, msg);
     return { content: [{ type: "text" as const, text: `Error: ${msg}` }], isError: true };
   }
 }
@@ -140,7 +140,7 @@ export async function handleListModelsCatalog(args: { provider?: string; capabil
     const result = await getMcpModelsCatalog(args);
 
     await logToolCall(
-      "omniroute_list_models_catalog",
+      "cheaproute_list_models_catalog",
       args,
       { modelCount: result.models.length },
       Date.now() - start,
@@ -149,7 +149,7 @@ export async function handleListModelsCatalog(args: { provider?: string; capabil
     return { content: [{ type: "text" as const, text: JSON.stringify(result, null, 2) }] };
   } catch (err) {
     const msg = toSafeMcpErrorMessage(err);
-    await logToolCall("omniroute_list_models_catalog", args, null, Date.now() - start, false, msg);
+    await logToolCall("cheaproute_list_models_catalog", args, null, Date.now() - start, false, msg);
     return { content: [{ type: "text" as const, text: `Error: ${msg}` }], isError: true };
   }
 }

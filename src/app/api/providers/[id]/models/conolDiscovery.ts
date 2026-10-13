@@ -1,12 +1,12 @@
 import { SAFE_OUTBOUND_FETCH_PRESETS, safeOutboundFetch } from "@/shared/network/safeOutboundFetch";
 import { getProviderOutboundGuard } from "@/shared/network/outboundUrlGuardPolicy";
-import { resolveConolCredentials } from "@omniroute/open-sse/services/conolAuth.ts";
+import { resolveConolCredentials } from "@cheaproute/open-sse/services/conolAuth.ts";
 import {
   CONOL_FALLBACK_MODELS,
   discoverConolModels,
   type ConolModel,
-} from "@omniroute/open-sse/services/conolModels.ts";
-import { sanitizeErrorMessage } from "@omniroute/open-sse/utils/error";
+} from "@cheaproute/open-sse/services/conolModels.ts";
+import { sanitizeErrorMessage } from "@cheaproute/open-sse/utils/error";
 
 interface DiscoveryWarnings {
   cacheWarning?: string;

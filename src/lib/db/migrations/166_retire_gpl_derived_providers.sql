@@ -24,7 +24,7 @@ UPDATE provider_connections
 SET is_active = 0,
     test_status = 'unavailable',
     error_code = 'PROVIDER_REMOVED',
-    last_error = 'Provider integration retired from OmniRoute v3.8.51',
+    last_error = 'Provider integration retired from CheapRoute v3.8.51',
     last_error_type = 'provider_removed',
     last_error_source = 'migration:166',
     last_error_at = COALESCE(last_error_at, datetime('now')),

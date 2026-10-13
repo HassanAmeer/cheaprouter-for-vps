@@ -8,7 +8,7 @@
  *   - Parts: { text }, { inline_data: { mime_type, data } }, { file_data: { mime_type, file_uri } }.
  *     CamelCase SDK spellings (inlineData / fileData) are accepted and forwarded.
  *
- * These are not OmniRoute's canonical `{ type, source }` items. For gemini
+ * These are not CheapRoute's canonical `{ type, source }` items. For gemini
  * they must reach generativelanguage.googleapis.com as Content parts — do
  * not collapse the OpenAI `input` array to string[].
  */

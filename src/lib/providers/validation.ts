@@ -1,5 +1,5 @@
-import { getEmbeddingProvider } from "@omniroute/open-sse/config/embeddingRegistry.ts";
-import { getRegistryEntry } from "@omniroute/open-sse/config/providerRegistry.ts";
+import { getEmbeddingProvider } from "@cheaproute/open-sse/config/embeddingRegistry.ts";
+import { getRegistryEntry } from "@cheaproute/open-sse/config/providerRegistry.ts";
 import {
   isClaudeCodeCompatibleProvider,
   isAnthropicCompatibleProvider,
@@ -12,12 +12,12 @@ import {
 } from "@/shared/constants/providers";
 import { MODAL_DEFAULT_VALIDATION_MODEL_ID } from "@/shared/constants/modal";
 import { validateImageProviderApiKey } from "@/lib/providers/imageValidation";
-import { usesCcWireImage } from "@omniroute/open-sse/services/ccWireImageBuiltins.ts";
+import { usesCcWireImage } from "@cheaproute/open-sse/services/ccWireImageBuiltins.ts";
 import {
   isAlibabaRegionalProvider,
   resolveAlibabaProviderBaseUrl,
 } from "@/shared/constants/alibabaProviderRegions";
-import { buildProviderHeaders, buildProviderUrl } from "@omniroute/open-sse/services/provider.ts";
+import { buildProviderHeaders, buildProviderUrl } from "@cheaproute/open-sse/services/provider.ts";
 
 import {
   OPENAI_LIKE_FORMATS,

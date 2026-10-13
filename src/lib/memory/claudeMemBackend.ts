@@ -3,7 +3,7 @@
  * (https://github.com/thedotmack/claude-mem).
  *
  * claude-mem captures Claude Code / Codex / Cursor sessions into "observations" and serves
- * them from a worker bound to loopback. Registering this backend lets OmniRoute's memory
+ * them from a worker bound to loopback. Registering this backend lets CheapRoute's memory
  * REST API and A2A memory search read (and write) that same store.
  *
  * The worker only listens on loopback, which the GenericMemoryBackend SSRF guard rejects by
@@ -43,7 +43,7 @@ export const ClaudeMemBackendConfigSchema = z
     /** claude-mem worker port (CLAUDE_MEM_WORKER_PORT; default is 37700 + uid % 100). */
     port: z.number().int().min(1024).max(65535),
     /**
-     * claude-mem project to read/write. When unset, each OmniRoute API key maps to its own
+     * claude-mem project to read/write. When unset, each CheapRoute API key maps to its own
      * project (the apiKeyId). Set it to a Claude Code project name to share that memory.
      */
     project: z.string().trim().min(1).max(200).optional(),
@@ -70,8 +70,8 @@ interface ClaudeMemObservation {
   created_at_epoch?: number | null;
 }
 
-/** OmniRoute fields stashed in claude-mem's free-form metadata so they round-trip. */
-interface OmniRouteMeta {
+/** CheapRoute fields stashed in claude-mem's free-form metadata so they round-trip. */
+interface CheapRouteMeta {
   apiKeyId?: string;
   sessionId?: string;
   type?: string;
@@ -127,13 +127,13 @@ export function toClaudeMemId(observationId: number): string {
   return `${ID_PREFIX}${observationId}`;
 }
 
-function resolveMemoryType(omni: OmniRouteMeta, row: ClaudeMemObservation): MemoryType {
+function resolveMemoryType(omni: CheapRouteMeta, row: ClaudeMemObservation): MemoryType {
   if (typeof omni.type === "string" && MEMORY_TYPES.has(omni.type)) return omni.type as MemoryType;
   return OBSERVATION_TYPE_MAP[row.type ?? ""] ?? MemoryType.EPISODIC;
 }
 
 function observationMetadata(
-  omni: OmniRouteMeta,
+  omni: CheapRouteMeta,
   row: ClaudeMemObservation,
   project: string
 ): Record<string, unknown> {
@@ -150,7 +150,7 @@ function observationMetadata(
 
 export function observationToMemory(row: ClaudeMemObservation): Memory {
   const rawMeta = parseJsonField<Record<string, unknown>>(row.metadata) ?? {};
-  const omni = (rawMeta.omniroute ?? {}) as OmniRouteMeta;
+  const omni = (rawMeta.cheaproute ?? {}) as CheapRouteMeta;
   const createdAt = toDate(row);
   const project = row.project ?? "";
 
@@ -236,7 +236,7 @@ export class ClaudeMemBackend implements MemoryBackend {
   }
 
   async create(input: CreateMemoryInput): Promise<Memory> {
-    const omniroute: OmniRouteMeta = {
+    const cheaproute: CheapRouteMeta = {
       apiKeyId: input.apiKeyId,
       sessionId: input.sessionId,
       type: input.type,
@@ -251,7 +251,7 @@ export class ClaudeMemBackend implements MemoryBackend {
         text: input.content,
         title: input.key,
         project: this.projectFor(input.apiKeyId),
-        metadata: { omniroute },
+        metadata: { cheaproute },
       }
     );
     if (!result.success || typeof result.id !== "number") {

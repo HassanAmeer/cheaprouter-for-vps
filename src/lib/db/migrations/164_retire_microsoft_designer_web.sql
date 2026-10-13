@@ -4,7 +4,7 @@
 UPDATE provider_connections
 SET is_active = 0,
     test_status = 'unavailable',
-    last_error = 'Provider retired from OmniRoute runtime.',
+    last_error = 'Provider retired from CheapRoute runtime.',
     last_error_at = COALESCE(last_error_at, CURRENT_TIMESTAMP),
     last_error_type = 'provider_retired',
     last_error_source = 'migration:retire-microsoft-designer-web'
@@ -35,7 +35,7 @@ BEGIN
   UPDATE provider_connections
   SET is_active = 0,
       test_status = 'unavailable',
-      last_error = 'Provider retired from OmniRoute runtime.',
+      last_error = 'Provider retired from CheapRoute runtime.',
       last_error_at = COALESCE(last_error_at, CURRENT_TIMESTAMP),
       last_error_type = 'provider_retired',
       last_error_source = 'migration:retire-microsoft-designer-web'
@@ -56,7 +56,7 @@ WHEN lower(trim(NEW.provider, ' ' || char(9) || char(10) || char(11) || char(12)
   AND (
     COALESCE(NEW.is_active, 0) <> 0
     OR COALESCE(NEW.test_status, '') <> 'unavailable'
-    OR COALESCE(NEW.last_error, '') <> 'Provider retired from OmniRoute runtime.'
+    OR COALESCE(NEW.last_error, '') <> 'Provider retired from CheapRoute runtime.'
     OR COALESCE(NEW.last_error_type, '') <> 'provider_retired'
     OR COALESCE(NEW.last_error_source, '') <> 'migration:retire-microsoft-designer-web'
   )
@@ -64,7 +64,7 @@ BEGIN
   UPDATE provider_connections
   SET is_active = 0,
       test_status = 'unavailable',
-      last_error = 'Provider retired from OmniRoute runtime.',
+      last_error = 'Provider retired from CheapRoute runtime.',
       last_error_at = COALESCE(last_error_at, CURRENT_TIMESTAMP),
       last_error_type = 'provider_retired',
       last_error_source = 'migration:retire-microsoft-designer-web'

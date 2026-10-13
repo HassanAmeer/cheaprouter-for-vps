@@ -1,5 +1,5 @@
 /** Examples for the configuration API keep credentials out of URLs and apply dry-run-only. */
-import { resolveOmniRouteBaseUrl } from "@/shared/utils/resolveOmniRouteBaseUrl";
+import { resolveCheapRouteBaseUrl } from "@/shared/utils/resolveCheapRouteBaseUrl";
 
 export function buildCliConfigurationExample(operation: {
   path: string;
@@ -7,12 +7,12 @@ export function buildCliConfigurationExample(operation: {
 }): string[] | undefined {
   const { path, method } = operation;
   if (path !== "/api/cli-tools/config" && path !== "/api/cli-tools/apply") return;
-  const baseUrl = resolveOmniRouteBaseUrl();
+  const baseUrl = resolveCheapRouteBaseUrl();
   if (method === "GET" && path === "/api/cli-tools/config") {
     return [
       `curl ${baseUrl}${path} \\`,
-      '  -H "Authorization: Bearer $OMNIROUTE_TOKEN" \\',
-      '  -H "x-omniroute-config-api-key: <configuration-api-key>"',
+      '  -H "Authorization: Bearer $CHEAPROUTE_TOKEN" \\',
+      '  -H "x-cheaproute-config-api-key: <configuration-api-key>"',
     ];
   }
   if (method !== "POST") return;
@@ -23,7 +23,7 @@ export function buildCliConfigurationExample(operation: {
   };
   return [
     `curl -X POST ${baseUrl}${path} \\`,
-    '  -H "Authorization: Bearer $OMNIROUTE_TOKEN" \\',
+    '  -H "Authorization: Bearer $CHEAPROUTE_TOKEN" \\',
     '  -H "Content-Type: application/json" \\',
     `  -d '${JSON.stringify(body)}'`,
   ];

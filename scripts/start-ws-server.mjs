@@ -9,14 +9,14 @@
  * Environment variables:
  *   LIVE_WS_PORT       — WebSocket server port (default: 20132)
  *   LIVE_WS_HOST       — WebSocket server host (default: 127.0.0.1)
- *   OMNIROUTE_ENABLE_LIVE_WS — Set to "0" or "false" to disable
+ *   CHEAPROUTE_ENABLE_LIVE_WS — Set to "0" or "false" to disable
  */
 
 import { spawnSync } from "node:child_process";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { dirname, join } from "node:path";
 
-const BOOTSTRAPPED_ENV = "OMNIROUTE_LIVE_WS_BOOTSTRAPPED";
+const BOOTSTRAPPED_ENV = "CHEAPROUTE_LIVE_WS_BOOTSTRAPPED";
 
 /**
  * Package root for the launcher = the directory above `scripts/`, where
@@ -52,7 +52,7 @@ export function buildSidecarSpawn(scriptUrl, env = process.env) {
         [BOOTSTRAPPED_ENV]: "1",
         // Prevent liveServer.ts from auto-starting on import; this script owns
         // process startup so errors propagate to the supervisor/CLI caller.
-        OMNIROUTE_ENABLE_LIVE_WS: "0",
+        CHEAPROUTE_ENABLE_LIVE_WS: "0",
       },
     },
   };
@@ -60,15 +60,15 @@ export function buildSidecarSpawn(scriptUrl, env = process.env) {
 
 async function main() {
   // The operator disable gate only applies to the OUTER invocation: the bootstrapped
-  // child is re-spawned with OMNIROUTE_ENABLE_LIVE_WS="0" purely to stop liveServer.ts
+  // child is re-spawned with CHEAPROUTE_ENABLE_LIVE_WS="0" purely to stop liveServer.ts
   // auto-starting on import (this script owns startup), so honoring the gate there
   // made the standalone script exit 0 without ever listening (#6072 regression).
   if (
     process.env[BOOTSTRAPPED_ENV] !== "1" &&
-    (process.env.OMNIROUTE_ENABLE_LIVE_WS === "0" ||
-      process.env.OMNIROUTE_ENABLE_LIVE_WS?.toLowerCase() === "false")
+    (process.env.CHEAPROUTE_ENABLE_LIVE_WS === "0" ||
+      process.env.CHEAPROUTE_ENABLE_LIVE_WS?.toLowerCase() === "false")
   ) {
-    console.log("[LiveWS] Disabled via OMNIROUTE_ENABLE_LIVE_WS");
+    console.log("[LiveWS] Disabled via CHEAPROUTE_ENABLE_LIVE_WS");
     process.exit(0);
   }
 

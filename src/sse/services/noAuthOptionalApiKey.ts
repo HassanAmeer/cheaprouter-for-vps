@@ -8,8 +8,8 @@
  * (`anonymousApiKey` and/or FREE_APIKEY), prefer an active connection that
  * actually has a key, then fall back to the synthetic anonymous path.
  */
-import { REGISTRY } from "@omniroute/open-sse/config/providerRegistry.ts";
-import { isAccountUnavailable } from "@omniroute/open-sse/services/accountFallback.ts";
+import { REGISTRY } from "@cheaproute/open-sse/config/providerRegistry.ts";
+import { isAccountUnavailable } from "@cheaproute/open-sse/services/accountFallback.ts";
 import { createLazyConnectionView } from "@/lib/db/providers/lazyConnectionView";
 import type { ProviderConnectionView } from "@/lib/db/providers/lazyConnectionView";
 import { buildConnectionConcurrencyFields } from "./connectionConcurrencyFields.ts";

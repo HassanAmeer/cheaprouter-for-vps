@@ -16,22 +16,22 @@
  *
  * This function is a SECONDARY, best-effort, defense-in-depth check layered behind
  * that gate. In the Next.js runtime it is currently INERT for real requests:
- * `globalThis.__omniRequestHeaders` is not populated per-request, so the loopback/
+ * `globalThis.__cheapRequestHeaders` is not populated per-request, so the loopback/
  * bearer branches below never run and the function falls through to its env-gated
  * default. Do NOT rely on it as the trust boundary — keep `/api/local/*` classified
  * in `routeGuard.ts` (that is what actually closes the hole). The header-driven
  * branches remain for the desktop/embedded path that does inject the header.
  *
- * Rules (apply only when `__omniRequestHeaders` is wired by the caller):
+ * Rules (apply only when `__cheapRequestHeaders` is wired by the caller):
  *   1. Allow requests whose `host` header matches the dev server's bind host
  *      (localhost / 127.0.0.1 / ::1) AND whose `x-forwarded-for` is absent
  *      or set to a loopback address. This blocks proxied requests from the
  *      public internet when the dev server is bound to localhost.
  *   2. In production (`NODE_ENV=production`), reject unconditionally unless
- *      OMNIROUTE_LOCAL_ENDPOINTS_ENABLED=1 is set. The flag is opt-in so
+ *      CHEAPROUTE_LOCAL_ENDPOINTS_ENABLED=1 is set. The flag is opt-in so
  *      accidental dev deployments do not expose the API.
- *   3. Trust-list the OmniRoute desktop app via a shared bearer token
- *      (OMNIROUTE_LOCAL_ENDPOINTS_TOKEN). The desktop app injects the header
+ *   3. Trust-list the CheapRoute desktop app via a shared bearer token
+ *      (CHEAPROUTE_LOCAL_ENDPOINTS_TOKEN). The desktop app injects the header
  *      and the server verifies it.
  *
  * If you are adding a new endpoint under /api/local/* you must:
@@ -41,10 +41,10 @@
  *   - log the invocation via the audit channel so misuse is detectable
  */
 export function isLocalRequestAllowed(): { allowed: true } | { allowed: false; reason: string } {
-  const headers = (globalThis as { __omniRequestHeaders?: Headers }).__omniRequestHeaders;
+  const headers = (globalThis as { __cheapRequestHeaders?: Headers }).__cheapRequestHeaders;
   if (headers) {
     // 1. Bearer token path (desktop app trust)
-    const expected = process.env.OMNIROUTE_LOCAL_ENDPOINTS_TOKEN;
+    const expected = process.env.CHEAPROUTE_LOCAL_ENDPOINTS_TOKEN;
     if (expected) {
       const supplied = headers.get("authorization")?.replace(/^Bearer\s+/i, "") ?? "";
       if (supplied && constantTimeEqual(supplied, expected)) {
@@ -65,7 +65,7 @@ export function isLocalRequestAllowed(): { allowed: true } | { allowed: false; r
   }
 
   // Production opt-in
-  if (process.env.NODE_ENV === "production" && process.env.OMNIROUTE_LOCAL_ENDPOINTS_ENABLED !== "1") {
+  if (process.env.NODE_ENV === "production" && process.env.CHEAPROUTE_LOCAL_ENDPOINTS_ENABLED !== "1") {
     return { allowed: false, reason: "disabled in production" };
   }
 

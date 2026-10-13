@@ -13,7 +13,7 @@
  * `a b c′ … h i′ i j k`. A whole-history hash (the original approach) breaks
  * on any such edit and never reconnects.
  *
- * Every OmniRoute conversation is a single straight line — it never forks.
+ * Every CheapRoute conversation is a single straight line — it never forks.
  * When a turn diverges from what's already on file (`c` became `c'`), that
  * diverging history becomes its OWN independent conversation, with its own
  * id, built fresh from this request's full turn list — not a branch grafted
@@ -63,7 +63,7 @@ export interface ResolveConversationIdInput {
   body: JsonRecord | null | undefined;
   model: string | null;
   apiKeyId: string | null;
-  /** Raw `x-omniroute-session-id` header value, if the client supplied one. */
+  /** Raw `x-cheaproute-session-id` header value, if the client supplied one. */
   clientSessionIdHeader: string | null;
   /**
    * call_logs.correlation_id for this request (109_call_logs_correlation_id)
@@ -203,7 +203,7 @@ export function extractCanonicalTurns(body: JsonRecord | null | undefined): Cano
 // Content fingerprint for conversation identity, not a password/credential hash — keyed with a
 // fixed context label so it reads as a domain-separated digest rather than a bare password hash.
 function hashHex(text: string): string {
-  return createHmac("sha256", "omniroute-conversation-fingerprint-v1").update(text).digest("hex");
+  return createHmac("sha256", "cheaproute-conversation-fingerprint-v1").update(text).digest("hex");
 }
 
 function extractToolNames(body: JsonRecord | null | undefined): string[] {
@@ -222,7 +222,7 @@ function extractToolNames(body: JsonRecord | null | undefined): string[] {
 // Deliberately excludes any message text — both the system prompt (real
 // coding-agent CLIs like Claude Code/opencode regenerate it every request
 // with live context: timestamp, cwd, git status...) AND, discovered live on
-// a real OmniRoute deployment running OpenClaw, the first non-system turn
+// a real CheapRoute deployment running OpenClaw, the first non-system turn
 // too: OpenClaw's sliding context window drops/summarizes the EARLIEST
 // turns as a session grows, so `firstNonSystemText` never stays stable
 // across requests either — anchoring identity to either one mints a brand
@@ -455,7 +455,7 @@ const MAX_STORED_ID_LENGTH = 128;
 export async function resolveConversationId(
   input: ResolveConversationIdInput
 ): Promise<ResolveConversationIdResult> {
-  if (process.env.OMNIROUTE_DISABLE_CONVERSATION_TRACKING === "1") {
+  if (process.env.CHEAPROUTE_DISABLE_CONVERSATION_TRACKING === "1") {
     return { conversationId: null, isNewConversation: false };
   }
 
@@ -539,7 +539,7 @@ export async function resolveConversationId(
     // request's turn at that position diverges from what's on file (a real
     // OpenClaw cache-aware-context edit: turn `c` became `c'`). As of the
     // 2026-08-06 redesign, an edited/duplicated turn no longer forks a
-    // branch inside this conversation's own chain — every OmniRoute
+    // branch inside this conversation's own chain — every CheapRoute
     // conversation is now a single straight line, never a tree. The
     // diverging history becomes its own independent conversation instead
     // (built fresh below, from this request's full turn list) — distinct

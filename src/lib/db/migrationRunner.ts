@@ -52,7 +52,7 @@ import {
  * `file://` URL, causing `fileURLToPath` to throw `ERR_INVALID_FILE_URL_PATH`.
  */
 function resolveMigrationsDir(): string {
-  const configuredDir = process.env.OMNIROUTE_MIGRATIONS_DIR;
+  const configuredDir = process.env.CHEAPROUTE_MIGRATIONS_DIR;
   if (typeof configuredDir === "string" && configuredDir.trim().length > 0) {
     return path.resolve(configuredDir);
   }
@@ -106,7 +106,7 @@ function resolveMigrationsDir(): string {
   if (fromCwd) return fromCwd;
 
   throw new Error(
-    "[Migration] Could not resolve migrations directory. Set OMNIROUTE_MIGRATIONS_DIR."
+    "[Migration] Could not resolve migrations directory. Set CHEAPROUTE_MIGRATIONS_DIR."
   );
 }
 
@@ -118,21 +118,21 @@ const MIGRATIONS_DIR = resolveMigrationsDir();
  * it likely means the migration tracking table was accidentally wiped,
  * and running all migrations from scratch could cause data loss.
  *
- * Set the threshold to 0 (via `OMNIROUTE_MAX_PENDING_MIGRATIONS`) to disable
+ * Set the threshold to 0 (via `CHEAPROUTE_MAX_PENDING_MIGRATIONS`) to disable
  * this safety check.
  */
 const DEFAULT_MAX_PENDING_MIGRATIONS_ON_EXISTING_DB = 50;
 
 /**
  * Resolve the mass-migration safety threshold, allowing an operator to override
- * the default via the `OMNIROUTE_MAX_PENDING_MIGRATIONS` env var (#3416). This
+ * the default via the `CHEAPROUTE_MAX_PENDING_MIGRATIONS` env var (#3416). This
  * is read at CALL TIME inside runMigrations() so a backup restore can raise the
  * limit (or `0` to disable the check) without a code change. Mirrors the
- * `OMNIROUTE_MIGRATIONS_DIR` convention used in resolveMigrationsDir(). Falls
+ * `CHEAPROUTE_MIGRATIONS_DIR` convention used in resolveMigrationsDir(). Falls
  * back to the default on missing or invalid (non-numeric / negative) input.
  */
 function resolveMaxPendingMigrations(): number {
-  const raw = process.env.OMNIROUTE_MAX_PENDING_MIGRATIONS;
+  const raw = process.env.CHEAPROUTE_MAX_PENDING_MIGRATIONS;
   if (typeof raw === "string" && raw.trim().length > 0) {
     const parsed = Number.parseInt(raw.trim(), 10);
     if (Number.isFinite(parsed) && parsed >= 0) {
@@ -172,7 +172,7 @@ const fts5SupportCache = new WeakMap<SqliteAdapter, boolean>();
  */
 function ensureMigrationsTable(db: SqliteAdapter): void {
   db.exec(`
-    CREATE TABLE IF NOT EXISTS _omniroute_migrations (
+    CREATE TABLE IF NOT EXISTS _cheaproute_migrations (
       version TEXT PRIMARY KEY,
       name TEXT NOT NULL,
       applied_at TEXT NOT NULL DEFAULT (datetime('now'))
@@ -191,7 +191,7 @@ export function supportsFts5(db: SqliteAdapter): boolean {
   }
 
   try {
-    const probeTable = `__omniroute_fts5_probe_${crypto.randomUUID().replace(/-/g, "_")}`;
+    const probeTable = `__cheaproute_fts5_probe_${crypto.randomUUID().replace(/-/g, "_")}`;
     db.transaction(() => {
       db.exec(`CREATE VIRTUAL TABLE "${probeTable}" USING fts5(content);`);
       db.exec(`DROP TABLE "${probeTable}";`);
@@ -240,7 +240,7 @@ function getMigrationFiles(): Array<{ version: string; name: string; path: strin
 
   // Detect version collisions early: two files sharing the same numeric prefix
   // would otherwise be silently skipped by the runner (only the first applied
-  // would record version=NNN in _omniroute_migrations; the rest would never run).
+  // would record version=NNN in _cheaproute_migrations; the rest would never run).
   // SUPERSEDED_DUPLICATE_MIGRATIONS lists legitimate "renamed" pairs and is OK.
   const byVersion = new Map<string, string[]>();
   for (const f of files) {
@@ -270,7 +270,7 @@ function getMigrationFiles(): Array<{ version: string; name: string; path: strin
     );
   }
 
-  // Extra directories registered via OMNIROUTE_EXTRA_MIGRATIONS_DIRS, appended
+  // Extra directories registered via CHEAPROUTE_EXTRA_MIGRATIONS_DIRS, appended
   // AFTER the numeric set so a distribution's own schema always lands on top of
   // the upstream one. Their versions are namespaced (`ee-134`), so they cannot
   // collide with a numeric slot, and every downstream consumer here — the applied
@@ -311,7 +311,7 @@ function filterSupersededDuplicateMigrations(
  * Get list of already-applied migration versions.
  */
 function getAppliedVersions(db: SqliteAdapter): Set<string> {
-  const rows = db.prepare("SELECT version FROM _omniroute_migrations").all() as Array<{
+  const rows = db.prepare("SELECT version FROM _cheaproute_migrations").all() as Array<{
     version: string;
   }>;
   return new Set(rows.map((r) => r.version));
@@ -322,7 +322,7 @@ function getAppliedVersions(db: SqliteAdapter): Set<string> {
  */
 function getAppliedRecords(db: SqliteAdapter): Array<{ version: string; name: string }> {
   return db
-    .prepare("SELECT version, name FROM _omniroute_migrations ORDER BY version")
+    .prepare("SELECT version, name FROM _cheaproute_migrations ORDER BY version")
     .all() as Array<{
     version: string;
     name: string;
@@ -359,7 +359,7 @@ function validateRequiredPhysicalMigrationProvenance(
     if (!migrationExists) continue;
 
     const occupied = db
-      .prepare("SELECT version, name FROM _omniroute_migrations WHERE version = ?")
+      .prepare("SELECT version, name FROM _cheaproute_migrations WHERE version = ?")
       .get(required.version) as { version: string; name: string } | undefined;
     if (!occupied || occupied.name === required.name) continue;
 
@@ -407,7 +407,7 @@ function findAtomicPhysicalReplays(
     if (!migrationExists) continue;
 
     const applied = db
-      .prepare("SELECT version, name FROM _omniroute_migrations WHERE version = ? AND name = ?")
+      .prepare("SELECT version, name FROM _cheaproute_migrations WHERE version = ? AND name = ?")
       .get(required.version, required.name) as { version: string; name: string } | undefined;
     if (!applied) continue;
 
@@ -971,7 +971,7 @@ export function runMigrations(
               : "";
           const bypassHint =
             ` To bypass this check (e.g. after restoring a backup where the migration ` +
-            `tracking table was wiped), set OMNIROUTE_MAX_PENDING_MIGRATIONS=0 in your ` +
+            `tracking table was wiped), set CHEAPROUTE_MAX_PENDING_MIGRATIONS=0 in your ` +
             `server.env or DATA_DIR/.env and restart.`;
           const msg =
             `[Migration] 🛑 ABORT: Detected ${actionablePending.length} pending migrations on an existing database ` +
@@ -985,7 +985,7 @@ export function runMigrations(
             console.error(
               `[Migration] 🛑 ABORT (repeat — see earlier detail): ` +
                 `${actionablePending.length} pending > threshold ${maxPendingMigrations}. ` +
-                `Set OMNIROUTE_MAX_PENDING_MIGRATIONS=0 to bypass.`
+                `Set CHEAPROUTE_MAX_PENDING_MIGRATIONS=0 to bypass.`
             );
             throw memoizedSafetyAbort;
           }
@@ -1044,7 +1044,7 @@ export function runMigrations(
     );
     console.error(
       `[Migration] The version-only tracking will skip these (version already applied), ` +
-        `but please report this to the OmniRoute maintainers.`
+        `but please report this to the CheapRoute maintainers.`
     );
   }
 
@@ -1082,7 +1082,7 @@ export function runMigrations(
     const applyMigration = db.transaction(() => {
       if (atomicPhysicalReplays.has(migration.version)) {
         const removed = db
-          .prepare("DELETE FROM _omniroute_migrations WHERE version = ? AND name = ?")
+          .prepare("DELETE FROM _cheaproute_migrations WHERE version = ? AND name = ?")
           .run(migration.version, migration.name);
         if (removed.changes !== 1) {
           throw new Error(
@@ -1107,7 +1107,7 @@ export function runMigrations(
         genericSql = sql;
         db.exec(sql);
       }
-      db.prepare("INSERT INTO _omniroute_migrations (version, name) VALUES (?, ?)").run(
+      db.prepare("INSERT INTO _cheaproute_migrations (version, name) VALUES (?, ?)").run(
         migration.version,
         migration.name
       );
@@ -1192,7 +1192,7 @@ export function getMigrationStatus(db: SqliteAdapter): {
   ensureMigrationsTable(db);
 
   const appliedRows = db
-    .prepare("SELECT version, name, applied_at FROM _omniroute_migrations ORDER BY version")
+    .prepare("SELECT version, name, applied_at FROM _cheaproute_migrations ORDER BY version")
     .all() as Array<{ version: string; name: string; applied_at: string }>;
 
   const appliedVersions = new Set(appliedRows.map((r) => r.version));

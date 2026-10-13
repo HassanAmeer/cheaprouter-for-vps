@@ -3,7 +3,7 @@ import { peekGeneratedSelfLoopSecret } from "@/shared/middleware/chatAdmissionId
 import { timingSafeCompare } from "@/shared/utils/timingSafeCompare";
 
 /**
- * The random per-process secret the vision/audio bridges send to OmniRoute's own /v1
+ * The random per-process secret the vision/audio bridges send to CheapRoute's own /v1
  * routes when no env key is set (#13813). Without accepting it, those self-loops got
  * 401 on every REQUIRE_API_KEY instance without an env key. Validation never creates it.
  */

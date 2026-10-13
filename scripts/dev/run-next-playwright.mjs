@@ -155,40 +155,40 @@ const bootstrapEnvVars = bootstrapEnv({
   dataDirOverride: playwrightDataDir,
 });
 const runtimePorts = resolveRuntimePorts(bootstrapEnvVars);
-const bootstrapMode = process.env.OMNIROUTE_E2E_BOOTSTRAP_MODE || "auth";
+const bootstrapMode = process.env.CHEAPROUTE_E2E_BOOTSTRAP_MODE || "auth";
 const playwrightPassword =
-  process.env.OMNIROUTE_E2E_PASSWORD || process.env.INITIAL_PASSWORD || "omniroute-e2e-password";
+  process.env.CHEAPROUTE_E2E_PASSWORD || process.env.INITIAL_PASSWORD || "cheaproute-e2e-password";
 const testServerEnv = {
   ...sanitizeColorEnv(bootstrapEnvVars),
   ...sanitizeColorEnv(process.env),
   NODE_ENV: mode === "start" ? "production" : "development",
   DATA_DIR: playwrightDataDir,
-  NEXT_PUBLIC_OMNIROUTE_E2E_MODE: process.env.NEXT_PUBLIC_OMNIROUTE_E2E_MODE || "1",
-  OMNIROUTE_DISABLE_BACKGROUND_SERVICES:
-    process.env.OMNIROUTE_DISABLE_BACKGROUND_SERVICES || "true",
-  OMNIROUTE_DISABLE_TOKEN_HEALTHCHECK: process.env.OMNIROUTE_DISABLE_TOKEN_HEALTHCHECK || "true",
-  OMNIROUTE_DISABLE_LOCAL_HEALTHCHECK: process.env.OMNIROUTE_DISABLE_LOCAL_HEALTHCHECK || "true",
-  OMNIROUTE_HIDE_HEALTHCHECK_LOGS: process.env.OMNIROUTE_HIDE_HEALTHCHECK_LOGS || "true",
+  NEXT_PUBLIC_CHEAPROUTE_E2E_MODE: process.env.NEXT_PUBLIC_CHEAPROUTE_E2E_MODE || "1",
+  CHEAPROUTE_DISABLE_BACKGROUND_SERVICES:
+    process.env.CHEAPROUTE_DISABLE_BACKGROUND_SERVICES || "true",
+  CHEAPROUTE_DISABLE_TOKEN_HEALTHCHECK: process.env.CHEAPROUTE_DISABLE_TOKEN_HEALTHCHECK || "true",
+  CHEAPROUTE_DISABLE_LOCAL_HEALTHCHECK: process.env.CHEAPROUTE_DISABLE_LOCAL_HEALTHCHECK || "true",
+  CHEAPROUTE_HIDE_HEALTHCHECK_LOGS: process.env.CHEAPROUTE_HIDE_HEALTHCHECK_LOGS || "true",
   ...(bootstrapMode === "open"
     ? {
         INITIAL_PASSWORD: "",
-        OMNIROUTE_E2E_PASSWORD: "",
-        OMNIROUTE_API_KEY: "",
+        CHEAPROUTE_E2E_PASSWORD: "",
+        CHEAPROUTE_API_KEY: "",
       }
     : {
         INITIAL_PASSWORD: playwrightPassword,
-        OMNIROUTE_E2E_PASSWORD: playwrightPassword,
+        CHEAPROUTE_E2E_PASSWORD: playwrightPassword,
       }),
-  ...(process.env.OMNIROUTE_USE_TURBOPACK
+  ...(process.env.CHEAPROUTE_USE_TURBOPACK
     ? {
-        OMNIROUTE_USE_TURBOPACK: process.env.OMNIROUTE_USE_TURBOPACK,
+        CHEAPROUTE_USE_TURBOPACK: process.env.CHEAPROUTE_USE_TURBOPACK,
       }
     : {}),
 };
 
 export function shouldUseWebpackForPlaywrightDev({ mode, env }) {
   // Webpack only on the explicit escape hatch (=0) — turbopack is the default.
-  return mode === "dev" && env.OMNIROUTE_USE_TURBOPACK === "0";
+  return mode === "dev" && env.CHEAPROUTE_USE_TURBOPACK === "0";
 }
 
 function runChild(command, args, env) {
@@ -215,7 +215,7 @@ function runChild(command, args, env) {
 
 async function runBuildForStart() {
   if (mode !== "start") return;
-  if (process.env.OMNIROUTE_PLAYWRIGHT_SKIP_BUILD === "1") return;
+  if (process.env.CHEAPROUTE_PLAYWRIGHT_SKIP_BUILD === "1") return;
   console.log("[Playwright WebServer] Building fresh standalone app for this run...");
 
   const buildEnv = withRuntimePortEnv(testServerEnv, runtimePorts);

@@ -40,7 +40,7 @@ export const nvidiaProvider: RegistryEntry = {
     },
     {
       id: "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning",
-      name: "Nemotron 3 Nano Omni 30B A3B Reasoning",
+      name: "Nemotron 3 Nano Cheap 30B A3B Reasoning",
       supportsReasoning: true,
       supportsVision: true,
     },

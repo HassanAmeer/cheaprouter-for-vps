@@ -142,7 +142,7 @@ export default function ChatTab({ configState, onMetricsUpdate }: ChatTabProps) 
       const chatEndpoint = isChatCompletionsEndpoint(configState.endpoint);
       const nativeCodex = isNativeCodexPlaygroundModel(configState.model);
       const nativeCodexTurnId = nativeCodex ? crypto.randomUUID() : "";
-      if (nativeCodex) fetchHeaders.Originator = "codex_omniroute_playground";
+      if (nativeCodex) fetchHeaders.Originator = "codex_cheaproute_playground";
       const requestBody = nativeCodex
         ? buildNativeCodexPlaygroundRequest({
             model: configState.model,

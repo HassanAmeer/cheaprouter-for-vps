@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * OmniRoute — UI i18n VALUE-drift gate (CI gate, blocking).
+ * CheapRoute — UI i18n VALUE-drift gate (CI gate, blocking).
  *
  * Catches the one i18n regression no existing gate can see: an English **value** is
  * rewritten and the translations derived from the previous English are left behind, so

@@ -42,7 +42,7 @@ function isBuildProcess(): boolean {
 // ── State (globalThis survives HMR re-evaluation) ───────────────────────
 
 declare global {
-  var __omnirouteLocalHC:
+  var __cheaprouteLocalHC:
     | {
         initialized: boolean;
         sweepTimer: ReturnType<typeof setTimeout> | null;
@@ -53,15 +53,15 @@ declare global {
 }
 
 function getLHCState() {
-  if (!globalThis.__omnirouteLocalHC) {
-    globalThis.__omnirouteLocalHC = {
+  if (!globalThis.__cheaprouteLocalHC) {
+    globalThis.__cheaprouteLocalHC = {
       initialized: false,
       sweepTimer: null,
       healthCache: new Map(),
       sweepInProgress: false,
     };
   }
-  return globalThis.__omnirouteLocalHC;
+  return globalThis.__cheaprouteLocalHC;
 }
 
 const healthCache = getLHCState().healthCache;
@@ -76,7 +76,7 @@ function isEnvFlagEnabled(name: string): boolean {
 
 function isLocalHealthCheckDisabled(): boolean {
   return (
-    isEnvFlagEnabled("OMNIROUTE_DISABLE_LOCAL_HEALTHCHECK") ||
+    isEnvFlagEnabled("CHEAPROUTE_DISABLE_LOCAL_HEALTHCHECK") ||
     isBuildProcess() ||
     isAutomatedTestProcess()
   );

@@ -1,4 +1,4 @@
-import { isProviderCircuitOpenResult } from "@omniroute/open-sse/services/combo/comboPredicates.ts";
+import { isProviderCircuitOpenResult } from "@cheaproute/open-sse/services/combo/comboPredicates.ts";
 import { classifyProviderBreakerResult } from "./chatPredicates";
 
 type ProbeDispatch = {

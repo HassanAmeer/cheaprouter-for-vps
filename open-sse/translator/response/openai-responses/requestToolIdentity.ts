@@ -20,7 +20,7 @@ const NAMESPACE_TOOL_PREFIX = "mcp__";
  * #12996 — deterministic wire-name fallback for when no per-request identity
  * map entry exists at all (e.g. a follow-up turn in the same Codex/MCP
  * session that relies on `previous_response_id` continuity instead of
- * re-declaring its `type:"namespace"` tools every turn — OmniRoute is a
+ * re-declaring its `type:"namespace"` tools every turn — CheapRoute is a
  * stateless-upstream-by-default proxy for the Responses API, so nothing
  * persists the prior turn's identity map across separate HTTP requests).
  *

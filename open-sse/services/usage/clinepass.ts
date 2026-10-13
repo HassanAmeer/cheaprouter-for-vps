@@ -19,7 +19,7 @@ import { toNumber, toRecord, clampPercentage } from "./scalars.ts";
 import { parseResetTime, type UsageQuota } from "./quota.ts";
 
 const CLINEPASS_USAGE_LIMITS_URL =
-  process.env.OMNIROUTE_CLINEPASS_USAGE_URL ??
+  process.env.CHEAPROUTE_CLINEPASS_USAGE_URL ??
   "https://api.cline.bot/api/v1/users/me/plan/usage-limits";
 
 const WINDOW_KEYS: Record<string, { key: string; displayName: string }> = {

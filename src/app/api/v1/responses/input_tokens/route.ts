@@ -14,8 +14,8 @@ import {
   type TokenizerContext,
 } from "@/shared/utils/tiktokenCounter";
 import { extractApiKey, isValidApiKey } from "@/sse/services/auth";
-import { errorResponse } from "@omniroute/open-sse/utils/error.ts";
-import { HTTP_STATUS } from "@omniroute/open-sse/config/constants.ts";
+import { errorResponse } from "@cheaproute/open-sse/utils/error.ts";
+import { HTTP_STATUS } from "@cheaproute/open-sse/config/constants.ts";
 
 /**
  * POST /v1/responses/input_tokens — local Responses token count.
@@ -44,7 +44,7 @@ import { HTTP_STATUS } from "@omniroute/open-sse/config/constants.ts";
  * decide when to compact, so over-counting is safe (it compacts slightly
  * early) while under-counting risks sending a request past the context
  * window. The public response stays byte-shape compatible with the OpenAI
- * contract: no OmniRoute-only metadata fields are added.
+ * contract: no CheapRoute-only metadata fields are added.
  */
 
 /** Protocol overhead per input item, mirroring Responses message framing. */

@@ -1,7 +1,7 @@
 /**
  * Argument escaping for child processes spawned with `shell: true` on Windows.
  *
- * The launchers (`omniroute launch`, `omniroute launch-codex`) must go through
+ * The launchers (`cheaproute launch`, `cheaproute launch-codex`) must go through
  * cmd.exe on win32 because the target binaries are npm `.cmd` shims that Node
  * cannot exec directly (CVE-2024-27980). With `shell: true` Node joins argv with
  * plain spaces and no escaping at all (the DEP0190 warning), so anything with a

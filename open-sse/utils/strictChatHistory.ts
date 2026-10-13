@@ -277,7 +277,7 @@ export function normalizeToolSequence(messages: unknown[]): unknown[] {
  *
  * WorkBuddy's gateway collapses consecutive user messages and keeps only their
  * text when it does, so an image delivered in a user message of its own is
- * silently dropped. OmniRoute emits exactly that shape when it lifts a tool
+ * silently dropped. CheapRoute emits exactly that shape when it lifts a tool
  * result's image out of the `tool` message it cannot ride in, and an agent
  * client interleaves a hook message into the call group, which leaves the
  * lifted image sitting behind another user turn. Merging preserves every

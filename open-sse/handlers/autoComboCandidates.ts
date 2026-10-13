@@ -26,11 +26,11 @@
  * `createBuiltinAutoCombo` called without a `prepared` override) is
  * unchanged and keeps excluding these candidates before dispatch.
  */
-import { buildErrorBody } from "@omniroute/open-sse/utils/error.ts";
+import { buildErrorBody } from "@cheaproute/open-sse/utils/error.ts";
 import { getCircuitBreaker } from "@/shared/utils/circuitBreaker";
-import { isModelLocked } from "@omniroute/open-sse/services/accountFallback.ts";
-import { parseModel } from "@omniroute/open-sse/services/model.ts";
-import type { StrictZeroCostExclusionReason } from "@omniroute/open-sse/services/autoCombo/strictZeroCostFilter.ts";
+import { isModelLocked } from "@cheaproute/open-sse/services/accountFallback.ts";
+import { parseModel } from "@cheaproute/open-sse/services/model.ts";
+import type { StrictZeroCostExclusionReason } from "@cheaproute/open-sse/services/autoCombo/strictZeroCostFilter.ts";
 import { getProviderConnectionById } from "@/lib/db/providers";
 import { getExcludedConnectionIds } from "@/lib/db/autoCandidateOverrides";
 
@@ -149,7 +149,7 @@ export async function getAutoComboCandidates(
   // `prepareVirtualAutoComboInputs()`/`createVirtualAutoCombo()` with the
   // default (filtered) behavior.
   const { prepareVirtualAutoComboInputs, createVirtualAutoComboFromPrepared } =
-    await import("@omniroute/open-sse/services/autoCombo/virtualFactory.ts");
+    await import("@cheaproute/open-sse/services/autoCombo/virtualFactory.ts");
   const prepared = await prepareVirtualAutoComboInputs({}, true);
 
   let virtualCombo;
@@ -157,7 +157,7 @@ export async function getAutoComboCandidates(
     virtualCombo = await createVirtualAutoComboFromPrepared(prepared, undefined);
   } else {
     const { createBuiltinAutoCombo } =
-      await import("@omniroute/open-sse/services/autoCombo/builtinCatalog.ts");
+      await import("@cheaproute/open-sse/services/autoCombo/builtinCatalog.ts");
     virtualCombo = await createBuiltinAutoCombo(modelStr, channel, prepared);
   }
 

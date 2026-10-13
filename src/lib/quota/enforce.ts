@@ -399,7 +399,7 @@ export async function recordConsumption(input: RecordConsumptionInput): Promise<
 
   // Scheduled own-consumption budget tracking.
   // The counter lives in its own dimension-key namespace so it measures exactly
-  // what OmniRoute spent inside this window — never what the account spent in
+  // what CheapRoute spent inside this window — never what the account spent in
   // total. Only maintained while a window with a budget is open; outside one
   // there is no bucket to keep.
   const budgetSchedule = activeBudgetSchedule(poolId);
@@ -435,8 +435,8 @@ export async function recordConsumption(input: RecordConsumptionInput): Promise<
  *   schedule-reserve — the account's REMAINING upstream quota has fallen under
  *                      the floor this window insists on leaving behind. The
  *                      signal covers the whole account, so a human burning the
- *                      same credentials pushes OmniRoute out first.
- *   schedule-budget  — OmniRoute's OWN consumption inside the window has reached
+ *                      same credentials pushes CheapRoute out first.
+ *   schedule-budget  — CheapRoute's OWN consumption inside the window has reached
  *                      the allowance. Read from a schedule-scoped counter, so it
  *                      is unaffected by whoever else is on the account.
  */
@@ -485,7 +485,7 @@ async function checkSchedules(
     }
   }
 
-  // "How much may OMNIROUTE use" — measured on OmniRoute's own consumption only.
+  // "How much may CHEAPROUTE use" — measured on CheapRoute's own consumption only.
   if (schedule.budgetValue !== undefined && schedule.budgetUnit !== undefined) {
     const dimKey = {
       poolId: scheduleBucketPoolId(poolId, schedule.id),

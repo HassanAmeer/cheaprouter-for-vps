@@ -18,8 +18,8 @@ export function buildExecutorClientHeaders(
   const isLeaseControlHeader = (key: string) => {
     const lowerKey = key.toLowerCase();
     return (
-      lowerKey === "x-omniroute-lease-owner" ||
-      lowerKey === "x-omniroute-lease-generation" ||
+      lowerKey === "x-cheaproute-lease-owner" ||
+      lowerKey === "x-cheaproute-lease-generation" ||
       lowerKey === "x-deadline-token"
     );
   };

@@ -15,8 +15,8 @@
     "lib": ["dom", "esnext"],
     "paths": {
       "@/*": ["../src/*"],
-      "@omniroute/open-sse": ["../open-sse"],
-      "@omniroute/open-sse/*": ["../open-sse/*"]
+      "@cheaproute/open-sse": ["../open-sse"],
+      "@cheaproute/open-sse/*": ["../open-sse/*"]
     }
   },
   "include": ["**/*.ts", "**/*.js"]

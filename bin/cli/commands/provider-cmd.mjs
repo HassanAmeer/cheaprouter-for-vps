@@ -6,16 +6,16 @@ export function registerProvider(program) {
     .allowExcessArguments()
     .action(() => {
       console.log(`
-  Use \`omniroute providers\` for the full provider management interface:
+  Use \`cheaproute providers\` for the full provider management interface:
 
-    omniroute providers available   — show provider catalog
-    omniroute providers list        — list configured connections
-    omniroute providers test <name> — test a provider connection
-    omniroute providers test-all    — test all active connections
-    omniroute providers validate    — validate local configuration
-    omniroute providers add <id>    — add an API-key connection
-    omniroute providers auth <id>   — start an existing OAuth flow
-    omniroute providers remove <id> — remove a connection (requires confirmation)
+    cheaproute providers available   — show provider catalog
+    cheaproute providers list        — list configured connections
+    cheaproute providers test <name> — test a provider connection
+    cheaproute providers test-all    — test all active connections
+    cheaproute providers validate    — validate local configuration
+    cheaproute providers add <id>    — add an API-key connection
+    cheaproute providers auth <id>   — start an existing OAuth flow
+    cheaproute providers remove <id> — remove a connection (requires confirmation)
 `);
     });
 }

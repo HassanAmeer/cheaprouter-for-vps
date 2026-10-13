@@ -15,11 +15,11 @@ const env = bootstrapEnv();
 const runtimePorts = resolveRuntimePorts(env);
 const childEnv = withRuntimePortEnv(env, runtimePorts);
 
-// #2939 / #10353: OMNIROUTE_MEMORY_MB is the Docker/standalone heap knob.
+// #2939 / #10353: CHEAPROUTE_MEMORY_MB is the Docker/standalone heap knob.
 // When it is set, we append --max-old-space-size last (V8 last-flag wins).
 // When it is unset and NODE_OPTIONS already pins the heap, keep NODE_OPTIONS
 // (#5238). Warn when both are set and the numbers disagree.
-const maxOldSpaceMb = resolveMaxOldSpaceMb(childEnv.OMNIROUTE_MEMORY_MB);
+const maxOldSpaceMb = resolveMaxOldSpaceMb(childEnv.CHEAPROUTE_MEMORY_MB);
 warnConflictingHeapLimits(childEnv, maxOldSpaceMb);
 childEnv.NODE_OPTIONS = buildStandaloneNodeOptions(childEnv, maxOldSpaceMb);
 

@@ -1,7 +1,7 @@
-import { errorResponse } from "@omniroute/open-sse/utils/error.ts";
-import { HTTP_STATUS } from "@omniroute/open-sse/config/constants.ts";
+import { errorResponse } from "@cheaproute/open-sse/utils/error.ts";
+import { HTTP_STATUS } from "@cheaproute/open-sse/config/constants.ts";
 
-import { attachOmniRouteMetaHeaders } from "@/domain/omnirouteResponseMeta";
+import { attachCheapRouteMetaHeaders } from "@/domain/cheaprouteResponseMeta";
 import { calculateModalCost } from "@/lib/usage/costCalculator";
 import { generateRequestId } from "@/shared/utils/requestId";
 import { toJsonErrorPayload } from "@/shared/utils/upstreamError";
@@ -130,7 +130,7 @@ export async function successfulMediaGenerationResponse({
   const seconds = Number(duration) || 0;
   const costUsd = await calculateModalCost(billingMode, provider, model, { seconds });
   const headers = new Headers({ "Content-Type": "application/json" });
-  attachOmniRouteMetaHeaders(headers, {
+  attachCheapRouteMetaHeaders(headers, {
     provider,
     model,
     costUsd,

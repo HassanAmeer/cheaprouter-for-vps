@@ -21,7 +21,7 @@ export const kilocodeProvider: RegistryEntry = {
   // header is required by the gateway and is harmless on the authenticated path.
   anonymousApiKey: "anonymous",
   headers: {
-    "X-KILOCODE-EDITORNAME": "OmniRoute",
+    "X-KILOCODE-EDITORNAME": "CheapRoute",
   },
   oauth: {
     initiateUrl: "https://api.kilo.ai/api/device-auth/codes",

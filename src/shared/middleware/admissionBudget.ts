@@ -96,10 +96,10 @@ let cachedBudget: IngestBudget | null = null;
 /**
  * Resolve the process-wide ingest byte budget, cached after first call (like
  * `HEAP_PRESSURE_THRESHOLD_MB`) so the gate never re-reads cgroup/V8 state on
- * the hot path. `override` defaults to `OMNIROUTE_CHAT_MAX_INFLIGHT_BYTES`.
+ * the hot path. `override` defaults to `CHEAPROUTE_CHAT_MAX_INFLIGHT_BYTES`.
  */
 export function resolveIngestByteBudget(
-  override: string | number | null | undefined = process.env.OMNIROUTE_CHAT_MAX_INFLIGHT_BYTES
+  override: string | number | null | undefined = process.env.CHEAPROUTE_CHAT_MAX_INFLIGHT_BYTES
 ): IngestBudget {
   if (cachedBudget) return cachedBudget;
   cachedBudget = computeIngestByteBudget({

@@ -11,7 +11,7 @@ import { normalizeRoutingTags } from "@/domain/tagRouter";
 import {
   splitClaudeEffortSuffix,
   getProviderModels,
-} from "@omniroute/open-sse/config/providerModels.ts";
+} from "@cheaproute/open-sse/config/providerModels.ts";
 import {
   codexModelFamilySupportsExtendedEffort,
   isCodexExtendedEffortBaseModel,
@@ -564,14 +564,14 @@ export function attachReasoningRuleDirective(
     ...source,
     model: decision.rule.scope === "connection" ? source.model : decision.targetModel,
   };
-  body._omnirouteReasoningRule = {
+  body._cheaprouteReasoningRule = {
     id: decision.rule.id,
     effortMode: decision.rule.effortMode,
     targetEffort: decision.targetEffort,
     budgetAction: decision.targetEffort === "none" ? "remove" : decision.rule.budgetAction,
     budgetTokens: decision.rule.budgetTokens,
   };
-  body._omnirouteReasoningRouteTrace = {
+  body._cheaprouteReasoningRouteTrace = {
     ruleId: decision.rule.id,
     ruleName: decision.rule.name,
     scope: decision.rule.scope,
@@ -592,10 +592,10 @@ export function applyReasoningRuleDirective(
   targetFormat?: "openai-responses" | "claude"
 ): unknown {
   const source = asRecord(bodyInput);
-  const directive = asRecord(source._omnirouteReasoningRule);
+  const directive = asRecord(source._cheaprouteReasoningRule);
   if (!directive.id) return bodyInput;
   const body = { ...source };
-  delete body._omnirouteReasoningRule;
+  delete body._cheaprouteReasoningRule;
   const effortMode = directive.effortMode;
   const targetEffort = effort(directive.targetEffort);
   if (effortMode === "force" && targetEffort === "none") {

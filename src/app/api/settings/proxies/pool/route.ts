@@ -9,7 +9,7 @@ import { proxyPoolMemberSchema, proxyRotationStrategySchema } from "@/shared/val
 import { isValidationFailure, validateBody } from "@/shared/validation/helpers";
 import { createErrorResponse, createErrorResponseFromUnknown } from "@/lib/api/errorResponse";
 import { isScopeIdMissing } from "@/lib/db/proxies/mappers";
-import { clearDispatcherCache } from "@omniroute/open-sse/utils/proxyDispatcher";
+import { clearDispatcherCache } from "@cheaproute/open-sse/utils/proxyDispatcher";
 import { requireManagementAuth } from "@/lib/api/requireManagementAuth";
 
 // #6365 proxy pools — a scope (global/provider/account/combo) may hold MULTIPLE

@@ -45,7 +45,7 @@ function checkControlUrl(
 
 /**
  * The core binary is executed with `execFile`, so it is never taken from a request body: it comes
- * from the host environment only (OMNIROUTE_PROXY_CORE_BINARY_PATH, Hard Rule #15). A body that
+ * from the host environment only (CHEAPROUTE_PROXY_CORE_BINARY_PATH, Hard Rule #15). A body that
  * carries the field is refused instead of silently dropped.
  */
 function refuseCoreBinaryPath(b: Record<string, unknown>, ctx: z.RefinementCtx): boolean {
@@ -53,7 +53,7 @@ function refuseCoreBinaryPath(b: Record<string, unknown>, ctx: z.RefinementCtx):
   ctx.addIssue({
     code: z.ZodIssueCode.custom,
     message:
-      "coreBinaryPath cannot be set through the API; set OMNIROUTE_PROXY_CORE_BINARY_PATH on the host",
+      "coreBinaryPath cannot be set through the API; set CHEAPROUTE_PROXY_CORE_BINARY_PATH on the host",
   });
   return true;
 }

@@ -60,7 +60,7 @@ function isBuildProcess(): boolean {
 }
 
 function isBackgroundServicesDisabled(): boolean {
-  const raw = process.env.OMNIROUTE_DISABLE_BACKGROUND_SERVICES;
+  const raw = process.env.CHEAPROUTE_DISABLE_BACKGROUND_SERVICES;
   if (!raw) return false;
   return ["1", "true", "yes", "on"].includes(raw.trim().toLowerCase());
 }

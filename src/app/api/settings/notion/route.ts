@@ -7,7 +7,7 @@ import {
   clearNotionToken,
 } from "@/lib/db/notion";
 import { createNotionClient } from "@/lib/notion/api";
-import { sanitizeErrorMessage } from "@omniroute/open-sse/utils/error";
+import { sanitizeErrorMessage } from "@cheaproute/open-sse/utils/error";
 
 const setTokenSchema = z.object({
   token: z.string().min(1).max(500),

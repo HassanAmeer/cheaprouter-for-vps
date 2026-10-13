@@ -1,5 +1,5 @@
 /**
- * Server-side proxy to the OmniConductor hub (Conductor PRD RF3).
+ * Server-side proxy to the CheapConductor hub (Conductor PRD RF3).
  *
  * The browser NEVER talks to the hub: these helpers run only in API routes,
  * authenticate with the server-side env token, and return WHITELISTED shapes —

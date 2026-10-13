@@ -44,7 +44,7 @@ export function isUsableLiteMaxToolLength(value: unknown): value is number {
 
 export function resolveLiteMaxToolLength(maxToolLength?: number): number {
   if (isUsableLiteMaxToolLength(maxToolLength)) return Math.floor(maxToolLength);
-  return envInt("OMNIROUTE_LITE_MAX_TOOL_LENGTH", DEFAULT_MAX_TOOL_LENGTH);
+  return envInt("CHEAPROUTE_LITE_MAX_TOOL_LENGTH", DEFAULT_MAX_TOOL_LENGTH);
 }
 
 function normalizeMessageWhitespace(content: string): string {

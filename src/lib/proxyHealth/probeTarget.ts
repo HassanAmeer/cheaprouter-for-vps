@@ -9,7 +9,7 @@
  * mutate `process.env`.
  */
 
-import { sleep } from "@omniroute/open-sse/utils/sleep";
+import { sleep } from "@cheaproute/open-sse/utils/sleep";
 
 export const DEFAULT_PROBE_TARGET = "https://httpbin.org/ip";
 export const DEFAULT_PROBE_CONCURRENCY = 10;

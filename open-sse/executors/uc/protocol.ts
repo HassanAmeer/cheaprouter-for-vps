@@ -2,7 +2,7 @@
  * UC (uncensored.com) PERSONA protocol — WebSocket send-frame assembly and
  * OpenAI→persona context mapping. Ported from the proven reference client
  * (uc_native_adapter.py: build_uc_turn, _persona_frame) and the wire spec
- * (UC-PERSONA-WS-OMNIROUTE-SPEC.md).
+ * (UC-PERSONA-WS-CHEAPROUTE-SPEC.md).
  *
  * Unlike a stateless-full-history HTTP provider, UC persona is single-shot over a
  * socket: one JSON frame carrying the CURRENT turn as `text` plus the prior

@@ -7,7 +7,7 @@ import {
 import { reasoningRuleDataToInput } from "@/lib/reasoningRouting/input";
 import { createReasoningRoutingRuleSchema } from "@/shared/validation/schemas";
 import { validatedJsonBody } from "@/shared/validation/helpers";
-import { buildErrorBody, sanitizeErrorMessage } from "@omniroute/open-sse/utils/error.ts";
+import { buildErrorBody, sanitizeErrorMessage } from "@cheaproute/open-sse/utils/error.ts";
 
 export async function GET(request: Request) {
   const authError = await requireManagementAuth(request);

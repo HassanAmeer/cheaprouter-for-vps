@@ -12,7 +12,7 @@ import {
   resetLocalCorpusIndex,
 } from "@/lib/localCorpus/configured";
 import { isAuthenticated } from "@/shared/utils/apiAuth";
-import { sanitizeErrorMessage } from "@omniroute/open-sse/utils/error";
+import { sanitizeErrorMessage } from "@cheaproute/open-sse/utils/error";
 
 const localCorpusSchema = z
   .object({

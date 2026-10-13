@@ -29,7 +29,7 @@ let cached: string | null | undefined;
 export function readRunningBuildSha(cwd: string = process.cwd()): string | null {
   if (cached !== undefined) return cached;
 
-  const fromEnv = process.env.OMNIROUTE_BUILD_SHA?.trim();
+  const fromEnv = process.env.CHEAPROUTE_BUILD_SHA?.trim();
   if (fromEnv) {
     cached = fromEnv;
     return cached;

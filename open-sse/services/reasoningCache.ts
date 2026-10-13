@@ -216,7 +216,7 @@ export function cacheReasoningByKey(
 ): void {
   if (!isReasoningReplayEnabled() || !key || !reasoning) return;
   // ponytail: never store the internal replay placeholder — models echo it
-  // and it poisons the cache (upstream echo loop, OmniRoute #9573).
+  // and it poisons the cache (upstream echo loop, CheapRoute #9573).
   if (isInternalReasoningPlaceholder(reasoning)) return;
 
   if (reasoning.length > MAX_ENTRY_BYTES) {
@@ -606,7 +606,7 @@ export function cleanupReasoningCache(): number {
 const DEFAULT_CLEANUP_INTERVAL_MS = 30 * 60 * 1000; // 30 min
 
 function getCleanupIntervalMs(): number {
-  const raw = process.env.OMNIROUTE_REASONING_CACHE_CLEANUP_INTERVAL_MS;
+  const raw = process.env.CHEAPROUTE_REASONING_CACHE_CLEANUP_INTERVAL_MS;
   const parsed = raw ? Number(raw) : Number.NaN;
   return Number.isFinite(parsed) && parsed >= 60_000 ? parsed : DEFAULT_CLEANUP_INTERVAL_MS;
 }

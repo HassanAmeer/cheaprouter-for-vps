@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * OmniRoute — UI i18n key sync (next-intl message catalogs).
+ * CheapRoute — UI i18n key sync (next-intl message catalogs).
  *
  * Source of truth: `src/i18n/messages/en.json`. Every other locale JSON in
  * `src/i18n/messages/` should mirror the same key tree. This script replicates
@@ -16,7 +16,7 @@
  *   npm run i18n:sync-ui -- --translate-markers --locale=pt-BR --concurrency=4
  *   npm run i18n:sync-ui -- --translate-markers --batch-size=40
  *
- * --translate-markers calls the OmniRoute translation backend (same env vars
+ * --translate-markers calls the CheapRoute translation backend (same env vars
  * as `run-translation.mjs`; the client lives in `lib/translate-backend.mjs`)
  * and replaces every `__MISSING__:<en>` placeholder with a translated string.
  * Missing env vars cause the script to fail fast — the markers stay in place
@@ -717,7 +717,7 @@ export async function processLocale(locale, source, config, opts, backend) {
       logWarn(`${locale}: not present in config/i18n.json — skipping translation`);
     } else {
       const concurrency =
-        opts.concurrency ?? Number(process.env.OMNIROUTE_TRANSLATION_CONCURRENCY || 4);
+        opts.concurrency ?? Number(process.env.CHEAPROUTE_TRANSLATION_CONCURRENCY || 4);
       translateStats = await translatePlaceholders(
         merged,
         localeEntry,
@@ -772,7 +772,7 @@ async function main() {
   if (opts.translateMarkers && !opts.dryRun) {
     backend = backendConfig();
     backend.concurrency =
-      opts.concurrency ?? Number(process.env.OMNIROUTE_TRANSLATION_CONCURRENCY || 4);
+      opts.concurrency ?? Number(process.env.CHEAPROUTE_TRANSLATION_CONCURRENCY || 4);
     const batchInfo = opts.batchSize > 1 ? `, batch=${opts.batchSize}` : "";
     const localesInfo =
       (opts.localesPerRequest ?? 1) > 1 ? `, locales-per-request=${opts.localesPerRequest}` : "";
@@ -801,7 +801,7 @@ async function main() {
       addedByLocale.set(locale, loaded.addedPaths);
     }
     const concurrency =
-      opts.concurrency ?? Number(process.env.OMNIROUTE_TRANSLATION_CONCURRENCY || 4);
+      opts.concurrency ?? Number(process.env.CHEAPROUTE_TRANSLATION_CONCURRENCY || 4);
     const limit = createLimiter(concurrency);
     const counters = { multiRequests: 0, singleRequests: 0, failedLocales: 0 };
     const chunkCtx = { config, opts, backend, limit, counters, mergedByLocale };

@@ -1,13 +1,13 @@
 /**
  * Vision Bridge helper functions for image processing.
  */
-import { detectMediaParts, type MediaPart } from "@omniroute/open-sse/utils/mediaParts";
-import { normalizeDataUri } from "@omniroute/open-sse/utils/imageNormalize";
+import { detectMediaParts, type MediaPart } from "@cheaproute/open-sse/utils/mediaParts";
+import { normalizeDataUri } from "@cheaproute/open-sse/utils/imageNormalize";
 import { fetchRemoteImage } from "@/shared/network/remoteImageFetch";
 import { getRuntimePorts } from "@/lib/runtime/ports";
 import { resolveSelfLoopBearer } from "@/shared/middleware/chatBodyAdmission";
 import { getBestVisionModel, getFallbackModels, recordLatency } from "./visionBridgeRouter";
-import { REGISTRY } from "@omniroute/open-sse/config/providers";
+import { REGISTRY } from "@cheaproute/open-sse/config/providers";
 import { fetch as undiciFetch } from "undici";
 /**
  * Provider to environment variable mapping for API key resolution.
@@ -47,7 +47,7 @@ export function isClaudeWireFormatModel(model: string | null | undefined): boole
  *   2. `VISION_BRIDGE_API_KEY` env var — operator-set, takes precedence over
  *      per-provider env vars. Used when the operator wants every vision-bridge
  *      call to go through a single OpenAI-compatible endpoint (e.g.,
- *      OmniRoute itself, OpenRouter, a Gemini-OpenAI-compat URL).
+ *      CheapRoute itself, OpenRouter, a Gemini-OpenAI-compat URL).
  *   3. Per-provider env var (`ANTHROPIC_API_KEY`, `GOOGLE_API_KEY`,
  *      `OPENAI_API_KEY`) based on the `provider/` prefix in the model id.
  *   4. `OPENAI_API_KEY` as final fallback when the prefix is unrecognized.
@@ -76,19 +76,19 @@ export function resolveProviderApiKey(model: string, explicitKey?: string): stri
  *
  * Priority:
  *   1. `VISION_BRIDGE_BASE_URL` env var — operator-set, e.g. point this at
- *      OmniRoute's own `/v1` so the vision model can be any provider
- *      registered in OmniRoute (`google/gemini-2.0-flash`,
+ *      CheapRoute's own `/v1` so the vision model can be any provider
+ *      registered in CheapRoute (`google/gemini-2.0-flash`,
  *      `openrouter/...`, etc.) instead of being limited to OpenAI/Anthropic.
  *   2. `OPENAI_API_URL` env var (legacy)
- *   3. OmniRoute self-loop (`http://localhost:20128/v1`) — auto-detected when
- *      the model uses a known OmniRoute-internal provider (e.g. `kr/`, `if/`,
+ *   3. CheapRoute self-loop (`http://localhost:20128/v1`) — auto-detected when
+ *      the model uses a known CheapRoute-internal provider (e.g. `kr/`, `if/`,
  *      `pol/`, `groq/`, etc.) instead of a direct OpenAI/Anthropic endpoint.
  *   4. `https://api.openai.com/v1` (fallback when the model is `openai/*` or
  *      unprefixed — works only when the operator actually has an OpenAI
  *      account and OPENAI_API_KEY set)
  *
  * @param model - Optional model identifier used to detect non-standard providers
- *                that require OmniRoute self-loop routing.
+ *                that require CheapRoute self-loop routing.
  */
 export function resolveVisionBridgeBaseUrl(model?: string): string {
   const explicit = (process.env.VISION_BRIDGE_BASE_URL || "").trim();
@@ -97,9 +97,9 @@ export function resolveVisionBridgeBaseUrl(model?: string): string {
   if (legacy) return legacy.replace(/\/+$/, "");
 
   // When the model has a non-standard provider prefix (not openai/ or
-  // anthropic/), it can only be resolved through OmniRoute's own router,
+  // anthropic/), it can only be resolved through CheapRoute's own router,
   // not through a direct OpenAI/Anthropic endpoint. Use the operator-configured
-  // port via OMNIROUTE_PORT / PORT env vars, falling back to the default 20128.
+  // port via CHEAPROUTE_PORT / PORT env vars, falling back to the default 20128.
   if (model && model.includes("/")) {
     const provider = model.split("/")[0].toLowerCase();
     if (provider !== "openai" && provider !== "anthropic") {
@@ -111,8 +111,8 @@ export function resolveVisionBridgeBaseUrl(model?: string): string {
   return "https://api.openai.com/v1";
 }
 
-/** True when `baseUrl` is this OmniRoute instance's own loopback listener. */
-function isOwnOmniRouteBaseUrl(baseUrl: string): boolean {
+/** True when `baseUrl` is this CheapRoute instance's own loopback listener. */
+function isOwnCheapRouteBaseUrl(baseUrl: string): boolean {
   let url: URL;
   try {
     url = new URL(baseUrl);
@@ -211,7 +211,7 @@ const VISION_BRIDGE_UA_FETCH: typeof fetch = ((input: RequestInfo | URL, init?: 
   undiciFetch(input as string | URL, {
     ...(init as Parameters<typeof undiciFetch>[1]),
     headers: {
-      "user-agent": "omniroute-vision-bridge",
+      "user-agent": "cheaproute-vision-bridge",
       ...((init?.headers as Record<string, string> | undefined) ?? {}),
     },
   })) as unknown as typeof fetch;
@@ -348,8 +348,8 @@ export interface VisionModelConfig {
   prompt: string;
   timeoutMs: number;
   maxImages: number;
-  /** Route catalog models through OmniRoute so provider connections remain authoritative. */
-  routeThroughOmniRoute?: boolean;
+  /** Route catalog models through CheapRoute so provider connections remain authoritative. */
+  routeThroughCheapRoute?: boolean;
   /** Optional parent deadline/abort propagated by multi-step media bridges. */
   signal?: AbortSignal;
   /** Injectable fetch (tests). Defaults to undici fetch to bypass the runtime's hooked global fetch. */
@@ -443,7 +443,7 @@ export async function callVisionModel(
 }
 
 /**
- * Unwrap the detailed-log/diagnostics envelope that some OmniRoute paths attach
+ * Unwrap the detailed-log/diagnostics envelope that some CheapRoute paths attach
  * to provider responses (`{ _streamed, _format, summary: {...} }`). Returns the
  * inner `summary` object when present, otherwise the value unchanged.
  */
@@ -461,7 +461,7 @@ function unwrapVisionSummary(value: unknown): unknown {
  * Parse a vision-bridge response body that may be:
  *   1. Plain JSON (`{ choices: [...] }` / `{ content: [...] }`)
  *   2. An SSE stream of `data: {...}` lines (forceStream providers, or
- *      OmniRoute's self-loop when the `stream` default kicks in)
+ *      CheapRoute's self-loop when the `stream` default kicks in)
  *   3. The `{ _streamed, _format, summary }` diagnostics envelope
  *
  * For SSE input, aggregates `delta.content` / `delta.reasoning_content`
@@ -581,14 +581,14 @@ function parseSseVisionBody(rawBody: string): unknown {
 /**
  * Read a vision-model HTTP response body tolerantly: try `json()` first, then
  * fall back to text/SSE parsing. Some OpenAI-compatible backends (including
- * OmniRoute's own self-loop and forceStream providers) reply with a `data:`
+ * CheapRoute's own self-loop and forceStream providers) reply with a `data:`
  * SSE stream even for `stream: false`, which makes `response.json()` throw
  * `Unexpected token 'd'`.
  */
 async function readVisionResponseBody(response: Response): Promise<unknown> {
   try {
     // JSON path — also unwrap the { _streamed, summary } diagnostics envelope
-    // that some OmniRoute capture paths attach to provider responses.
+    // that some CheapRoute capture paths attach to provider responses.
     return unwrapVisionSummary(await response.json());
   } catch {
     // Not JSON — attempt SSE / envelope parsing from the raw text.
@@ -675,8 +675,8 @@ async function callVisionModelSingle(
   // body reaches the backend as a data URI (the OpenAI→claude translator only
   // preserves data URIs as base64; remote URLs become source.url which these
   // backends reject).
-  const routeThroughOmniRoute = config.routeThroughOmniRoute === true;
-  const isAnthropic = !routeThroughOmniRoute && config.model.startsWith("anthropic/");
+  const routeThroughCheapRoute = config.routeThroughCheapRoute === true;
+  const isAnthropic = !routeThroughCheapRoute && config.model.startsWith("anthropic/");
   const requiresBase64 = isAnthropic || isClaudeWireFormatModel(config.model);
 
   try {
@@ -740,39 +740,39 @@ async function callVisionModelSingle(
     } else {
       // OpenAI-compatible path (default) — issue #2232: honor
       // VISION_BRIDGE_BASE_URL so the vision-bridge call can be routed through
-      // OmniRoute itself or any other OpenAI-compatible endpoint instead of
+      // CheapRoute itself or any other OpenAI-compatible endpoint instead of
       // hardcoded api.openai.com.
-      const baseUrl = routeThroughOmniRoute
+      const baseUrl = routeThroughCheapRoute
         ? `http://localhost:${getRuntimePorts().port}/v1`
         : resolveVisionBridgeBaseUrl(config.model);
 
-      // When routing through the OmniRoute self-loop (non-standard provider),
-      // keep the full provider-prefixed model ID so OmniRoute can resolve the
+      // When routing through the CheapRoute self-loop (non-standard provider),
+      // keep the full provider-prefixed model ID so CheapRoute can resolve the
       // correct provider backend. Only strip the prefix for direct OpenAI calls.
       const useFullModelId =
-        routeThroughOmniRoute ||
+        routeThroughCheapRoute ||
         (baseUrl.startsWith("http://localhost") &&
           config.model.includes("/") &&
           !config.model.startsWith("openai/"));
       const requestModel = useFullModelId ? config.model : modelName;
 
       // Build headers with optional recursion guard for self-loop calls.
-      // When routing through OmniRoute's own API, omit the vision-bridge
+      // When routing through CheapRoute's own API, omit the vision-bridge
       // guardrail on the sub-request to prevent infinite recursion.
-      // OmniRoute's own listener authenticates the self-loop bearer (the env key or the
+      // CheapRoute's own listener authenticates the self-loop bearer (the env key or the
       // per-process secret, both accepted by API-key validation), which the admission
       // bypass below also requires. Any other endpoint — api.openai.com, or another
       // localhost server set as VISION_BRIDGE_BASE_URL — gets only the provider key and
-      // never an OmniRoute credential; with no provider key the header is omitted.
+      // never an CheapRoute credential; with no provider key the header is omitted.
       // A bare-id call to our own listener keeps an operator VISION_BRIDGE_API_KEY.
       const selfLoopBearer =
-        isOwnOmniRouteBaseUrl(baseUrl) && (useFullModelId || !resolvedApiKey)
+        isOwnCheapRouteBaseUrl(baseUrl) && (useFullModelId || !resolvedApiKey)
           ? resolveSelfLoopBearer()
           : null;
       const bearer = selfLoopBearer ?? resolvedApiKey;
       const headers: Record<string, string> = {
         "Content-Type": "application/json",
-        // Explicit JSON opt-in: without `Accept: application/json` OmniRoute's
+        // Explicit JSON opt-in: without `Accept: application/json` CheapRoute's
         // self-loop defaults to SSE (resolveStreamFlag's legacy default) and the
         // describe call would receive a `data:` stream that response.json() can't
         // parse (`Unexpected token 'd'`), failing the whole vision-bridge
@@ -782,12 +782,12 @@ async function callVisionModelSingle(
       if (bearer) headers.Authorization = `Bearer ${bearer}`;
       // Any call into our own listener carries the recursion guard, including a bare-id one.
       if (useFullModelId || selfLoopBearer) {
-        headers["x-omniroute-disabled-guardrails"] = routeThroughOmniRoute
+        headers["x-cheaproute-disabled-guardrails"] = routeThroughCheapRoute
           ? "vision-bridge,video-bridge"
           : "vision-bridge";
         // The compression pipeline must not touch the image payload of the
         // self-loop describe call (stacked RTK/Caveman can mangle data URIs).
-        headers["x-omniroute-compression"] = "off";
+        headers["x-cheaproute-compression"] = "off";
       }
       if (selfLoopBearer) {
         // Internal self-loop sub-request: the parent request already holds the
@@ -796,7 +796,7 @@ async function callVisionModelSingle(
         // `chat_admission_busy` before it is described. The route only honors
         // this header when the bearer is the self-loop bearer (set above), so
         // external clients cannot use it to bypass admission.
-        headers["x-omniroute-admission-bypass"] = "internal";
+        headers["x-cheaproute-admission-bypass"] = "internal";
       }
 
       response = await fetchImpl(`${baseUrl}/chat/completions`, {
@@ -811,7 +811,7 @@ async function callVisionModelSingle(
               role: "user",
               content: [
                 {
-                  // Global, not OpenCode-scoped: this is OmniRoute's own internal
+                  // Global, not OpenCode-scoped: this is CheapRoute's own internal
                   // describe self-loop (VisionBridgeGuardrail), called for every
                   // caller/provider when the target model lacks vision support —
                   // there is no client-identity signal at this layer to gate on

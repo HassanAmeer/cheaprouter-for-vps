@@ -1,8 +1,8 @@
 {
   "common": {
     "error": "Hata: {message}",
-    "serverOffline": "OmniRoute sunucusu çevrimdışı. Başlatın: omniroute serve",
-    "authRequired": "Kimlik doğrulama gerekli. OMNIROUTE_API_KEY ayarlayın veya çalıştırın: omniroute setup",
+    "serverOffline": "CheapRoute sunucusu çevrimdışı. Başlatın: cheaproute serve",
+    "authRequired": "Kimlik doğrulama gerekli. CHEAPROUTE_API_KEY ayarlayın veya çalıştırın: cheaproute setup",
     "rateLimited": "İstek limiti aşıldı. {seconds}s sonra tekrar deneyin.",
     "timeout": "İstek {ms}ms sonra zaman aşımına uğradı.",
     "success": "Tamamlandı.",
@@ -15,7 +15,7 @@
     "yesOpt": "Onayı atla"
   },
   "setup": {
-    "title": "OmniRoute Kurulumu",
+    "title": "CheapRoute Kurulumu",
     "passwordPrompt": "Yönetici parolası",
     "providerPrompt": "Varsayılan sağlayıcı (atlamak için boş bırakın)",
     "done": "Kurulum tamamlandı",
@@ -27,22 +27,22 @@
     "loginEnabled": "Oturum açma: etkin (parola güncellendi)",
     "loginDisabled": "Oturum açma: devre dışı",
     "providerInfo": "Sağlayıcı: {info}",
-    "opencode": "OpenCode için paketle birlikte gelen @omniroute/opencode-plugin eklentisini yükleyip yapılandırın"
+    "opencode": "OpenCode için paketle birlikte gelen @cheaproute/opencode-plugin eklentisini yükleyip yapılandırın"
   },
   "doctor": {
-    "title": "OmniRoute Tanılama",
+    "title": "CheapRoute Tanılama",
     "dbOk": "Veritabanı: Tamam ({path})",
-    "dbMissing": "Veritabanı: başlatılmamış — `omniroute setup` komutunu çalıştırın",
+    "dbMissing": "Veritabanı: başlatılmamış — `cheaproute setup` komutunu çalıştırın",
     "portOk": "Port {port}: kullanılabilir",
     "portConflict": "Port {port}: başka bir işlem tarafından kullanılıyor",
     "encryptionOk": "Şifreleme anahtarı: yapılandırıldı",
-    "encryptionMissing": "Şifreleme anahtarı eksik — `omniroute setup` komutunu çalıştırın",
+    "encryptionMissing": "Şifreleme anahtarı eksik — `cheaproute setup` komutunu çalıştırın",
     "allGood": "Tüm kontroller başarılı.",
     "warnings": "{count} uyarı — yukarıya bakın."
   },
   "providers": {
     "title": "Sağlayıcılar",
-    "noProviders": "Yapılandırılmış sağlayıcı yok. Şunu çalıştırın: omniroute setup",
+    "noProviders": "Yapılandırılmış sağlayıcı yok. Şunu çalıştırın: cheaproute setup",
     "testing": "{name} test ediliyor...",
     "available": "{count} sağlayıcı kullanılabilir",
     "connected": "Bağlı",
@@ -71,7 +71,7 @@
       "dryRunOpt": "Yazmadan nelerin değişeceğini göster",
       "confirmPrompt": "\"{name}\" ({id}) bağlantısının API anahtarı değiştirilsin mi? [y/N]",
       "dryRunResult": "[dry-run] \"{name}\" ({id}) için anahtar döndürülecekti. Hiçbir değişiklik yapılmadı.",
-      "oauthHint": "OAuth bağlantısı — çalıştırın: omniroute oauth {provider}",
+      "oauthHint": "OAuth bağlantısı — çalıştırın: cheaproute oauth {provider}",
       "envVarEmpty": "{var} ortam değişkeni ayarlanmamış veya boş.",
       "success": "\"{name}\" için anahtar döndürüldü. Doğrulamak için `providers test {id}` komutunu çalıştırın.",
       "testPassed": "Rotasyon sonrası test başarılı.",
@@ -82,7 +82,7 @@
       "providerOpt": "Sağlayıcı adına göre filtrele",
       "header": "Kimlik     Sağlayıcı      Ad                       Süre Sonu Durumu  Test Durumu  Bekleme Bitişi",
       "noData": "Kullanılabilir sağlayıcı bağlantısı verisi yok.",
-      "requiresServer": "providers status için OmniRoute sunucusunun çalışıyor olması gerekir."
+      "requiresServer": "providers status için CheapRoute sunucusunun çalışıyor olması gerekir."
     }
   },
   "keys": {
@@ -90,8 +90,8 @@
     "addDescription": "Bir sağlayıcı için API anahtarı ekle veya güncelle",
     "listDescription": "Yapılandırılmış tüm API anahtarlarını listele",
     "removeDescription": "Bir sağlayıcının API anahtarını kaldır",
-    "regenerateDescription": "Bir OmniRoute API anahtarını yeniden oluştur",
-    "revokeDescription": "Bir OmniRoute API anahtarını iptal et",
+    "regenerateDescription": "Bir CheapRoute API anahtarını yeniden oluştur",
+    "revokeDescription": "Bir CheapRoute API anahtarını iptal et",
     "revealDescription": "Maskelenmemiş API anahtarı değerini göster",
     "usageDescription": "Bir API anahtarının son kullanımını göster",
     "usageLimitOpt": "Son isteklerin sayısı",
@@ -142,7 +142,7 @@
     "warning": "⚠ Bu işlem, ŞİFRESİ ÇÖZÜLMÜŞ düz metin API anahtarlarını ve OAuth belirteçlerini görüntüler/yazar. Ekranınızın, kabuk geçmişinizin ve tüm çıktı dosyalarının gizli kaldığından emin olun.",
     "confirmHeading": "⚠ UYARI: Bu işlem, ŞİFRESİ ÇÖZÜLMÜŞ sağlayıcı kimlik bilgilerini düz metin olarak dışa aktarır",
     "confirmBody": "Bu komut, seçilen bağlantıların apiKey, accessToken, refreshToken ve\nidToken değerlerinin şifresini çözer ve bunları görüntüler/yazar. Çıktıyı gizli bilgi olarak değerlendirin.",
-    "confirmFooter": "Onaylamak için şunu çalıştırın:\n  omniroute auth export --force",
+    "confirmFooter": "Onaylamak için şunu çalıştırın:\n  cheaproute auth export --force",
     "missingKey": "Kimlik bilgilerini dışa aktarmak için STORAGE_ENCRYPTION_KEY gereklidir.",
     "notFound": "Bağlantı bulunamadı: {id}",
     "invalidFormat": "Geçersiz biçim: {format}. json veya env kullanın."
@@ -220,10 +220,10 @@
     "reasoning": "Akıl yürütme çabası düzeyi (low|medium|high)",
     "thinking": "Genişletilmiş düşünme token bütçesi",
     "explain": "Yedekleme ağacını ve maliyet aralığını stderr'e yazdır",
-    "noCombo": "Eşleşen kombinasyon bulunamadı. Şu komutla yapılandırın: omniroute combo create"
+    "noCombo": "Eşleşen kombinasyon bulunamadı. Şu komutla yapılandırın: cheaproute combo create"
   },
   "chat": {
-    "description": "OmniRoute'a tek seferlik bir sohbet istemi gönder",
+    "description": "CheapRoute'a tek seferlik bir sohbet istemi gönder",
     "file": "İstemi dosyadan oku",
     "stdin": "İstemi stdin'den oku",
     "system": "Sistem istemi",
@@ -236,14 +236,14 @@
     "combo": "Ada göre belirli bir kombinasyonu zorunlu kıl",
     "responses_api": "/v1/chat/completions yerine /v1/responses kullan",
     "stream": "Yanıtı kademeli olarak aktar",
-    "no_history": "~/.omniroute/cli-history.jsonl dosyasına kaydetme",
+    "no_history": "~/.cheaproute/cli-history.jsonl dosyasına kaydetme",
     "error": {
       "empty_prompt": "Hata: istem gerekli (konumsal argüman, --file veya --stdin)"
     }
   },
   "serve": {
-    "description": "OmniRoute sunucusunu başlat (varsayılan eylem)",
-    "starting": "OmniRoute sunucusu {port} portunda başlatılıyor...",
+    "description": "CheapRoute sunucusunu başlat (varsayılan eylem)",
+    "starting": "CheapRoute sunucusu {port} portunda başlatılıyor...",
     "ready": "http://localhost:{port} adresinde hazır",
     "stopping": "Sunucu durduruluyor (PID {pid})...",
     "stopped": "Sunucu durduruldu.",
@@ -256,13 +256,13 @@
     "max_restarts": "Vazgeçmeden önce 30 saniye içinde izin verilen en fazla çökme sonrası yeniden başlatma sayısı (varsayılan: 2)",
     "tray": "Sistem tepsisinde başlat (yalnızca masaüstü, isteğe bağlı)",
     "no_tray": "Sistem tepsisi simgesini devre dışı bırak",
-    "ready_timeout": "Hazır olma denetimi zaman aşımı, ms cinsinden (ayrıca OMNIROUTE_READY_TIMEOUT_MS, varsayılan 60000)",
-    "tls_cert": "HTTPS sunmak için TLS sertifikasının yolu (PEM) (ayrıca OMNIROUTE_TLS_CERT)",
-    "tls_key": "HTTPS sunmak için TLS özel anahtarının yolu (PEM) (ayrıca OMNIROUTE_TLS_KEY)"
+    "ready_timeout": "Hazır olma denetimi zaman aşımı, ms cinsinden (ayrıca CHEAPROUTE_READY_TIMEOUT_MS, varsayılan 60000)",
+    "tls_cert": "HTTPS sunmak için TLS sertifikasının yolu (PEM) (ayrıca CHEAPROUTE_TLS_CERT)",
+    "tls_key": "HTTPS sunmak için TLS özel anahtarının yolu (PEM) (ayrıca CHEAPROUTE_TLS_KEY)"
   },
   "backup": {
     "title": "Yedekleme",
-    "description": "OmniRoute verilerinin yedeğini oluştur",
+    "description": "CheapRoute verilerinin yedeğini oluştur",
     "creating": "Yedek oluşturuluyor...",
     "done": "Yedek {path} konumuna kaydedildi",
     "noFiles": "Yedeklenecek dosya yok (veritabanı başlatılmamış)",
@@ -274,7 +274,7 @@
     "noBackups": "Yedek bulunamadı.",
     "notFound": "Yedek bulunamadı: {name}",
     "confirmRestore": "Mevcut verilerin üzerine {ts} tarihli yedek yazılsın mı?",
-    "createDescription": "OmniRoute verilerinin yedeğini oluştur",
+    "createDescription": "CheapRoute verilerinin yedeğini oluştur",
     "nameOpt": "Özel yedek adı",
     "cloudOpt": "Yedeği bulut depolama alanına yükle",
     "encryptOpt": "Yedeği AES-256-GCM ile şifrele",
@@ -292,14 +292,14 @@
       "statusDescription": "Mevcut yedekleme zamanlamasının durumunu göster",
       "cronOpt": "Zamanlama için cron ifadesi (varsayılan: her gün saat 03.00'te)",
       "enabled": "Otomatik yedekleme etkinleştirildi (cron: {cron}).",
-      "hint": "Zamanlama, başlangıçta omniroute serve tarafından okunur.",
+      "hint": "Zamanlama, başlangıçta cheaproute serve tarafından okunur.",
       "disabled": "Otomatik yedekleme devre dışı bırakıldı.",
       "notConfigured": "Yedekleme zamanlaması yapılandırılmamış."
     }
   },
   "health": {
     "description": "Sunucu sağlığını ve bileşen durumunu kontrol et",
-    "noServer": "Sunucu çalışmıyor. Şununla başlatın: omniroute serve",
+    "noServer": "Sunucu çalışmıyor. Şununla başlatın: cheaproute serve",
     "title": "Sağlık",
     "status": "Durum: {status}",
     "uptime": "Çalışma süresi: {uptime}",
@@ -308,21 +308,21 @@
   },
   "quota": {
     "description": "Sağlayıcı kota kullanımını göster",
-    "noServer": "Sunucu çalışmıyor. Şununla başlatın: omniroute serve",
+    "noServer": "Sunucu çalışmıyor. Şununla başlatın: cheaproute serve",
     "noData": "Kota bilgisi mevcut değil."
   },
   "cache": {
     "description": "Yanıt önbelleğini yönet",
-    "noServer": "Sunucu çalışmıyor. Şununla başlatın: omniroute serve",
+    "noServer": "Sunucu çalışmıyor. Şununla başlatın: cheaproute serve",
     "cleared": "Önbellek temizlendi.",
     "clearFailed": "Önbellek temizlenemedi."
   },
   "redis": {
-    "description": "OmniRoute önbelleği ve kota takibi için tek tıkla yerel Redis konteyneri (Podman veya Docker) başlatın"
+    "description": "CheapRoute önbelleği ve kota takibi için tek tıkla yerel Redis konteyneri (Podman veya Docker) başlatın"
   },
   "test": {
     "description": "Bir sağlayıcı bağlantısını test et",
-    "noServer": "Sunucu çalışmıyor. Şununla başlatın: omniroute serve",
+    "noServer": "Sunucu çalışmıyor. Şununla başlatın: cheaproute serve",
     "testing": "{provider} / {model} test ediliyor...",
     "passed": "Bağlantı başarılı!",
     "failed": "Bağlantı başarısız: {error}",
@@ -334,7 +334,7 @@
     "saved": "Sonuçlar {path} konumuna kaydedildi",
     "compareTitle": "Model Karşılaştırması",
     "compareMinTwo": "--compare için en az iki model gereklidir (virgülle ayrılmış)",
-    "noProviders": "Yapılandırılmış sağlayıcı yok. Şununla bir tane ekleyin: omniroute keys add"
+    "noProviders": "Yapılandırılmış sağlayıcı yok. Şununla bir tane ekleyin: cheaproute keys add"
   },
   "update": {
     "checking": "Güncellemeler kontrol ediliyor...",
@@ -348,7 +348,7 @@
     "running": "MCP sunucusu çalışıyor ({transport})",
     "stopped": "MCP sunucusu durduruldu.",
     "restarted": "MCP sunucusu yeniden başlatıldı.",
-    "stoppedHint": "Etkinleştirmek için `omniroute mcp enable` komutunu çalıştırın.",
+    "stoppedHint": "Etkinleştirmek için `cheaproute mcp enable` komutunu çalıştırın.",
     "enabled": "MCP sunucusu etkinleştirildi.",
     "disabled": "MCP sunucusu devre dışı bırakıldı.",
     "enable": {
@@ -416,7 +416,7 @@
     }
   },
   "policy": {
-    "description": "OmniRoute yetkilendirme politikalarını yönet",
+    "description": "CheapRoute yetkilendirme politikalarını yönet",
     "list": {
       "description": "Politikaları listele",
       "kind": "Türe göre filtrele (allow|deny|rate-limit|cost-cap)",
@@ -453,7 +453,7 @@
     }
   },
   "compression": {
-    "description": "OmniRoute sıkıştırma işlem hattını yapılandır ve incele",
+    "description": "CheapRoute sıkıştırma işlem hattını yapılandır ve incele",
     "status": {
       "description": "Geçerli sıkıştırma durumunu ve ayarlarını göster"
     },
@@ -507,18 +507,18 @@
     "confirmRotate": "{type} tüneli yenilensin mi? (yeni bir URL oluşturulacak)"
   },
   "stop": {
-    "description": "OmniRoute sunucusunu durdur",
+    "description": "CheapRoute sunucusunu durdur",
     "stopping": "Sunucu durduruluyor (PID {pid})...",
     "stopped": "Sunucu durduruldu.",
     "notRunning": "Çalışan sunucu yok.",
     "portFallback": "PID dosyası bulunamadı, bağlantı noktası üzerinden durdurma deneniyor..."
   },
   "restart": {
-    "description": "OmniRoute sunucusunu yeniden başlat",
-    "restarting": "OmniRoute sunucusu yeniden başlatılıyor..."
+    "description": "CheapRoute sunucusunu yeniden başlat",
+    "restarting": "CheapRoute sunucusu yeniden başlatılıyor..."
   },
   "dashboard": {
-    "description": "OmniRoute panosunu bir tarayıcıda aç",
+    "description": "CheapRoute panosunu bir tarayıcıda aç",
     "opening": "Pano {url} adresinde açılıyor",
     "urlOnly": "Tarayıcıyı açmadan pano URL'sini yazdır",
     "tui": "Etkileşimli TUI panosunu aç (terminal kullanıcı arayüzü, 7 sekme)"
@@ -526,7 +526,7 @@
   "models": {
     "description": "Kullanılabilir modelleri listele (sunucu gerektirir)",
     "search": "Modelleri kimliğe, ada, sağlayıcıya veya açıklamaya göre filtrele",
-    "noServer": "Sunucu çalışmıyor. Şununla başlatın: omniroute serve",
+    "noServer": "Sunucu çalışmıyor. Şununla başlatın: cheaproute serve",
     "noModels": "Model bulunamadı."
   },
   "audit": {
@@ -558,7 +558,7 @@
     }
   },
   "skills": {
-    "description": "OmniRoute becerilerini yönetin (sandbox, builtin, custom, hybrid, skillssh)",
+    "description": "CheapRoute becerilerini yönetin (sandbox, builtin, custom, hybrid, skillssh)",
     "list": {
       "description": "Yüklü becerileri listele",
       "type": "Türe göre filtrele (sandbox|custom|builtin|hybrid|skillssh)",
@@ -631,7 +631,7 @@
     }
   },
   "memory": {
-    "description": "OmniRoute konuşma belleğini yönet (FTS5 + vector)",
+    "description": "CheapRoute konuşma belleğini yönet (FTS5 + vector)",
     "search": {
       "description": "Bellek girdilerini anlamsal sorguyla ara",
       "type": "Bellek türüne göre filtrele (user|feedback|project|reference)",
@@ -789,7 +789,7 @@
     }
   },
   "webhooks": {
-    "description": "OmniRoute webhook'larını yönet",
+    "description": "CheapRoute webhook'larını yönet",
     "events": {
       "description": "Kullanılabilir tüm webhook olay türlerini listele"
     },
@@ -821,16 +821,16 @@
     }
   },
   "program": {
-    "description": "OmniRoute — Otomatik Fallback ile Akıllı AI Yönlendirici",
+    "description": "CheapRoute — Otomatik Fallback ile Akıllı AI Yönlendirici",
     "version": "Sürümü yazdır ve çık",
     "output": "Çıktı formatı (table, json, jsonl, csv)",
     "quiet": "Önemsiz çıktıyı gizle",
     "no_color": "Renkli çıktıyı devre dışı bırak",
     "timeout": "HTTP istek zaman aşımı (milisaniye)",
-    "api_key": "OmniRoute sunucusu için API anahtarı",
-    "base_url": "OmniRoute sunucusu temel URL'si",
+    "api_key": "CheapRoute sunucusu için API anahtarı",
+    "base_url": "CheapRoute sunucusu temel URL'si",
     "context": "Bu komut için sunucu bağlamı/profili",
-    "lang": "CLI görüntüleme dilini ayarla (OMNIROUTE_LANG'ı geçersiz kılar)"
+    "lang": "CLI görüntüleme dilini ayarla (CHEAPROUTE_LANG'ı geçersiz kılar)"
   },
   "files": {
     "description": "Dosyaları yönet (yükle, listele, getir, indir, sil)",
@@ -1079,7 +1079,7 @@
     }
   },
   "openapi": {
-    "description": "OmniRoute OpenAPI spesifikasyonuna erişin ve test edin",
+    "description": "CheapRoute OpenAPI spesifikasyonuna erişin ve test edin",
     "dump": {
       "description": "OpenAPI spesifikasyonunu stdout'a veya dosyaya dökün",
       "format": "Çıktı biçimi: yaml|json (varsayılan: yaml)",
@@ -1149,7 +1149,7 @@
     }
   },
   "open": {
-    "description": "Belirli bir OmniRoute kontrol paneli sayfasını tarayıcıda aç",
+    "description": "Belirli bir CheapRoute kontrol paneli sayfasını tarayıcıda aç",
     "url": "Yalnızca URL'yi yazdır, tarayıcıyı açma"
   },
   "telemetry": {
@@ -1166,7 +1166,7 @@
     }
   },
   "sync": {
-    "description": "Yapılandırmayı OmniRoute örnekleri arasında eşitle",
+    "description": "Yapılandırmayı CheapRoute örnekleri arasında eşitle",
     "push": {
       "description": "Yapılandırmayı buluta veya uzak örneğe gönder",
       "target": "Hedef (cloud veya context:name)",
@@ -1222,10 +1222,10 @@
       "listTitle": "Kullanılabilir Diller",
       "current": "Dil: {code} ({name})",
       "saved": "Dil {code} ({name}) olarak ayarlandı.",
-      "noCode": "Dil kodu gerekli. Kullanılabilir kodları görmek için 'omniroute config lang list' komutunu çalıştırın.",
-      "unknown": "Bilinmeyen dil kodu: {code}. Kullanılabilir kodları görmek için 'omniroute config lang list' komutunu çalıştırın.",
+      "noCode": "Dil kodu gerekli. Kullanılabilir kodları görmek için 'cheaproute config lang list' komutunu çalıştırın.",
+      "unknown": "Bilinmeyen dil kodu: {code}. Kullanılabilir kodları görmek için 'cheaproute config lang list' komutunu çalıştırın.",
       "alreadySet": "Dil zaten {code} olarak ayarlı.",
-      "envHint": "İpucu: Ortamınızda OMNIROUTE_LANG={code} değişkenini de ayarlayabilirsiniz."
+      "envHint": "İpucu: Ortamınızda CHEAPROUTE_LANG={code} değişkenini de ayarlayabilirsiniz."
     }
   },
   "completion": {
@@ -1242,7 +1242,7 @@
     "filter": "Düzeye göre filtrele (error,warn,info) — virgülle ayrılmış",
     "lines": "Getirilecek satır sayısı",
     "timeout": "Bağlantı zaman aşımı (ms)",
-    "baseUrl": "OmniRoute API temel URL'si",
+    "baseUrl": "CheapRoute API temel URL'si",
     "requestId": "İstek kimliğine göre filtrele",
     "apiKey": "API anahtarına göre filtrele",
     "combo": "Kombinasyon adına göre filtrele",
@@ -1258,10 +1258,10 @@
     "description": "Sistem tepsisi simgesini kontrol et",
     "show": "Tepsi simgesini göster (sunucu --tray ile çalışıyorsa)",
     "hide": "Tepsi simgesini gizle",
-    "quit": "OmniRoute'tan tepsi üzerinden çık"
+    "quit": "CheapRoute'tan tepsi üzerinden çık"
   },
   "autostart": {
-    "description": "OmniRoute'un açılışta otomatik başlatılmasını yönet (Linux: systemd kullanıcı hizmeti)",
+    "description": "CheapRoute'un açılışta otomatik başlatılmasını yönet (Linux: systemd kullanıcı hizmeti)",
     "enable": "Açılışta otomatik başlatmayı etkinleştir",
     "disable": "Açılışta otomatik başlatmayı devre dışı bırak",
     "toggle": "Açılışta otomatik başlatmayı aç/kapat",
@@ -1283,7 +1283,7 @@
     "resume": "Kaydedilmiş bir oturumu adına göre sürdür"
   },
   "plugin": {
-    "description": "CLI eklentilerini (omniroute-cmd-*) yönet",
+    "description": "CLI eklentilerini (cheaproute-cmd-*) yönet",
     "list": "Yüklü eklentileri listele",
     "install": "npm'den veya yerel yoldan bir eklenti yükle",
     "remove": "Yüklü bir eklentiyi kaldır",
@@ -1293,19 +1293,19 @@
     "scaffold": "Yeni bir eklenti için başlangıç şablonu oluştur"
   },
   "launch": {
-    "description": "OmniRoute'u hedefleyen Claude Code'u başlat (yerel veya uzak, --profile ile)",
+    "description": "CheapRoute'u hedefleyen Claude Code'u başlat (yerel veya uzak, --profile ile)",
     "token": "Claude istemcisinin göndermesi gereken token (ANTHROPIC_AUTH_TOKEN)",
-    "notRunning": "OmniRoute'a {port} üzerinden erişilemiyor. 'omniroute serve' ile başlatın.",
+    "notRunning": "CheapRoute'a {port} üzerinden erişilemiyor. 'cheaproute serve' ile başlatın.",
     "notFound": "'claude' CLI, PATH içinde bulunamadı."
   },
   "run": {
-    "description": "Desteklenen bir CLI hedefini OmniRoute üzerinden başlat"
+    "description": "Desteklenen bir CLI hedefini CheapRoute üzerinden başlat"
   },
   "setupClaude": {
-    "description": "OmniRoute model kataloğundan ~/.claude/profiles Claude Code profilleri oluştur"
+    "description": "CheapRoute model kataloğundan ~/.claude/profiles Claude Code profilleri oluştur"
   },
   "connect": {
-    "description": "Uzak bir OmniRoute sunucusuna bağlan ve uzak moda geç"
+    "description": "Uzak bir CheapRoute sunucusuna bağlan ve uzak moda geç"
   },
   "tokens": {
     "description": "Kapsamlı CLI erişim token'larını yönet (uzak mod)"
@@ -1314,10 +1314,10 @@
     "description": "Etkin sunucudan bir sağlayıcı+model seç ve desteklenen bir yerel CLI'ı yapılandır"
   },
   "launchCodex": {
-    "description": "OmniRoute'u hedefleyen Codex CLI'ı başlat (yerel veya uzak VPS)"
+    "description": "CheapRoute'u hedefleyen Codex CLI'ı başlat (yerel veya uzak VPS)"
   },
   "setupCodex": {
-    "description": "OmniRoute canlı model kataloğundan ~/.codex profil dosyaları oluştur"
+    "description": "CheapRoute canlı model kataloğundan ~/.codex profil dosyaları oluştur"
   },
   "packs": {
     "description": "İsteğe bağlı çalışma zamanı paketlerini yönet (ML / tarayıcı otomasyonu)",
@@ -1330,7 +1330,7 @@
     "errUnknown": "bilinmeyen paket: {name}",
     "errNoIndex": "paket dizini bulunamadı; paket içeriğini barındıran --source <dir> parametresini iletin (masaüstü paketleri bunu uygulamanın yanında içerir)",
     "installed": "\"{name}\" paketi {dir} konumuna yüklendi ve doğrulandı",
-    "restartHint": "çalışma zamanının paketi algılaması için OmniRoute sunucusunu (veya masaüstü uygulamasını) yeniden başlatın",
+    "restartHint": "çalışma zamanının paketi algılaması için CheapRoute sunucusunu (veya masaüstü uygulamasını) yeniden başlatın",
     "removed": "\"{name}\" paketi kaldırıldı",
     "notInstalled": "\"{name}\" paketi yüklü değildi",
     "verifyOk": "yüklü tüm paketler doğrulandı",

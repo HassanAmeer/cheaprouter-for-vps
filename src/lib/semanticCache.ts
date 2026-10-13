@@ -8,7 +8,7 @@
  *
  * Cache key = SHA-256(model + normalized messages + temperature + top_p
  *             + output contract, when present — see outputContractOf, #12307)
- * Bypass: X-OmniRoute-No-Cache: true
+ * Bypass: X-CheapRoute-No-Cache: true
  *
  * @module lib/semanticCache
  */
@@ -536,7 +536,7 @@ export function getCacheStats() {
  * because the provider default may be non-deterministic (e.g. random/creative tasks).
  */
 export function isCacheableForRead(body, headers) {
-  if ((getHeaderValue(headers, "x-omniroute-no-cache") || "").toLowerCase() === "true") {
+  if ((getHeaderValue(headers, "x-cheaproute-no-cache") || "").toLowerCase() === "true") {
     return false;
   }
   const cacheControl = (getHeaderValue(headers, "cache-control") || "").toLowerCase();
@@ -554,7 +554,7 @@ export function isCacheableForRead(body, headers) {
  * because the provider default may be non-deterministic.
  */
 export function isCacheableForWrite(body, headers) {
-  if ((getHeaderValue(headers, "x-omniroute-no-cache") || "").toLowerCase() === "true") {
+  if ((getHeaderValue(headers, "x-cheaproute-no-cache") || "").toLowerCase() === "true") {
     return false;
   }
   const cacheControl = (getHeaderValue(headers, "cache-control") || "").toLowerCase();

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { isLocalRequestAllowed } from "@/lib/security/localEndpoints";
-import { sanitizeErrorMessage } from "@omniroute/open-sse/utils/error";
+import { sanitizeErrorMessage } from "@cheaproute/open-sse/utils/error";
 
 import {
   REDIS_CONTAINER_NAME,
@@ -12,9 +12,9 @@ import {
   runRedisRuntimeCommand,
 } from "../redisRuntime";
 
-const HOST_PORT = process.env.OMNIROUTE_REDIS_HOST_PORT || "6379";
-const BIND_HOST = process.env.OMNIROUTE_REDIS_BIND_HOST || REDIS_DEFAULT_BIND_HOST;
-const IMAGE = process.env.OMNIROUTE_REDIS_IMAGE || "docker.io/redis:7-alpine";
+const HOST_PORT = process.env.CHEAPROUTE_REDIS_HOST_PORT || "6379";
+const BIND_HOST = process.env.CHEAPROUTE_REDIS_BIND_HOST || REDIS_DEFAULT_BIND_HOST;
+const IMAGE = process.env.CHEAPROUTE_REDIS_IMAGE || "docker.io/redis:7-alpine";
 
 export async function POST() {
   const guard = isLocalRequestAllowed();

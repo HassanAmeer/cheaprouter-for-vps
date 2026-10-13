@@ -1,11 +1,11 @@
 import { NextResponse } from "next/server";
 export const dynamic = "force-dynamic";
-import { getAllRateLimitStatus } from "@omniroute/open-sse/services/rateLimitManager.ts";
-import { getStats as getComboSemaphoreStats } from "@omniroute/open-sse/services/rateLimitSemaphore.ts";
+import { getAllRateLimitStatus } from "@cheaproute/open-sse/services/rateLimitManager.ts";
+import { getStats as getComboSemaphoreStats } from "@cheaproute/open-sse/services/rateLimitSemaphore.ts";
 import {
   getStats as getSemaphoreStats,
   resetAll as resetAllSemaphores,
-} from "@omniroute/open-sse/services/accountSemaphore.ts";
+} from "@cheaproute/open-sse/services/accountSemaphore.ts";
 import { requireManagementAuth } from "@/lib/api/requireManagementAuth";
 
 export async function GET(request: Request) {

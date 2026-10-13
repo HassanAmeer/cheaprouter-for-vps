@@ -68,7 +68,7 @@ export function vaultPathOverlapsDataDir(resolvedVaultPath: string): boolean {
 }
 
 export const VAULT_OVERLAPS_DATA_DIR_ERROR =
-  "Vault path must not be the OmniRoute data directory, a directory inside it, or a directory that contains it";
+  "Vault path must not be the CheapRoute data directory, a directory inside it, or a directory that contains it";
 
 export async function enableObsidianVaultSync(
   vaultPath: string
@@ -127,7 +127,7 @@ function removeStignore(vaultPath: string): void {
     const stignorePath = path.join(vaultPath, ".stignore");
     if (fs.existsSync(stignorePath)) {
       const content = fs.readFileSync(stignorePath, "utf-8");
-      const marker = "# Managed by OmniRoute";
+      const marker = "# Managed by CheapRoute";
       if (content.includes(marker)) {
         fs.unlinkSync(stignorePath);
       }

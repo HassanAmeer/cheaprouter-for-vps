@@ -189,9 +189,9 @@ function resolveCaseModel(evalCase: Record<string, unknown>, target: EvalTargetI
  * The runner manages its own context: a graded case must measure the model
  * answering the case, not the operator's injected context. Two injections
  * otherwise apply on the ordinary chat path — a selected output style is
- * prepended as a system message (gated on `x-omniroute-compression`), and
+ * prepended as a system message (gated on `x-cheaproute-compression`), and
  * retrieved memory plus the built-in `memory_*` tools are appended once the
- * request carries an API key (gated on `x-omniroute-no-memory`). Both are
+ * request carries an API key (gated on `x-cheaproute-no-memory`). Both are
  * request-header opt-outs, so the runner sets them on every case. Without them
  * a graded case answers in the configured persona or spends its turn calling
  * `memory_*`, and a run that passes an API key scores *worse* than one that
@@ -213,8 +213,8 @@ export function buildEvalCaseRequest(
   const headers = new Headers({
     "Content-Type": "application/json",
     // Self-managed context — see the docblock above.
-    "x-omniroute-compression": "off",
-    "x-omniroute-no-memory": "true",
+    "x-cheaproute-compression": "off",
+    "x-cheaproute-no-memory": "true",
   });
 
   if (apiKey) {

@@ -16,7 +16,7 @@ import {
 import { installBasePathFetch } from "@/shared/utils/basePathFetch";
 
 const SIDEBAR_COLLAPSED_KEY = "sidebar-collapsed";
-const isE2EMode = process.env.NEXT_PUBLIC_OMNIROUTE_E2E_MODE === "1";
+const isE2EMode = process.env.NEXT_PUBLIC_CHEAPROUTE_E2E_MODE === "1";
 
 export default function DashboardLayout({ children }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);

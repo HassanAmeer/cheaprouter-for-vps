@@ -17,10 +17,12 @@ export const SIDEBAR_ICON_ACCENTS: Partial<Record<SidebarItemId, string>> = {
   home: "#60A5FA",
   usage: "#10B981",
   "api-manager": "#F59E0B",
-  endpoints: "#38BDF8",
+  "api-endpoints": "#38BDF8",
+  "api-docs": "#818CF8",
   providers: "#818CF8",
   "model-catalog": "#6366F1",
   combos: "#A855F7",
+  users: "#14B8A0",
   "costs-pricing": "#FB923C",
   "free-provider-rankings": "#10B981",
   logs: "#CBD5E1",
@@ -131,7 +133,7 @@ export const HIDDEN_SIDEBAR_ITEMS_SETTING_KEY = "hiddenSidebarItems";
 export const SIDEBAR_SECTION_ORDER_KEY = "sidebarSectionOrder";
 export const SIDEBAR_ITEM_ORDER_KEY = "sidebarItemOrder";
 export const SIDEBAR_PRESET_KEY = "sidebarActivePreset";
-export const SIDEBAR_SETTINGS_UPDATED_EVENT = "omniroute:settings-updated";
+export const SIDEBAR_SETTINGS_UPDATED_EVENT = "cheaproute:settings-updated";
 
 export const ESSENTIALS_ADVANCED_TOOL_IDS: ReadonlySet<HideableSidebarItemId> = new Set([
   "playground",

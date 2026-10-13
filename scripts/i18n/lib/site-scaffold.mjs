@@ -1,5 +1,5 @@
 /**
- * Pure text helpers for the marketing site (omnirouteSite — a separate repo
+ * Pure text helpers for the marketing site (cheaprouteSite — a separate repo
  * mirrored next to this one; `scripts/i18n/add-locale.mjs --site-dir=…` points
  * at it). Text in, text out — no filesystem.
  *

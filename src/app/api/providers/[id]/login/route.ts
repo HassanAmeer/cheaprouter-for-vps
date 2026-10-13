@@ -11,7 +11,7 @@ import { getCachedProviderConnectionById } from "@/lib/db/readCache";
 import { updateProviderConnection } from "@/lib/db/providers";
 import { requireManagementAuth } from "@/lib/api/requireManagementAuth";
 import { clampLoginTimeoutMs } from "@/lib/api/loginTimeout";
-import { sanitizeErrorMessage } from "@omniroute/open-sse/utils/error.ts";
+import { sanitizeErrorMessage } from "@cheaproute/open-sse/utils/error.ts";
 
 const ADOBE_FIREFLY_SLUGS = new Set(["adobe-firefly", "firefly"]);
 
@@ -128,7 +128,7 @@ async function loginAdobeFirefly(
   // startAdobeFireflyBrowserLogin always kills its Chrome tree in `finally` (no orphans).
   try {
     const { startAdobeFireflyBrowserLogin } =
-      await import("@omniroute/open-sse/services/adobeFireflyBrowserLogin.ts");
+      await import("@cheaproute/open-sse/services/adobeFireflyBrowserLogin.ts");
     const pure = await startAdobeFireflyBrowserLogin(timeout, {
       sessionKey: connectionId,
       freshSession,
@@ -175,7 +175,7 @@ async function loginMaxaiEmail(
 ): Promise<NextResponse> {
   const { randomUUID } = await import("node:crypto");
   const { requestMaxaiEmailCode, verifyMaxaiEmailCode } = await import(
-    "@omniroute/open-sse/executors/maxai/emailLogin.ts"
+    "@cheaproute/open-sse/executors/maxai/emailLogin.ts"
   );
 
   const psd = (connection.providerSpecificData ?? {}) as Record<string, unknown>;
@@ -342,7 +342,7 @@ export async function POST(
   if (providerSlug === "conol-web" || providerSlug === "cnl") {
     try {
       const { startConolBrowserLogin } =
-        await import("@omniroute/open-sse/services/conolBrowserLogin.ts");
+        await import("@cheaproute/open-sse/services/conolBrowserLogin.ts");
       const result = await startConolBrowserLogin(
         typeof body.timeout === "number" ? body.timeout : undefined
       );
@@ -380,7 +380,7 @@ export async function POST(
     // TOKEN_EXTRACTION_CONFIGS can find the extraction config.
     // Bug: the previous code passed `id` (connection UUID), so the lookup always
     // missed and returned "No extraction config" without launching a browser.
-    const { inAppLoginService } = await import("@omniroute/open-sse/services/inAppLoginService.ts");
+    const { inAppLoginService } = await import("@cheaproute/open-sse/services/inAppLoginService.ts");
 
     const result = await inAppLoginService.startLogin(providerSlug || id, {
       timeout: clampLoginTimeoutMs(body.timeout),

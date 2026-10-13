@@ -18,7 +18,7 @@
 import { logToolCall } from "../audit.ts";
 import { toSafeMcpErrorMessage } from "../errorMessage.ts";
 import { mcpFetchTimeoutSignal } from "../fetchTimeout.ts";
-import { omniRouteFetch } from "../internalFetch.ts";
+import { cheapRouteFetch } from "../internalFetch.ts";
 
 export async function handleWebSearch(args: {
   query: string;
@@ -35,16 +35,16 @@ export async function handleWebSearch(args: {
     };
     if (args.provider) body.provider = args.provider;
 
-    const result = await omniRouteFetch("/v1/search", {
+    const result = await cheapRouteFetch("/v1/search", {
       method: "POST",
       body: JSON.stringify(body),
       signal: mcpFetchTimeoutSignal("upstream"),
     });
-    await logToolCall("omniroute_web_search", args, result, Date.now() - start, true);
+    await logToolCall("cheaproute_web_search", args, result, Date.now() - start, true);
     return { content: [{ type: "text" as const, text: JSON.stringify(result, null, 2) }] };
   } catch (err) {
     const msg = toSafeMcpErrorMessage(err);
-    await logToolCall("omniroute_web_search", args, null, Date.now() - start, false, msg);
+    await logToolCall("cheaproute_web_search", args, null, Date.now() - start, false, msg);
     return { content: [{ type: "text" as const, text: `Error: ${msg}` }], isError: true };
   }
 }
@@ -56,7 +56,7 @@ export async function handleXSearch(args: {
 }) {
   const start = Date.now();
   try {
-    const result = await omniRouteFetch("/v1/search", {
+    const result = await cheapRouteFetch("/v1/search", {
       method: "POST",
       body: JSON.stringify({
         query: args.query,
@@ -66,11 +66,11 @@ export async function handleXSearch(args: {
       }),
       signal: AbortSignal.timeout(120000),
     });
-    await logToolCall("omniroute_x_search", args, result, Date.now() - start, true);
+    await logToolCall("cheaproute_x_search", args, result, Date.now() - start, true);
     return { content: [{ type: "text" as const, text: JSON.stringify(result, null, 2) }] };
   } catch (err) {
     const msg = toSafeMcpErrorMessage(err);
-    await logToolCall("omniroute_x_search", args, null, Date.now() - start, false, msg);
+    await logToolCall("cheaproute_x_search", args, null, Date.now() - start, false, msg);
     return { content: [{ type: "text" as const, text: `Error: ${msg}` }], isError: true };
   }
 }
@@ -101,16 +101,16 @@ export async function handleWebFetch(args: {
     if (args.depth !== undefined) body.depth = args.depth;
     if (args.wait_for_selector) body.wait_for_selector = args.wait_for_selector;
 
-    const result = await omniRouteFetch("/v1/web/fetch", {
+    const result = await cheapRouteFetch("/v1/web/fetch", {
       method: "POST",
       body: JSON.stringify(body),
       signal: mcpFetchTimeoutSignal("upstream"),
     });
-    await logToolCall("omniroute_web_fetch", args, result, Date.now() - start, true);
+    await logToolCall("cheaproute_web_fetch", args, result, Date.now() - start, true);
     return { content: [{ type: "text" as const, text: JSON.stringify(result, null, 2) }] };
   } catch (err) {
     const msg = toSafeMcpErrorMessage(err);
-    await logToolCall("omniroute_web_fetch", args, null, Date.now() - start, false, msg);
+    await logToolCall("cheaproute_web_fetch", args, null, Date.now() - start, false, msg);
     return { content: [{ type: "text" as const, text: `Error: ${msg}` }], isError: true };
   }
 }

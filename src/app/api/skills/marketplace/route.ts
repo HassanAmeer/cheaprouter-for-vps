@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { getSettings } from "@/lib/db/settings";
 import { isAuthenticated } from "@/shared/utils/apiAuth";
 import { getSkillsProviderSetting } from "@/lib/skills/providerSettings";
-import { sanitizeErrorMessage } from "@omniroute/open-sse/utils/error";
+import { sanitizeErrorMessage } from "@cheaproute/open-sse/utils/error";
 
 const POPULAR_BY_PROVIDER = {
   skillsmp: ["web-search", "file-reader", "sql-assistant", "devops-helper", "docs-assistant"],

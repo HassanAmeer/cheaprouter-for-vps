@@ -20,7 +20,7 @@ import {
 } from "@/lib/providers/codexFastTier";
 import { normalizeCodexLimitPolicy, providerText, ERROR_TYPE_LABELS } from "../providerPageHelpers";
 import { getCodexPlanLabel } from "../codexPlanLabel";
-import type { CodexAccountPoolProjection } from "@omniroute/open-sse/services/codexAccount/index.ts";
+import type { CodexAccountPoolProjection } from "@cheaproute/open-sse/services/codexAccount/index.ts";
 import CodexAccountDetails from "./CodexAccountDetails";
 import ConnectionQuotaPanel from "./ConnectionQuotaPanel";
 import type { ProviderQuotaCacheEntry } from "../hooks/useProviderQuota";

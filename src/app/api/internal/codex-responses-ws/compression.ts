@@ -17,19 +17,19 @@
  * now; the WS bridge previously had *zero* compression coverage, so this closes the primary gap.
  */
 
-import { logger } from "@omniroute/open-sse/utils/logger.ts";
-import { estimateTokens } from "@omniroute/open-sse/services/contextManager.ts";
-import { adaptBodyForCompression } from "@omniroute/open-sse/services/compression/bodyAdapter.ts";
-import { resolveOmniGlyphTransport } from "@omniroute/open-sse/services/compression/imageTransportPolicy.ts";
+import { logger } from "@cheaproute/open-sse/utils/logger.ts";
+import { estimateTokens } from "@cheaproute/open-sse/services/contextManager.ts";
+import { adaptBodyForCompression } from "@cheaproute/open-sse/services/compression/bodyAdapter.ts";
+import { resolveCheapGlyphTransport } from "@cheaproute/open-sse/services/compression/imageTransportPolicy.ts";
 import type {
   CompressionConfig,
   CompressionResult,
-} from "@omniroute/open-sse/services/compression/types.ts";
-import { resolveCompressionSettings } from "@omniroute/open-sse/handlers/chatCore/compressionSettings.ts";
+} from "@cheaproute/open-sse/services/compression/types.ts";
+import { resolveCompressionSettings } from "@cheaproute/open-sse/handlers/chatCore/compressionSettings.ts";
 import {
   writeCompressionAnalytics,
   writeCompressionSkip,
-} from "@omniroute/open-sse/handlers/chatCore/compressionAnalyticsWrite.ts";
+} from "@cheaproute/open-sse/handlers/chatCore/compressionAnalyticsWrite.ts";
 
 const log = logger("RESPONSES_WS_COMPRESSION");
 
@@ -65,7 +65,7 @@ export async function applyResponsesWsCompression(
     }
 
     const { selectCompressionStrategy, applyCompressionAsync } =
-      await import("@omniroute/open-sse/services/compression/strategySelector.ts");
+      await import("@cheaproute/open-sse/services/compression/strategySelector.ts");
 
     const estimatedTokens = estimateTokens(adapter.body.messages);
     const cachingContext = {
@@ -87,7 +87,7 @@ export async function applyResponsesWsCompression(
 
     const result = await applyCompressionAsync(adapter.body, mode, {
       model: ctx.model,
-      ...resolveOmniGlyphTransport(ctx.provider),
+      ...resolveCheapGlyphTransport(ctx.provider),
       provider: ctx.provider,
       config: settings as CompressionConfig,
       cachingContext,

@@ -1,7 +1,7 @@
 import { getDatabaseSettings } from "@/lib/db/databaseSettings";
 import { getDbInstance } from "@/lib/db/core";
 import { decryptConnectionFields } from "@/lib/db/encryption";
-import { registerSemanticCacheConfigResolver } from "@omniroute/open-sse/config/semanticCacheConfig.ts";
+import { registerSemanticCacheConfigResolver } from "@cheaproute/open-sse/config/semanticCacheConfig.ts";
 
 let registered = false;
 

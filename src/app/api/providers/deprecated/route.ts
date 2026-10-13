@@ -5,7 +5,7 @@ import { requireManagementAuth } from "@/lib/api/requireManagementAuth";
 import { getRawProviderConnections } from "@/lib/db/providers";
 import { deleteProviderConnectionsByProvider } from "@/lib/db/providers/deletion";
 import { listDeprecatedProviderLeftovers } from "@/lib/providers/deprecatedProviderCleanup";
-import { isDeprecatedProvider } from "@omniroute/open-sse/services/tokenRefresh.ts";
+import { isDeprecatedProvider } from "@cheaproute/open-sse/services/tokenRefresh.ts";
 import { isValidationFailure, validateBody } from "@/shared/validation/helpers";
 
 const purgeSchema = z.object({

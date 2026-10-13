@@ -44,7 +44,7 @@ export const listModelsCatalogTool: McpToolDefinition<
   typeof listModelsCatalogInput,
   typeof listModelsCatalogOutput
 > = {
-  name: "omniroute_list_models_catalog",
+  name: "cheaproute_list_models_catalog",
   description:
     "Lists all available AI models across all providers with their capabilities, current status, and pricing information.",
   inputSchema: listModelsCatalogInput,

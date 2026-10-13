@@ -30,7 +30,7 @@ import {
   MAX_RESULT_BYTES_PER_TOOL,
   MAX_RESULT_BYTES_TOTAL,
 } from "./followUpTranscript.ts";
-import { createErrorResult } from "@omniroute/open-sse/utils/error.ts";
+import { createErrorResult } from "@cheaproute/open-sse/utils/error.ts";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 

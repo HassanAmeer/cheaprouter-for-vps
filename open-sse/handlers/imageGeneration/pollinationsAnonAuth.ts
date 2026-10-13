@@ -8,7 +8,7 @@
 // equivalent: a keyless Pollinations image request went out with no
 // Authorization header AND no fingerprint headers, so Pollinations' own
 // upstream legitimately rejected it with a 401 — even with a perfectly
-// valid OmniRoute API key. This module mirrors that same anonymous
+// valid CheapRoute API key. This module mirrors that same anonymous
 // session-pool fallback for the image path.
 
 import { SessionPool } from "../../services/sessionPool/sessionPool.ts";

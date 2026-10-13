@@ -10,7 +10,7 @@ function parsePort(value, fallback) {
   return Number.isFinite(parsed) && parsed > 0 && parsed <= 65535 ? parsed : fallback;
 }
 
-const explicitBaseUrl = process.env.OMNIROUTE_BASE_URL || "";
+const explicitBaseUrl = process.env.CHEAPROUTE_BASE_URL || "";
 const isolatedPort = parsePort(
   process.env.DASHBOARD_PORT || process.env.PORT,
   23000 + (process.pid % 1000)
@@ -54,9 +54,9 @@ async function main() {
           PORT: String(port),
           DASHBOARD_PORT: String(port),
           API_PORT: String(port),
-          OMNIROUTE_BASE_URL: baseUrl,
+          CHEAPROUTE_BASE_URL: baseUrl,
         }),
-    OMNIROUTE_E2E_BOOTSTRAP_MODE: process.env.OMNIROUTE_E2E_BOOTSTRAP_MODE || "open",
+    CHEAPROUTE_E2E_BOOTSTRAP_MODE: process.env.CHEAPROUTE_E2E_BOOTSTRAP_MODE || "open",
     // Pin the custom server's bind address to loopback (#11535). The bootstrap
     // loopback verdict (apiAuth.isLoopbackRequest) comes from the peer stamp the
     // custom server writes from the real TCP socket (GHSA-7pq4-8pvv-rx7r), never
@@ -70,7 +70,7 @@ async function main() {
     // Only the custom Node server stamps the trusted PEER_IP_HEADER from the TCP
     // socket; without that stamp the authz middleware fails closed on locality and
     // every LOCAL_ONLY route (e.g. /api/mcp/audit) answers 403 even from loopback
-    // (#11535). run-next.mjs honors OMNIROUTE_E2E_BOOTSTRAP_MODE=open by clearing
+    // (#11535). run-next.mjs honors CHEAPROUTE_E2E_BOOTSTRAP_MODE=open by clearing
     // bootstrap credentials after its env merge, keeping the audit assertions live
     // (200) instead of masking them behind a 401. The Playwright webServer runner is
     // intentionally left untouched — it serves the whole blocking test-e2e suite.

@@ -4,10 +4,10 @@ import { getCombos, createCombo } from "@/lib/db/combos";
 import { normalizeComboModels } from "@/lib/combos/steps";
 import { duplicateAutoComboSchema } from "@/shared/validation/schemas";
 import { isValidationFailure, validateBody } from "@/shared/validation/helpers";
-import { resolveBuiltinAutoSpec } from "@omniroute/open-sse/services/autoCombo/builtinCatalog";
-import { AutoVariant } from "@omniroute/open-sse/services/autoCombo/autoPrefix";
-import { AutoComboSpec } from "@omniroute/open-sse/services/autoCombo/virtualFactory";
-import { MODEL_FAMILIES, ModelFamily } from "@omniroute/open-sse/services/autoCombo/modelFamily";
+import { resolveBuiltinAutoSpec } from "@cheaproute/open-sse/services/autoCombo/builtinCatalog";
+import { AutoVariant } from "@cheaproute/open-sse/services/autoCombo/autoPrefix";
+import { AutoComboSpec } from "@cheaproute/open-sse/services/autoCombo/virtualFactory";
+import { MODEL_FAMILIES, ModelFamily } from "@cheaproute/open-sse/services/autoCombo/modelFamily";
 
 // POST /api/combos/duplicate - Resolve an auto-combo into a static combo snapshot.
 // Takes an auto/* template name, resolves its candidate pool using the same logic as
@@ -40,7 +40,7 @@ export async function POST(request: Request) {
 
   try {
     const { createVirtualAutoCombo: _createVirtualAutoCombo } =
-      await import("@omniroute/open-sse/services/autoCombo/virtualFactory");
+      await import("@cheaproute/open-sse/services/autoCombo/virtualFactory");
 
     // Resolve the variant/spec using the same logic as builtinCatalog.
     const suffix = name.slice("auto/".length);
@@ -84,7 +84,7 @@ export async function POST(request: Request) {
     // includeResolvedCapabilities is required so computeSnapshotWeights can
     // differentiate candidates by vision/reasoning capabilities at snapshot time.
     const { prepareVirtualAutoComboInputs, createVirtualAutoComboFromPrepared } =
-      await import("@omniroute/open-sse/services/autoCombo/virtualFactory");
+      await import("@cheaproute/open-sse/services/autoCombo/virtualFactory");
 
     const prepared = await prepareVirtualAutoComboInputs({
       includeResolvedCapabilities: true,

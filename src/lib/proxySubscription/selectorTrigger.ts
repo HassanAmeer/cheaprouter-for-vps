@@ -40,7 +40,7 @@ import {
   noteProxyMemberRefusal,
   snapshotProxySetAside,
   type ProxyRefusalKind,
-} from "@omniroute/open-sse/utils/proxyRefusalMemory.ts";
+} from "@cheaproute/open-sse/utils/proxyRefusalMemory.ts";
 import { parseSelectorTag } from "./selectorEndpoint";
 import { getGroupMembers, switchSelector, type SelectorSwitchReason } from "./selectorClient";
 import { isSelectorControlUrlAllowedAtFetchTime, resolveSelectorAllowlist } from "./selectorGuard";

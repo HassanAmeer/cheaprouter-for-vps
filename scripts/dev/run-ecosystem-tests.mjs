@@ -10,7 +10,7 @@ function parsePort(value, fallback) {
   return Number.isFinite(parsed) && parsed > 0 && parsed <= 65535 ? parsed : fallback;
 }
 
-const explicitBaseUrl = process.env.OMNIROUTE_BASE_URL || "";
+const explicitBaseUrl = process.env.CHEAPROUTE_BASE_URL || "";
 const isolatedPort = parsePort(
   process.env.DASHBOARD_PORT || process.env.PORT,
   22000 + (process.pid % 1000)
@@ -56,15 +56,15 @@ async function main() {
           PORT: String(port),
           DASHBOARD_PORT: String(port),
           API_PORT: String(port),
-          OMNIROUTE_BASE_URL: baseUrl,
+          CHEAPROUTE_BASE_URL: baseUrl,
         }),
-    OMNIROUTE_E2E_BOOTSTRAP_MODE: process.env.OMNIROUTE_E2E_BOOTSTRAP_MODE || "open",
+    CHEAPROUTE_E2E_BOOTSTRAP_MODE: process.env.CHEAPROUTE_E2E_BOOTSTRAP_MODE || "open",
     REQUIRE_API_KEY: explicitBaseUrl ? process.env.REQUIRE_API_KEY : "false",
     ENABLE_CLI_TOOLS: "true",
     // The production auth policy derives locality from the real TCP peer stamp.
     HOST: process.env.HOST || "127.0.0.1",
-    OMNIROUTE_DISABLE_BACKGROUND_SERVICES:
-      process.env.OMNIROUTE_DISABLE_BACKGROUND_SERVICES || "true",
+    CHEAPROUTE_DISABLE_BACKGROUND_SERVICES:
+      process.env.CHEAPROUTE_DISABLE_BACKGROUND_SERVICES || "true",
   };
 
   if (!(await isServerReady())) {

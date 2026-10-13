@@ -1,7 +1,7 @@
 /**
  * claudeLowPriority.ts — Claude OAuth "lower-priority lane" after the 5-hour usage wall.
  *
- * OmniRoute counterpart of Claude Code's `/low-priority` command (wire contract captured
+ * CheapRoute counterpart of Claude Code's `/low-priority` command (wire contract captured
  * from Claude Code 2.1.263). A Claude subscription account that hits its 5-hour usage
  * limit gets a 429 carrying `anthropic-ratelimit-unified-slow-offer: treatment`. Accepting
  * the offer means re-sending the request — and every following request until the window

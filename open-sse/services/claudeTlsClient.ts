@@ -17,9 +17,9 @@ import {
 export const CLAUDE_TLS_BROWSER_MAJOR_VERSION = "146";
 
 const DEFAULT_TIMEOUT_MS =
-  Number.parseInt(process.env.OMNIROUTE_CLAUDE_TLS_TIMEOUT_MS || "", 10) || 60_000;
+  Number.parseInt(process.env.CHEAPROUTE_CLAUDE_TLS_TIMEOUT_MS || "", 10) || 60_000;
 const HARD_TIMEOUT_GRACE_MS =
-  Number.parseInt(process.env.OMNIROUTE_CLAUDE_TLS_GRACE_MS || "", 10) || 10_000;
+  Number.parseInt(process.env.CHEAPROUTE_CLAUDE_TLS_GRACE_MS || "", 10) || 10_000;
 
 export const tlsClientModule = createTlsClientModule({
   providerName: "Claude",

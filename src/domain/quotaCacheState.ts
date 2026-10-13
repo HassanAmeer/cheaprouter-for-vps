@@ -12,7 +12,7 @@
  * @module domain/quotaCacheState
  */
 
-import type { ClaudeQuotaMetadata } from "@omniroute/open-sse/services/usage/quota.ts";
+import type { ClaudeQuotaMetadata } from "@cheaproute/open-sse/services/usage/quota.ts";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -67,12 +67,12 @@ interface QuotaCacheState {
 }
 
 declare global {
-  var __omnirouteQuotaCacheState: QuotaCacheState | undefined;
+  var __cheaprouteQuotaCacheState: QuotaCacheState | undefined;
 }
 
 export function getQuotaCacheState(): QuotaCacheState {
-  if (!globalThis.__omnirouteQuotaCacheState) {
-    globalThis.__omnirouteQuotaCacheState = {
+  if (!globalThis.__cheaprouteQuotaCacheState) {
+    globalThis.__cheaprouteQuotaCacheState = {
       cache: new Map(),
       refreshingSet: new Set(),
       healthyUntil: new Map(),
@@ -80,7 +80,7 @@ export function getQuotaCacheState(): QuotaCacheState {
       tickRunning: false,
     };
   }
-  return globalThis.__omnirouteQuotaCacheState;
+  return globalThis.__cheaprouteQuotaCacheState;
 }
 
 // ─── #14359 healthy override ────────────────────────────────────────────────

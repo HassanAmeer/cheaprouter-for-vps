@@ -104,7 +104,7 @@ async function dropManagedAlias(state: AliasSyncState, alias: string): Promise<v
   state.removedAliases.push(alias);
 }
 
-// Prune pass (#11836): only alias names OmniRoute itself generated/adopted
+// Prune pass (#11836): only alias names CheapRoute itself generated/adopted
 // (`managedAliasNames`) are eligible for deletion here — a hand-created custom alias that
 // happens to already point at a model's full id must never be deleted just because that
 // model transiently drops out of the sync's target set.
@@ -130,7 +130,7 @@ async function pruneHiddenModelAliases(state: AliasSyncState, fullModel: string)
   }
 }
 
-// Assigns (or adopts) the alias for one visible model. Only an alias OmniRoute itself
+// Assigns (or adopts) the alias for one visible model. Only an alias CheapRoute itself
 // writes here is eligible for the prune passes above (#11836) — an alias that already
 // carries the right value (whether it is a genuinely managed alias from a prior sync, or a
 // hand-created custom alias that happens to coincide with `fullModel`) is left exactly
@@ -185,7 +185,7 @@ export async function syncManagedAvailableModelAliases(
         return typeof value === "string";
       })
     ),
-    // Provenance marker (#11836): only alias names OmniRoute itself generated/adopted are
+    // Provenance marker (#11836): only alias names CheapRoute itself generated/adopted are
     // eligible for the prune passes below — a hand-created custom alias that happens to
     // already point at a model's full id must never be deleted just because that model
     // transiently drops out of the sync's target set.

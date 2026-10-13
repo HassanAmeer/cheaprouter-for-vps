@@ -14,7 +14,7 @@ type McpHttpAuthContext = {
  * `httpTransport.ts` passes into `transport.handleRequest(req, { authInfo })`
  * so per-tool-call `extra.authInfo` — and therefore
  * `scopeEnforcement.ts::resolveCallerScopeContext` — sees the caller's real
- * per-key scopes instead of falling back to the `OMNIROUTE_MCP_SCOPES` env var.
+ * per-key scopes instead of falling back to the `CHEAPROUTE_MCP_SCOPES` env var.
  */
 export type McpCallerAuthInfo = {
   token: string;

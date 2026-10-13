@@ -21,7 +21,7 @@
  * sync: registering a provider the usual way is enough.
  */
 import { NOAUTH_PROVIDERS } from "../constants/providers/noauth.ts";
-import { REGISTRY } from "@omniroute/open-sse/config/providerRegistry.ts";
+import { REGISTRY } from "@cheaproute/open-sse/config/providerRegistry.ts";
 
 export type CredentialRequirement =
   /** Never needs a credential — the connect form does not even ask for one. */

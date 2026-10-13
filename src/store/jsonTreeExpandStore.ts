@@ -51,7 +51,7 @@ const useJsonTreeExpandStore = create<JsonTreeExpandState>()(
       expandAll: (sectionId) => set((s) => ({ levels: { ...s.levels, [sectionId]: MAX_LEVEL } })),
     }),
     {
-      name: "omniroute-json-tree-expand-levels",
+      name: "cheaproute-json-tree-expand-levels",
     }
   )
 );

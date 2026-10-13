@@ -1,6 +1,6 @@
 import { getActiveSyncedCatalog } from "@/lib/db/models/activeSyncedCatalog";
-import { providerUsesAuthoritativeLiveCatalog } from "@omniroute/open-sse/config/providerRegistry";
-import { getRegisteredProviderEffortBaseModelId } from "@omniroute/open-sse/utils/registeredEffortVariants.ts";
+import { providerUsesAuthoritativeLiveCatalog } from "@cheaproute/open-sse/config/providerRegistry";
+import { getRegisteredProviderEffortBaseModelId } from "@cheaproute/open-sse/utils/registeredEffortVariants.ts";
 
 /**
  * #15585: dispatch (`getModelInfo` -> `lookupModelMeta`) rejects a model with

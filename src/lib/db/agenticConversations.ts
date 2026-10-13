@@ -324,7 +324,7 @@ export function resolveCallLogIdsByCorrelationIds(correlationIds: string[]): Map
 }
 
 /**
- * Upsert for the client-supplied `x-omniroute-session-id` path: the header
+ * Upsert for the client-supplied `x-cheaproute-session-id` path: the header
  * value is used directly as the conversation id, so this only needs to keep
  * `turn_count`/`last_seen_at` moving — the fingerprint/prefix-hash fields are
  * unused for header-pinned conversations (continuation is guaranteed by the

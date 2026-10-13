@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * OmniRoute — UI i18n ICU gate (CI gate, blocking).
+ * CheapRoute — UI i18n ICU gate (CI gate, blocking).
  *
  * Compiles EVERY message value in every locale catalog
  * (src/i18n/messages/*.json) with `IntlMessageFormat` — the exact parser
@@ -11,10 +11,10 @@
  *
  * Real incidents this gate prevents (all same class, all fixed with ICU
  * single-quote escaping):
- *   - #12302: `ccOnboardingKeyPlaceholder` = `<your OmniRoute API key>`
+ *   - #12302: `ccOnboardingKeyPlaceholder` = `<your CheapRoute API key>`
  *     in every locale catalog — INVALID_TAG crashed the Claude Code onboarding
  *     block.
- *   - #12505: `featureFlags.definitions.OMNIROUTE_AUTO_SYNC_CLAUDE_PROFILES
+ *   - #12505: `featureFlags.definitions.CHEAPROUTE_AUTO_SYNC_CLAUDE_PROFILES
  *     .description` = `~/.claude/profiles/<name>/settings.json` in every
  *     locale catalog
  *     locales — UNCLOSED_TAG made the Feature Flags page show the raw key.

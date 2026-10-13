@@ -5,13 +5,13 @@
  *
  * Extracted verbatim from `server.ts` (see that file's `createMcpServer`, which
  * now imports these). Nothing here changed behaviourally: every handler keeps
- * its original body, its `omniroute_*` audit tool name, and its
+ * its original body, its `cheaproute_*` audit tool name, and its
  * `toSafeMcpErrorMessage` catch. The move exists so `server.ts` can be read as
  * registration rather than as an implementation, and so this file can be read
  * without paging through eleven unrelated handlers to find one.
  *
  * Grouped by surface rather than one-file-per-handler: these six all speak to
- * OmniRoute's own management API and all share the fetch → audit → JSON shape,
+ * CheapRoute's own management API and all share the fetch → audit → JSON shape,
  * so a sixth file would have been a near-copy. That also matches how
  * `advancedTools.ts` already holds sixteen handlers.
  *
@@ -33,16 +33,16 @@ import {
   type JsonRecord,
 } from "../coercions.ts";
 import { toSafeMcpErrorMessage } from "../errorMessage.ts";
-import { omniRouteFetch } from "../internalFetch.ts";
+import { cheapRouteFetch } from "../internalFetch.ts";
 import { normalizeQuotaResponse } from "../../../src/shared/contracts/quota.ts";
 
 export async function handleGetHealth() {
   const start = Date.now();
   try {
     const [healthRaw, resilienceRaw, rateLimitsRaw] = await Promise.allSettled([
-      omniRouteFetch("/api/monitoring/health"),
-      omniRouteFetch("/api/resilience"),
-      omniRouteFetch("/api/rate-limits"),
+      cheapRouteFetch("/api/monitoring/health"),
+      cheapRouteFetch("/api/resilience"),
+      cheapRouteFetch("/api/rate-limits"),
     ]);
 
     const health = healthRaw.status === "fulfilled" ? toRecord(healthRaw.value) : {};
@@ -124,11 +124,11 @@ export async function handleGetHealth() {
       degraded: degraded.length > 0 ? degraded : undefined,
     };
 
-    await logToolCall("omniroute_get_health", {}, result, Date.now() - start, true);
+    await logToolCall("cheaproute_get_health", {}, result, Date.now() - start, true);
     return { content: [{ type: "text" as const, text: JSON.stringify(result, null, 2) }] };
   } catch (err) {
     const msg = toSafeMcpErrorMessage(err);
-    await logToolCall("omniroute_get_health", {}, null, Date.now() - start, false, msg);
+    await logToolCall("cheaproute_get_health", {}, null, Date.now() - start, false, msg);
     return { content: [{ type: "text" as const, text: `Error: ${msg}` }], isError: true };
   }
 }
@@ -136,7 +136,7 @@ export async function handleGetHealth() {
 export async function handleListCombos(args: { includeMetrics?: boolean }) {
   const start = Date.now();
   try {
-    const combosRaw = await omniRouteFetch("/api/combos");
+    const combosRaw = await cheapRouteFetch("/api/combos");
     const combosRecord = toRecord(combosRaw);
     const combos = Array.isArray(combosRecord.combos)
       ? combosRecord.combos
@@ -145,7 +145,7 @@ export async function handleListCombos(args: { includeMetrics?: boolean }) {
         : [];
     let metrics: JsonRecord = {};
     if (args.includeMetrics) {
-      metrics = toRecord(await omniRouteFetch("/api/combos/metrics").catch(() => ({})));
+      metrics = toRecord(await cheapRouteFetch("/api/combos/metrics").catch(() => ({})));
     }
 
     const result = {
@@ -166,11 +166,11 @@ export async function handleListCombos(args: { includeMetrics?: boolean }) {
       }),
     };
 
-    await logToolCall("omniroute_list_combos", args, result, Date.now() - start, true);
+    await logToolCall("cheaproute_list_combos", args, result, Date.now() - start, true);
     return { content: [{ type: "text" as const, text: JSON.stringify(result, null, 2) }] };
   } catch (err) {
     const msg = toSafeMcpErrorMessage(err);
-    await logToolCall("omniroute_list_combos", args, null, Date.now() - start, false, msg);
+    await logToolCall("cheaproute_list_combos", args, null, Date.now() - start, false, msg);
     return { content: [{ type: "text" as const, text: `Error: ${msg}` }], isError: true };
   }
 }
@@ -178,14 +178,14 @@ export async function handleListCombos(args: { includeMetrics?: boolean }) {
 export async function handleGetComboMetrics(args: { comboId: string }) {
   const start = Date.now();
   try {
-    const result = await omniRouteFetch(
+    const result = await cheapRouteFetch(
       `/api/combos/metrics?comboId=${encodeURIComponent(args.comboId)}`
     );
-    await logToolCall("omniroute_get_combo_metrics", args, result, Date.now() - start, true);
+    await logToolCall("cheaproute_get_combo_metrics", args, result, Date.now() - start, true);
     return { content: [{ type: "text" as const, text: JSON.stringify(result, null, 2) }] };
   } catch (err) {
     const msg = toSafeMcpErrorMessage(err);
-    await logToolCall("omniroute_get_combo_metrics", args, null, Date.now() - start, false, msg);
+    await logToolCall("cheaproute_get_combo_metrics", args, null, Date.now() - start, false, msg);
     return { content: [{ type: "text" as const, text: `Error: ${msg}` }], isError: true };
   }
 }
@@ -193,15 +193,15 @@ export async function handleGetComboMetrics(args: { comboId: string }) {
 export async function handleSwitchCombo(args: { comboId: string; active: boolean }) {
   const start = Date.now();
   try {
-    const result = await omniRouteFetch(`/api/combos/${encodeURIComponent(args.comboId)}`, {
+    const result = await cheapRouteFetch(`/api/combos/${encodeURIComponent(args.comboId)}`, {
       method: "PUT",
       body: JSON.stringify({ isActive: args.active }),
     });
-    await logToolCall("omniroute_switch_combo", args, result, Date.now() - start, true);
+    await logToolCall("cheaproute_switch_combo", args, result, Date.now() - start, true);
     return { content: [{ type: "text" as const, text: JSON.stringify(result, null, 2) }] };
   } catch (err) {
     const msg = toSafeMcpErrorMessage(err);
-    await logToolCall("omniroute_switch_combo", args, null, Date.now() - start, false, msg);
+    await logToolCall("cheaproute_switch_combo", args, null, Date.now() - start, false, msg);
     return { content: [{ type: "text" as const, text: `Error: ${msg}` }], isError: true };
   }
 }
@@ -214,15 +214,15 @@ export async function handleCreateCombo(args: {
 }) {
   const start = Date.now();
   try {
-    const result = await omniRouteFetch("/api/combos", {
+    const result = await cheapRouteFetch("/api/combos", {
       method: "POST",
       body: JSON.stringify(args),
     });
-    await logToolCall("omniroute_create_combo", args, result, Date.now() - start, true);
+    await logToolCall("cheaproute_create_combo", args, result, Date.now() - start, true);
     return { content: [{ type: "text" as const, text: JSON.stringify(result, null, 2) }] };
   } catch (err) {
     const msg = toSafeMcpErrorMessage(err);
-    await logToolCall("omniroute_create_combo", args, null, Date.now() - start, false, msg);
+    await logToolCall("cheaproute_create_combo", args, null, Date.now() - start, false, msg);
     return { content: [{ type: "text" as const, text: `Error: ${msg}` }], isError: true };
   }
 }
@@ -234,16 +234,16 @@ export async function handleCheckQuota(args: { provider?: string; connectionId?:
     if (args.connectionId) path += `?connectionId=${encodeURIComponent(args.connectionId)}`;
     else if (args.provider) path += `?provider=${encodeURIComponent(args.provider)}`;
 
-    const result = normalizeQuotaResponse(await omniRouteFetch(path), {
+    const result = normalizeQuotaResponse(await cheapRouteFetch(path), {
       provider: args.provider || null,
       connectionId: args.connectionId || null,
     });
 
-    await logToolCall("omniroute_check_quota", args, result, Date.now() - start, true);
+    await logToolCall("cheaproute_check_quota", args, result, Date.now() - start, true);
     return { content: [{ type: "text" as const, text: JSON.stringify(result, null, 2) }] };
   } catch (err) {
     const msg = toSafeMcpErrorMessage(err);
-    await logToolCall("omniroute_check_quota", args, null, Date.now() - start, false, msg);
+    await logToolCall("cheaproute_check_quota", args, null, Date.now() - start, false, msg);
     return { content: [{ type: "text" as const, text: `Error: ${msg}` }], isError: true };
   }
 }

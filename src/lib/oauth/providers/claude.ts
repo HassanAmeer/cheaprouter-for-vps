@@ -1,6 +1,6 @@
 import crypto from "node:crypto";
 import { CLAUDE_CONFIG } from "../constants/oauth";
-import { getClaudeCodeVersion } from "@omniroute/open-sse/executors/claudeIdentity.ts";
+import { getClaudeCodeVersion } from "@cheaproute/open-sse/executors/claudeIdentity.ts";
 import { validateClaudeOAuthInline } from "@/lib/providers/validation/anthropicFormat";
 
 const SETUP_TOKEN_PREFIX = "sk-ant-oat";

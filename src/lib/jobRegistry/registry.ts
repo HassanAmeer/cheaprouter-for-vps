@@ -17,7 +17,7 @@ import {
   getRuns as dbGetRuns,
 } from "../db/jobRegistryDb";
 import { isEnvEnabled } from "./core";
-import { sanitizeErrorMessage } from "@omniroute/open-sse/utils/error.ts";
+import { sanitizeErrorMessage } from "@cheaproute/open-sse/utils/error.ts";
 import type { JobDefinition, HandlerResult, JobRun } from "./core";
 
 function errMessage(err: unknown): string {

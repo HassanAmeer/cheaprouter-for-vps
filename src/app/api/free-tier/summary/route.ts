@@ -1,11 +1,11 @@
 import {
   computeFreeModelTotals,
   type FreeModelBudget,
-} from "@omniroute/open-sse/config/freeModelCatalog.ts";
+} from "@cheaproute/open-sse/config/freeModelCatalog.ts";
 import {
   FREE_CATALOG_CURATED_AT,
   FREE_MODEL_BUDGETS,
-} from "@omniroute/open-sse/config/freeModelCatalog.data.ts";
+} from "@cheaproute/open-sse/config/freeModelCatalog.data.ts";
 import type { MergedEntry } from "@/lib/radar/applyFeed";
 import { getCatalogWithoutOverlay, getRadarCatalog } from "@/lib/radar";
 import { sumUsageTokensThisMonth } from "@/lib/db/usageSummary";

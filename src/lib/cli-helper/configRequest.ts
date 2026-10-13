@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { buildErrorBody } from "@omniroute/open-sse/utils/error.ts";
+import { buildErrorBody } from "@cheaproute/open-sse/utils/error.ts";
 
 const baseUrlSchema = z.string().refine((value) => {
   try {
@@ -24,7 +24,7 @@ export const configPreviewQuerySchema = z.object({ baseUrl: baseUrlSchema.option
 
 export function defaultConfigBaseUrl(): string {
   const port = process.env.API_PORT || process.env.PORT || 20128;
-  return process.env.OMNIROUTE_BASE_URL || process.env.BASE_URL || `http://localhost:${port}/v1`;
+  return process.env.CHEAPROUTE_BASE_URL || process.env.BASE_URL || `http://localhost:${port}/v1`;
 }
 
 export function privateConfigResponse(body: unknown, status = 200): NextResponse {

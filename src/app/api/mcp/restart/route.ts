@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getMcpHttpStatus, shutdownMcpHttp } from "@omniroute/open-sse/mcp-server/httpTransport";
+import { getMcpHttpStatus, shutdownMcpHttp } from "@cheaproute/open-sse/mcp-server/httpTransport";
 import { getCachedSettings } from "@/lib/db/settings";
 import { requireManagementAuth } from "@/lib/api/requireManagementAuth";
 
@@ -10,7 +10,7 @@ import { requireManagementAuth } from "@/lib/api/requireManagementAuth";
  * external MCP process to restart the way `/api/restart` self-restarts the
  * whole server — this only tears down active SSE/Streamable HTTP sessions.
  *
- * Fixes #13012: the CLI's `omniroute mcp restart` POSTs here but the route
+ * Fixes #13012: the CLI's `cheaproute mcp restart` POSTs here but the route
  * never existed, so every call 404d.
  */
 export async function POST(request: Request) {
@@ -24,7 +24,7 @@ export async function POST(request: Request) {
   if (!mcpEnabled) {
     return NextResponse.json(
       {
-        error: "MCP is disabled; enable it first (`omniroute mcp enable`).",
+        error: "MCP is disabled; enable it first (`cheaproute mcp enable`).",
       },
       { status: 409 }
     );
@@ -36,7 +36,7 @@ export async function POST(request: Request) {
         error:
           "MCP restart is not supported for the stdio transport — stdio clients spawn their " +
           "own subprocess with no in-process handle to restart. Switch to sse/streamable-http " +
-          "(`omniroute mcp enable --transport sse`) or restart the client instead.",
+          "(`cheaproute mcp enable --transport sse`) or restart the client instead.",
       },
       { status: 501 }
     );

@@ -48,7 +48,7 @@ function getProxyTimeoutMs(req: IncomingMessage): number {
 // client has to be reported through them or it would be taken for the host itself.
 //
 //   local          loopback peer: its headers pass through, as for any local caller.
-//   trusted-proxy  private-LAN peer that OMNIROUTE_TRUST_PROXY=private|lan names as a
+//   trusted-proxy  private-LAN peer that CHEAPROUTE_TRUST_PROXY=private|lan names as a
 //                  proxy: its headers pass through and its own address is appended.
 //   remote         anyone else: everything it sent about forwarding is dropped and it
 //                  is reported by the address of its connection.
@@ -246,7 +246,7 @@ function proxyUpgrade(
 }
 
 declare global {
-  var __omnirouteApiBridgeStarted: boolean | undefined;
+  var __cheaprouteApiBridgeStarted: boolean | undefined;
 }
 
 export function createApiBridgeServer(dashboardPort: number): http.Server {
@@ -302,7 +302,7 @@ export function initApiBridgeServer(): void {
   // becomes an uncaughtException that kills the server. Benign aborts are
   // swallowed; genuine errors still crash loudly (#fix-dev-server-aborted).
   installProcessCrashGuard();
-  if (globalThis.__omnirouteApiBridgeStarted) return;
+  if (globalThis.__cheaprouteApiBridgeStarted) return;
 
   const { apiPort, dashboardPort } = getRuntimePorts();
   if (apiPort === dashboardPort) return;
@@ -322,7 +322,7 @@ export function initApiBridgeServer(): void {
   });
 
   server.listen(apiPort, host, () => {
-    globalThis.__omnirouteApiBridgeStarted = true;
+    globalThis.__cheaprouteApiBridgeStarted = true;
     console.log(`[API Bridge] Listening on ${host}:${apiPort} -> dashboard:${dashboardPort}`);
   });
 }

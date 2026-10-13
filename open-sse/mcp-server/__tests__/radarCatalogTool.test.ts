@@ -50,9 +50,9 @@ const catalog = {
   meta: { version: "2026.08.08.1", tier: "community", fetchedAt: "2026-08-08T20:00:00Z" },
 };
 
-describe("omniroute_radar_catalog", () => {
+describe("cheaproute_radar_catalog", () => {
   it("is a phase-1 read-only registry tool with the dedicated Radar scope", () => {
-    const definition = MCP_TOOL_MAP.omniroute_radar_catalog;
+    const definition = MCP_TOOL_MAP.cheaproute_radar_catalog;
     expect(definition).toBeDefined();
     expect(definition.phase).toBe(1);
     expect(definition.scopes).toEqual(["read:radar"]);
@@ -60,7 +60,7 @@ describe("omniroute_radar_catalog", () => {
     expect(definition.sourceEndpoints).toEqual(["/api/radar/catalog"]);
     expect(MCP_ESSENTIAL_TOOLS).toContain(definition);
     expect(MCP_SCOPE_LIST).toContain("read:radar");
-    expect(MCP_TOOL_SCOPES.omniroute_radar_catalog).toEqual(["read:radar"]);
+    expect(MCP_TOOL_SCOPES.cheaproute_radar_catalog).toEqual(["read:radar"]);
   });
 
   it("reads only the local catalog and returns a closed filtered projection", async () => {
@@ -102,9 +102,9 @@ describe("omniroute_radar_catalog", () => {
   });
 
   it("allows read:radar and read:* but denies a missing scope when enforcement is active", () => {
-    expect(evaluateToolScopes("omniroute_radar_catalog", ["read:radar"], true).allowed).toBe(true);
-    expect(evaluateToolScopes("omniroute_radar_catalog", ["read:*"], true).allowed).toBe(true);
-    expect(evaluateToolScopes("omniroute_radar_catalog", [], true)).toMatchObject({
+    expect(evaluateToolScopes("cheaproute_radar_catalog", ["read:radar"], true).allowed).toBe(true);
+    expect(evaluateToolScopes("cheaproute_radar_catalog", ["read:*"], true).allowed).toBe(true);
+    expect(evaluateToolScopes("cheaproute_radar_catalog", [], true)).toMatchObject({
       allowed: false,
       reason: "missing_scopes",
       missing: ["read:radar"],
@@ -112,7 +112,7 @@ describe("omniroute_radar_catalog", () => {
   });
 });
 
-describe("omniroute_radar_catalog MCP dispatch", () => {
+describe("cheaproute_radar_catalog MCP dispatch", () => {
   const mockFetch = vi.fn();
   let client: Client;
 
@@ -135,10 +135,10 @@ describe("omniroute_radar_catalog MCP dispatch", () => {
     mockFetch.mockResolvedValueOnce({ ok: true, json: async () => catalog });
 
     const listed = await client.listTools();
-    expect(listed.tools.some((tool) => tool.name === "omniroute_radar_catalog")).toBe(true);
+    expect(listed.tools.some((tool) => tool.name === "cheaproute_radar_catalog")).toBe(true);
 
     const result = await client.callTool({
-      name: "omniroute_radar_catalog",
+      name: "cheaproute_radar_catalog",
       arguments: { enabledOnly: false },
     });
     expect(result.isError).toBeFalsy();

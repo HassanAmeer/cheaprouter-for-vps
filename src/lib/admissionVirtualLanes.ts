@@ -2,7 +2,7 @@
  * Adaptive virtual admission lanes (#9654) — src-side activation surface.
  *
  * The adaptive gate itself (`open-sse/services/admission/runtime.ts`) reads
- * `OMNIROUTE_CHAT_VIRTUAL_LANES` from env at process-global construction. This
+ * `CHEAPROUTE_CHAT_VIRTUAL_LANES` from env at process-global construction. This
  * module is the activation layer that lives where the DB is reachable:
  *
  *  - `resolveAdaptiveVirtualLanesFlag` resolves the flag with **env-wins**
@@ -20,7 +20,7 @@
  */
 import { getFeatureFlagOverride } from "@/lib/db/featureFlags";
 
-export const ADAPTIVE_VIRTUAL_LANES_FLAG_KEY = "OMNIROUTE_CHAT_VIRTUAL_LANES";
+export const ADAPTIVE_VIRTUAL_LANES_FLAG_KEY = "CHEAPROUTE_CHAT_VIRTUAL_LANES";
 
 export type AdaptiveVirtualLanesFlagState = {
   enabled: boolean;
@@ -79,7 +79,7 @@ export async function warmAdaptiveVirtualLanesIntoRuntime(
 
   const reload =
     deps.reload ??
-    (await import("@omniroute/open-sse/services/admission/runtime.ts"))
+    (await import("@cheaproute/open-sse/services/admission/runtime.ts"))
       .reloadAdaptiveAdmissionRuntime;
   reload({
     env: {

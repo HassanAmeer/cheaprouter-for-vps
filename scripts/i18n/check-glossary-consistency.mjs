@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * OmniRoute — Chinese terminology glossary consistency gate (zh-CN + zh-TW).
+ * CheapRoute — Chinese terminology glossary consistency gate (zh-CN + zh-TW).
  *
  * Complements the existing parity (check-ui-keys-coverage.mjs) and ICU
  * (validate_translation.py) checks with a native-quality layer:

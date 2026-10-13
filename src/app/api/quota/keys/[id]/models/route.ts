@@ -17,7 +17,7 @@
  */
 
 import { NextResponse } from "next/server";
-import { buildErrorBody } from "@omniroute/open-sse/utils/error";
+import { buildErrorBody } from "@cheaproute/open-sse/utils/error";
 import { requireManagementAuth } from "@/lib/api/requireManagementAuth";
 import { getApiKeyById } from "@/lib/db/apiKeys";
 import { getCombos } from "@/lib/db/combos";

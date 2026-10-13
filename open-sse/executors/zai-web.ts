@@ -440,7 +440,7 @@ export class ZaiWebExecutor extends BaseExecutor {
               "with browsers).",
             input.body,
             ZAI_CHAT_URL,
-            { "X-Omni-Fallback-Hint": "connection_cooldown" }
+            { "X-Cheap-Fallback-Hint": "connection_cooldown" }
           ),
         };
       }
@@ -475,7 +475,7 @@ export class ZaiWebExecutor extends BaseExecutor {
       }),
       auditHeaders: {
         Authorization: "Bearer [REDACTED]",
-        "X-OmniRoute-Transport": "browser",
+        "X-CheapRoute-Transport": "browser",
       },
       auditBody: buildZaiBrowserAuditBody({
         messages: input.messages,

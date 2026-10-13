@@ -97,7 +97,7 @@ export function buildPerplexityRequest(
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${params.token}`,
-        "X-Pplx-Integration": "omniroute",
+        "X-Pplx-Integration": "cheaproute",
       },
       body: JSON.stringify(body),
     },

@@ -421,11 +421,11 @@ const SEARCH_HINT = "You have built-in web search. Answer questions directly usi
  * It used to be unconditional. Perplexity's answer engine is search-first anyway, and
  * for coding clients the sentence leaks into replies as meta-commentary ("I need to
  * search before responding per my instructions"), so it is now opt-in via
- * `OMNIROUTE_PPLX_SEARCH_HINT`. Read per call rather than at module load so the flag
+ * `CHEAPROUTE_PPLX_SEARCH_HINT`. Read per call rather than at module load so the flag
  * can be flipped without restarting the server (and so tests can toggle it).
  */
 function searchHintEnabled(): boolean {
-  return /^(1|true|yes|on)$/i.test(process.env.OMNIROUTE_PPLX_SEARCH_HINT ?? "");
+  return /^(1|true|yes|on)$/i.test(process.env.CHEAPROUTE_PPLX_SEARCH_HINT ?? "");
 }
 
 export function buildQuery(parsed: ParsedMessages, followUpUuid: string | null): string {

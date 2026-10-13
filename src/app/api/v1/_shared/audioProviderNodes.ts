@@ -15,7 +15,7 @@
  *    that serves audio on the same base URL).
  *
  * 2. **host** — loopback/private nodes, and hostnames the operator listed in
- *    `OMNIROUTE_LOCAL_PROVIDER_NODE_HOSTS` (#14635), are always eligible. Remote nodes are
+ *    `CHEAPROUTE_LOCAL_PROVIDER_NODE_HOSTS` (#14635), are always eligible. Remote nodes are
  *    opt-in via `AUDIO_REMOTE_PROVIDER_NODES`, default OFF: routing audio to an
  *    arbitrary remote host changes egress identity, so it must be an explicit
  *    operator decision rather than a silent default (cf. #3963).
@@ -28,14 +28,14 @@ import {
   buildDynamicAudioProvider,
   type AudioProvider,
   type ProviderNodeRow,
-} from "@omniroute/open-sse/config/audioRegistry.ts";
+} from "@cheaproute/open-sse/config/audioRegistry.ts";
 
 /** Feature flag gating remote (non-loopback) audio provider nodes. Default OFF. */
 export const AUDIO_REMOTE_NODES_FLAG = "AUDIO_REMOTE_PROVIDER_NODES";
 
 /**
  * Hosts that never leave the operator's machine or Docker network: loopback, the Docker
- * private range, and hostnames listed in `OMNIROUTE_LOCAL_PROVIDER_NODE_HOSTS` (#14635).
+ * private range, and hostnames listed in `CHEAPROUTE_LOCAL_PROVIDER_NODE_HOSTS` (#14635).
  * `::1` stays excluded, matching the previous SSRF hardening.
  */
 export { isLocalProviderNodeHost as isLocalAudioNodeHost };

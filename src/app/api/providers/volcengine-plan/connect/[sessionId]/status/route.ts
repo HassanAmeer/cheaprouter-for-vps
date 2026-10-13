@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireManagementAuth } from "@/lib/api/requireManagementAuth";
 import { bindVolcenginePlansFromConsoleCredentials } from "@/lib/providers/volcenginePlanBinding";
-import { sanitizeErrorMessage } from "@omniroute/open-sse/utils/error.ts";
+import { sanitizeErrorMessage } from "@cheaproute/open-sse/utils/error.ts";
 
 /**
  * GET /api/providers/volcengine-plan/connect/[sessionId]/status
@@ -19,7 +19,7 @@ export async function GET(
 
   try {
     const { volcengineConsoleAutoLoginService } =
-      await import("@omniroute/open-sse/services/volcengineConsoleAutoLogin.ts");
+      await import("@cheaproute/open-sse/services/volcengineConsoleAutoLogin.ts");
 
     const session = await volcengineConsoleAutoLoginService.withBinding(sessionId, (credentials) =>
       bindVolcenginePlansFromConsoleCredentials(credentials)

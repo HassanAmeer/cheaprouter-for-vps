@@ -47,7 +47,7 @@ export function withCustomUserAgent(init: RequestInit, providerSpecificData: any
  * relay to cloud-metadata endpoints. We apply `getProviderValidationGuard()`
  * (local-first default = "block-metadata": allow LAN/localhost providers but
  * reject 169.254.169.254 / link-local IMDS; power users can opt fully out via
- * `OMNIROUTE_ALLOW_PRIVATE_PROVIDER_URLS`). `applyUrlGuard` only checks the
+ * `CHEAPROUTE_ALLOW_PRIVATE_PROVIDER_URLS`). `applyUrlGuard` only checks the
  * INITIAL url, so `allowRedirect: false` is required too — otherwise a provider
  * could 3xx-redirect the probe to metadata past the guard. Validation targets
  * are concrete API endpoints (/models, /chat/completions, /v1/messages) that

@@ -30,7 +30,7 @@ export function registerOneProxy(program) {
   const op = program.command("oneproxy").description(t("oneproxy.description"));
 
   op.command("status").action(async (opts, cmd) => {
-    const data = await mcpCall("omniroute_oneproxy_stats", {});
+    const data = await mcpCall("cheaproute_oneproxy_stats", {});
     emit(data, cmd.optsWithGlobals());
   });
 
@@ -38,7 +38,7 @@ export function registerOneProxy(program) {
     .option("--provider <p>", t("oneproxy.stats.provider"))
     .option("--period <p>", t("oneproxy.stats.period"), "24h")
     .action(async (opts, cmd) => {
-      const data = await mcpCall("omniroute_oneproxy_stats", {
+      const data = await mcpCall("cheaproute_oneproxy_stats", {
         provider: opts.provider,
         period: opts.period,
       });
@@ -50,7 +50,7 @@ export function registerOneProxy(program) {
     .option("--count <n>", t("oneproxy.fetch.count"), parseInt, 1)
     .option("--type <t>", t("oneproxy.fetch.type"), "http")
     .action(async (opts, cmd) => {
-      const data = await mcpCall("omniroute_oneproxy_fetch", {
+      const data = await mcpCall("cheaproute_oneproxy_fetch", {
         count: opts.count,
         type: opts.type,
       });
@@ -62,7 +62,7 @@ export function registerOneProxy(program) {
     .option("--provider <p>", t("oneproxy.rotate.provider"))
     .option("--connection-id <id>", t("oneproxy.rotate.connectionId"))
     .action(async (opts, cmd) => {
-      const data = await mcpCall("omniroute_oneproxy_rotate", {
+      const data = await mcpCall("cheaproute_oneproxy_rotate", {
         provider: opts.provider,
         connectionId: opts.connectionId,
       });

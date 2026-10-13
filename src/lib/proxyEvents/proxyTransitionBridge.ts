@@ -17,7 +17,7 @@ import { isProxySkipRecentlyFailedEnabled } from "@/shared/utils/featureFlags";
 import {
   onProxyTransition,
   type ProxyTransition,
-} from "@omniroute/open-sse/utils/proxyTransitionListeners.ts";
+} from "@cheaproute/open-sse/utils/proxyTransitionListeners.ts";
 
 const DEFAULT_REBOUND_MS = 300_000;
 const MIN_REBOUND_MS = 1_000;

@@ -1,7 +1,7 @@
 import { parseApiKeyCodexServiceMode } from "../../shared/constants/codexServiceMode";
 
 // Request-local metadata, never accepted from a client body or persisted credentials.
-const SERVICE_TIER_OVERRIDE = Symbol.for("omniroute.apiKeyCodexServiceTier");
+const SERVICE_TIER_OVERRIDE = Symbol.for("cheaproute.apiKeyCodexServiceTier");
 
 export function applyApiKeyCodexServiceMode<T>(provider: string, body: T, mode: unknown): T {
   const tier = parseApiKeyCodexServiceMode(mode);

@@ -105,9 +105,9 @@ export async function validateEmbeddingApiProvider({
  * Jina Foundation API key probe.
  *
  * Dashboard Test used to POST rerank with jina-reranker-v3, which can 200
- * while production Omni embed / rerank-v3.5 403. Prefer GET /v1/models
+ * while production Cheap embed / rerank-v3.5 403. Prefer GET /v1/models
  * (key validity). Embeddings fallback hits jina-embeddings-v5-omni-small
- * so Test exercises the Omni SKU, not a text-only stand-in. Always report
+ * so Test exercises the Cheap SKU, not a text-only stand-in. Always report
  * the endpoint and model that were hit.
  */
 export async function validateJinaFoundationProvider({

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireManagementAuth } from "@/lib/api/requireManagementAuth";
 import { getConversationTurnPage } from "@/lib/db/agenticConversations";
-import { resolveTurnDisplayContent } from "@omniroute/open-sse/services/conversationTurnContent.ts";
+import { resolveTurnDisplayContent } from "@cheaproute/open-sse/services/conversationTurnContent.ts";
 
 export const dynamic = "force-dynamic";
 
@@ -16,7 +16,7 @@ export function parseSeqParam(raw: string | null): number | undefined {
   return Number.isFinite(n) ? n : undefined;
 }
 
-// Every OmniRoute conversation is a single straight line (see
+// Every CheapRoute conversation is a single straight line (see
 // conversationTracker.ts's 2026-08-06 redesign — an edited/duplicated turn
 // mints its own independent conversation instead of forking this one), so
 // this always returns a flat, chronological page — never a tree — capped

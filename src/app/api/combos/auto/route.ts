@@ -4,13 +4,13 @@ import { isAutoComboId, materializeAutoCombo } from "@/lib/combos/autoVirtual";
 import {
   VALID_VARIANTS,
   type AutoVariant,
-} from "@omniroute/open-sse/services/autoCombo/autoPrefix";
+} from "@cheaproute/open-sse/services/autoCombo/autoPrefix";
 import {
   AUTO_SUFFIX_VARIANTS,
   AUTO_TEMPLATE_VARIANTS,
   AUTO_FAMILY_IDS,
-} from "@omniroute/open-sse/services/autoCombo/builtinCatalog";
-import { parseAutoSuffix } from "@omniroute/open-sse/services/autoCombo/suffixComposition";
+} from "@cheaproute/open-sse/services/autoCombo/builtinCatalog";
+import { parseAutoSuffix } from "@cheaproute/open-sse/services/autoCombo/suffixComposition";
 
 const ALL_VARIANTS: Array<{ variant: AutoVariant | undefined; name: string }> = [
   { variant: undefined, name: "Auto" },
@@ -34,7 +34,7 @@ export async function GET(request: Request) {
 
   try {
     const { prepareVirtualAutoComboInputs, createVirtualAutoComboFromPrepared } =
-      await import("@omniroute/open-sse/services/autoCombo/virtualFactory");
+      await import("@cheaproute/open-sse/services/autoCombo/virtualFactory");
 
     // #14889: every variant below is built from the same candidate pool, so prepare
     // it once per request. createVirtualAutoCombo() prepares it again on each call,

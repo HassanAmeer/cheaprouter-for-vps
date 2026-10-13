@@ -16,7 +16,7 @@ export async function POST(
 
   try {
     const { volcengineConsoleAutoLoginService } =
-      await import("@omniroute/open-sse/services/volcengineConsoleAutoLogin.ts");
+      await import("@cheaproute/open-sse/services/volcengineConsoleAutoLogin.ts");
     const session = await volcengineConsoleAutoLoginService.cancel(sessionId);
     if (!session) {
       return NextResponse.json(

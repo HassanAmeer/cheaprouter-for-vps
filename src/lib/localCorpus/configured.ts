@@ -39,7 +39,7 @@ function getConfiguredIndex(dynamicRoot?: string): LocalCorpusIndex {
 
   const maxCacheSize = Math.max(
     1,
-    parseInt(process.env.OMNIROUTE_CORPUS_CACHE_SIZE || "5", 10) || 5
+    parseInt(process.env.CHEAPROUTE_CORPUS_CACHE_SIZE || "5", 10) || 5
   );
   if (indexCache.size >= maxCacheSize) {
     const firstKey = indexCache.keys().next().value;

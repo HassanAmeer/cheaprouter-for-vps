@@ -78,7 +78,7 @@ export const QuotaScheduleSchema = z
       )
       .max(6)
       .default([]),
-    /** OmniRoute's own allowance inside the window. */
+    /** CheapRoute's own allowance inside the window. */
     budgetValue: z.number().positive().optional(),
     budgetUnit: z.enum(["requests", "tokens", "usd"]).optional(),
     budgetWindow: z.enum(["5h", "hourly", "daily", "weekly", "monthly"]).default("daily"),

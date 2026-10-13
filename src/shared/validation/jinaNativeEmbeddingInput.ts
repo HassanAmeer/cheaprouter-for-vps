@@ -9,7 +9,7 @@
  *   PDFDoc   { pdf }     single input only upstream; we still accept it in a list
  *   MergedContentGroup { content: [TextDoc|ImageDoc|AudioDoc|VideoDoc, ...] }
  *
- * These are not OmniRoute's canonical `{ type, source }` items. For jina-ai
+ * These are not CheapRoute's canonical `{ type, source }` items. For jina-ai
  * they must be forwarded intact — do not stringify, do not fetch image URLs
  * into data URIs. Jina fetches public media itself.
  */
@@ -30,7 +30,7 @@ export function isPlainObject(value: unknown): value is Record<string, unknown> 
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
-/** OmniRoute canonical structured item — leave those on the translator path. */
+/** CheapRoute canonical structured item — leave those on the translator path. */
 export function isCanonicalEmbeddingItem(value: unknown): boolean {
   return isPlainObject(value) && "type" in value && typeof value.type === "string";
 }

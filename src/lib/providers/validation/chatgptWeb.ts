@@ -1,7 +1,7 @@
 import {
   chatGptWebStorageStateFromCookieHeader,
   normalizeChatGptWebStorageState,
-} from "@omniroute/open-sse/utils/chatgptWebExecutorAdapter.ts";
+} from "@cheaproute/open-sse/utils/chatgptWebExecutorAdapter.ts";
 
 export type ChatGptWebValidationResult = {
   valid: boolean;

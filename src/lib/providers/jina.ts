@@ -1,7 +1,7 @@
 /**
  * Shared Jina AI integration helpers.
  *
- * OmniRoute keeps two dashboard cards because the hosts differ:
+ * CheapRoute keeps two dashboard cards because the hosts differ:
  *   - jina-ai      Foundation API  https://api.jina.ai
  *   - jina-reader  Reader          https://r.jina.ai
  *

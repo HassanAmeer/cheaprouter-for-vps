@@ -25,10 +25,10 @@ const getOpenClawDir = () => path.dirname(getOpenClawSettingsPath());
 // "installed but not configured" instead of a 500 misread as "not installed".
 const readSettings = async () => readJsoncConfig(getOpenClawSettingsPath());
 
-// Check if settings has OmniRoute config
-const hasOmniRouteConfig = (settings: any) => {
+// Check if settings has CheapRoute config
+const hasCheapRouteConfig = (settings: any) => {
   if (!settings || !settings.models || !settings.models.providers) return false;
-  return !!settings.models.providers["omniroute"];
+  return !!settings.models.providers["cheaproute"];
 };
 
 // GET - Check openclaw CLI and read current settings
@@ -65,7 +65,7 @@ export async function GET(request: Request) {
       runtimeMode: runtime.runtimeMode,
       reason: runtime.reason,
       settings,
-      hasOmniRoute: hasOmniRouteConfig(settings),
+      hasCheapRoute: hasCheapRouteConfig(settings),
       settingsPath: getOpenClawSettingsPath(),
     });
   } catch (error) {
@@ -74,7 +74,7 @@ export async function GET(request: Request) {
   }
 }
 
-// POST - Update OmniRoute settings (merge with existing settings)
+// POST - Update CheapRoute settings (merge with existing settings)
 export async function POST(request: Request) {
   const authError = await requireCliToolsAuth(request);
   if (authError) return authError;
@@ -139,10 +139,10 @@ export async function POST(request: Request) {
     const normalizedBaseUrl = baseUrl.endsWith("/v1") ? baseUrl : `${baseUrl}/v1`;
 
     // Update agents.defaults.model.primary
-    settings.agents.defaults.model.primary = `omniroute/${model}`;
+    settings.agents.defaults.model.primary = `cheaproute/${model}`;
 
-    // Update models.providers.omniroute
-    settings.models.providers["omniroute"] = {
+    // Update models.providers.cheaproute
+    settings.models.providers["cheaproute"] = {
       baseUrl: normalizedBaseUrl,
       apiKey: apiKey || "your_api_key",
       api: "openai-completions",
@@ -175,7 +175,7 @@ export async function POST(request: Request) {
   }
 }
 
-// DELETE - Remove OmniRoute settings only (keep other settings)
+// DELETE - Remove CheapRoute settings only (keep other settings)
 export async function DELETE(request: Request) {
   const authError = await requireCliToolsAuth(request);
   if (authError) return authError;
@@ -206,9 +206,9 @@ export async function DELETE(request: Request) {
       throw error;
     }
 
-    // Remove OmniRoute from models.providers
+    // Remove CheapRoute from models.providers
     if (settings.models && settings.models.providers) {
-      delete settings.models.providers["omniroute"];
+      delete settings.models.providers["cheaproute"];
 
       // Remove providers object if empty
       if (Object.keys(settings.models.providers).length === 0) {
@@ -216,8 +216,8 @@ export async function DELETE(request: Request) {
       }
     }
 
-    // Reset agents.defaults.model.primary if it uses omniroute
-    if (settings.agents?.defaults?.model?.primary?.startsWith("omniroute/")) {
+    // Reset agents.defaults.model.primary if it uses cheaproute
+    if (settings.agents?.defaults?.model?.primary?.startsWith("cheaproute/")) {
       delete settings.agents.defaults.model.primary;
     }
 
@@ -233,7 +233,7 @@ export async function DELETE(request: Request) {
 
     return NextResponse.json({
       success: true,
-      message: "OmniRoute settings removed successfully",
+      message: "CheapRoute settings removed successfully",
     });
   } catch (error) {
     console.log("Error resetting openclaw settings:", error);

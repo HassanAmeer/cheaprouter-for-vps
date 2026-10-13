@@ -1,5 +1,5 @@
 import { getAllCustomModels } from "@/lib/db/models";
-import { parseVideoModel } from "@omniroute/open-sse/config/videoRegistry.ts";
+import { parseVideoModel } from "@cheaproute/open-sse/config/videoRegistry.ts";
 import { getProviderCredentialsWithQuotaPreflight } from "@/sse/services/auth";
 import { isAllRateLimitedCredentials } from "@/app/api/v1/_shared/rateLimit";
 

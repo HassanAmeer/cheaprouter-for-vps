@@ -1,8 +1,8 @@
 import { logToolCall } from "../audit.ts";
 import { toSafeMcpErrorMessage } from "../errorMessage.ts";
-// #15159 M-06: one shared hop. The private copy this replaced read OMNIROUTE_API_KEY and
+// #15159 M-06: one shared hop. The private copy this replaced read CHEAPROUTE_API_KEY and
 // the base URL at module load and hardcoded a 30s timeout.
-import { omniRouteFetch as apiFetch } from "../internalFetch.ts";
+import { cheapRouteFetch as apiFetch } from "../internalFetch.ts";
 import { normalizeQuotaResponse } from "../../../src/shared/contracts/quota.ts";
 import {
   getComboModelProvider,
@@ -288,11 +288,11 @@ export async function handlePickFastestModel(args: PickFastestModelArgs) {
       appliedToCombo,
     };
 
-    await logToolCall("omniroute_pick_fastest_model", args, result, Date.now() - start, true);
+    await logToolCall("cheaproute_pick_fastest_model", args, result, Date.now() - start, true);
     return { content: [{ type: "text" as const, text: JSON.stringify(result, null, 2) }] };
   } catch (err) {
     const msg = toSafeMcpErrorMessage(err);
-    await logToolCall("omniroute_pick_fastest_model", args, null, Date.now() - start, false, msg);
+    await logToolCall("cheaproute_pick_fastest_model", args, null, Date.now() - start, false, msg);
     return { content: [{ type: "text" as const, text: `Error: ${msg}` }], isError: true };
   }
 }

@@ -29,15 +29,15 @@
  */
 
 import { CORS_HEADERS, handleCorsOptions } from "@/shared/utils/cors";
-import { stripSensitiveResponseHeaders } from "@omniroute/open-sse/utils/upstreamResponseHeaders";
+import { stripSensitiveResponseHeaders } from "@cheaproute/open-sse/utils/upstreamResponseHeaders";
 import { createInjectionGuard } from "@/middleware/promptInjectionGuard";
 import { getRelayTokenByHash, checkRateLimit, recordRelayUsage } from "@/lib/db/relayProxies";
 import {
   buildErrorBody,
   parseUpstreamError,
   sanitizeErrorMessage,
-} from "@omniroute/open-sse/utils/error";
-import { getProviderPluginManifestHeader } from "@omniroute/open-sse/config/providerPluginManifestUrl.ts";
+} from "@cheaproute/open-sse/utils/error";
+import { getProviderPluginManifestHeader } from "@cheaproute/open-sse/config/providerPluginManifestUrl.ts";
 import { z } from "zod";
 import {
   checkIpRateLimit,
@@ -66,7 +66,7 @@ const JSON_CORS_HEADERS = {
 } as const;
 
 const BIFROST_BASE_URL = process.env.BIFROST_BASE_URL?.replace(/\/$/, "");
-const BIFROST_API_KEY = process.env.BIFROST_API_KEY || process.env.OMNIROUTE_BIFROST_KEY;
+const BIFROST_API_KEY = process.env.BIFROST_API_KEY || process.env.CHEAPROUTE_BIFROST_KEY;
 const BIFROST_TIMEOUT_MS = Number(process.env.BIFROST_TIMEOUT_MS || "30000");
 const BIFROST_STREAMING_ENABLED = process.env.BIFROST_STREAMING_ENABLED !== "0";
 const BIFROST_ENABLED = process.env.BIFROST_ENABLED !== "0";
@@ -125,7 +125,7 @@ export async function POST(request: Request) {
   try {
     // 1. Auth + rate limit — duplicated from the TS route so this route is
     //    standalone (we don't import the relay handler to keep the import
-    //    graph from pulling in 30MB of @omniroute/open-sse when the user
+    //    graph from pulling in 30MB of @cheaproute/open-sse when the user
     //    is only using the sidecar path).
     const rawToken = extractToken(request);
     if (!rawToken) {

@@ -3,7 +3,7 @@
 import { EventEmitter } from "node:events";
 import { spawn } from "node:child_process";
 import type { ChildProcess } from "node:child_process";
-import { sanitizeErrorMessage } from "@omniroute/open-sse/utils/error";
+import { sanitizeErrorMessage } from "@cheaproute/open-sse/utils/error";
 import { getServiceRow, setToolStatus } from "@/lib/db/versionManager";
 import { RingBuffer } from "./ringBuffer";
 import { HealthChecker } from "./healthCheck";

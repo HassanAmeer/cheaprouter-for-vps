@@ -3,11 +3,11 @@ import {
   MUSE_CODE_DEVICE_GRANT,
   isMuseDcaToken,
   museCodeHeaders,
-} from "@omniroute/open-sse/config/museCode.ts";
+} from "@cheaproute/open-sse/config/museCode.ts";
 import {
   mintMuseApiKey,
   type MuseMintedKey,
-} from "@omniroute/open-sse/services/museCodeAuth.ts";
+} from "@cheaproute/open-sse/services/museCodeAuth.ts";
 import { MUSE_CODE_CONFIG } from "../constants/oauth";
 
 function requiredText(value: unknown, field: string): string {

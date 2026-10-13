@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import type { CodexAccountPoolProjection } from "@omniroute/open-sse/services/codexAccount/index.ts";
+import type { CodexAccountPoolProjection } from "@cheaproute/open-sse/services/codexAccount/index.ts";
 import { useLocale, useTranslations } from "next-intl";
 
 export interface CodexAccountDetailsProps {

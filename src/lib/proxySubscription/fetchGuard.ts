@@ -3,10 +3,10 @@
  *
  * The subscription URL is fetched server-side (see `subscriptionService
  * .fetchSubscriptionContent`). Without a guard, an operator — or a compromised
- * subscription link — could point OmniRoute at cloud metadata (SSRF). Only
+ * subscription link — could point CheapRoute at cloud metadata (SSRF). Only
  * http/https to non-metadata hosts are allowed.
  *
- * Local-first (#10158): OmniRoute already lets an operator route ALL traffic
+ * Local-first (#10158): CheapRoute already lets an operator route ALL traffic
  * through a loopback core (`coreEndpoint.ts` allows `127.0.0.1`/`::1`/
  * `localhost`), so a subscription fetch target on loopback/private ranges is
  * ALLOWED by default (`allowLocal: true`, matching the local-first default of

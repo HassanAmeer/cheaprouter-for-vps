@@ -4,7 +4,7 @@ import { getDbInstance } from "./core";
 import {
   sanitizeErrorMessage,
   sanitizeUpstreamDetails,
-} from "@omniroute/open-sse/utils/errorSanitization";
+} from "@cheaproute/open-sse/utils/errorSanitization";
 
 const MAX_PERSISTED_OUTPUT_CHARS = 32_768;
 const MAX_PERSISTED_ERROR_CHARS = 4_096;

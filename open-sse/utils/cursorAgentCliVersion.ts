@@ -141,7 +141,7 @@ function resolveCacheDir(): string {
   if (cacheDirOverride) return cacheDirOverride;
   const dataDir = process.env.DATA_DIR?.trim();
   if (dataDir) return join(dataDir, "cache");
-  return join(homedir(), ".omniroute", "cache");
+  return join(homedir(), ".cheaproute", "cache");
 }
 
 function versionCachePath(): string {

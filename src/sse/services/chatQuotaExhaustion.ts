@@ -1,4 +1,4 @@
-import { shouldMarkAccountExhaustedFrom429 } from "@omniroute/open-sse/services/accountFallback.ts";
+import { shouldMarkAccountExhaustedFrom429 } from "@cheaproute/open-sse/services/accountFallback.ts";
 import {
   getCachedClaudeQuotaScopeDecision,
   markAccountExhaustedFrom429,

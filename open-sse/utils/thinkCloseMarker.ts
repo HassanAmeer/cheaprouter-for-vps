@@ -1,7 +1,7 @@
 /**
  * `</think>` close-marker client policy.
  *
- * When OmniRoute translates a Claude-native streamed response to OpenAI Chat
+ * When CheapRoute translates a Claude-native streamed response to OpenAI Chat
  * Completions shape (`claude-to-openai.ts`), it historically emitted a single
  * `</think>` close marker as `delta.content` so clients that scan content for
  * the marker (Claude Code, Cursor) could split reasoning from the final answer
@@ -15,9 +15,9 @@
  *
  * Policy (#8245):
  *   - Default: SUPPRESS the marker on OpenAI Chat Completions.
- *   - Explicit opt-in: `x-omniroute-thinking-marker: on` force-keeps it for the
+ *   - Explicit opt-in: `x-cheaproute-thinking-marker: on` force-keeps it for the
  *     shrinking set of content-scanning clients (#4633).
- *   - Explicit opt-out: `x-omniroute-thinking-marker: off` (same as default).
+ *   - Explicit opt-out: `x-cheaproute-thinking-marker: off` (same as default).
  *   - Responses API (`openai-responses`): always suppress (#7747) — wins over
  *     the header; there is no legitimate marker consumer on that path.
  *
@@ -29,7 +29,7 @@
 import { FORMATS } from "../translator/formats.ts";
 
 /** Header clients send to explicitly opt in/out of the `</think>` close marker. */
-export const THINKING_MARKER_HEADER = "x-omniroute-thinking-marker";
+export const THINKING_MARKER_HEADER = "x-cheaproute-thinking-marker";
 
 // Lowercased User-Agent substrings of clients that historically rendered the
 // textual `</think>` marker verbatim (#5245 / #1061). Kept for direct callers;
@@ -48,7 +48,7 @@ export function shouldSuppressThinkCloseMarker(userAgent: string | null | undefi
 }
 
 /**
- * Interpret the explicit `x-omniroute-thinking-marker` request header.
+ * Interpret the explicit `x-cheaproute-thinking-marker` request header.
  * Returns `true` (suppress the marker), `false` (force-keep the marker), or
  * `null` when the header is absent/unrecognized (defer to the default policy).
  */
@@ -68,7 +68,7 @@ export function thinkingMarkerHeaderSignal(
  *
  * Precedence:
  *   1. Responses API format → always suppress (#7747)
- *   2. Explicit `x-omniroute-thinking-marker` header → honor on/off (#5312)
+ *   2. Explicit `x-cheaproute-thinking-marker` header → honor on/off (#5312)
  *   3. Default → suppress on Chat Completions (#8245)
  */
 export function resolveSuppressThinkClose(opts: {
@@ -84,6 +84,6 @@ export function resolveSuppressThinkClose(opts: {
   const headerSignal = thinkingMarkerHeaderSignal(opts.thinkingMarkerHeader);
   if (headerSignal !== null) return headerSignal;
   // #8245: suppress by default. Reasoning already ships as reasoning_content.
-  // Legacy content-scanning clients opt in with x-omniroute-thinking-marker: on.
+  // Legacy content-scanning clients opt in with x-cheaproute-thinking-marker: on.
   return true;
 }

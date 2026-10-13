@@ -204,8 +204,8 @@ export function syncSkillsBeta(
 
 /**
  * Client-negotiated `anthropic-beta` values that are safe to forward to the
- * claude.ai backend on top of OmniRoute's own set. Kept to betas the backend
- * actually accepts and that OmniRoute does not otherwise emit — so a blind
+ * claude.ai backend on top of CheapRoute's own set. Kept to betas the backend
+ * actually accepts and that CheapRoute does not otherwise emit — so a blind
  * passthrough cannot reintroduce the over-sending fingerprint/rejection bugs
  * (#3415, #2454). Currently: deferred-tool negotiation (#3974) and the
  * client's own `[1m]` long-context negotiation (context-1m). selectBetaFlags
@@ -248,7 +248,7 @@ export function syncSkillsBeta(
  * AWS Bedrock's adaptive-thinking guide documents the same schema gate and
  * quotes the exact 400 above; it also lists `mid-conversation-effort-2026-08-01`
  * and `per-message-effort-2026-07-01` as aliases. Those two are deliberately
- * trimmed: no known client sends them, and OmniRoute's Bedrock executor does
+ * trimmed: no known client sends them, and CheapRoute's Bedrock executor does
  * not negotiate `anthropic_beta` at all.
  *
  * `timing-2026-09-09` and `inline-tools-2026-09-15` are the other two per-turn
@@ -463,7 +463,7 @@ export function mergeCcHeaders(
 
 /**
  * Stainless SDK metadata for the Claude wire image. OS/arch follow the host running
- * the signed binary; the runtime version is pinned to the captured CLI, not OmniRoute's
+ * the signed binary; the runtime version is pinned to the captured CLI, not CheapRoute's
  * Node. Mutates `headers`.
  */
 export function applyStainlessHeaders(

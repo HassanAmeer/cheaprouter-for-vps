@@ -1,7 +1,7 @@
 import {
   getVertexModelTargetFormat,
   normalizeVertexModelId,
-} from "@omniroute/open-sse/config/vertexModels.ts";
+} from "@cheaproute/open-sse/config/vertexModels.ts";
 
 interface VertexPublisherModel {
   name?: string;

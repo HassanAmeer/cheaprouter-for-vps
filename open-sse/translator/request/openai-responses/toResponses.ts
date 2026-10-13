@@ -268,7 +268,7 @@ export function openaiToOpenAIResponsesRequest(
       ) {
         // Reasoning-presence validation on strict Responses upstreams (opencode
         // console gateways) rejects thinking-mode history whose assistant turns
-        // lack a reasoning_text item — even when OmniRoute's replay cache missed
+        // lack a reasoning_text item — even when CheapRoute's replay cache missed
         // and the history only carries the internal sentinel (see
         // replayOpenAIReasoningMessage's requiresExplicitReasoningReplay branch).
         // Emit the sentinel text: it satisfies presence validation, and the

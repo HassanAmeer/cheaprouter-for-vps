@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /**
- * OmniRoute — Optional runtime pack manifest + integrity core.
+ * CheapRoute — Optional runtime pack manifest + integrity core.
  *
  * Stage 7 of the Electron efficiency roadmap (issue #10321): the heavy optional
  * ML / browser automation dependency closure is excluded from the packaged
@@ -14,7 +14,7 @@
  *    Electron staging tree, optionally tars the packs for release assets.
  *  - `scripts/packs/optionalPackInstaller.mjs` (first use): installs/verifies/
  *    removes packs in DATA_DIR against the shipped index.
- *  - `bin/cli/commands/packs.mjs` (UX): `omniroute packs …`.
+ *  - `bin/cli/commands/packs.mjs` (UX): `cheaproute packs …`.
  *
  * The runtime *resolution* side (making an installed pack light up the SLM /
  * embeddings / browser features) lives in `open-sse/utils/optionalPacks.ts` and

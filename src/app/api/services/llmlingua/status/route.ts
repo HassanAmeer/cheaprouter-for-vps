@@ -6,7 +6,7 @@ import {
   LLMLINGUA_DEFAULT_PORT,
 } from "@/lib/services/installers/llmlingua";
 import { createErrorResponse } from "@/lib/api/errorResponse";
-import { sanitizeErrorMessage } from "@omniroute/open-sse/utils/error";
+import { sanitizeErrorMessage } from "@cheaproute/open-sse/utils/error";
 
 const TOOL = "llmlingua";
 

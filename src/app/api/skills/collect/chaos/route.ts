@@ -26,7 +26,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { validateBody, isValidationFailure } from "@/shared/validation/helpers";
-import { buildErrorBody, sanitizeErrorMessage } from "@omniroute/open-sse/utils/error";
+import { buildErrorBody, sanitizeErrorMessage } from "@cheaproute/open-sse/utils/error";
 import { validateApiKey, getApiKeyMetadata } from "@/lib/db/apiKeys";
 import { getChaosConfig } from "@/lib/chaos/chaosConfig";
 import { executeChaosRun, type ChaosRunResult } from "@/lib/chaos/chaosExecutor";

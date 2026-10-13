@@ -1,5 +1,5 @@
 /**
- * Badge Definitions & Evaluation Engine for OmniRoute Gamification
+ * Badge Definitions & Evaluation Engine for CheapRoute Gamification
  *
  * Defines 20+ built-in badges across 5 categories and evaluates unlock
  * criteria against user activity. All DB access goes through dynamic imports
@@ -13,7 +13,7 @@ import type { BadgeDefinition } from "../db/gamification";
 // ─── Built-in Badge Definitions ──────────────────────────────────────────────
 
 /**
- * All built-in badges shipped with OmniRoute.
+ * All built-in badges shipped with CheapRoute.
  * Spread with `{ created_at: new Date().toISOString() }` when inserting.
  */
 export const BUILTIN_BADGES: Omit<BadgeDefinition, "createdAt">[] = [
@@ -164,7 +164,7 @@ export const BUILTIN_BADGES: Omit<BadgeDefinition, "createdAt">[] = [
   {
     id: "radar-supporter",
     name: "Radar Supporter",
-    description: "Verified a live OmniRoute Radar supporter feed",
+    description: "Verified a live CheapRoute Radar supporter feed",
     icon: "radar",
     category: "contribution",
     rarity: "rare",

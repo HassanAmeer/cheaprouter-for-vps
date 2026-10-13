@@ -11,7 +11,7 @@
  */
 import { NextResponse } from "next/server";
 
-import { buildErrorBody } from "@omniroute/open-sse/utils/error.ts";
+import { buildErrorBody } from "@cheaproute/open-sse/utils/error.ts";
 import { getJobRegistry } from "@/lib/jobRegistry";
 
 export const dynamic = "force-dynamic";
@@ -25,7 +25,7 @@ export async function POST(_request: Request, { params }: { params: Promise<{ id
     if (!registry.listJobs().some((j) => j.id === id)) {
       return NextResponse.json(buildErrorBody(404, "Job not found"), { status: 404 });
     }
-    const timeoutMs = Number(process.env.OMNIROUTE_RUNNOW_TIMEOUT_MS) || DEFAULT_TIMEOUT_MS;
+    const timeoutMs = Number(process.env.CHEAPROUTE_RUNNOW_TIMEOUT_MS) || DEFAULT_TIMEOUT_MS;
     // Clear the loser: Promise.race settles on the first result but leaves the
     // other timer armed, so without this every call keeps a live timeout for
     // the full window even though it resolved in milliseconds.

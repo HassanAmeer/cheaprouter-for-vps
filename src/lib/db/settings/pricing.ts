@@ -5,7 +5,7 @@
 import { getDbInstance } from "../core";
 import { backupDbFile } from "../backup";
 import { getCachedPricing, invalidateDbCache } from "../readCache";
-import { PROVIDER_ID_TO_ALIAS } from "@omniroute/open-sse/config/providerModels.ts";
+import { PROVIDER_ID_TO_ALIAS } from "@cheaproute/open-sse/config/providerModels.ts";
 import { invalidateUserPricingMemo } from "@/lib/catalogUserPricing";
 import { type JsonRecord, toRecord } from "./shared";
 
@@ -18,7 +18,7 @@ async function touchPricing(): Promise<void> {
   invalidateDbCache("pricing");
   invalidateUserPricingMemo();
   try {
-    const { clearTierCache } = await import("@omniroute/open-sse/services/tierResolver");
+    const { clearTierCache } = await import("@cheaproute/open-sse/services/tierResolver");
     clearTierCache();
   } catch {
     // fail-open: a missed tier invalidation must never break a price write

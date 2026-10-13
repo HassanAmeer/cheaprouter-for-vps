@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 
 /**
- * OmniRoute — optional runtime pack installer (Stage 7, issue #10321).
+ * CheapRoute — optional runtime pack installer (Stage 7, issue #10321).
  *
- * First-use installer used by `omniroute packs …` (bin/cli/commands/packs.mjs):
+ * First-use installer used by `cheaproute packs …` (bin/cli/commands/packs.mjs):
  * extracts a versioned pack tarball (or pre-extracted tree) from a source dir
  * into `${DATA_DIR}/packs/<name>` AFTER verifying every member checksum against
  * the bundle-shipped `optional-packs.index.json`. Atomic: staged into a temp
@@ -60,10 +60,10 @@ export function readPackIndex(indexFile) {
   return raw;
 }
 
-/** @returns {string} `${DATA_DIR||~/.omniroute}/packs` */
+/** @returns {string} `${DATA_DIR||~/.cheaproute}/packs` */
 export function packsRoot(dataDir) {
   return path.join(
-    dataDir || process.env.DATA_DIR || path.join(os.homedir(), ".omniroute"),
+    dataDir || process.env.DATA_DIR || path.join(os.homedir(), ".cheaproute"),
     "packs"
   );
 }

@@ -8,7 +8,7 @@
 
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { sanitizeErrorMessage } from "@omniroute/open-sse/utils/error";
+import { sanitizeErrorMessage } from "@cheaproute/open-sse/utils/error";
 import { validateBody, isValidationFailure } from "@/shared/validation/helpers";
 import { requireManagementAuth } from "@/lib/api/requireManagementAuth";
 import { isPrivateHost } from "@/shared/network/outboundUrlGuard";
@@ -16,7 +16,7 @@ import { arePrivateProviderUrlsAllowed } from "@/shared/network/outboundUrlGuard
 import {
   testProxiesAgainstTarget,
   getProxyCandidates,
-} from "@omniroute/open-sse/utils/proxyFallback";
+} from "@cheaproute/open-sse/utils/proxyFallback";
 
 const testSchema = z.object({
   targetUrl: z.string().url("Invalid target URL"),
@@ -28,7 +28,7 @@ const testSchema = z.object({
  * caller-supplied proxies. Even behind management auth, never let it probe
  * private / link-local / cloud-metadata hosts (169.254.x, 127/8, 10/8,
  * 192.168/16, 172.16/12, ::1, fc00::/7, .internal, …) unless the operator has
- * explicitly opted in via OMNIROUTE_ALLOW_PRIVATE_PROVIDER_URLS.
+ * explicitly opted in via CHEAPROUTE_ALLOW_PRIVATE_PROVIDER_URLS.
  */
 function blockedPrivateUrl(rawUrl: string): boolean {
   if (arePrivateProviderUrlsAllowed()) return false;

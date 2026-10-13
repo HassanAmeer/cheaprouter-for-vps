@@ -1,4 +1,4 @@
-import { isSocks5ProxyEnabled } from "@omniroute/open-sse/utils/proxyDispatcher";
+import { isSocks5ProxyEnabled } from "@cheaproute/open-sse/utils/proxyDispatcher";
 import { listProxies } from "@/lib/db/proxies";
 import {
   handleProxyCreate,

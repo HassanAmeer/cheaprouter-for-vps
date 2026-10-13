@@ -5,7 +5,7 @@ import {
   isSocks5ProxyEnabled,
   proxyConfigToUrl,
   proxyUrlForLogs,
-} from "@omniroute/open-sse/utils/proxyDispatcher.ts";
+} from "@cheaproute/open-sse/utils/proxyDispatcher.ts";
 import { probeEchoTargets } from "@/lib/proxyEchoTarget";
 import { testProxySchema } from "@/shared/validation/schemas";
 import { isValidationFailure, validateBody } from "@/shared/validation/helpers";
@@ -13,7 +13,7 @@ import { createErrorResponse, createErrorResponseFromUnknown } from "@/lib/api/e
 
 import { extractRelayAuth, getProxyById } from "@/lib/db/proxies";
 import { requireManagementAuth } from "@/lib/api/requireManagementAuth";
-import { sanitizeErrorMessage } from "@omniroute/open-sse/utils/error";
+import { sanitizeErrorMessage } from "@cheaproute/open-sse/utils/error";
 import { buildRelayTestResult } from "./relayTestResult";
 import { recordRelayProbe } from "@/lib/db/relayProbeStats";
 

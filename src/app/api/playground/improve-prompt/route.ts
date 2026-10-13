@@ -14,8 +14,8 @@
  * Hard Rule #12: ALL error paths route through buildErrorBody.
  */
 
-import { buildErrorBody, sanitizeErrorMessage } from "@omniroute/open-sse/utils/error.ts";
-import { HTTP_STATUS } from "@omniroute/open-sse/config/constants.ts";
+import { buildErrorBody, sanitizeErrorMessage } from "@cheaproute/open-sse/utils/error.ts";
+import { HTTP_STATUS } from "@cheaproute/open-sse/config/constants.ts";
 import { extractApiKey, isValidApiKey } from "@/sse/services/auth";
 import {
   ImprovePromptRequestSchema,
@@ -77,7 +77,7 @@ export async function POST(request: Request): Promise<Response> {
 
   // 5. Call /v1/chat/completions on ourselves (D8)
   const port = process.env.API_PORT ?? process.env.PORT ?? "20128";
-  const baseUrl = process.env.OMNIROUTE_BASE_URL ?? `http://127.0.0.1:${port}`;
+  const baseUrl = process.env.CHEAPROUTE_BASE_URL ?? `http://127.0.0.1:${port}`;
   const upstreamUrl = `${baseUrl}/v1/chat/completions`;
 
   let upstreamResponse: Response;

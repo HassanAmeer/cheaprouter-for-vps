@@ -6,8 +6,8 @@ import { isLocalRequestAllowed } from "@/lib/security/localEndpoints";
 
 const execFileAsync = promisify(execFile);
 
-const CONTAINER_NAME = process.env.OMNIROUTE_REDIS_CONTAINER_NAME || "omniroute-redis";
-const HOST_PORT = process.env.OMNIROUTE_REDIS_HOST_PORT || "6379";
+const CONTAINER_NAME = process.env.CHEAPROUTE_REDIS_CONTAINER_NAME || "cheaproute-redis";
+const HOST_PORT = process.env.CHEAPROUTE_REDIS_HOST_PORT || "6379";
 
 const RUNTIME_PREFERENCE = ["podman", "docker"];
 
@@ -89,7 +89,7 @@ export async function GET() {
     container = { exists, running, reachable };
   }
 
-  // Native Redis via REDIS_URL (the production path this instance uses). OmniRoute
+  // Native Redis via REDIS_URL (the production path this instance uses). CheapRoute
   // is "connected" whenever REDIS_URL is configured AND the server answers — even
   // when no Docker container is present.
   const redisUrl = process.env.REDIS_URL?.trim() || "";

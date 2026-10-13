@@ -8,7 +8,7 @@ import { codexProvider } from "../codex/index.ts";
  * WebSocket (executor: "codex-app-server"). Unlike the `codex` provider — which
  * replays the user's ChatGPT/OpenAI OAuth token directly to the Responses API —
  * the app-server process OWNS and self-refreshes its OpenAI auth
- * (~/.codex/auth.json), exactly like an interactive `codex` session. OmniRoute
+ * (~/.codex/auth.json), exactly like an interactive `codex` session. CheapRoute
  * never receives or replays a token, so there is no `authType: "oauth"` and no
  * usage-caveat: `authType: "none"`.
  *

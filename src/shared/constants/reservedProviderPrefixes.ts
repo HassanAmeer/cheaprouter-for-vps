@@ -19,7 +19,7 @@
 //     cause false-positive rejections.
 //   - Live REGISTRY entries remain case-sensitive. Retired ids use their retirement
 //     normalizer (trim + lowercase), so casing cannot revive a removed provider.
-import { REGISTRY } from "@omniroute/open-sse/config/providerRegistry.ts";
+import { REGISTRY } from "@cheaproute/open-sse/config/providerRegistry.ts";
 
 import {
   isMicrosoftDesignerWebRetiredProviderId,

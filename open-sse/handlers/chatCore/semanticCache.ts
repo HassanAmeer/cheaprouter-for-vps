@@ -9,9 +9,9 @@ import { calculateCost } from "@/lib/usage/costCalculator";
 import { getUserDatabaseSettings } from "@/lib/db/databaseSettings";
 import { finalizePendingScope, type PendingRequestScope } from "@/lib/usage/pendingRequestScope";
 import { synthesizeOpenAiSseFromJson } from "../../utils/jsonToSse.ts";
-import { attachOmniRouteMetaHeaders } from "@/domain/omnirouteResponseMeta";
+import { attachCheapRouteMetaHeaders } from "@/domain/cheaprouteResponseMeta";
 import { extractUsageFromResponse } from "../usageExtractor.ts";
-import { OMNIROUTE_RESPONSE_HEADERS } from "@/shared/constants/headers";
+import { CHEAPROUTE_RESPONSE_HEADERS } from "@/shared/constants/headers";
 import { getSemanticCacheManager } from "../../services/cache/semanticCacheManager.ts";
 
 export function isSemanticCacheEnabled(
@@ -170,22 +170,22 @@ export async function checkSemanticCache({
         "Content-Type": cachedSse ? "text/event-stream" : "application/json",
         // Keep the legacy `HIT` value verbatim: consumers match it exactly
         // (tests/unit/chatcore-semantic-cache.test.ts and the chat-route suites).
-        // A similarity hit is distinguished by X-OmniRoute-Cache-Similarity below.
-        [OMNIROUTE_RESPONSE_HEADERS.cache]: "HIT",
+        // A similarity hit is distinguished by X-CheapRoute-Cache-Similarity below.
+        [CHEAPROUTE_RESPONSE_HEADERS.cache]: "HIT",
         // Marker for latency measurement tools: this response served from cache
         // has synthetic (near-zero) latency, not real upstream latency.
-        [OMNIROUTE_RESPONSE_HEADERS.cacheLatency]: "synthetic",
-        [OMNIROUTE_RESPONSE_HEADERS.savingsTokens]: String(tokensSaved),
+        [CHEAPROUTE_RESPONSE_HEADERS.cacheLatency]: "synthetic",
+        [CHEAPROUTE_RESPONSE_HEADERS.savingsTokens]: String(tokensSaved),
       };
 
       if (hitType === "semantic" && typeof similarity === "number") {
-        headers[OMNIROUTE_RESPONSE_HEADERS.cacheSimilarity] = similarity.toFixed(4);
+        headers[CHEAPROUTE_RESPONSE_HEADERS.cacheSimilarity] = similarity.toFixed(4);
       }
 
       // A cache HIT serves WITHOUT an upstream call, so the incremental cost billed to
-      // the client is 0 (consumers that sum X-OmniRoute-Response-Cost must not charge for
-      // hits). The original/would-have-been cost is surfaced via X-OmniRoute-Cost-Saved.
-      attachOmniRouteMetaHeaders(headers, {
+      // the client is 0 (consumers that sum X-CheapRoute-Response-Cost must not charge for
+      // hits). The original/would-have-been cost is surfaced via X-CheapRoute-Cost-Saved.
+      attachCheapRouteMetaHeaders(headers, {
         provider,
         model,
         cacheHit: true,

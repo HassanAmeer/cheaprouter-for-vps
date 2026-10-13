@@ -18,7 +18,7 @@ import { getHeaderValueCaseInsensitive } from "./headers.ts";
 export interface AdaptiveEffortContext {
   /** Raw (pre-translation) request body, for turn-scoped request-shape signals. */
   rawBody: { messages?: ChatMessageLike[] | undefined } | undefined;
-  /** Incoming client request, used to read the x-omniroute-effort header. */
+  /** Incoming client request, used to read the x-cheaproute-effort header. */
   clientRawRequest?: { headers?: unknown } | undefined;
   /** Explicit header value, if already extracted by the caller. */
   headerEffort?: string | null | undefined;
@@ -30,7 +30,7 @@ export interface AdaptiveEffortContext {
    * top-level parameters (e.g. Anthropic's Messages API 400s on one). Every other
    * reasoning-shape normalization in chatCore.ts (applyDefaultReasoningEffort,
    * promoteStrayReasoningEffort for the Responses same-format lane) is scoped the
-   * same way — wiring must match, or an operator's `X-OmniRoute-Effort: auto` header
+   * same way — wiring must match, or an operator's `X-CheapRoute-Effort: auto` header
    * on a Claude/Gemini-targeted request would silently no-op or break the request.
    */
   targetFormat: string | undefined;
@@ -59,7 +59,7 @@ export function wireAdaptiveEffort<T extends Record<string, unknown>>(
       ? ctx.headerEffort
       : getHeaderValueCaseInsensitive(
           ctx.clientRawRequest?.headers as Record<string, unknown> | Headers | null | undefined,
-          "x-omniroute-effort"
+          "x-cheaproute-effort"
         );
   if (!modelDefaultAuto && !isAdaptiveEffort(headerEffort)) return body;
   const stripped = modelDefaultAuto ? { ...body } : body;

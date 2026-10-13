@@ -9,9 +9,9 @@ import { extractSyntxMessageText, type SyntxChatMessage } from "../services/synt
 
 export type JsonRecord = Record<string, unknown>;
 
-/** Unset = on. `OMNIROUTE_PROMPT_EMULATE_TOOLS=0` skips the local-tool catalog inject. */
+/** Unset = on. `CHEAPROUTE_PROMPT_EMULATE_TOOLS=0` skips the local-tool catalog inject. */
 function isSyntxPromptToolEmulationEnabled(): boolean {
-  const raw = (process.env.OMNIROUTE_PROMPT_EMULATE_TOOLS ?? "").trim().toLowerCase();
+  const raw = (process.env.CHEAPROUTE_PROMPT_EMULATE_TOOLS ?? "").trim().toLowerCase();
   if (!raw) return true;
   return raw === "1" || raw === "true" || raw === "on" || raw === "yes";
 }

@@ -12,7 +12,7 @@ import {
 import { enforceApiKeyPolicy } from "@/shared/utils/apiKeyPolicy";
 import { formatBatchResponse } from "./formatBatchResponse";
 import { parseBatchListLimit } from "./parseListLimit";
-import { buildErrorBody, sanitizeErrorMessage } from "@omniroute/open-sse/utils/error";
+import { buildErrorBody, sanitizeErrorMessage } from "@cheaproute/open-sse/utils/error";
 
 export async function OPTIONS() {
   return handleCorsOptions();

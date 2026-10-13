@@ -14,7 +14,7 @@
  * than adding a new Turnstile solver — `claudeTurnstileSolver.ts` is
  * claude.ai-specific and does not apply here.
  *
- * Opt-in only: gated behind `OMNIROUTE_BROWSER_POOL` / `WEB_COOKIE_USE_BROWSER`
+ * Opt-in only: gated behind `CHEAPROUTE_BROWSER_POOL` / `WEB_COOKIE_USE_BROWSER`
  * (the same env gate already used by claude-web.ts / duckduckgo-web.ts).
  * With the gate off, `acquireFreshGrokClearance` is never called — the
  * executor stays on the Step-1 `cloudflare_challenge` classification.
@@ -28,12 +28,12 @@ const GROK_POOL_KEY = "grok-web";
 
 /**
  * Reads the same opt-in gate as claude-web/duckduckgo-web
- * (`WEB_COOKIE_USE_BROWSER` or `OMNIROUTE_BROWSER_POOL`). Off by default.
+ * (`WEB_COOKIE_USE_BROWSER` or `CHEAPROUTE_BROWSER_POOL`). Off by default.
  */
 export function shouldUseGrokBrowserBacked(): boolean {
   const flag = process.env.WEB_COOKIE_USE_BROWSER;
   if (flag === "1" || flag === "true" || flag === "on") return true;
-  const poolFlag = process.env.OMNIROUTE_BROWSER_POOL;
+  const poolFlag = process.env.CHEAPROUTE_BROWSER_POOL;
   return poolFlag === "on" || poolFlag === "1" || poolFlag === "true";
 }
 

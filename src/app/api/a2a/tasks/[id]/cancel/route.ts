@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getTaskManager } from "@/lib/a2a/taskManager";
 import { authorizeA2ATaskRoute } from "@/app/api/a2a/_auth";
-import { sanitizeErrorMessage } from "@omniroute/open-sse/utils/error";
+import { sanitizeErrorMessage } from "@cheaproute/open-sse/utils/error";
 
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   // GHSA-jcm5-6wpp-wjj8: this route had no auth call at all. The owner check

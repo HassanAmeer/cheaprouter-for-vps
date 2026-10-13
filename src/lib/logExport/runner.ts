@@ -22,7 +22,7 @@ import {
   getCallLogsForExport,
   getMaxCallLogRowId,
 } from "@/lib/usage/callLogExportSource";
-import { sanitizeErrorMessage } from "@omniroute/open-sse/utils/error";
+import { sanitizeErrorMessage } from "@cheaproute/open-sse/utils/error";
 import { getLogExportDestinationType } from "./registry";
 import { decryptDestinationConfig } from "./secrets";
 import type { LogExportClient } from "./types";

@@ -1,5 +1,5 @@
 /**
- * OmniGlyph — compressão contexto-como-imagem para os wires Anthropic e OpenAI.
+ * CheapGlyph — compressão contexto-como-imagem para os wires Anthropic e OpenAI.
  * A versão 1.3.x do pacote também traz transformadores nativos para Chat
  * Completions e Responses; o adaptador escolhe o transformador pelo formato do
  * provider, nunca pelo formato que o cliente usou na entrada.
@@ -11,7 +11,7 @@
  *    (agregadores redimensionam imagens e destroem a legibilidade — medido)
  *  - imageTransportFidelity !== 'byte-preserving' → skip:transport_fidelity_unknown/resizes
  *  - wire não é Claude/OpenAI suportado → skip:target_format_not_supported
- *  - gate de rentabilidade interno do omniglyph decide o resto (patches 28px
+ *  - gate de rentabilidade interno do cheapglyph decide o resto (patches 28px
  *    exatos; texto esparso/pequeno passa direto) → skip:not_profitable
  *
  * `sampling: true`: perda é INTENCIONAL (byte-exatos viajam no factsheet em
@@ -21,36 +21,36 @@ import type { CompressionEngine, CompressionEngineApplyOptions } from "./types.t
 import type { CompressionResult } from "../types.ts";
 import { createCompressionStats } from "../stats.ts";
 import {
-  buildOmniGlyphAccounting,
-  type OmniGlyphAccounting,
-} from "../omniglyphTelemetry.ts";
+  buildCheapGlyphAccounting,
+  type CheapGlyphAccounting,
+} from "../cheapglyphTelemetry.ts";
 import {
-  isOmniGlyphSupportedModelForScope,
+  isCheapGlyphSupportedModelForScope,
   mergeCompressionProfileOptions,
   resolveCompressionProfile,
   transformAnthropicMessages,
   transformOpenAIChatCompletions,
   transformOpenAIResponses,
   type CompressionProfile,
-  type OmniGlyphSafetyScope,
-} from "omniglyph";
-import { isModelImageable } from "omniglyph/applicability";
+  type CheapGlyphSafetyScope,
+} from "cheapglyph";
+import { isModelImageable } from "cheapglyph/applicability";
 
 /**
- * Teto de modelos do OmniRoute — sempre o escopo mais restrito do pacote.
+ * Teto de modelos do CheapRoute — sempre o escopo mais restrito do pacote.
  *
- * `isOmniGlyphSupportedModel()` resolve o escopo lendo `OMNIGLYPH_PROFILE` do
- * processo, e a lista base sai de `OMNIGLYPH_MODELS`. Duas variáveis do HOST
- * decidiriam, em silêncio, o gate de todo request do OmniRoute: `passthrough`
- * desligaria a engine inteira e `OMNIGLYPH_MODELS` ADMITIRIA modelos sem
+ * `isCheapGlyphSupportedModel()` resolve o escopo lendo `CHEAPGLYPH_PROFILE` do
+ * processo, e a lista base sai de `CHEAPGLYPH_MODELS`. Duas variáveis do HOST
+ * decidiriam, em silêncio, o gate de todo request do CheapRoute: `passthrough`
+ * desligaria a engine inteira e `CHEAPGLYPH_MODELS` ADMITIRIA modelos sem
  * recibo medido — enquanto a UI continua prometendo "Claude Fable 5 na rota
  * direta medida". Fixar o escopo mais restrito faz o gate só poder ESTREITAR
- * pela env, nunca alargar, e mantém a decisão na configuração do OmniRoute.
+ * pela env, nunca alargar, e mantém a decisão na configuração do CheapRoute.
  */
-const MEASURED_MODEL_SCOPE: OmniGlyphSafetyScope = "coding-safe";
+const MEASURED_MODEL_SCOPE: CheapGlyphSafetyScope = "coding-safe";
 
 /**
- * Perfil padrão do OmniRoute.
+ * Perfil padrão do CheapRoute.
  *
  * `aggressive` é a política que os recibos publicados mediram. `coding-safe` e
  * `balanced` fixam `minCompressChars` no máximo e só colapsam histórico antigo:
@@ -58,13 +58,13 @@ const MEASURED_MODEL_SCOPE: OmniGlyphSafetyScope = "coding-safe";
  * `below_min_chars` e a engine não faz nada — o operador veria "ligado, 0% de
  * ganho". Ficam disponíveis como escolha explícita, não como default.
  */
-const DEFAULT_PROFILE: OmniGlyphSafetyScope = "aggressive";
+const DEFAULT_PROFILE: CheapGlyphSafetyScope = "aggressive";
 
-/** Perfil do passo (mais específico) > perfil global > default do OmniRoute. */
+/** Perfil do passo (mais específico) > perfil global > default do CheapRoute. */
 function resolveProfileName(options?: CompressionEngineApplyOptions): string {
   const step = options?.stepConfig?.profile;
   if (typeof step === "string" && step.trim()) return step;
-  const global = (options?.config as { omniglyph?: { profile?: unknown } } | undefined)?.omniglyph
+  const global = (options?.config as { cheapglyph?: { profile?: unknown } } | undefined)?.cheapglyph
     ?.profile;
   if (typeof global === "string" && global.trim()) return global;
   return DEFAULT_PROFILE;
@@ -75,9 +75,9 @@ function resolveProfileName(options?: CompressionEngineApplyOptions): string {
  * (Anthropic e GPT) compartilham a mesma allowlist no pacote desde 1.4.0, então
  * uma única checagem cobre os dois.
  */
-function isModelWithinScope(model: string, scope: OmniGlyphSafetyScope): boolean {
-  if (!isOmniGlyphSupportedModelForScope(model, MEASURED_MODEL_SCOPE)) return false;
-  return isOmniGlyphSupportedModelForScope(model, scope);
+function isModelWithinScope(model: string, scope: CheapGlyphSafetyScope): boolean {
+  if (!isCheapGlyphSupportedModelForScope(model, MEASURED_MODEL_SCOPE)) return false;
+  return isCheapGlyphSupportedModelForScope(model, scope);
 }
 
 function skip(body: Record<string, unknown>, reason: string): CompressionResult {
@@ -95,7 +95,7 @@ function skip(body: Record<string, unknown>, reason: string): CompressionResult 
   }
 }
 
-type OmniGlyphWireFormat = "claude" | "openai" | "openai-responses";
+type CheapGlyphWireFormat = "claude" | "openai" | "openai-responses";
 
 /** Formato Claude nativo: system no topo, nunca role:"system" dentro de messages. */
 function isClaudeFormat(body: Record<string, unknown>): boolean {
@@ -104,7 +104,7 @@ function isClaudeFormat(body: Record<string, unknown>): boolean {
   return !messages.some((m) => (m as { role?: string } | null)?.role === "system");
 }
 
-function inferWireFormat(body: Record<string, unknown>): OmniGlyphWireFormat {
+function inferWireFormat(body: Record<string, unknown>): CheapGlyphWireFormat {
   if (Array.isArray(body.input) || typeof body.instructions === "string") {
     return "openai-responses";
   }
@@ -115,7 +115,7 @@ function inferWireFormat(body: Record<string, unknown>): OmniGlyphWireFormat {
 function resolveWireFormat(
   body: Record<string, unknown>,
   options?: CompressionEngineApplyOptions
-): OmniGlyphWireFormat | null {
+): CheapGlyphWireFormat | null {
   const stage = options?.compressionStage ?? "pre-translation";
   const requested = stage === "post-translation" ? options?.targetFormat : options?.sourceFormat;
   if (requested === "claude" || requested === "openai" || requested === "openai-responses") {
@@ -125,7 +125,7 @@ function resolveWireFormat(
   return inferWireFormat(body);
 }
 
-async function applyOmniglyph(
+async function applyCheapglyph(
   body: Record<string, unknown>,
   options?: CompressionEngineApplyOptions
 ): Promise<CompressionResult> {
@@ -201,19 +201,19 @@ async function applyOmniglyph(
       : options?.config?.preserveSystemPrompt) === true;
   // `compressSystem` só existe no transform Anthropic. Os wires OpenAI honram
   // apenas compressTools/gptHistory/minCompressChars/reflow e sempre trocam a
-  // instrução por um ponteiro para a imagem. Imagear o system quando o OmniRoute
+  // instrução por um ponteiro para a imagem. Imagear o system quando o CheapRoute
   // decidiu preservá-lo queimaria o prefixo quente que a política cache-aware
   // está protegendo — e nada no corpo devolvido denunciaria isso. Sem como
   // honrar a política nesse wire, a engine pula.
   if (preserveSystemPrompt && wireFormat !== "claude") {
     return skip(body, "system_preservation_unsupported_on_wire");
   }
-  // OmniGlyph 1.3.x deliberately keeps unverified families (currently Grok)
+  // CheapGlyph 1.3.x deliberately keeps unverified families (currently Grok)
   // text-only until the operator acknowledges them via its own env gate.
   if (!isModelImageable(model)) return skip(body, "model_not_imageable");
   const started = Date.now();
   let outBody: Record<string, unknown>;
-  let accounting: OmniGlyphAccounting | undefined;
+  let accounting: CheapGlyphAccounting | undefined;
   try {
     // The upstream OpenAI transformer resolves its billing/render profile from
     // body.model. Keep the provider body byte-compatible on output, but use the
@@ -240,7 +240,7 @@ async function applyOmniglyph(
     if (!applied) return skip(body, result.info?.reason ?? "not_profitable");
     outBody = JSON.parse(new TextDecoder().decode(result.body)) as Record<string, unknown>;
     if (transformBody !== body && body.model !== undefined) outBody.model = body.model;
-    accounting = buildOmniGlyphAccounting({
+    accounting = buildCheapGlyphAccounting({
       provider: options?.provider,
       model,
       originalBytes: encoded.byteLength,
@@ -258,44 +258,44 @@ async function applyOmniglyph(
     body,
     outBody,
     "stacked",
-    ["omniglyph:context-as-image"],
+    ["cheapglyph:context-as-image"],
     undefined,
     Date.now() - started
   );
   // A contabilidade só acompanha uma conversão que realmente aconteceu: um skip
   // não tem economia para reportar, e inventar zeros ali viraria "0% de ganho"
   // indistinguível de "a engine nem rodou".
-  if (accounting) stats.omniglyph = accounting;
+  if (accounting) stats.cheapglyph = accounting;
 
   return { body: outBody, compressed: true, stats };
 }
 
-export const omniglyphEngine: CompressionEngine = {
-  id: "omniglyph",
-  name: "OmniGlyph",
+export const cheapglyphEngine: CompressionEngine = {
+  id: "cheapglyph",
+  name: "CheapGlyph",
   description:
     "Contexto-como-imagem para Claude Fable 5 na rota direta medida; wires GPT nativos ficam disponíveis apenas após recibo de fidelidade do provedor.",
   icon: "image",
   targets: ["messages", "tool_results"],
   stackable: true,
-  stackPriority: 90, // por último: RTK/Caveman limpam texto antes; omniglyph imageia o residual
+  stackPriority: 90, // por último: RTK/Caveman limpam texto antes; cheapglyph imageia o residual
   sampling: true, // perda intencional + factsheet → fidelity gate pula por design
   metadata: {
-    id: "omniglyph",
-    name: "OmniGlyph",
+    id: "cheapglyph",
+    name: "CheapGlyph",
     description:
       "Contexto-como-imagem para Claude Fable 5 na rota direta medida; transformadores GPT nativos permanecem fail-closed até validação do provedor.",
     inputScope: "mixed",
     targetLatencyMs: 250, // render+encode PNG de páginas grandes
     supportsPreview: true,
-    stable: false, // P1: preview — promover após o e2e P3 (30/30 via OmniRoute)
+    stable: false, // P1: preview — promover após o e2e P3 (30/30 via CheapRoute)
     executionStages: ["pre-translation", "post-translation"],
   },
   // Contrato da interface: engines async-only mantêm apply síncrono como pass-through seguro.
   apply(body) {
     return { body, compressed: false, stats: null };
   },
-  applyAsync: applyOmniglyph,
+  applyAsync: applyCheapglyph,
   compress(body, config) {
     return this.apply(body, { stepConfig: config });
   },

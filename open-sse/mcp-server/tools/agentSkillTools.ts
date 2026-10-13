@@ -19,7 +19,7 @@ export const AgentSkillsListSchema = z.object({
 });
 
 export const AgentSkillsGetSchema = z.object({
-  id: z.string().describe("Canonical skill ID (e.g. 'omni-providers', 'cli-serve')"),
+  id: z.string().describe("Canonical skill ID (e.g. 'cheap-providers', 'cli-serve')"),
 });
 
 export const AgentSkillsCoverageSchema = z.object({});
@@ -27,10 +27,10 @@ export const AgentSkillsCoverageSchema = z.object({});
 // ── Tool Definitions ─────────────────────────────────────────────────────────
 
 export const agentSkillTools = {
-  omniroute_agent_skills_list: {
-    name: "omniroute_agent_skills_list",
+  cheaproute_agent_skills_list: {
+    name: "cheaproute_agent_skills_list",
     description:
-      "List OmniRoute agent skills with optional filtering by category (api/cli/config) or area. Returns skill metadata including id, name, description, endpoints/commands, and URLs.",
+      "List CheapRoute agent skills with optional filtering by category (api/cli/config) or area. Returns skill metadata including id, name, description, endpoints/commands, and URLs.",
     inputSchema: AgentSkillsListSchema,
     handler: async (args: z.infer<typeof AgentSkillsListSchema>) => {
       const skills: AgentSkill[] =
@@ -59,8 +59,8 @@ export const agentSkillTools = {
     },
   },
 
-  omniroute_agent_skills_get: {
-    name: "omniroute_agent_skills_get",
+  cheaproute_agent_skills_get: {
+    name: "cheaproute_agent_skills_get",
     description:
       "Get detailed metadata and SKILL.md markdown for a single agent skill by its canonical ID. Returns all skill fields plus the raw markdown content.",
     inputSchema: AgentSkillsGetSchema,
@@ -79,8 +79,8 @@ export const agentSkillTools = {
     },
   },
 
-  omniroute_agent_skills_coverage: {
-    name: "omniroute_agent_skills_coverage",
+  cheaproute_agent_skills_coverage: {
+    name: "cheaproute_agent_skills_coverage",
     description:
       "Returns the current SKILL.md coverage stats: how many of the 23 API, 21 CLI, and 1 config skill have generated SKILL.md files on the filesystem vs the catalog total.",
     inputSchema: AgentSkillsCoverageSchema,

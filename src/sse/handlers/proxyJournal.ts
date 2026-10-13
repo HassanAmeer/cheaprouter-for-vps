@@ -7,7 +7,7 @@ import { updateAttemptTiming } from "../../lib/db/proxyLogs";
 import {
   isFirstChunkTimingEnabled,
   sanitizeTimingMs,
-} from "@omniroute/open-sse/utils/upstreamStatusCapture.ts";
+} from "@cheaproute/open-sse/utils/upstreamStatusCapture.ts";
 
 /** One request actually sent: the outlet snapshot plus what came back. */
 export type AttemptJournalEntry = {
@@ -72,7 +72,7 @@ function asProxyConfig(value: unknown): ProxyConfig {
 async function resolveCachedEgress(proxy: unknown): Promise<string | null> {
   try {
     const { getCachedEgressIp, warmEgressIp } = await import("../../lib/proxyEgress");
-    const { proxyConfigToUrl } = await import("@omniroute/open-sse/utils/proxyDispatcher.ts");
+    const { proxyConfigToUrl } = await import("@cheaproute/open-sse/utils/proxyDispatcher.ts");
     const proxyUrl = proxy ? proxyConfigToUrl(proxy) : null;
     const cached = getCachedEgressIp(proxyUrl);
     warmEgressIp(proxyUrl);

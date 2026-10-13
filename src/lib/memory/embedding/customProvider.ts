@@ -1,4 +1,4 @@
-import type { EmbeddingProvider } from "@omniroute/open-sse/config/embeddingRegistry.ts";
+import type { EmbeddingProvider } from "@cheaproute/open-sse/config/embeddingRegistry.ts";
 import {
   parseAndValidateNonMetadataUrl,
   parseAndValidatePublicUrl,

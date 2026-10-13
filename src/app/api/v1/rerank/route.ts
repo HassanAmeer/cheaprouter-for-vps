@@ -1,12 +1,12 @@
-import { handleRerank } from "@omniroute/open-sse/handlers/rerank.ts";
+import { handleRerank } from "@cheaproute/open-sse/handlers/rerank.ts";
 import {
   getProviderCredentialsWithQuotaPreflight,
   clearRecoveredProviderState,
 } from "@/sse/services/auth";
 import { withInjectionGuard } from "@/middleware/promptInjectionGuard";
-import { parseRerankModel } from "@omniroute/open-sse/config/rerankRegistry.ts";
-import { errorResponse } from "@omniroute/open-sse/utils/error.ts";
-import { HTTP_STATUS } from "@omniroute/open-sse/config/constants.ts";
+import { parseRerankModel } from "@cheaproute/open-sse/config/rerankRegistry.ts";
+import { errorResponse } from "@cheaproute/open-sse/utils/error.ts";
+import { HTTP_STATUS } from "@cheaproute/open-sse/config/constants.ts";
 import { enforceApiKeyPolicy } from "@/shared/utils/apiKeyPolicy";
 import { v1RerankSchema } from "@/shared/validation/schemas";
 import { isValidationFailure, validateBody } from "@/shared/validation/helpers";
@@ -20,14 +20,14 @@ import {
   rateLimitedProviderResponse,
 } from "@/app/api/v1/_shared/rateLimit";
 import { saveCallLog } from "@/lib/usageDb";
-import { attachOmniRouteMetaHeaders } from "@/domain/omnirouteResponseMeta";
+import { attachCheapRouteMetaHeaders } from "@/domain/cheaprouteResponseMeta";
 import { generateRequestId } from "@/shared/utils/requestId";
-import { CORS_HEADERS } from "@omniroute/open-sse/utils/cors.ts";
-import { deriveRerankProviderForChatProvider } from "@omniroute/open-sse/config/rerankRegistry.ts";
+import { CORS_HEADERS } from "@cheaproute/open-sse/utils/cors.ts";
+import { deriveRerankProviderForChatProvider } from "@cheaproute/open-sse/config/rerankRegistry.ts";
 import { resolveAlibabaQwen3RerankUrl } from "@/shared/constants/alibabaProviderRegions";
 import { getComboByName, getCombos } from "@/lib/db/combos";
 import { getDatabaseSettings } from "@/lib/db/databaseSettings";
-import { handleComboChat } from "@omniroute/open-sse/services/combo.ts";
+import { handleComboChat } from "@cheaproute/open-sse/services/combo.ts";
 import * as log from "@/sse/utils/logger";
 
 /**
@@ -164,7 +164,7 @@ export async function handleValidatedRerankRequestBody(
     const prefix = body.model.split("/")[0];
     if (prefix && prefix !== body.model) {
       try {
-        const { REGISTRY } = await import("@omniroute/open-sse/config/providerRegistry.ts");
+        const { REGISTRY } = await import("@cheaproute/open-sse/config/providerRegistry.ts");
         const chatEntry = (REGISTRY as Record<string, { baseUrl?: string } | undefined>)[prefix];
         derivedProvider = deriveRerankProviderForChatProvider(prefix, chatEntry);
       } catch {
@@ -360,7 +360,7 @@ export async function handleValidatedRerankRequestBody(
         }).catch(() => {});
 
         const headers = new Headers({ ...CORS_HEADERS, "Content-Type": "application/json" });
-        attachOmniRouteMetaHeaders(headers, {
+        attachCheapRouteMetaHeaders(headers, {
           provider: prefix,
           model: localModel,
           costUsd: 0,

@@ -1,7 +1,7 @@
 /**
  * Pairs Gemini `functionResponse` parts with the `functionCall` they answer.
  *
- * Gemini carries an `id` on either part only when the client set one, and OmniRoute's own
+ * Gemini carries an `id` on either part only when the client set one, and CheapRoute's own
  * Gemini-format responses never emit it, so multi-turn tool loops through the Gemini
  * endpoints usually arrive without ids. A call without an id is given a generated one;
  * falling back to the function *name* for the matching response then points the tool

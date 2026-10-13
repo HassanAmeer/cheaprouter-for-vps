@@ -1,4 +1,4 @@
-import type { EngineConfigField } from "@omniroute/open-sse/services/compression/engines/types";
+import type { EngineConfigField } from "@cheaproute/open-sse/services/compression/engines/types";
 
 type FormValues = Record<string, unknown>;
 
@@ -20,7 +20,7 @@ export function seedEngineForm(
   const current = asRecord(stored);
   const defaults: FormValues = Object.fromEntries(schema.map((f) => [f.key, f.defaultValue]));
   // Leave lite.maxToolLength out until a cap is stored. The baseline then has no cap, so an
-  // unset cap stays unset (OMNIROUTE_LITE_MAX_TOOL_LENGTH applies) and typing 2000 still counts
+  // unset cap stays unset (CHEAPROUTE_LITE_MAX_TOOL_LENGTH applies) and typing 2000 still counts
   // as an edit. The form still shows 2000 through field.defaultValue.
   if (engineId === "lite" && current.maxToolLength === undefined) {
     delete defaults.maxToolLength;

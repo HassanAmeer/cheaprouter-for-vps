@@ -3,7 +3,7 @@
  *
  * Toggle provider exposure for the CLIProxy embedded service.
  * When enabled, cliproxyapi models are discoverable as `cliproxyapi/...` in
- * OmniRoute routing.
+ * CheapRoute routing.
  *
  * Body: { enabled: boolean }
  * Response: 204 No Content on success.
@@ -14,7 +14,7 @@
 import { z } from "zod";
 import { updateServiceField } from "@/lib/db/versionManager";
 import { createErrorResponse } from "@/lib/api/errorResponse";
-import { sanitizeErrorMessage } from "@omniroute/open-sse/utils/error";
+import { sanitizeErrorMessage } from "@cheaproute/open-sse/utils/error";
 
 const BodySchema = z.object({ enabled: z.boolean() });
 

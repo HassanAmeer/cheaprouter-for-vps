@@ -3,13 +3,13 @@
  * Every failure preserves the last verified local cache.
  */
 
-import { sanitizeErrorMessage } from "@omniroute/open-sse/utils/error";
+import { sanitizeErrorMessage } from "@cheaproute/open-sse/utils/error";
 import { isFeatureFlagEnabled } from "@/shared/utils/featureFlags";
 import { RadarOffersFeedSchema, type RadarOffersFeed } from "./offersFeedSchema";
 import { compareVersions, type RadarSettingsSnapshot } from "./sync";
 import { verifyFeedBytes } from "./verify";
 
-const DEFAULT_FEED_BASE_URL = "https://radar.omniroute.online";
+const DEFAULT_FEED_BASE_URL = "https://radar.cheaproute.online";
 const SYNC_TIMEOUT_MS = 30_000;
 const MAX_FEED_BYTES = 10 * 1024 * 1024;
 
@@ -107,7 +107,7 @@ export async function syncRadarOffers(deps: OffersSyncDeps = {}): Promise<Offers
     const rawBytes = await readBoundedBytes(response);
     if (!rawBytes) return { status: "too_large" };
 
-    const signature = response.headers.get("x-omniroute-feed-signature") ?? "";
+    const signature = response.headers.get("x-cheaproute-feed-signature") ?? "";
     if (!verifyFeedBytes(rawBytes, signature)) return { status: "invalid_signature" };
 
     let feed: RadarOffersFeed;
@@ -117,7 +117,7 @@ export async function syncRadarOffers(deps: OffersSyncDeps = {}): Promise<Offers
       return { status: "invalid_schema" };
     }
 
-    if (response.headers.get("x-omniroute-feed-tier") !== "live" || feed.tier !== "live") {
+    if (response.headers.get("x-cheaproute-feed-tier") !== "live" || feed.tier !== "live") {
       return { status: "wrong_tier" };
     }
 

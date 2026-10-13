@@ -23,7 +23,7 @@ function tokensMatch(provided: string, expected: string): boolean {
 
 /**
  * Whether the request may use the A2A surface at all. Mirrors the JSON-RPC
- * posture: when a client key is required, demand a valid OmniRoute key;
+ * posture: when a client key is required, demand a valid CheapRoute key;
  * otherwise honor the legacy explicit A2A key; otherwise stay keyless (the
  * same local-first default as /v1).
  */
@@ -37,7 +37,7 @@ export async function authenticateA2ARequest(req: NextRequest | Request): Promis
     return isDashboardSessionAuthenticated(req);
   }
 
-  const configuredKey = process.env.OMNIROUTE_API_KEY;
+  const configuredKey = process.env.CHEAPROUTE_API_KEY;
   if (configuredKey) {
     if (apiKey) return tokensMatch(apiKey, configuredKey);
     return isDashboardSessionAuthenticated(req);

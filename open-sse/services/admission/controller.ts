@@ -520,7 +520,7 @@ export class AdaptiveAdmissionController {
     };
 
     // Per-tenant virtual admission lanes (#9654): when enabled via
-    // OMNIROUTE_CHAT_VIRTUAL_LANES=1, requests with a tenantKey are enqueued into
+    // CHEAPROUTE_CHAT_VIRTUAL_LANES=1, requests with a tenantKey are enqueued into
     // a per-tenant lane queue instead of the shared queue, so one tenant's
     // burst does not 503 other sessions. Lanes are bounded by
     // ADMISSION_LANE_MAX_SESSIONS and idle-evicted after ADMISSION_LANE_TTL_MS.

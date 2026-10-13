@@ -7,7 +7,7 @@ import {
   listConnectionCooldowns,
 } from "@/lib/resilience/cooldownManager";
 import { validateBody, isValidationFailure } from "@/shared/validation/helpers";
-import { buildErrorBody, sanitizeErrorMessage } from "@omniroute/open-sse/utils/error";
+import { buildErrorBody, sanitizeErrorMessage } from "@cheaproute/open-sse/utils/error";
 
 const providerSchema = z.string().trim().min(1).max(128);
 

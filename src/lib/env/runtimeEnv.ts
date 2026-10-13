@@ -62,11 +62,11 @@ export const webRuntimeEnvSchema = z.object({
   INITIAL_PASSWORD: optionalTrimmedString,
   AUTH_COOKIE_SECURE: optionalBooleanEnv,
   PRICING_SYNC_ENABLED: optionalBooleanEnv,
-  OMNIROUTE_DISABLE_BACKGROUND_SERVICES: optionalBooleanEnv,
+  CHEAPROUTE_DISABLE_BACKGROUND_SERVICES: optionalBooleanEnv,
   CLOUD_URL: optionalHttpUrl,
   NEXT_PUBLIC_CLOUD_URL: optionalHttpUrl,
-  OMNIROUTE_PUBLIC_BASE_URL: optionalHttpUrl,
-  OMNIROUTE_BASE_URL: optionalHttpUrl,
+  CHEAPROUTE_PUBLIC_BASE_URL: optionalHttpUrl,
+  CHEAPROUTE_BASE_URL: optionalHttpUrl,
   BASE_URL: optionalHttpUrl,
   NEXT_PUBLIC_BASE_URL: optionalHttpUrl,
   CONDUCTOR_HUB_URL: optionalHttpUrl,
@@ -74,7 +74,7 @@ export const webRuntimeEnvSchema = z.object({
   CONDUCTOR_ORCHESTRATOR_TOKEN: optionalTrimmedString,
 
   CONDUCTOR_HUB_TOKEN: optionalTrimmedString,
-  OMNIROUTE_PORT: optionalPortEnv,
+  CHEAPROUTE_PORT: optionalPortEnv,
   API_PORT: optionalPortEnv,
   DASHBOARD_PORT: optionalPortEnv,
 });

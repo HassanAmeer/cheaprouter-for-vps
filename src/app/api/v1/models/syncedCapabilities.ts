@@ -19,14 +19,14 @@
  */
 // Use the same canonical alias as catalogModelPolicy.ts (l.1) — a relative path from
 // src/app/api/v1/models/ to open-sse/ would need 5 `../` and silently breaks under
-// refactors. (Confirmed convention: grep "from \"@omniroute/open-sse" src/app/api/v1/models/)
+// refactors. (Confirmed convention: grep "from \"@cheaproute/open-sse" src/app/api/v1/models/)
 import { getCodexWireEfforts } from "@/shared/reasoning/codexEfforts";
-import { getLearnedReasoningEffortForModel } from "@omniroute/open-sse/services/learnedReasoningEffortCaps.ts";
-import { isSkippedEffortProvider } from "@omniroute/open-sse/utils/syncedEffortVariants.ts";
+import { getLearnedReasoningEffortForModel } from "@cheaproute/open-sse/services/learnedReasoningEffortCaps.ts";
+import { isSkippedEffortProvider } from "@cheaproute/open-sse/utils/syncedEffortVariants.ts";
 import {
   getRegistryModelThinkingEfforts,
   getRegistryThinkingEfforts,
-} from "@omniroute/open-sse/config/providerRegistry.ts";
+} from "@cheaproute/open-sse/config/providerRegistry.ts";
 
 interface SyncedCapabilityFlags {
   id?: string;

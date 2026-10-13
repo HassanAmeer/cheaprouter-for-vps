@@ -1,13 +1,13 @@
 import { z } from "zod";
 
 export const NEWS_JSON_URL =
-  "https://raw.githubusercontent.com/diegosouzapw/OmniRoute/main/news.json";
+  "https://raw.githubusercontent.com/diegosouzapw/CheapRoute/main/news.json";
 export const CHANGELOG_RAW_URL =
-  "https://raw.githubusercontent.com/diegosouzapw/OmniRoute/main/CHANGELOG.md";
+  "https://raw.githubusercontent.com/diegosouzapw/CheapRoute/main/CHANGELOG.md";
 export const CHANGELOG_GITHUB_URL =
-  "https://github.com/diegosouzapw/OmniRoute/blob/main/CHANGELOG.md";
-export const NEWS_DISMISS_STORAGE_NAME = "omniroute-news-dismissed-v2";
-export const NEWS_DISMISS_EVENT = "omniroute:news-dismissed";
+  "https://github.com/diegosouzapw/CheapRoute/blob/main/CHANGELOG.md";
+export const NEWS_DISMISS_STORAGE_NAME = "cheaproute-news-dismissed-v2";
+export const NEWS_DISMISS_EVENT = "cheaproute:news-dismissed";
 
 const NEWS_ID_PATTERN = /^[a-z0-9](?:[a-z0-9-]{0,78}[a-z0-9])?$/;
 const LOCALE_PATTERN = /^[a-z]{2,3}(?:-[A-Z][a-z]{3})?(?:-[A-Z]{2}|-[0-9]{3})?$/;

@@ -35,8 +35,8 @@
 
 import { checkBudget } from "@/domain/costRules";
 import { isFlatRateProvider } from "./flatRateProviders";
-import { errorResponse } from "@omniroute/open-sse/utils/error.ts";
-import { HTTP_STATUS } from "@omniroute/open-sse/config/constants.ts";
+import { errorResponse } from "@cheaproute/open-sse/utils/error.ts";
+import { HTTP_STATUS } from "@cheaproute/open-sse/config/constants.ts";
 import * as log from "@/sse/utils/logger";
 
 /**

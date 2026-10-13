@@ -135,7 +135,7 @@ export const DEFAULT_DATABASE_SETTINGS: Omit<DatabaseSettings, "location" | "sta
     semanticCacheEmbeddingBaseUrl: "",
     semanticCacheEmbeddingApiKey: "",
     semanticCacheRedisUrl: "",
-    semanticCacheRedisPrefix: "omniroute:semcache:",
+    semanticCacheRedisPrefix: "cheaproute:semcache:",
     semanticCacheRequireZeroTemp: true,
     promptCacheEnabled: true,
     promptCacheStrategy: "auto",

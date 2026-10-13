@@ -1,6 +1,6 @@
 /**
  * Fleet skills for the Agent Card (Conductor PRD RF2) — derives A2A skills from
- * the OmniConductor hub's runner registry (`GET /v1/runners`, OASF capabilities).
+ * the CheapConductor hub's runner registry (`GET /v1/runners`, OASF capabilities).
  *
  * Fail-open by design: any problem (env unset, hub offline, bad shape) yields
  * `[]` so the Agent Card stays valid, just without the fleet section. Results
@@ -88,7 +88,7 @@ function deriveSkills(runners: z.infer<typeof runnersSchema>): FleetSkill[] {
       id: `conductor-cli-${profile}`,
       name: `Conductor fleet: ${profile} CLI`,
       description:
-        `Delegate coding tasks to the OmniConductor fleet's ${profile} CLI ` +
+        `Delegate coding tasks to the CheapConductor fleet's ${profile} CLI ` +
         `(${info.count} runner(s) online${models.length ? `; models: ${models.join(", ")}` : ""}). ` +
         "Tasks run in disposable git worktrees; results come back as branches with graduated manifests.",
       tags: ["conductor", "fleet", "cli", profile],
@@ -98,7 +98,7 @@ function deriveSkills(runners: z.infer<typeof runnersSchema>): FleetSkill[] {
     skills.push({
       id: `conductor-skill-${s}`,
       name: `Conductor fleet skill: ${s}`,
-      description: `OASF skill "${s}" declared by online runners of the OmniConductor fleet.`,
+      description: `OASF skill "${s}" declared by online runners of the CheapConductor fleet.`,
       tags: ["conductor", "fleet", "skill"],
     });
   }

@@ -2,7 +2,7 @@
 
 import fs from "fs/promises";
 import { getCliConfigHome, getCliPrimaryConfigPath } from "@/shared/services/cliRuntime";
-import { hasOmniRouteQwenCodeConfig } from "@/shared/services/qwenCodeConfig";
+import { hasCheapRouteQwenCodeConfig } from "@/shared/services/qwenCodeConfig";
 import {
   parseGrokBuildConfig,
   resolveGrokBuildConfigPath,
@@ -12,7 +12,7 @@ import { getRuntimePorts } from "@/lib/runtime/ports";
 const { apiPort } = getRuntimePorts();
 
 /**
- * Check if a tool has OmniRoute configured by reading its config file directly.
+ * Check if a tool has CheapRoute configured by reading its config file directly.
  * This replaces the expensive self-referential HTTP calls to /api/cli-tools/*-settings.
  *
  * @param toolId - CLI tool identifier (e.g. "claude", "codex", "cline")
@@ -36,7 +36,7 @@ export async function checkToolConfigStatus(
 
     if (toolId === "grok-build") {
       const settings = parseGrokBuildConfig(content);
-      return settings.default === "omniroute" &&
+      return settings.default === "cheaproute" &&
         settings.model?.base_url &&
         settings.model.api_backend === "chat_completions"
         ? "configured"
@@ -46,11 +46,11 @@ export async function checkToolConfigStatus(
     // Codex uses TOML config — parse as raw text, not JSON
     if (toolId === "codex") {
       const lower = content.toLowerCase();
-      const hasOmniRoute =
-        lower.includes("omniroute") ||
+      const hasCheapRoute =
+        lower.includes("cheaproute") ||
         lower.includes(`localhost:${apiPort}`) ||
         lower.includes(`127.0.0.1:${apiPort}`);
-      if (!hasOmniRoute) return "not_configured";
+      if (!hasCheapRoute) return "not_configured";
 
       // Also verify auth.json has an API key (not masked/empty)
       try {
@@ -70,32 +70,32 @@ export async function checkToolConfigStatus(
 
     if (toolId === "hermes" || toolId === "omp") {
       const lower = content.toLowerCase();
-      const hasOmniRoute =
-        lower.includes("omniroute") ||
+      const hasCheapRoute =
+        lower.includes("cheaproute") ||
         lower.includes(`localhost:${apiPort}`) ||
         lower.includes(`127.0.0.1:${apiPort}`);
-      return hasOmniRoute ? "configured" : "not_configured";
+      return hasCheapRoute ? "configured" : "not_configured";
     }
 
     const config = JSON.parse(content) as Record<string, unknown>;
 
-    // Each tool stores OmniRoute config differently
+    // Each tool stores CheapRoute config differently
     switch (toolId) {
       case "claude":
         return (config?.env as Record<string, unknown>)?.ANTHROPIC_BASE_URL
           ? "configured"
           : "not_configured";
       case "qwen":
-        return hasOmniRouteQwenCodeConfig(config) ? "configured" : "not_configured";
+        return hasCheapRouteQwenCodeConfig(config) ? "configured" : "not_configured";
       case "droid":
       case "openclaw":
       case "cline":
       case "kilo": {
-        // Generic check: look for OmniRoute-specific markers in the config
+        // Generic check: look for CheapRoute-specific markers in the config
         const configStr = JSON.stringify(config).toLowerCase();
         if (
-          configStr.includes("omniroute") ||
-          configStr.includes("sk_omniroute") ||
+          configStr.includes("cheaproute") ||
+          configStr.includes("sk_cheaproute") ||
           configStr.includes(`localhost:${apiPort}`) ||
           configStr.includes(`127.0.0.1:${apiPort}`)
         ) {

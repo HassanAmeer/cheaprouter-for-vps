@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireManagementAuth } from "@/lib/api/requireManagementAuth";
 import { bindVolcenginePlansFromConsoleCredentials } from "@/lib/providers/volcenginePlanBinding";
-import { sanitizeErrorMessage } from "@omniroute/open-sse/utils/error.ts";
+import { sanitizeErrorMessage } from "@cheaproute/open-sse/utils/error.ts";
 import { formatValidationMessage, validateBody } from "@/shared/validation/helpers";
 import { volcenginePlanIdentitySchema } from "@/shared/validation/schemas/volcenginePlan";
 
@@ -31,7 +31,7 @@ export async function POST(
 
   try {
     const { volcengineConsoleAutoLoginService } = await import(
-      "@omniroute/open-sse/services/volcengineConsoleAutoLogin.ts"
+      "@cheaproute/open-sse/services/volcengineConsoleAutoLogin.ts"
     );
 
     if (!volcengineConsoleAutoLoginService.getStatus(sessionId)) {

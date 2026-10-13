@@ -79,7 +79,7 @@ export function refreshZedClientVersion(fetchImpl: FetchLike = fetch): Promise<s
       const response = await fetchImpl(ZED_RELEASE_URL, {
         headers: {
           Accept: "application/json",
-          "User-Agent": "OmniRoute-ZedVersion/1.0",
+          "User-Agent": "CheapRoute-ZedVersion/1.0",
         },
         signal: controller.signal,
       });

@@ -8,8 +8,8 @@ import {
   CLAUDE_CODE_COMPATIBLE_DEFAULT_MODELS_PATH,
   joinClaudeCodeCompatibleUrl,
   joinBaseUrlAndPath,
-} from "@omniroute/open-sse/services/claudeCodeCompatible.ts";
-import { getDefaultExecutor } from "@omniroute/open-sse/executors/defaultResolver.ts";
+} from "@cheaproute/open-sse/services/claudeCodeCompatible.ts";
+import { getDefaultExecutor } from "@cheaproute/open-sse/executors/defaultResolver.ts";
 import {
   addModelsSuffix,
   normalizeAnthropicBaseUrl,

@@ -4,7 +4,7 @@ import { parsePaginationParams, buildPaginatedResponse } from "@/shared/types/pa
 import { getSkillsProviderSetting } from "@/lib/skills/providerSettings";
 import { requireManagementAuth } from "@/lib/api/requireManagementAuth";
 import { matchesSearch } from "@/shared/utils/turkishText";
-import { sanitizeErrorMessage } from "@omniroute/open-sse/utils/error";
+import { sanitizeErrorMessage } from "@cheaproute/open-sse/utils/error";
 
 const POPULAR_BY_PROVIDER = {
   skillsmp: ["web-search", "file-reader", "sql-assistant", "devops-helper", "docs-assistant"],

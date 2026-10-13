@@ -20,7 +20,7 @@ export const dynamic = "force-dynamic";
 
 export async function GET() {
   try {
-    const { getMemoStats } = await import("@omniroute/open-sse/services/compression/index.ts");
+    const { getMemoStats } = await import("@cheaproute/open-sse/services/compression/index.ts");
     return NextResponse.json(
       {
         compression: {

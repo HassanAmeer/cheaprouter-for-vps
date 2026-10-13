@@ -42,7 +42,7 @@ export type CursorErrorKind =
 
 export type ClassifiedCursorError = {
   kind: CursorErrorKind;
-  /** HTTP status to surface to OmniRoute clients. */
+  /** HTTP status to surface to CheapRoute clients. */
   status: number;
   /** OpenAI-style error.type */
   type: string;

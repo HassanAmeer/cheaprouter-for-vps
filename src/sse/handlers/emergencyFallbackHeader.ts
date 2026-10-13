@@ -1,11 +1,11 @@
-import { inheritTrustedLocalRateLimitResponse } from "@omniroute/open-sse/services/rateLimitManager/errors.ts";
-import { OMNIROUTE_RESPONSE_HEADERS } from "@/shared/constants/headers";
+import { inheritTrustedLocalRateLimitResponse } from "@cheaproute/open-sse/services/rateLimitManager/errors.ts";
+import { CHEAPROUTE_RESPONSE_HEADERS } from "@/shared/constants/headers";
 import * as log from "../utils/logger";
 
 /**
  * Mark a response that was served by the budget-exhaustion emergency fallback
- * (`OMNIROUTE_EMERGENCY_FALLBACK`). Without it the reroute is only visible by
- * diffing `X-OmniRoute-Provider` / `X-OmniRoute-Model` against the request, so a
+ * (`CHEAPROUTE_EMERGENCY_FALLBACK`). Without it the reroute is only visible by
+ * diffing `X-CheapRoute-Provider` / `X-CheapRoute-Model` against the request, so a
  * caller that must keep roles on distinct providers cannot tell a 200 from the
  * requested model apart from one served by the free fallback. The value only
  * carries the two `provider/model` ids (never the upstream error text).
@@ -22,7 +22,7 @@ export function withEmergencyFallbackHeader(
   const value = `from=${clean(fromModel)}; to=${clean(toModel)}`;
 
   try {
-    response.headers.set(OMNIROUTE_RESPONSE_HEADERS.emergencyFallback, value);
+    response.headers.set(CHEAPROUTE_RESPONSE_HEADERS.emergencyFallback, value);
     return response;
   } catch {
     const cloned = new Response(response.body, {
@@ -30,7 +30,7 @@ export function withEmergencyFallbackHeader(
       statusText: response.statusText,
       headers: response.headers,
     });
-    cloned.headers.set(OMNIROUTE_RESPONSE_HEADERS.emergencyFallback, value);
+    cloned.headers.set(CHEAPROUTE_RESPONSE_HEADERS.emergencyFallback, value);
     return inheritTrustedLocalRateLimitResponse(response, cloned);
   }
 }

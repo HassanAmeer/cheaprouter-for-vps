@@ -1,5 +1,5 @@
 import { projectProviderValidationResultForPublicResponse } from "@/lib/providers/validation/transport";
-import { sanitizeErrorMessage } from "@omniroute/open-sse/utils/errorSanitization.ts";
+import { sanitizeErrorMessage } from "@cheaproute/open-sse/utils/errorSanitization.ts";
 import { makeDiagnosis } from "./codexAppServerHealth";
 import { classifyAmbiguousOrAuthError, type ClassifyFailureArgs } from "./mistralAmbiguousAuth";
 

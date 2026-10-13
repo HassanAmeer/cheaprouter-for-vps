@@ -1,14 +1,14 @@
 import { z } from "zod";
-import type { RequestPipelinePayloads } from "@omniroute/open-sse/utils/requestLogger.ts";
+import type { RequestPipelinePayloads } from "@cheaproute/open-sse/utils/requestLogger.ts";
 import {
   classifyProviderError,
   type ErrorTypeContract,
   ERROR_TYPE_CONTRACT,
-} from "@omniroute/open-sse/services/errorClassifier.ts";
+} from "@cheaproute/open-sse/services/errorClassifier.ts";
 import {
   sanitizeErrorMessage,
   sanitizeUpstreamDetails,
-} from "@omniroute/open-sse/utils/errorSanitization.ts";
+} from "@cheaproute/open-sse/utils/errorSanitization.ts";
 import { sanitizePII } from "../../piiSanitizer";
 import {
   omitEncryptedReasoningFromLogChunks,

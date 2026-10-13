@@ -14,7 +14,7 @@ export const REASONING_BUFFER_MIN_TRIGGER = 256;
 
 /**
  * Opt-in minimum output budget for reasoning models (#10281 follow-up).
- * When set (env `OMNIROUTE_REASONING_MIN_BUDGET`, positive integer), a caller
+ * When set (env `CHEAPROUTE_REASONING_MIN_BUDGET`, positive integer), a caller
  * budget in [REASONING_BUFFER_MIN_TRIGGER, floor) on a thinking model is raised
  * to the floor so reasoning tokens cannot consume the entire budget and yield
  * a zero-content `finish_reason: "length"` turn (which validateQuality then
@@ -23,7 +23,7 @@ export const REASONING_BUFFER_MIN_TRIGGER = 256;
  * Budgets below REASONING_BUFFER_MIN_TRIGGER stay verbatim (#6274 probes), and
  * the floor never exceeds the model's known output cap.
  */
-export const REASONING_MIN_BUDGET_ENV = "OMNIROUTE_REASONING_MIN_BUDGET";
+export const REASONING_MIN_BUDGET_ENV = "CHEAPROUTE_REASONING_MIN_BUDGET";
 
 export function getReasoningMinBudget(): number | null {
   return toPositiveInteger(process.env[REASONING_MIN_BUDGET_ENV]);
@@ -63,7 +63,7 @@ export function resolveReasoningBufferedMaxTokens(
   if (current < REASONING_BUFFER_MIN_TRIGGER) return current;
 
   // Opt-in reasoning budget floor: raise budgets below the operator-declared
-  // floor (env OMNIROUTE_REASONING_MIN_BUDGET) up to that floor so reasoning
+  // floor (env CHEAPROUTE_REASONING_MIN_BUDGET) up to that floor so reasoning
   // cannot consume the whole budget. #9507 contract preserved — the env IS the
   // opt-in. The floor is itself capped by the model's output cap.
   const minBudget = getReasoningMinBudget();
@@ -120,7 +120,7 @@ export function isEmptyContentUpstreamFailure(statusCode: number, message: strin
 /**
  * Build a valid truncated OpenAI chat.completion response (200, empty content,
  * `finish_reason: "length"`) used to answer a tiny-budget reasoning probe whose
- * upstream answered the empty outcome with a 5xx. Mirrors the semantics OmniRoute
+ * upstream answered the empty outcome with a 5xx. Mirrors the semantics CheapRoute
  * already grants to `finish_reason: "length"` empty 200s (errorClassifier.ts).
  */
 export function buildReasoningProbeTruncatedResponse(opts: {

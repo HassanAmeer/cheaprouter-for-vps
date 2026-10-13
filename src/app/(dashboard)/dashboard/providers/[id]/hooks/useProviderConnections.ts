@@ -136,7 +136,7 @@ async function resolveConnectionProxies(
 
 /**
  * Upstream proxy routing mode for Claude-Code-compatible providers. `native`
- * uses OmniRoute's own executor; `cliproxyapi`/`dario` route every request
+ * uses CheapRoute's own executor; `cliproxyapi`/`dario` route every request
  * through that backend directly; `fallback` tries native first and retries
  * via `fallbackBackend` on failure. Mirrors the `mode` enum in
  * src/app/api/upstream-proxy/[providerId]/route.ts.
@@ -216,8 +216,8 @@ export interface UseProviderConnectionsReturn {
   /**
    * Manually lifts a persisted 429 cooldown: PUTs `rateLimitedUntil: null`
    * (plus backoff reset server-side) so the connection rejoins routing
-   * immediately. For the "quota already refreshed upstream but OmniRoute
-   * still benches the key" case — the cooldown timer is OmniRoute's own
+   * immediately. For the "quota already refreshed upstream but CheapRoute
+   * still benches the key" case — the cooldown timer is CheapRoute's own
    * lesson, not upstream truth.
    */
   handleClearCooldown: (connectionId: string) => Promise<void>;
@@ -617,7 +617,7 @@ export function useProviderConnections(
   };
 
   const UPSTREAM_PROXY_MODE_MESSAGES: Record<UpstreamProxyMode, string> = {
-    native: "Requests now use native OmniRoute (direct)",
+    native: "Requests now use native CheapRoute (direct)",
     cliproxyapi: "Requests now route through CLIProxyAPI (deeper emulation)",
     dario: "Requests now route through Dario (Claude subscription proxy)",
     fallback: "Requests try native first, retrying via the configured backend on failure",
@@ -729,7 +729,7 @@ export function useProviderConnections(
   // Manually lift a persisted 429 cooldown. Complements the automatic paths
   // (Test-button success / Edit-modal key re-validation): those only clear the
   // bench as a side effect of a successful upstream round-trip, so a user whose
-  // quota already refreshed upstream still waits out OmniRoute's local timer.
+  // quota already refreshed upstream still waits out CheapRoute's local timer.
   // PUT /api/providers/[id] applies updateProviderConnectionDefaults, which
   // resets backoffLevel → 0 alongside rateLimitedUntil → null.
   const handleClearCooldown = async (connectionId: string) => {

@@ -96,7 +96,7 @@ function defaultPublicClassification(status: number): Pick<CodexPublicError, "ty
  *
  * Upstream message, code, and type fields are untrusted. The public message is fixed,
  * while code/type retain only closed, protocol-level identifiers already produced by
- * OmniRoute. Everything else falls back to the HTTP status classification.
+ * CheapRoute. Everything else falls back to the HTTP status classification.
  */
 export function projectCodexPublicError(input: CodexPublicErrorInput): CodexPublicError {
   const status =

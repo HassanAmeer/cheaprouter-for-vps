@@ -30,7 +30,7 @@ export function resolveLlmPlaygroundEndpoint(qualifiedModel: string): string {
 /** Header used to test a specific API key's policy from the dashboard playground
  *  without exposing the key secret to the browser — the gateway resolves the key
  *  by id server-side (see enforceApiKeyPolicy). */
-const PLAYGROUND_KEY_ID_HEADER = "x-omniroute-playground-key-id";
+const PLAYGROUND_KEY_ID_HEADER = "x-cheaproute-playground-key-id";
 
 /**
  * Map the playground's masked key selection (sk-xxxx****yyyy, as returned by
@@ -52,7 +52,7 @@ const NO_THINKING_PREFIX = "no-think/";
 
 /**
  * Qualify a provider-scoped playground model with its routing prefix so
- * OmniRoute can resolve it unambiguously. The previous heuristic only prefixed
+ * CheapRoute can resolve it unambiguously. The previous heuristic only prefixed
  * models without a `/`, which skipped vendor-namespaced ids like
  * `moonshotai/kimi-k2.6` or `nvidia/zyphra/zamba2-7b-instruct` — those already
  * contain a slash, so they were sent bare and rejected with
@@ -205,7 +205,7 @@ export function LlmChatCard({
   const firstModel = models[0]?.id ?? "";
   const effectiveModel = model || firstModel || initialModel || "";
   const routingPrefix = getProviderAlias(providerId);
-  // Auto-prefix model with the provider's routing alias to avoid OmniRoute "Ambiguous model"
+  // Auto-prefix model with the provider's routing alias to avoid CheapRoute "Ambiguous model"
   // rejection when the same id is registered under multiple providers. This
   // also covers vendor-namespaced ids (e.g. `moonshotai/kimi-k2.6`) that already
   // contain a slash but still need the provider prefix (#3050).
@@ -260,7 +260,7 @@ export function LlmChatCard({
       if (playgroundKeyId) headers[PLAYGROUND_KEY_ID_HEADER] = playgroundKeyId;
       const nativeCodex = isNativeCodexPlaygroundModel(qualifiedModel);
       const turnId = nativeCodex ? crypto.randomUUID() : "";
-      if (nativeCodex) headers.Originator = "codex_omniroute_provider_playground";
+      if (nativeCodex) headers.Originator = "codex_cheaproute_provider_playground";
       const requestMessages = [...messages, userMsg];
       const requestBody = nativeCodex
         ? buildNativeCodexPlaygroundRequest({

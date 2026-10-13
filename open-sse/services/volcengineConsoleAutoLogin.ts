@@ -805,7 +805,7 @@ export class VolcengineConsoleAutoLoginService {
   private async dumpPageHtml(session: ActiveSession): Promise<string | null> {
     try {
       const { writeFile } = await import("fs/promises");
-      const path = `/tmp/omniroute-volc-select-identity-${session.sessionId.slice(0, 8)}.html`;
+      const path = `/tmp/cheaproute-volc-select-identity-${session.sessionId.slice(0, 8)}.html`;
       await writeFile(path, await session.page.content(), "utf8");
       return path;
     } catch {

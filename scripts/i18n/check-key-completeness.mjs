@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * OmniRoute — i18n key COMPLETENESS gate (CI gate, blocking).
+ * CheapRoute — i18n key COMPLETENESS gate (CI gate, blocking).
  *
  * Every `src/i18n/messages/<locale>.json` must carry exactly the key set of `en.json`:
  * no leaf absent, no leaf the source no longer has. A `__MISSING__:` placeholder counts as

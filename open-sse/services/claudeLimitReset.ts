@@ -1,7 +1,7 @@
 /**
  * claudeLimitReset.ts — Claude OAuth once-a-week session-limit reset.
  *
- * OmniRoute counterpart of Claude Code's hidden `/limit-reset` command (wire contract
+ * CheapRoute counterpart of Claude Code's hidden `/limit-reset` command (wire contract
  * captured from Claude Code 2.1.263, program name `juniper_tide`). At the 5-hour usage
  * wall a subscription account may be allowed to reset its session window once per week;
  * the reset still counts toward the weekly limit.
@@ -17,7 +17,7 @@
  *               next_available_at, weekly_resets_at }
  *
  * Both calls use the OAuth bearer token (scope `user:profile` for the status read — the
- * scope OmniRoute already requests). The organization UUID comes from the connection's
+ * scope CheapRoute already requests). The organization UUID comes from the connection's
  * `providerSpecificData.organizationUUID` (persisted at OAuth provisioning) with the
  * `/api/claude_cli/bootstrap` lookup as fallback.
  *

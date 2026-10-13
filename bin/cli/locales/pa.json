@@ -1,8 +1,8 @@
 {
   "common": {
     "error": "ਗਲਤੀ: {message}",
-    "serverOffline": "OmniRoute ਸਰਵਰ ਆਫ਼ਲਾਈਨ ਹੈ। ਇਸਨੂੰ ਇਸ ਕਮਾਂਡ ਨਾਲ ਚਾਲੂ ਕਰੋ: omniroute serve",
-    "authRequired": "ਪ੍ਰਮਾਣੀਕਰਨ ਲੋੜੀਂਦਾ ਹੈ। OMNIROUTE_API_KEY ਸੈੱਟ ਕਰੋ ਜਾਂ ਇਹ ਚਲਾਓ: omniroute setup",
+    "serverOffline": "CheapRoute ਸਰਵਰ ਆਫ਼ਲਾਈਨ ਹੈ। ਇਸਨੂੰ ਇਸ ਕਮਾਂਡ ਨਾਲ ਚਾਲੂ ਕਰੋ: cheaproute serve",
+    "authRequired": "ਪ੍ਰਮਾਣੀਕਰਨ ਲੋੜੀਂਦਾ ਹੈ। CHEAPROUTE_API_KEY ਸੈੱਟ ਕਰੋ ਜਾਂ ਇਹ ਚਲਾਓ: cheaproute setup",
     "rateLimited": "ਦਰ ਸੀਮਾ ਪਾਰ ਹੋ ਗਈ ਹੈ। {seconds}s ਬਾਅਦ ਮੁੜ ਕੋਸ਼ਿਸ਼ ਕਰੋ।",
     "timeout": "ਬੇਨਤੀ ਦਾ ਸਮਾਂ {ms}ms ਬਾਅਦ ਸਮਾਪਤ ਹੋ ਗਿਆ।",
     "success": "ਮੁਕੰਮਲ।",
@@ -15,7 +15,7 @@
     "yesOpt": "ਪੁਸ਼ਟੀਕਰਨ ਪ੍ਰੌਂਪਟ ਛੱਡੋ"
   },
   "setup": {
-    "title": "OmniRoute ਸੈੱਟਅੱਪ",
+    "title": "CheapRoute ਸੈੱਟਅੱਪ",
     "passwordPrompt": "ਐਡਮਿਨ ਪਾਸਵਰਡ",
     "providerPrompt": "ਡਿਫਾਲਟ ਪ੍ਰਦਾਤਾ (ਛੱਡਣ ਲਈ ਖਾਲੀ ਰਹਿਣ ਦਿਓ)",
     "done": "ਸੈੱਟਅੱਪ ਮੁਕੰਮਲ",
@@ -27,22 +27,22 @@
     "loginEnabled": "ਲੌਗਇਨ: ਸਮਰੱਥ (ਪਾਸਵਰਡ ਅੱਪਡੇਟ ਕੀਤਾ ਗਿਆ)",
     "loginDisabled": "ਲੌਗਇਨ: ਅਸਮਰੱਥ",
     "providerInfo": "ਪ੍ਰਦਾਤਾ: {info}",
-    "opencode": "OpenCode ਲਈ ਨਾਲ ਦਿੱਤਾ @omniroute/opencode-plugin ਇੰਸਟਾਲ ਅਤੇ ਕੌਂਫਿਗਰ ਕਰੋ"
+    "opencode": "OpenCode ਲਈ ਨਾਲ ਦਿੱਤਾ @cheaproute/opencode-plugin ਇੰਸਟਾਲ ਅਤੇ ਕੌਂਫਿਗਰ ਕਰੋ"
   },
   "doctor": {
-    "title": "OmniRoute ਡਾਕਟਰ",
+    "title": "CheapRoute ਡਾਕਟਰ",
     "dbOk": "ਡਾਟਾਬੇਸ: ਠੀਕ ਹੈ ({path})",
-    "dbMissing": "ਡਾਟਾਬੇਸ: ਸ਼ੁਰੂ ਨਹੀਂ ਕੀਤਾ ਗਿਆ — `omniroute setup` ਚਲਾਓ",
+    "dbMissing": "ਡਾਟਾਬੇਸ: ਸ਼ੁਰੂ ਨਹੀਂ ਕੀਤਾ ਗਿਆ — `cheaproute setup` ਚਲਾਓ",
     "portOk": "ਪੋਰਟ {port}: ਉਪਲਬਧ",
     "portConflict": "ਪੋਰਟ {port}: ਕਿਸੇ ਹੋਰ ਪ੍ਰਕਿਰਿਆ ਵੱਲੋਂ ਵਰਤੋਂ ਵਿੱਚ ਹੈ",
     "encryptionOk": "ਇਨਕ੍ਰਿਪਸ਼ਨ ਕੁੰਜੀ: ਕੌਂਫਿਗਰ ਕੀਤੀ ਗਈ",
-    "encryptionMissing": "ਇਨਕ੍ਰਿਪਸ਼ਨ ਕੁੰਜੀ ਮੌਜੂਦ ਨਹੀਂ — `omniroute setup` ਚਲਾਓ",
+    "encryptionMissing": "ਇਨਕ੍ਰਿਪਸ਼ਨ ਕੁੰਜੀ ਮੌਜੂਦ ਨਹੀਂ — `cheaproute setup` ਚਲਾਓ",
     "allGood": "ਸਾਰੀਆਂ ਜਾਂਚਾਂ ਸਫਲ ਰਹੀਆਂ।",
     "warnings": "{count} ਚੇਤਾਵਨੀ(ਆਂ) — ਉੱਪਰ ਵੇਖੋ।"
   },
   "providers": {
     "title": "ਪ੍ਰਦਾਤਾ",
-    "noProviders": "ਕੋਈ ਪ੍ਰਦਾਤਾ ਕੌਂਫਿਗਰ ਨਹੀਂ ਕੀਤਾ ਗਿਆ। ਚਲਾਓ: omniroute setup",
+    "noProviders": "ਕੋਈ ਪ੍ਰਦਾਤਾ ਕੌਂਫਿਗਰ ਨਹੀਂ ਕੀਤਾ ਗਿਆ। ਚਲਾਓ: cheaproute setup",
     "testing": "{name} ਦੀ ਜਾਂਚ ਕੀਤੀ ਜਾ ਰਹੀ ਹੈ...",
     "available": "{count} ਪ੍ਰਦਾਤਾ ਉਪਲਬਧ",
     "connected": "ਕਨੈਕਟ ਕੀਤਾ ਗਿਆ",
@@ -71,7 +71,7 @@
       "dryRunOpt": "ਲਿਖੇ ਬਿਨਾਂ ਦਿਖਾਓ ਕਿ ਕੀ ਬਦਲੇਗਾ",
       "confirmPrompt": "ਕੀ ਕਨੈਕਸ਼ਨ \"{name}\" ({id}) ਲਈ API ਕੁੰਜੀ ਬਦਲਣੀ ਹੈ? [y/N]",
       "dryRunResult": "[dry-run] \"{name}\" ({id}) ਲਈ ਕੁੰਜੀ ਬਦਲੀ ਜਾਣੀ ਸੀ। ਕੋਈ ਤਬਦੀਲੀ ਨਹੀਂ ਕੀਤੀ ਗਈ।",
-      "oauthHint": "OAuth ਕਨੈਕਸ਼ਨ — ਚਲਾਓ: omniroute oauth {provider}",
+      "oauthHint": "OAuth ਕਨੈਕਸ਼ਨ — ਚਲਾਓ: cheaproute oauth {provider}",
       "envVarEmpty": "ਵਾਤਾਵਰਣ ਵੇਰੀਏਬਲ {var} ਸੈੱਟ ਨਹੀਂ ਹੈ ਜਾਂ ਖਾਲੀ ਹੈ।",
       "success": "\"{name}\" ਲਈ ਕੁੰਜੀ ਬਦਲ ਦਿੱਤੀ ਗਈ ਹੈ। ਪੁਸ਼ਟੀ ਕਰਨ ਲਈ `providers test {id}` ਚਲਾਓ।",
       "testPassed": "ਕੁੰਜੀ ਬਦਲਣ ਤੋਂ ਬਾਅਦ ਦਾ ਟੈਸਟ ਸਫਲ ਰਿਹਾ।",
@@ -82,7 +82,7 @@
       "providerOpt": "ਪ੍ਰਦਾਤਾ ਦੇ ਨਾਮ ਅਨੁਸਾਰ ਫਿਲਟਰ ਕਰੋ",
       "header": "ID         ਪ੍ਰਦਾਤਾ       ਨਾਮ                     ਮਿਆਦ ਸਥਿਤੀ  ਟੈਸਟ ਸਥਿਤੀ  ਕੂਲਡਾਊਨ ਤੱਕ",
       "noData": "ਕੋਈ ਪ੍ਰਦਾਤਾ ਕਨੈਕਸ਼ਨ ਡਾਟਾ ਉਪਲਬਧ ਨਹੀਂ ਹੈ।",
-      "requiresServer": "providers status ਲਈ OmniRoute ਸਰਵਰ ਦਾ ਚੱਲਣਾ ਲਾਜ਼ਮੀ ਹੈ।"
+      "requiresServer": "providers status ਲਈ CheapRoute ਸਰਵਰ ਦਾ ਚੱਲਣਾ ਲਾਜ਼ਮੀ ਹੈ।"
     }
   },
   "keys": {
@@ -90,8 +90,8 @@
     "addDescription": "ਕਿਸੇ ਪ੍ਰਦਾਤਾ ਲਈ API ਕੁੰਜੀ ਸ਼ਾਮਲ ਜਾਂ ਅੱਪਡੇਟ ਕਰੋ",
     "listDescription": "ਸਾਰੀਆਂ ਸੰਰਚਿਤ API ਕੁੰਜੀਆਂ ਦੀ ਸੂਚੀ ਦਿਖਾਓ",
     "removeDescription": "ਕਿਸੇ ਪ੍ਰਦਾਤਾ ਲਈ API ਕੁੰਜੀ ਹਟਾਓ",
-    "regenerateDescription": "OmniRoute API ਕੁੰਜੀ ਮੁੜ ਤਿਆਰ ਕਰੋ",
-    "revokeDescription": "OmniRoute API ਕੁੰਜੀ ਰੱਦ ਕਰੋ",
+    "regenerateDescription": "CheapRoute API ਕੁੰਜੀ ਮੁੜ ਤਿਆਰ ਕਰੋ",
+    "revokeDescription": "CheapRoute API ਕੁੰਜੀ ਰੱਦ ਕਰੋ",
     "revealDescription": "ਬਿਨਾਂ ਮਾਸਕ ਕੀਤਾ API ਕੁੰਜੀ ਮੁੱਲ ਦਿਖਾਓ",
     "usageDescription": "ਕਿਸੇ API ਕੁੰਜੀ ਦੀ ਹਾਲੀਆ ਵਰਤੋਂ ਦਿਖਾਓ",
     "usageLimitOpt": "ਹਾਲੀਆ ਬੇਨਤੀਆਂ ਦੀ ਗਿਣਤੀ",
@@ -142,7 +142,7 @@
     "warning": "⚠ ਇਹ ਡਿਕ੍ਰਿਪਟ ਕੀਤੀਆਂ ਪਲੇਨਟੈਕਸਟ API ਕੁੰਜੀਆਂ ਅਤੇ OAuth ਟੋਕਨ ਪ੍ਰਿੰਟ/ਲਿਖਦਾ ਹੈ। ਯਕੀਨੀ ਬਣਾਓ ਕਿ ਤੁਹਾਡੀ ਸਕ੍ਰੀਨ, ਸ਼ੈੱਲ ਇਤਿਹਾਸ ਅਤੇ ਕੋਈ ਵੀ ਆਉਟਪੁੱਟ ਫ਼ਾਈਲ ਨਿੱਜੀ ਰਹੇ।",
     "confirmHeading": "⚠ ਚੇਤਾਵਨੀ: ਇਹ ਡਿਕ੍ਰਿਪਟ ਕੀਤੇ ਪ੍ਰਦਾਤਾ ਪ੍ਰਮਾਣ-ਪੱਤਰ ਪਲੇਨਟੈਕਸਟ ਵਿੱਚ ਨਿਰਯਾਤ ਕਰਦਾ ਹੈ",
     "confirmBody": "ਇਹ ਕਮਾਂਡ ਚੁਣੇ ਗਏ ਕਨੈਕਸ਼ਨ(ਨਾਂ) ਲਈ apiKey, accessToken, refreshToken, ਅਤੇ\nidToken ਨੂੰ ਡਿਕ੍ਰਿਪਟ ਕਰਕੇ ਪ੍ਰਿੰਟ/ਲਿਖਦੀ ਹੈ। ਆਉਟਪੁੱਟ ਨੂੰ ਇੱਕ ਰਾਜ਼ ਵਜੋਂ ਸੰਭਾਲੋ।",
-    "confirmFooter": "ਪੁਸ਼ਟੀ ਕਰਨ ਲਈ, ਇਹ ਚਲਾਓ:\n  omniroute auth export --force",
+    "confirmFooter": "ਪੁਸ਼ਟੀ ਕਰਨ ਲਈ, ਇਹ ਚਲਾਓ:\n  cheaproute auth export --force",
     "missingKey": "ਕ੍ਰੈਡੈਂਸ਼ਲ ਐਕਸਪੋਰਟ ਕਰਨ ਲਈ STORAGE_ENCRYPTION_KEY ਲੋੜੀਂਦੀ ਹੈ।",
     "notFound": "ਕਨੈਕਸ਼ਨ ਨਹੀਂ ਮਿਲਿਆ: {id}",
     "invalidFormat": "ਅਵੈਧ ਫਾਰਮੈਟ: {format}। json ਜਾਂ env ਵਰਤੋ।"
@@ -220,10 +220,10 @@
     "reasoning": "ਤਰਕ-ਵਿਤਰਕ ਯਤਨ ਦਾ ਪੱਧਰ (low|medium|high)",
     "thinking": "ਵਿਸਤ੍ਰਿਤ ਸੋਚ ਲਈ ਟੋਕਨ ਬਜਟ",
     "explain": "ਫਾਲਬੈਕ ਟ੍ਰੀ ਅਤੇ ਲਾਗਤ ਦੀ ਰੇਂਜ stderr ਉੱਤੇ ਪ੍ਰਿੰਟ ਕਰੋ",
-    "noCombo": "ਕੋਈ ਮੇਲ ਖਾਂਦਾ ਕੰਬੋ ਨਹੀਂ ਮਿਲਿਆ। ਇਸ ਕਮਾਂਡ ਨਾਲ ਇੱਕ ਸੰਰਚਿਤ ਕਰੋ: omniroute combo create"
+    "noCombo": "ਕੋਈ ਮੇਲ ਖਾਂਦਾ ਕੰਬੋ ਨਹੀਂ ਮਿਲਿਆ। ਇਸ ਕਮਾਂਡ ਨਾਲ ਇੱਕ ਸੰਰਚਿਤ ਕਰੋ: cheaproute combo create"
   },
   "chat": {
-    "description": "OmniRoute ਨੂੰ ਇੱਕ-ਵਾਰ ਚੈਟ ਪ੍ਰਾਂਪਟ ਭੇਜੋ",
+    "description": "CheapRoute ਨੂੰ ਇੱਕ-ਵਾਰ ਚੈਟ ਪ੍ਰਾਂਪਟ ਭੇਜੋ",
     "file": "ਫਾਈਲ ਤੋਂ ਪ੍ਰਾਂਪਟ ਪੜ੍ਹੋ",
     "stdin": "stdin ਤੋਂ ਪ੍ਰਾਂਪਟ ਪੜ੍ਹੋ",
     "system": "ਸਿਸਟਮ ਪ੍ਰਾਂਪਟ",
@@ -236,14 +236,14 @@
     "combo": "ਨਾਮ ਰਾਹੀਂ ਕੋਈ ਖ਼ਾਸ ਕੰਬੋ ਵਰਤਣ ਲਈ ਮਜਬੂਰ ਕਰੋ",
     "responses_api": "/v1/chat/completions ਦੀ ਬਜਾਏ /v1/responses ਵਰਤੋ",
     "stream": "ਜਵਾਬ ਨੂੰ ਕ੍ਰਮਵਾਰ ਸਟ੍ਰੀਮ ਕਰੋ",
-    "no_history": "~/.omniroute/cli-history.jsonl ਵਿੱਚ ਸੁਰੱਖਿਅਤ ਨਾ ਕਰੋ",
+    "no_history": "~/.cheaproute/cli-history.jsonl ਵਿੱਚ ਸੁਰੱਖਿਅਤ ਨਾ ਕਰੋ",
     "error": {
       "empty_prompt": "ਗਲਤੀ: ਪ੍ਰਾਂਪਟ ਲੋੜੀਂਦਾ ਹੈ (ਪੋਜ਼ੀਸ਼ਨਲ ਆਰਗੂਮੈਂਟ, --file, ਜਾਂ --stdin)"
     }
   },
   "serve": {
-    "description": "OmniRoute ਸਰਵਰ ਸ਼ੁਰੂ ਕਰੋ (ਡਿਫਾਲਟ ਕਾਰਵਾਈ)",
-    "starting": "ਪੋਰਟ {port} ਉੱਤੇ OmniRoute ਸਰਵਰ ਸ਼ੁਰੂ ਕੀਤਾ ਜਾ ਰਿਹਾ ਹੈ...",
+    "description": "CheapRoute ਸਰਵਰ ਸ਼ੁਰੂ ਕਰੋ (ਡਿਫਾਲਟ ਕਾਰਵਾਈ)",
+    "starting": "ਪੋਰਟ {port} ਉੱਤੇ CheapRoute ਸਰਵਰ ਸ਼ੁਰੂ ਕੀਤਾ ਜਾ ਰਿਹਾ ਹੈ...",
     "ready": "http://localhost:{port} ਉੱਤੇ ਤਿਆਰ ਹੈ",
     "stopping": "ਸਰਵਰ (PID {pid}) ਰੋਕਿਆ ਜਾ ਰਿਹਾ ਹੈ...",
     "stopped": "ਸਰਵਰ ਰੋਕ ਦਿੱਤਾ ਗਿਆ ਹੈ।",
@@ -256,13 +256,13 @@
     "max_restarts": "ਹਾਰ ਮੰਨਣ ਤੋਂ ਪਹਿਲਾਂ 30s ਦੇ ਅੰਦਰ ਕ੍ਰੈਸ਼ ਤੋਂ ਬਾਅਦ ਮੁੜ-ਚਾਲੂ ਕਰਨ ਦੀ ਵੱਧ ਤੋਂ ਵੱਧ ਗਿਣਤੀ (ਡਿਫਾਲਟ: 2)",
     "tray": "ਸਿਸਟਮ ਟਰੇ ਵਿੱਚ ਸ਼ੁਰੂ ਕਰੋ (ਸਿਰਫ਼ ਡੈਸਕਟਾਪ, ਚੋਣਵਾਂ)",
     "no_tray": "ਸਿਸਟਮ ਟਰੇ ਆਈਕਨ ਅਸਮਰੱਥ ਕਰੋ",
-    "ready_timeout": "ਰੈਡੀਨੈੱਸ ਪ੍ਰੋਬ ਦਾ ਟਾਈਮਆਉਟ ਮਿਲੀਸਕਿੰਟਾਂ ਵਿੱਚ (OMNIROUTE_READY_TIMEOUT_MS ਵੀ, ਡਿਫਾਲਟ 60000)",
-    "tls_cert": "HTTPS ਸਰਵ ਕਰਨ ਲਈ TLS ਸਰਟੀਫਿਕੇਟ (PEM) ਦਾ ਪਾਥ (OMNIROUTE_TLS_CERT ਵੀ)",
-    "tls_key": "HTTPS ਸਰਵ ਕਰਨ ਲਈ TLS ਨਿੱਜੀ ਕੁੰਜੀ (PEM) ਦਾ ਪਾਥ (OMNIROUTE_TLS_KEY ਵੀ)"
+    "ready_timeout": "ਰੈਡੀਨੈੱਸ ਪ੍ਰੋਬ ਦਾ ਟਾਈਮਆਉਟ ਮਿਲੀਸਕਿੰਟਾਂ ਵਿੱਚ (CHEAPROUTE_READY_TIMEOUT_MS ਵੀ, ਡਿਫਾਲਟ 60000)",
+    "tls_cert": "HTTPS ਸਰਵ ਕਰਨ ਲਈ TLS ਸਰਟੀਫਿਕੇਟ (PEM) ਦਾ ਪਾਥ (CHEAPROUTE_TLS_CERT ਵੀ)",
+    "tls_key": "HTTPS ਸਰਵ ਕਰਨ ਲਈ TLS ਨਿੱਜੀ ਕੁੰਜੀ (PEM) ਦਾ ਪਾਥ (CHEAPROUTE_TLS_KEY ਵੀ)"
   },
   "backup": {
     "title": "ਬੈਕਅੱਪ",
-    "description": "OmniRoute ਡਾਟੇ ਦਾ ਬੈਕਅੱਪ ਬਣਾਓ",
+    "description": "CheapRoute ਡਾਟੇ ਦਾ ਬੈਕਅੱਪ ਬਣਾਓ",
     "creating": "ਬੈਕਅੱਪ ਬਣਾਇਆ ਜਾ ਰਿਹਾ ਹੈ...",
     "done": "ਬੈਕਅੱਪ {path} ਵਿੱਚ ਸੰਭਾਲਿਆ ਗਿਆ",
     "noFiles": "ਬੈਕਅੱਪ ਲਈ ਕੋਈ ਫ਼ਾਈਲ ਨਹੀਂ ਹੈ (ਡਾਟਾਬੇਸ ਸ਼ੁਰੂ ਨਹੀਂ ਕੀਤਾ ਗਿਆ)",
@@ -274,7 +274,7 @@
     "noBackups": "ਕੋਈ ਬੈਕਅੱਪ ਨਹੀਂ ਮਿਲਿਆ।",
     "notFound": "ਬੈਕਅੱਪ ਨਹੀਂ ਮਿਲਿਆ: {name}",
     "confirmRestore": "ਕੀ {ts} ਦੇ ਬੈਕਅੱਪ ਨਾਲ ਮੌਜੂਦਾ ਡਾਟੇ ਨੂੰ ਓਵਰਰਾਈਟ ਕਰਨਾ ਹੈ?",
-    "createDescription": "OmniRoute ਡਾਟੇ ਦਾ ਬੈਕਅੱਪ ਬਣਾਓ",
+    "createDescription": "CheapRoute ਡਾਟੇ ਦਾ ਬੈਕਅੱਪ ਬਣਾਓ",
     "nameOpt": "ਕਸਟਮ ਬੈਕਅੱਪ ਨਾਮ",
     "cloudOpt": "ਬੈਕਅੱਪ ਨੂੰ ਕਲਾਉਡ ਸਟੋਰੇਜ ਉੱਤੇ ਅੱਪਲੋਡ ਕਰੋ",
     "encryptOpt": "ਬੈਕਅੱਪ ਨੂੰ AES-256-GCM ਨਾਲ ਇਨਕ੍ਰਿਪਟ ਕਰੋ",
@@ -292,14 +292,14 @@
       "statusDescription": "ਮੌਜੂਦਾ ਬੈਕਅੱਪ ਸਮਾਂ-ਸਾਰਣੀ ਦੀ ਸਥਿਤੀ ਦਿਖਾਓ",
       "cronOpt": "ਸਮਾਂ-ਸਾਰਣੀ ਲਈ Cron ਸਮੀਕਰਨ (ਡਿਫੌਲਟ: ਹਰ ਰੋਜ਼ ਸਵੇਰੇ 3 ਵਜੇ)",
       "enabled": "ਸਵੈਚਾਲਿਤ ਬੈਕਅੱਪ ਸਮਰੱਥ ਹੈ (cron: {cron})।",
-      "hint": "ਸ਼ੁਰੂ ਹੋਣ ਵੇਲੇ omniroute serve ਦੁਆਰਾ ਸਮਾਂ-ਸਾਰਣੀ ਪੜ੍ਹੀ ਜਾਂਦੀ ਹੈ।",
+      "hint": "ਸ਼ੁਰੂ ਹੋਣ ਵੇਲੇ cheaproute serve ਦੁਆਰਾ ਸਮਾਂ-ਸਾਰਣੀ ਪੜ੍ਹੀ ਜਾਂਦੀ ਹੈ।",
       "disabled": "ਸਵੈਚਾਲਿਤ ਬੈਕਅੱਪ ਅਸਮਰੱਥ ਹੈ।",
       "notConfigured": "ਕੋਈ ਬੈਕਅੱਪ ਸਮਾਂ-ਸਾਰਣੀ ਸੰਰਚਿਤ ਨਹੀਂ ਹੈ।"
     }
   },
   "health": {
     "description": "ਸਰਵਰ ਦੀ ਸਿਹਤ ਅਤੇ ਭਾਗਾਂ ਦੀ ਸਥਿਤੀ ਜਾਂਚੋ",
-    "noServer": "ਸਰਵਰ ਚੱਲ ਨਹੀਂ ਰਿਹਾ। ਇਸ ਨਾਲ ਸ਼ੁਰੂ ਕਰੋ: omniroute serve",
+    "noServer": "ਸਰਵਰ ਚੱਲ ਨਹੀਂ ਰਿਹਾ। ਇਸ ਨਾਲ ਸ਼ੁਰੂ ਕਰੋ: cheaproute serve",
     "title": "ਸਿਹਤ",
     "status": "ਸਥਿਤੀ: {status}",
     "uptime": "ਚਾਲੂ ਸਮਾਂ: {uptime}",
@@ -308,21 +308,21 @@
   },
   "quota": {
     "description": "ਪ੍ਰਦਾਤਾ ਕੋਟੇ ਦੀ ਵਰਤੋਂ ਦਿਖਾਓ",
-    "noServer": "ਸਰਵਰ ਚੱਲ ਨਹੀਂ ਰਿਹਾ। ਇਸ ਨਾਲ ਸ਼ੁਰੂ ਕਰੋ: omniroute serve",
+    "noServer": "ਸਰਵਰ ਚੱਲ ਨਹੀਂ ਰਿਹਾ। ਇਸ ਨਾਲ ਸ਼ੁਰੂ ਕਰੋ: cheaproute serve",
     "noData": "ਕੋਟੇ ਬਾਰੇ ਕੋਈ ਜਾਣਕਾਰੀ ਉਪਲਬਧ ਨਹੀਂ ਹੈ।"
   },
   "cache": {
     "description": "ਜਵਾਬ ਕੈਸ਼ ਦਾ ਪ੍ਰਬੰਧਨ ਕਰੋ",
-    "noServer": "ਸਰਵਰ ਚੱਲ ਨਹੀਂ ਰਿਹਾ। ਇਸ ਨਾਲ ਸ਼ੁਰੂ ਕਰੋ: omniroute serve",
+    "noServer": "ਸਰਵਰ ਚੱਲ ਨਹੀਂ ਰਿਹਾ। ਇਸ ਨਾਲ ਸ਼ੁਰੂ ਕਰੋ: cheaproute serve",
     "cleared": "ਕੈਸ਼ ਸਾਫ਼ ਕੀਤਾ ਗਿਆ।",
     "clearFailed": "ਕੈਸ਼ ਸਾਫ਼ ਕਰਨ ਵਿੱਚ ਅਸਫਲ।"
   },
   "redis": {
-    "description": "OmniRoute ਕੈਸ਼ਿੰਗ ਅਤੇ ਕੋਟਾ ਟਰੈਕਿੰਗ ਲਈ 1-ਕਲਿੱਕ ਸਥਾਨਕ Redis ਕੰਟੇਨਰ (Podman ਜਾਂ Docker) ਚਲਾਓ"
+    "description": "CheapRoute ਕੈਸ਼ਿੰਗ ਅਤੇ ਕੋਟਾ ਟਰੈਕਿੰਗ ਲਈ 1-ਕਲਿੱਕ ਸਥਾਨਕ Redis ਕੰਟੇਨਰ (Podman ਜਾਂ Docker) ਚਲਾਓ"
   },
   "test": {
     "description": "ਪ੍ਰਦਾਤਾ ਕਨੈਕਸ਼ਨ ਦੀ ਜਾਂਚ ਕਰੋ",
-    "noServer": "ਸਰਵਰ ਚੱਲ ਨਹੀਂ ਰਿਹਾ। ਇਸ ਨਾਲ ਸ਼ੁਰੂ ਕਰੋ: omniroute serve",
+    "noServer": "ਸਰਵਰ ਚੱਲ ਨਹੀਂ ਰਿਹਾ। ਇਸ ਨਾਲ ਸ਼ੁਰੂ ਕਰੋ: cheaproute serve",
     "testing": "{provider} / {model} ਦੀ ਜਾਂਚ ਕੀਤੀ ਜਾ ਰਹੀ ਹੈ...",
     "passed": "ਕਨੈਕਸ਼ਨ ਸਫਲ ਰਿਹਾ!",
     "failed": "ਕਨੈਕਸ਼ਨ ਅਸਫਲ ਰਿਹਾ: {error}",
@@ -334,7 +334,7 @@
     "saved": "ਨਤੀਜੇ {path} ਵਿੱਚ ਸੰਭਾਲੇ ਗਏ",
     "compareTitle": "ਮਾਡਲ ਤੁਲਨਾ",
     "compareMinTwo": "--compare ਲਈ ਘੱਟੋ-ਘੱਟ ਦੋ ਮਾਡਲ ਲੋੜੀਂਦੇ ਹਨ (ਕੌਮਿਆਂ ਨਾਲ ਵੱਖ ਕੀਤੇ)",
-    "noProviders": "ਕੋਈ ਪ੍ਰਦਾਤਾ ਸੰਰਚਿਤ ਨਹੀਂ ਹੈ। ਇਸ ਨਾਲ ਇੱਕ ਸ਼ਾਮਲ ਕਰੋ: omniroute keys add"
+    "noProviders": "ਕੋਈ ਪ੍ਰਦਾਤਾ ਸੰਰਚਿਤ ਨਹੀਂ ਹੈ। ਇਸ ਨਾਲ ਇੱਕ ਸ਼ਾਮਲ ਕਰੋ: cheaproute keys add"
   },
   "update": {
     "checking": "ਅੱਪਡੇਟਾਂ ਦੀ ਜਾਂਚ ਕੀਤੀ ਜਾ ਰਹੀ ਹੈ...",
@@ -348,7 +348,7 @@
     "running": "MCP ਸਰਵਰ ਚੱਲ ਰਿਹਾ ਹੈ ({transport})",
     "stopped": "MCP ਸਰਵਰ ਰੋਕਿਆ ਗਿਆ।",
     "restarted": "MCP ਸਰਵਰ ਮੁੜ ਚਾਲੂ ਕੀਤਾ ਗਿਆ।",
-    "stoppedHint": "ਇਸਨੂੰ ਚਾਲੂ ਕਰਨ ਲਈ `omniroute mcp enable` ਚਲਾਓ।",
+    "stoppedHint": "ਇਸਨੂੰ ਚਾਲੂ ਕਰਨ ਲਈ `cheaproute mcp enable` ਚਲਾਓ।",
     "enabled": "MCP ਸਰਵਰ ਚਾਲੂ ਹੈ।",
     "disabled": "MCP ਸਰਵਰ ਬੰਦ ਹੈ।",
     "enable": {
@@ -416,7 +416,7 @@
     }
   },
   "policy": {
-    "description": "OmniRoute ਪ੍ਰਮਾਣੀਕਰਨ ਨੀਤੀਆਂ ਦਾ ਪ੍ਰਬੰਧਨ ਕਰੋ",
+    "description": "CheapRoute ਪ੍ਰਮਾਣੀਕਰਨ ਨੀਤੀਆਂ ਦਾ ਪ੍ਰਬੰਧਨ ਕਰੋ",
     "list": {
       "description": "ਨੀਤੀਆਂ ਦੀ ਸੂਚੀ ਦਿਓ",
       "kind": "ਕਿਸਮ ਮੁਤਾਬਕ ਫਿਲਟਰ ਕਰੋ (allow|deny|rate-limit|cost-cap)",
@@ -453,7 +453,7 @@
     }
   },
   "compression": {
-    "description": "OmniRoute ਕੰਪ੍ਰੈਸ਼ਨ ਪਾਈਪਲਾਈਨ ਨੂੰ ਕੌਂਫਿਗਰ ਕਰੋ ਅਤੇ ਜਾਂਚੋ",
+    "description": "CheapRoute ਕੰਪ੍ਰੈਸ਼ਨ ਪਾਈਪਲਾਈਨ ਨੂੰ ਕੌਂਫਿਗਰ ਕਰੋ ਅਤੇ ਜਾਂਚੋ",
     "status": {
       "description": "ਮੌਜੂਦਾ ਕੰਪ੍ਰੈਸ਼ਨ ਸਥਿਤੀ ਅਤੇ ਸੈਟਿੰਗਾਂ ਦਿਖਾਓ"
     },
@@ -507,18 +507,18 @@
     "confirmRotate": "ਟਨਲ {type} ਦਾ URL ਬਦਲਣਾ ਹੈ? (ਇੱਕ ਨਵਾਂ URL ਬਣਾਇਆ ਜਾਵੇਗਾ)"
   },
   "stop": {
-    "description": "OmniRoute ਸਰਵਰ ਨੂੰ ਰੋਕੋ",
+    "description": "CheapRoute ਸਰਵਰ ਨੂੰ ਰੋਕੋ",
     "stopping": "ਸਰਵਰ ਰੋਕਿਆ ਜਾ ਰਿਹਾ ਹੈ (PID {pid})...",
     "stopped": "ਸਰਵਰ ਰੋਕ ਦਿੱਤਾ ਗਿਆ।",
     "notRunning": "ਕੋਈ ਸਰਵਰ ਨਹੀਂ ਚੱਲ ਰਿਹਾ।",
     "portFallback": "ਕੋਈ PID ਫਾਈਲ ਨਹੀਂ ਮਿਲੀ, ਪੋਰਟ-ਅਧਾਰਿਤ ਢੰਗ ਨਾਲ ਰੋਕਣ ਦੀ ਕੋਸ਼ਿਸ਼ ਕੀਤੀ ਜਾ ਰਹੀ ਹੈ..."
   },
   "restart": {
-    "description": "OmniRoute ਸਰਵਰ ਨੂੰ ਮੁੜ ਚਾਲੂ ਕਰੋ",
-    "restarting": "OmniRoute ਸਰਵਰ ਮੁੜ ਚਾਲੂ ਕੀਤਾ ਜਾ ਰਿਹਾ ਹੈ..."
+    "description": "CheapRoute ਸਰਵਰ ਨੂੰ ਮੁੜ ਚਾਲੂ ਕਰੋ",
+    "restarting": "CheapRoute ਸਰਵਰ ਮੁੜ ਚਾਲੂ ਕੀਤਾ ਜਾ ਰਿਹਾ ਹੈ..."
   },
   "dashboard": {
-    "description": "OmniRoute ਡੈਸ਼ਬੋਰਡ ਨੂੰ ਬ੍ਰਾਊਜ਼ਰ ਵਿੱਚ ਖੋਲ੍ਹੋ",
+    "description": "CheapRoute ਡੈਸ਼ਬੋਰਡ ਨੂੰ ਬ੍ਰਾਊਜ਼ਰ ਵਿੱਚ ਖੋਲ੍ਹੋ",
     "opening": "ਡੈਸ਼ਬੋਰਡ {url} 'ਤੇ ਖੋਲ੍ਹਿਆ ਜਾ ਰਿਹਾ ਹੈ",
     "urlOnly": "ਬ੍ਰਾਊਜ਼ਰ ਖੋਲ੍ਹੇ ਬਿਨਾਂ ਡੈਸ਼ਬੋਰਡ URL ਪ੍ਰਿੰਟ ਕਰੋ",
     "tui": "ਇੰਟਰਐਕਟਿਵ TUI ਡੈਸ਼ਬੋਰਡ ਖੋਲ੍ਹੋ (ਟਰਮੀਨਲ UI, 7 ਟੈਬਾਂ)"
@@ -526,7 +526,7 @@
   "models": {
     "description": "ਉਪਲਬਧ ਮਾਡਲਾਂ ਦੀ ਸੂਚੀ ਦਿਖਾਓ (ਸਰਵਰ ਲੋੜੀਂਦਾ ਹੈ)",
     "search": "ਮਾਡਲਾਂ ਨੂੰ id, ਨਾਮ, ਪ੍ਰਦਾਤਾ ਜਾਂ ਵੇਰਵੇ ਮੁਤਾਬਕ ਫਿਲਟਰ ਕਰੋ",
-    "noServer": "ਸਰਵਰ ਚੱਲ ਨਹੀਂ ਰਿਹਾ। ਇਸ ਨਾਲ ਸ਼ੁਰੂ ਕਰੋ: omniroute serve",
+    "noServer": "ਸਰਵਰ ਚੱਲ ਨਹੀਂ ਰਿਹਾ। ਇਸ ਨਾਲ ਸ਼ੁਰੂ ਕਰੋ: cheaproute serve",
     "noModels": "ਕੋਈ ਮਾਡਲ ਨਹੀਂ ਮਿਲਿਆ।"
   },
   "audit": {
@@ -558,7 +558,7 @@
     }
   },
   "skills": {
-    "description": "OmniRoute ਸਕਿੱਲਾਂ ਦਾ ਪ੍ਰਬੰਧਨ ਕਰੋ (sandbox, builtin, custom, hybrid, skillssh)",
+    "description": "CheapRoute ਸਕਿੱਲਾਂ ਦਾ ਪ੍ਰਬੰਧਨ ਕਰੋ (sandbox, builtin, custom, hybrid, skillssh)",
     "list": {
       "description": "ਇੰਸਟਾਲ ਕੀਤੀਆਂ ਸਕਿੱਲਾਂ ਦੀ ਸੂਚੀ ਦਿਖਾਓ",
       "type": "ਕਿਸਮ ਮੁਤਾਬਕ ਫਿਲਟਰ ਕਰੋ (sandbox|custom|builtin|hybrid|skillssh)",
@@ -631,7 +631,7 @@
     }
   },
   "memory": {
-    "description": "OmniRoute ਗੱਲਬਾਤੀ ਮੈਮੋਰੀ ਦਾ ਪ੍ਰਬੰਧਨ ਕਰੋ (FTS5 + vector)",
+    "description": "CheapRoute ਗੱਲਬਾਤੀ ਮੈਮੋਰੀ ਦਾ ਪ੍ਰਬੰਧਨ ਕਰੋ (FTS5 + vector)",
     "search": {
       "description": "ਅਰਥ-ਆਧਾਰਿਤ ਕਵੇਰੀ ਰਾਹੀਂ ਮੈਮੋਰੀ ਐਂਟਰੀਆਂ ਖੋਜੋ",
       "type": "ਮੈਮੋਰੀ ਕਿਸਮ ਮੁਤਾਬਕ ਫ਼ਿਲਟਰ ਕਰੋ (user|feedback|project|reference)",
@@ -789,7 +789,7 @@
     }
   },
   "webhooks": {
-    "description": "OmniRoute ਵੈੱਬਹੁੱਕਾਂ ਦਾ ਪ੍ਰਬੰਧਨ ਕਰੋ",
+    "description": "CheapRoute ਵੈੱਬਹੁੱਕਾਂ ਦਾ ਪ੍ਰਬੰਧਨ ਕਰੋ",
     "events": {
       "description": "ਸਾਰੀਆਂ ਉਪਲਬਧ ਵੈੱਬਹੁੱਕ ਇਵੈਂਟ ਕਿਸਮਾਂ ਦੀ ਸੂਚੀ ਦਿਖਾਓ"
     },
@@ -821,16 +821,16 @@
     }
   },
   "program": {
-    "description": "OmniRoute — ਆਟੋ ਫਾਲਬੈਕ ਵਾਲਾ ਸਮਾਰਟ AI ਰਾਊਟਰ",
+    "description": "CheapRoute — ਆਟੋ ਫਾਲਬੈਕ ਵਾਲਾ ਸਮਾਰਟ AI ਰਾਊਟਰ",
     "version": "ਵਰਜਨ ਪ੍ਰਿੰਟ ਕਰੋ ਅਤੇ ਬਾਹਰ ਨਿਕਲੋ",
     "output": "ਆਉਟਪੁੱਟ ਫਾਰਮੈਟ (table, json, jsonl, csv)",
     "quiet": "ਗੈਰ-ਜ਼ਰੂਰੀ ਆਉਟਪੁੱਟ ਨੂੰ ਰੋਕੋ",
     "no_color": "ਰੰਗੀਨ ਆਉਟਪੁੱਟ ਅਯੋਗ ਕਰੋ",
     "timeout": "ਮਿਲੀਸਕਿੰਟਾਂ ਵਿੱਚ HTTP ਬੇਨਤੀ ਦੀ ਸਮਾਂ-ਸੀਮਾ",
-    "api_key": "OmniRoute ਸਰਵਰ ਲਈ API ਕੁੰਜੀ",
-    "base_url": "OmniRoute ਸਰਵਰ ਦਾ ਮੂਲ URL",
+    "api_key": "CheapRoute ਸਰਵਰ ਲਈ API ਕੁੰਜੀ",
+    "base_url": "CheapRoute ਸਰਵਰ ਦਾ ਮੂਲ URL",
     "context": "ਇਸ ਕਮਾਂਡ ਲਈ ਵਰਤਣ ਵਾਸਤੇ ਸਰਵਰ ਸੰਦਰਭ/ਪ੍ਰੋਫ਼ਾਈਲ",
-    "lang": "CLI ਡਿਸਪਲੇ ਭਾਸ਼ਾ ਸੈੱਟ ਕਰੋ (OMNIROUTE_LANG ਨੂੰ ਓਵਰਰਾਈਡ ਕਰਦਾ ਹੈ)"
+    "lang": "CLI ਡਿਸਪਲੇ ਭਾਸ਼ਾ ਸੈੱਟ ਕਰੋ (CHEAPROUTE_LANG ਨੂੰ ਓਵਰਰਾਈਡ ਕਰਦਾ ਹੈ)"
   },
   "files": {
     "description": "ਫ਼ਾਈਲਾਂ ਦਾ ਪ੍ਰਬੰਧਨ ਕਰੋ (ਅੱਪਲੋਡ, ਸੂਚੀ, ਪ੍ਰਾਪਤ ਕਰੋ, ਡਾਊਨਲੋਡ, ਮਿਟਾਓ)",
@@ -1079,7 +1079,7 @@
     }
   },
   "openapi": {
-    "description": "OmniRoute OpenAPI ਸਪੈੱਕ ਤੱਕ ਪਹੁੰਚ ਕਰੋ ਅਤੇ ਇਸਦੀ ਜਾਂਚ ਕਰੋ",
+    "description": "CheapRoute OpenAPI ਸਪੈੱਕ ਤੱਕ ਪਹੁੰਚ ਕਰੋ ਅਤੇ ਇਸਦੀ ਜਾਂਚ ਕਰੋ",
     "dump": {
       "description": "OpenAPI ਸਪੈੱਕ ਨੂੰ stdout ਜਾਂ ਫਾਈਲ ਵਿੱਚ ਡੰਪ ਕਰੋ",
       "format": "ਆਉਟਪੁੱਟ ਫਾਰਮੈਟ: yaml|json (ਡਿਫੌਲਟ: yaml)",
@@ -1149,7 +1149,7 @@
     }
   },
   "open": {
-    "description": "ਬ੍ਰਾਊਜ਼ਰ ਵਿੱਚ ਕੋਈ ਖਾਸ OmniRoute ਡੈਸ਼ਬੋਰਡ ਪੰਨਾ ਖੋਲ੍ਹੋ",
+    "description": "ਬ੍ਰਾਊਜ਼ਰ ਵਿੱਚ ਕੋਈ ਖਾਸ CheapRoute ਡੈਸ਼ਬੋਰਡ ਪੰਨਾ ਖੋਲ੍ਹੋ",
     "url": "ਸਿਰਫ਼ URL ਪ੍ਰਿੰਟ ਕਰੋ, ਬ੍ਰਾਊਜ਼ਰ ਨਾ ਖੋਲ੍ਹੋ"
   },
   "telemetry": {
@@ -1166,7 +1166,7 @@
     }
   },
   "sync": {
-    "description": "OmniRoute ਇੰਸਟੈਂਸਾਂ ਵਿਚਕਾਰ ਕੌਂਫਿਗਰੇਸ਼ਨ ਸਿੰਕ ਕਰੋ",
+    "description": "CheapRoute ਇੰਸਟੈਂਸਾਂ ਵਿਚਕਾਰ ਕੌਂਫਿਗਰੇਸ਼ਨ ਸਿੰਕ ਕਰੋ",
     "push": {
       "description": "ਕੌਂਫਿਗ ਨੂੰ ਕਲਾਉਡ ਜਾਂ ਰਿਮੋਟ ਇੰਸਟੈਂਸ 'ਤੇ ਪੁਸ਼ ਕਰੋ",
       "target": "ਟਾਰਗੇਟ (cloud ਜਾਂ context:name)",
@@ -1222,10 +1222,10 @@
       "listTitle": "ਉਪਲਬਧ ਭਾਸ਼ਾਵਾਂ",
       "current": "ਭਾਸ਼ਾ: {code} ({name})",
       "saved": "ਭਾਸ਼ਾ {code} ({name}) 'ਤੇ ਸੈੱਟ ਕੀਤੀ ਗਈ।",
-      "noCode": "ਭਾਸ਼ਾ ਕੋਡ ਲੋੜੀਂਦਾ ਹੈ। ਉਪਲਬਧ ਕੋਡ ਵੇਖਣ ਲਈ 'omniroute config lang list' ਚਲਾਓ।",
-      "unknown": "ਅਣਜਾਣ ਭਾਸ਼ਾ ਕੋਡ: {code}। ਉਪਲਬਧ ਕੋਡ ਵੇਖਣ ਲਈ 'omniroute config lang list' ਚਲਾਓ।",
+      "noCode": "ਭਾਸ਼ਾ ਕੋਡ ਲੋੜੀਂਦਾ ਹੈ। ਉਪਲਬਧ ਕੋਡ ਵੇਖਣ ਲਈ 'cheaproute config lang list' ਚਲਾਓ।",
+      "unknown": "ਅਣਜਾਣ ਭਾਸ਼ਾ ਕੋਡ: {code}। ਉਪਲਬਧ ਕੋਡ ਵੇਖਣ ਲਈ 'cheaproute config lang list' ਚਲਾਓ।",
       "alreadySet": "ਭਾਸ਼ਾ ਪਹਿਲਾਂ ਹੀ {code} 'ਤੇ ਸੈੱਟ ਹੈ।",
-      "envHint": "ਸੁਝਾਅ: ਤੁਸੀਂ ਆਪਣੇ ਇਨਵਾਇਰਨਮੈਂਟ ਵਿੱਚ OMNIROUTE_LANG={code} ਵੀ ਸੈੱਟ ਕਰ ਸਕਦੇ ਹੋ।"
+      "envHint": "ਸੁਝਾਅ: ਤੁਸੀਂ ਆਪਣੇ ਇਨਵਾਇਰਨਮੈਂਟ ਵਿੱਚ CHEAPROUTE_LANG={code} ਵੀ ਸੈੱਟ ਕਰ ਸਕਦੇ ਹੋ।"
     }
   },
   "completion": {
@@ -1242,7 +1242,7 @@
     "filter": "ਪੱਧਰ ਅਨੁਸਾਰ ਫ਼ਿਲਟਰ ਕਰੋ (error,warn,info) — ਕੌਮਾ ਨਾਲ ਵੱਖ ਕੀਤੇ",
     "lines": "ਪ੍ਰਾਪਤ ਕਰਨ ਲਈ ਲਾਈਨਾਂ ਦੀ ਗਿਣਤੀ",
     "timeout": "ਕਨੈਕਸ਼ਨ ਟਾਈਮਆਉਟ ms ਵਿੱਚ",
-    "baseUrl": "OmniRoute API ਬੇਸ URL",
+    "baseUrl": "CheapRoute API ਬੇਸ URL",
     "requestId": "ਬੇਨਤੀ ID ਅਨੁਸਾਰ ਫ਼ਿਲਟਰ ਕਰੋ",
     "apiKey": "API ਕੁੰਜੀ ਅਨੁਸਾਰ ਫ਼ਿਲਟਰ ਕਰੋ",
     "combo": "ਕੰਬੋ ਨਾਮ ਮੁਤਾਬਕ ਫਿਲਟਰ ਕਰੋ",
@@ -1258,10 +1258,10 @@
     "description": "ਸਿਸਟਮ ਟਰੇ ਆਈਕਨ ਨੂੰ ਕੰਟਰੋਲ ਕਰੋ",
     "show": "ਟਰੇ ਆਈਕਨ ਦਿਖਾਓ (ਜੇ ਸਰਵਰ --tray ਨਾਲ ਚੱਲ ਰਿਹਾ ਹੈ)",
     "hide": "ਟਰੇ ਆਈਕਨ ਲੁਕਾਓ",
-    "quit": "ਟਰੇ ਰਾਹੀਂ OmniRoute ਬੰਦ ਕਰੋ"
+    "quit": "ਟਰੇ ਰਾਹੀਂ CheapRoute ਬੰਦ ਕਰੋ"
   },
   "autostart": {
-    "description": "ਬੂਟ ਸਮੇਂ OmniRoute ਦੀ ਆਟੋਸਟਾਰਟ ਵਿਵਸਥਾ ਦਾ ਪ੍ਰਬੰਧਨ ਕਰੋ (Linux: systemd ਯੂਜ਼ਰ ਸੇਵਾ)",
+    "description": "ਬੂਟ ਸਮੇਂ CheapRoute ਦੀ ਆਟੋਸਟਾਰਟ ਵਿਵਸਥਾ ਦਾ ਪ੍ਰਬੰਧਨ ਕਰੋ (Linux: systemd ਯੂਜ਼ਰ ਸੇਵਾ)",
     "enable": "ਬੂਟ ਸਮੇਂ ਆਟੋਸਟਾਰਟ ਸਮਰੱਥ ਕਰੋ",
     "disable": "ਬੂਟ ਸਮੇਂ ਆਟੋਸਟਾਰਟ ਅਸਮਰੱਥ ਕਰੋ",
     "toggle": "ਬੂਟ ਸਮੇਂ ਆਟੋਸਟਾਰਟ ਨੂੰ ਚਾਲੂ ਜਾਂ ਬੰਦ ਕਰੋ",
@@ -1283,7 +1283,7 @@
     "resume": "ਨਾਮ ਰਾਹੀਂ ਸੰਭਾਲਿਆ ਸੈਸ਼ਨ ਮੁੜ ਸ਼ੁਰੂ ਕਰੋ"
   },
   "plugin": {
-    "description": "CLI ਪਲੱਗਇਨਾਂ ਦਾ ਪ੍ਰਬੰਧਨ ਕਰੋ (omniroute-cmd-*)",
+    "description": "CLI ਪਲੱਗਇਨਾਂ ਦਾ ਪ੍ਰਬੰਧਨ ਕਰੋ (cheaproute-cmd-*)",
     "list": "ਇੰਸਟਾਲ ਕੀਤੇ ਪਲੱਗਇਨਾਂ ਦੀ ਸੂਚੀ ਦਿਖਾਓ",
     "install": "npm ਜਾਂ ਲੋਕਲ ਪਾਥ ਤੋਂ ਪਲੱਗਇਨ ਇੰਸਟਾਲ ਕਰੋ",
     "remove": "ਇੰਸਟਾਲ ਕੀਤਾ ਪਲੱਗਇਨ ਹਟਾਓ",
@@ -1293,19 +1293,19 @@
     "scaffold": "ਨਵੇਂ ਪਲੱਗਇਨ ਲਈ ਬੌਇਲਰਪਲੇਟ ਢਾਂਚਾ ਬਣਾਓ"
   },
   "launch": {
-    "description": "OmniRoute ਵੱਲ ਨਿਰਦੇਸ਼ਿਤ Claude Code ਲਾਂਚ ਕਰੋ (ਲੋਕਲ ਜਾਂ ਰਿਮੋਟ, --profile ਨਾਲ)",
+    "description": "CheapRoute ਵੱਲ ਨਿਰਦੇਸ਼ਿਤ Claude Code ਲਾਂਚ ਕਰੋ (ਲੋਕਲ ਜਾਂ ਰਿਮੋਟ, --profile ਨਾਲ)",
     "token": "ਉਹ ਟੋਕਨ ਜੋ Claude ਕਲਾਇੰਟ ਨੂੰ ਭੇਜਣਾ ਚਾਹੀਦਾ ਹੈ (ANTHROPIC_AUTH_TOKEN)",
-    "notRunning": "OmniRoute {port} 'ਤੇ ਪਹੁੰਚਯੋਗ ਨਹੀਂ ਹੈ। ਇਸਨੂੰ 'omniroute serve' ਨਾਲ ਸ਼ੁਰੂ ਕਰੋ।",
+    "notRunning": "CheapRoute {port} 'ਤੇ ਪਹੁੰਚਯੋਗ ਨਹੀਂ ਹੈ। ਇਸਨੂੰ 'cheaproute serve' ਨਾਲ ਸ਼ੁਰੂ ਕਰੋ।",
     "notFound": "'claude' CLI PATH ਵਿੱਚ ਨਹੀਂ ਮਿਲਿਆ।"
   },
   "run": {
-    "description": "OmniRoute ਰਾਹੀਂ ਇੱਕ ਸਮਰਥਿਤ CLI ਟਾਰਗੇਟ ਲਾਂਚ ਕਰੋ"
+    "description": "CheapRoute ਰਾਹੀਂ ਇੱਕ ਸਮਰਥਿਤ CLI ਟਾਰਗੇਟ ਲਾਂਚ ਕਰੋ"
   },
   "setupClaude": {
-    "description": "OmniRoute ਮਾਡਲ ਕੈਟਾਲਾਗ ਤੋਂ ~/.claude/profiles ਵਿੱਚ Claude Code ਪ੍ਰੋਫ਼ਾਈਲਾਂ ਬਣਾਓ"
+    "description": "CheapRoute ਮਾਡਲ ਕੈਟਾਲਾਗ ਤੋਂ ~/.claude/profiles ਵਿੱਚ Claude Code ਪ੍ਰੋਫ਼ਾਈਲਾਂ ਬਣਾਓ"
   },
   "connect": {
-    "description": "ਰਿਮੋਟ OmniRoute ਸਰਵਰ ਨਾਲ ਕਨੈਕਟ ਕਰੋ ਅਤੇ ਰਿਮੋਟ ਮੋਡ ਵਿੱਚ ਜਾਓ"
+    "description": "ਰਿਮੋਟ CheapRoute ਸਰਵਰ ਨਾਲ ਕਨੈਕਟ ਕਰੋ ਅਤੇ ਰਿਮੋਟ ਮੋਡ ਵਿੱਚ ਜਾਓ"
   },
   "tokens": {
     "description": "ਸਕੋਪ ਕੀਤੇ CLI ਐਕਸੈੱਸ ਟੋਕਨਾਂ ਦਾ ਪ੍ਰਬੰਧਨ ਕਰੋ (ਰਿਮੋਟ ਮੋਡ)"
@@ -1314,10 +1314,10 @@
     "description": "ਸਰਗਰਮ ਸਰਵਰ ਤੋਂ ਇੱਕ ਪ੍ਰਦਾਤਾ+ਮਾਡਲ ਚੁਣੋ ਅਤੇ ਸਮਰਥਿਤ ਲੋਕਲ CLI ਨੂੰ ਕੌਂਫਿਗਰ ਕਰੋ"
   },
   "launchCodex": {
-    "description": "OmniRoute ਵੱਲ ਨਿਰਦੇਸ਼ਿਤ Codex CLI ਲਾਂਚ ਕਰੋ (ਲੋਕਲ ਜਾਂ ਰਿਮੋਟ VPS)"
+    "description": "CheapRoute ਵੱਲ ਨਿਰਦੇਸ਼ਿਤ Codex CLI ਲਾਂਚ ਕਰੋ (ਲੋਕਲ ਜਾਂ ਰਿਮੋਟ VPS)"
   },
   "setupCodex": {
-    "description": "OmniRoute ਦੇ ਲਾਈਵ ਮਾਡਲ ਕੈਟਾਲਾਗ ਤੋਂ ~/.codex ਪ੍ਰੋਫ਼ਾਈਲ ਫ਼ਾਈਲਾਂ ਬਣਾਓ"
+    "description": "CheapRoute ਦੇ ਲਾਈਵ ਮਾਡਲ ਕੈਟਾਲਾਗ ਤੋਂ ~/.codex ਪ੍ਰੋਫ਼ਾਈਲ ਫ਼ਾਈਲਾਂ ਬਣਾਓ"
   },
   "packs": {
     "description": "ਵਿਕਲਪਿਕ ਰਨਟਾਈਮ ਪੈਕਾਂ ਦਾ ਪ੍ਰਬੰਧਨ ਕਰੋ (ML / ਬ੍ਰਾਊਜ਼ਰ ਆਟੋਮੇਸ਼ਨ)",
@@ -1330,7 +1330,7 @@
     "errUnknown": "ਅਣਜਾਣ ਪੈਕ: {name}",
     "errNoIndex": "ਪੈਕ ਇੰਡੈਕਸ ਨਹੀਂ ਮਿਲਿਆ; ਪੈਕ ਪੇਲੋਡ ਵਾਲੀ ਡਾਇਰੈਕਟਰੀ ਲਈ --source <dir> ਦਿਓ (ਡੈਸਕਟਾਪ ਬੰਡਲਾਂ ਵਿੱਚ ਇਹ ਐਪ ਦੇ ਨਾਲ ਸ਼ਾਮਲ ਹੁੰਦਾ ਹੈ)",
     "installed": "ਪੈਕ \"{name}\" ਨੂੰ {dir} ਵਿੱਚ ਇੰਸਟਾਲ ਕਰਕੇ ਪੁਸ਼ਟੀ ਕੀਤੀ ਗਈ",
-    "restartHint": "ਰਨਟਾਈਮ ਵੱਲੋਂ ਪੈਕ ਲੋਡ ਕਰਨ ਲਈ OmniRoute ਸਰਵਰ (ਜਾਂ ਡੈਸਕਟਾਪ ਐਪ) ਨੂੰ ਮੁੜ ਚਾਲੂ ਕਰੋ",
+    "restartHint": "ਰਨਟਾਈਮ ਵੱਲੋਂ ਪੈਕ ਲੋਡ ਕਰਨ ਲਈ CheapRoute ਸਰਵਰ (ਜਾਂ ਡੈਸਕਟਾਪ ਐਪ) ਨੂੰ ਮੁੜ ਚਾਲੂ ਕਰੋ",
     "removed": "ਪੈਕ \"{name}\" ਹਟਾ ਦਿੱਤਾ ਗਿਆ",
     "notInstalled": "ਪੈਕ \"{name}\" ਇੰਸਟਾਲ ਨਹੀਂ ਸੀ",
     "verifyOk": "ਸਾਰੇ ਇੰਸਟਾਲ ਕੀਤੇ ਪੈਕਾਂ ਦੀ ਪੁਸ਼ਟੀ ਹੋ ਗਈ",

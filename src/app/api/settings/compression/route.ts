@@ -3,7 +3,7 @@ import { getCompressionSettings, updateCompressionSettings } from "@/lib/db/comp
 import { isAuthenticated } from "@/shared/utils/apiAuth";
 import { isValidationFailure, validateBody } from "@/shared/validation/helpers";
 import { compressionSettingsUpdateSchema } from "@/shared/validation/compressionConfigSchemas";
-import { sanitizeErrorMessage } from "@omniroute/open-sse/utils/error";
+import { sanitizeErrorMessage } from "@cheaproute/open-sse/utils/error";
 
 export async function GET(request: NextRequest) {
   if (!(await isAuthenticated(request))) {

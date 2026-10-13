@@ -377,7 +377,7 @@ function markMessageCacheControl(msg: ClaudeMessage, ttl?: string): boolean {
 }
 
 /**
- * Build the cache marker OmniRoute adds when the client did not provide one.
+ * Build the cache marker CheapRoute adds when the client did not provide one.
  * Vertex defaults to five minutes when ttl is omitted; unlike 1h, that mode is
  * supported by every cache-capable Claude model on Vertex and has cheaper writes.
  */

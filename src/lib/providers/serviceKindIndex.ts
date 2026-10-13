@@ -1,4 +1,4 @@
-import { resolveProviderServiceKinds } from "@omniroute/open-sse/config/mediaServiceKinds.ts";
+import { resolveProviderServiceKinds } from "@cheaproute/open-sse/config/mediaServiceKinds.ts";
 
 /**
  * Full serviceKinds for a provider — the declared ones (llm, web*, imageToText)

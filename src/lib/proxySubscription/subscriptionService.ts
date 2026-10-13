@@ -577,7 +577,7 @@ function isSubscriptionFetchRetryable(e: unknown): boolean {
 }
 
 async function fetchSubscriptionContent(url: string): Promise<string> {
-  const headers = { "User-Agent": "OmniRoute-ProxySubscription" };
+  const headers = { "User-Agent": "CheapRoute-ProxySubscription" };
   // Retry transient failures (timeouts, 5xx, 429) with bounded exponential
   // backoff; give up fast on permanent errors (4xx, SSRF block).
   return withRetry(() => doSafeFetch(url, headers), {
@@ -912,7 +912,7 @@ async function syncSubscriptionUnsafe(id: string): Promise<SyncResult> {
 
   const lastNodes = redactedNodeSummary(parsed);
 
-  // Opt-in core-config generation. Without OMNIROUTE_PROXY_CORE_BINARY_PATH
+  // Opt-in core-config generation. Without CHEAPROUTE_PROXY_CORE_BINARY_PATH
   // the beside-file is written directly, never the adopted file. With it, the rendered
   // text is verified with the native check before replacing the adopted
   // file (miss → beside-file + warning). Skipped when an earlier warning

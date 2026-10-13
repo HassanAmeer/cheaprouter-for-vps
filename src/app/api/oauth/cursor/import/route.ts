@@ -8,7 +8,7 @@ import { cursorImportSchema } from "@/shared/validation/schemas";
 import { isValidationFailure, validateBody } from "@/shared/validation/helpers";
 import { requireManagementAuth } from "@/lib/api/requireManagementAuth";
 import { getConsistentMachineId } from "@/shared/utils/machineId";
-import { runWithProxyContext } from "@omniroute/open-sse/utils/proxyFetch.ts";
+import { runWithProxyContext } from "@cheaproute/open-sse/utils/proxyFetch.ts";
 import { resolveProxyForProvider } from "@/models";
 
 async function requireOAuthImportAuth(request: Request) {

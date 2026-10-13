@@ -32,7 +32,7 @@ type CaptureState = {
   wrappedInnerFetch: typeof fetch | null;
 };
 
-const CAPTURE_STATE_KEY = Symbol.for("omniroute.providerRequestCapture.state");
+const CAPTURE_STATE_KEY = Symbol.for("cheaproute.providerRequestCapture.state");
 
 function getCaptureState(): CaptureState {
   const scopedGlobal = globalThis as typeof globalThis & {
@@ -126,7 +126,7 @@ export function captureCurrentProviderBody(
   return captureCurrentProviderRequest(url, headers, parseBody(bodyString), bodyString, log);
 }
 
-const DISPATCH_STATE_KEY = Symbol.for("omniroute.providerRequestCapture.dispatch");
+const DISPATCH_STATE_KEY = Symbol.for("cheaproute.providerRequestCapture.dispatch");
 const dispatchContext = ((
   globalThis as typeof globalThis & {
     [DISPATCH_STATE_KEY]?: AsyncLocalStorage<{ settled: boolean }>;
@@ -136,7 +136,7 @@ const dispatchContext = ((
 type DispatchStartListener = () => void;
 
 const DISPATCH_LISTENERS_KEY = Symbol.for(
-  "omniroute.providerRequestCapture.dispatchStartListeners"
+  "cheaproute.providerRequestCapture.dispatchStartListeners"
 );
 
 function getDispatchStartListeners(): Set<DispatchStartListener> {

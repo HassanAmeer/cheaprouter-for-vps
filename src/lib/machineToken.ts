@@ -19,7 +19,7 @@ try {
 // #13679 PR B: checked-in literal, used ONLY as a last-resort fallback (see
 // getActiveSalt() below) — /etc/machine-id is commonly world-readable, so relying on
 // this literal as the real default let any local user derive the same bearer token.
-const BUILTIN_DEFAULT_SALT = "omniroute-cli-auth-v1";
+const BUILTIN_DEFAULT_SALT = "cheaproute-cli-auth-v1";
 const SALT_FILE_NAME = "cli-token-salt.json";
 const PERSISTED_SALT_RE = /^[0-9a-f]{64}$/;
 
@@ -41,7 +41,7 @@ function readPersistedSalt(filePath: string): string | null {
 
 /**
  * Generate a random per-install salt on first use and persist it under DATA_DIR so
- * every process on this install (the server and every `omniroute` CLI invocation,
+ * every process on this install (the server and every `cheaproute` CLI invocation,
  * see the mirrored logic in bin/cli/utils/cliToken.mjs) converges on the same value.
  * The write uses the `wx` flag (fails if the file already exists) so a race between
  * two processes both hitting "no file yet" at once cannot clobber one another — the
@@ -68,7 +68,7 @@ function establishPersistedSalt(dataDir: string): string | null {
 let cachedActiveSalt: string | null = null;
 
 function getActiveSalt(): string {
-  const envSalt = process.env.OMNIROUTE_CLI_SALT;
+  const envSalt = process.env.CHEAPROUTE_CLI_SALT;
   if (envSalt) return envSalt;
 
   if (cachedActiveSalt) return cachedActiveSalt;

@@ -117,12 +117,12 @@ function normalizeEndpoint(rawEndpoint) {
 
   let parsed;
   try {
-    parsed = new URL(endpoint, "http://omniroute.local");
+    parsed = new URL(endpoint, "http://cheaproute.local");
   } catch {
     return null;
   }
 
-  if (parsed.origin !== "http://omniroute.local") {
+  if (parsed.origin !== "http://cheaproute.local") {
     return null;
   }
 
@@ -145,7 +145,7 @@ function getForwardHeaders(requestUrl, requestHeaders, forwarding) {
   if (isText(authorization)) {
     headers.authorization = authorization;
   } else {
-    const url = new URL(requestUrl, "http://omniroute.local");
+    const url = new URL(requestUrl, "http://cheaproute.local");
     for (const key of WS_QUERY_TOKEN_KEYS) {
       const value = url.searchParams.get(key);
       if (isText(value)) {
@@ -438,8 +438,8 @@ class WebSocketSession {
       ...this.requestHeaders,
       accept: payload.stream === false ? "application/json" : "text/event-stream",
       "content-type": "application/json",
-      "x-omniroute-ws-session-id": this.sessionId,
-      "x-omniroute-ws-request-id": requestId,
+      "x-cheaproute-ws-session-id": this.sessionId,
+      "x-cheaproute-ws-request-id": requestId,
     };
 
     const response = await this.fetchImpl(new URL(endpoint, this.baseUrl), {
@@ -555,14 +555,14 @@ class WebSocketSession {
   }
 }
 
-export function createOmnirouteWsBridge({
+export function createCheaprouteWsBridge({
   baseUrl,
   fetchImpl = fetch,
   pingIntervalMs = 25000,
   idleTimeoutMs = 90000,
 } = {}) {
   if (!isText(baseUrl)) {
-    throw new Error("createOmnirouteWsBridge requires a baseUrl");
+    throw new Error("createCheaprouteWsBridge requires a baseUrl");
   }
 
   return {

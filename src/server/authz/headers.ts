@@ -14,15 +14,15 @@
 
 export const AUTHZ_HEADER_REQUEST_ID = "x-request-id";
 
-export const AUTHZ_HEADER_ROUTE_CLASS = "x-omniroute-route-class";
+export const AUTHZ_HEADER_ROUTE_CLASS = "x-cheaproute-route-class";
 
-export const AUTHZ_HEADER_AUTH_KIND = "x-omniroute-auth-kind";
-export const AUTHZ_HEADER_AUTH_ID = "x-omniroute-auth-id";
-export const AUTHZ_HEADER_AUTH_LABEL = "x-omniroute-auth-label";
-export const AUTHZ_HEADER_AUTH_SCOPES = "x-omniroute-auth-scopes";
+export const AUTHZ_HEADER_AUTH_KIND = "x-cheaproute-auth-kind";
+export const AUTHZ_HEADER_AUTH_ID = "x-cheaproute-auth-id";
+export const AUTHZ_HEADER_AUTH_LABEL = "x-cheaproute-auth-label";
+export const AUTHZ_HEADER_AUTH_SCOPES = "x-cheaproute-auth-scopes";
 
 /** CLI sends this header so the local process can call management APIs without login. */
-export const CLI_TOKEN_HEADER = "x-omniroute-cli-token";
+export const CLI_TOKEN_HEADER = "x-cheaproute-cli-token";
 
 /**
  * Client-supplied one-shot fresh-install bootstrap token (#14296). Unlike the
@@ -32,31 +32,31 @@ export const CLI_TOKEN_HEADER = "x-omniroute-cli-token";
  * on the forwarded request (not in AUTHZ_TRUSTED_HEADERS) for the route
  * handler to consume after a successful bootstrap write.
  */
-export const BOOTSTRAP_TOKEN_HEADER = "x-omniroute-bootstrap-token";
+export const BOOTSTRAP_TOKEN_HEADER = "x-cheaproute-bootstrap-token";
 
 /**
  * The real TCP peer IP, stamped by the custom Node server BEFORE Next runs
  * (scripts/dev/peer-stamp.mjs), formatted as `<token>|<ip>`. The middleware has
  * no socket, so this is the only trustworthy locality signal — but ONLY when the
- * token matches this process's OMNIROUTE_PEER_STAMP_TOKEN (see
+ * token matches this process's CHEAPROUTE_PEER_STAMP_TOKEN (see
  * policies/management.ts → resolveStampedPeer). Any client-supplied value is
  * deleted by the server before stamping, and this header is stripped from the
  * forwarded request in pipeline.ts so it never reaches route handlers/upstream.
  * NEVER decide locality from the Host header — it is fully client-controlled.
  * Keep in sync with PEER_IP_HEADER in scripts/dev/peer-stamp.mjs.
  */
-export const PEER_IP_HEADER = "x-omniroute-peer-ip";
+export const PEER_IP_HEADER = "x-cheaproute-peer-ip";
 
 /**
  * Trusted "request arrived via a reverse proxy" marker stamped by the custom
  * Node server alongside PEER_IP_HEADER, formatted as `<token>|1` when the
  * inbound TCP request came from a peer that may be a proxy (this host, a
  * private-network address, a Cloudflare edge or an address named in
- * OMNIROUTE_TRUSTED_PROXIES) and carried forwarding headers (`x-forwarded-for` /
+ * CHEAPROUTE_TRUSTED_PROXIES) and carried forwarding headers (`x-forwarded-for` /
  * `x-real-ip`), or came from a Cloudflare edge with `cf-connecting-ip`, and
  * `<token>|0` otherwise. The middleware combines this with
  * the stamped peer IP so a loopback / private-LAN socket that is actually the
- * proxy hop (e.g. OmniRoute behind nginx / Caddy / Cloudflare Tunnel) is NOT
+ * proxy hop (e.g. CheapRoute behind nginx / Caddy / Cloudflare Tunnel) is NOT
  * trusted as local — closing the upstream da667836 vulnerability that would
  * otherwise let a leaked JWT over a public tunnel reach LOCAL_ONLY routes
  * that spawn child processes. Token-validated like PEER_IP_HEADER, so a
@@ -64,7 +64,7 @@ export const PEER_IP_HEADER = "x-omniroute-peer-ip";
  * route handlers see it.
  * Keep in sync with VIA_PROXY_HEADER in scripts/dev/peer-stamp.mjs.
  */
-export const VIA_PROXY_HEADER = "x-omniroute-via-proxy";
+export const VIA_PROXY_HEADER = "x-cheaproute-via-proxy";
 
 /**
  * The address the IP allow/deny list judges, stamped by the custom Node server as
@@ -72,7 +72,7 @@ export const VIA_PROXY_HEADER = "x-omniroute-via-proxy";
  * like PEER_IP_HEADER and stripped from forwarded headers in pipeline.ts.
  * Keep in sync with CLIENT_IP_HEADER in scripts/dev/peer-stamp.mjs.
  */
-export const CLIENT_IP_HEADER = "x-omniroute-client-ip";
+export const CLIENT_IP_HEADER = "x-cheaproute-client-ip";
 
 /**
  * Trusted locality verdict ("loopback" | "lan" | "remote") that the pipeline
@@ -81,7 +81,7 @@ export const CLIENT_IP_HEADER = "x-omniroute-client-ip";
  * spoofable Host header. Like the other trusted headers it is stripped from
  * client input and re-set by the pipeline, so a remote caller cannot forge it.
  */
-export const AUTHZ_HEADER_PEER_LOCALITY = "x-omniroute-peer-locality";
+export const AUTHZ_HEADER_PEER_LOCALITY = "x-cheaproute-peer-locality";
 
 /**
  * The resolved real peer IP, stamped by the pipeline AFTER verifying the
@@ -91,7 +91,7 @@ export const AUTHZ_HEADER_PEER_LOCALITY = "x-omniroute-peer-locality";
  * and the HMAC signature validates; absent when the stamp is not in use.
  * Stripped from incoming requests like all other trusted headers.
  */
-export const AUTHZ_HEADER_TRUSTED_PEER_IP = "x-omniroute-trusted-peer-ip";
+export const AUTHZ_HEADER_TRUSTED_PEER_IP = "x-cheaproute-trusted-peer-ip";
 
 /**
  * Headers the pipeline must NEVER trust on incoming requests. They are

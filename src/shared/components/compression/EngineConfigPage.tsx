@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
-import type { EngineConfigField } from "@omniroute/open-sse/services/compression/engines/types";
+import type { EngineConfigField } from "@cheaproute/open-sse/services/compression/engines/types";
 import { EngineConfigForm } from "@/shared/components/compression/EngineConfigForm";
 import {
   buildEngineDetailUpdate,

@@ -60,7 +60,7 @@ export function applyMigrationSkippingExistingColumns(
 ): string[] {
   const record = () =>
     db
-      .prepare("INSERT OR IGNORE INTO _omniroute_migrations (version, name) VALUES (?, ?)")
+      .prepare("INSERT OR IGNORE INTO _cheaproute_migrations (version, name) VALUES (?, ?)")
       .run(migration.version, migration.name);
   const { sql: rest, skipped } =
     sql === null
@@ -161,7 +161,7 @@ export function reconcileRenumberedMigrations(db: SqliteAdapter, files: Migratio
     }
 
     const legacyRow = db
-      .prepare("SELECT version, name FROM _omniroute_migrations WHERE version = ? AND name = ?")
+      .prepare("SELECT version, name FROM _cheaproute_migrations WHERE version = ? AND name = ?")
       .get(compatibility.fromVersion, compatibility.fromName) as
       { version: string; name: string } | undefined;
     if (!legacyRow) {
@@ -169,7 +169,7 @@ export function reconcileRenumberedMigrations(db: SqliteAdapter, files: Migratio
     }
 
     const targetRow = db
-      .prepare("SELECT version, name FROM _omniroute_migrations WHERE version = ?")
+      .prepare("SELECT version, name FROM _cheaproute_migrations WHERE version = ?")
       .get(compatibility.toVersion) as { version: string; name: string } | undefined;
 
     const isSameSlotReplacement = compatibility.fromVersion === compatibility.toVersion;
@@ -183,13 +183,13 @@ export function reconcileRenumberedMigrations(db: SqliteAdapter, files: Migratio
 
     const applyRepair = db.transaction(() => {
       if (targetRow) {
-        db.prepare("DELETE FROM _omniroute_migrations WHERE version = ? AND name = ?").run(
+        db.prepare("DELETE FROM _cheaproute_migrations WHERE version = ? AND name = ?").run(
           compatibility.fromVersion,
           compatibility.fromName
         );
       } else {
         db.prepare(
-          "UPDATE _omniroute_migrations SET version = ?, name = ? WHERE version = ? AND name = ?"
+          "UPDATE _cheaproute_migrations SET version = ?, name = ? WHERE version = ? AND name = ?"
         ).run(
           compatibility.toVersion,
           compatibility.toName,
@@ -212,7 +212,7 @@ export function reconcileRenumberedMigrations(db: SqliteAdapter, files: Migratio
     // placed at that version number — e.g. 028_create_files_and_batches.sql
     // would be skipped because getAppliedVersions() still sees version "028".
     const residualRow = db
-      .prepare("SELECT version, name FROM _omniroute_migrations WHERE version = ?")
+      .prepare("SELECT version, name FROM _cheaproute_migrations WHERE version = ?")
       .get(compatibility.fromVersion) as { version: string; name: string } | undefined;
     if (residualRow) {
       console.warn(
@@ -220,7 +220,7 @@ export function reconcileRenumberedMigrations(db: SqliteAdapter, files: Migratio
           `(name: "${residualRow.name}") still present after compat rewrite — ` +
           `removing to unblock new migration at this version slot.`
       );
-      db.prepare("DELETE FROM _omniroute_migrations WHERE version = ?").run(
+      db.prepare("DELETE FROM _cheaproute_migrations WHERE version = ?").run(
         compatibility.fromVersion
       );
     }
@@ -243,7 +243,7 @@ export function rehomeLegacyVersionSlotMigrations(
     }
 
     const legacyRow = db
-      .prepare("SELECT version, name FROM _omniroute_migrations WHERE version = ? AND name = ?")
+      .prepare("SELECT version, name FROM _cheaproute_migrations WHERE version = ? AND name = ?")
       .get(legacy.version, legacy.name) as { version: string; name: string } | undefined;
     if (!legacyRow) {
       continue;
@@ -252,18 +252,18 @@ export function rehomeLegacyVersionSlotMigrations(
     const legacyVersion = `legacy-${legacy.version}-${legacy.name}`;
     const applyRepair = db.transaction(() => {
       const existingLegacyRow = db
-        .prepare("SELECT version FROM _omniroute_migrations WHERE version = ?")
+        .prepare("SELECT version FROM _cheaproute_migrations WHERE version = ?")
         .get(legacyVersion) as { version: string } | undefined;
 
       if (existingLegacyRow) {
-        db.prepare("DELETE FROM _omniroute_migrations WHERE version = ? AND name = ?").run(
+        db.prepare("DELETE FROM _cheaproute_migrations WHERE version = ? AND name = ?").run(
           legacy.version,
           legacy.name
         );
         return;
       }
 
-      db.prepare("UPDATE _omniroute_migrations SET version = ? WHERE version = ? AND name = ?").run(
+      db.prepare("UPDATE _cheaproute_migrations SET version = ? WHERE version = ? AND name = ?").run(
         legacyVersion,
         legacy.version,
         legacy.name
@@ -287,7 +287,7 @@ export function hasLedgerRepairCandidates(db: SqliteAdapter, files: MigrationFil
     const diskName = diskNamesByVersion.get(legacy.version);
     if (!diskName || diskName === legacy.name) continue;
     const row = db
-      .prepare("SELECT 1 FROM _omniroute_migrations WHERE version = ? AND name = ?")
+      .prepare("SELECT 1 FROM _cheaproute_migrations WHERE version = ? AND name = ?")
       .get(legacy.version, legacy.name);
     if (row) return true;
   }
@@ -301,7 +301,7 @@ export function hasLedgerRepairCandidates(db: SqliteAdapter, files: MigrationFil
     );
     if (!hasTargetFile || !hasSourceFile) continue;
     const row = db
-      .prepare("SELECT 1 FROM _omniroute_migrations WHERE version = ? AND name = ?")
+      .prepare("SELECT 1 FROM _cheaproute_migrations WHERE version = ? AND name = ?")
       .get(compatibility.fromVersion, compatibility.fromName);
     if (row) return true;
   }

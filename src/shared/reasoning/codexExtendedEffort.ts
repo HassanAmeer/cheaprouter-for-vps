@@ -1,7 +1,7 @@
 import {
   CODEX_MAX_ALIAS_MODELS,
   CODEX_ULTRA_ALIAS_MODELS,
-} from "@omniroute/open-sse/executors/codex/reasoningSuffix.ts";
+} from "@cheaproute/open-sse/executors/codex/reasoningSuffix.ts";
 
 // Which Codex models accept the `max` / `ultra` reasoning tiers, read from the
 // alias sets the Codex executor uses so routing rules and the rules editor

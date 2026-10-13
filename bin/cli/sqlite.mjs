@@ -21,7 +21,7 @@ async function loadSqlite() {
 // #7586: unlike the real server (src/lib/db/adapters/driverFactory.ts::tryOpenSync),
 // this CLI helper historically had NO fallback beyond better-sqlite3 — so on any
 // machine where better-sqlite3's native binary is unavailable (Windows without a
-// prebuilt addon, etc.), every `omniroute doctor` DB check reported a false FAIL
+// prebuilt addon, etc.), every `cheaproute doctor` DB check reported a false FAIL
 // even when the actual server was healthy via its own (correct) driver cascade.
 // Reuse that same cascade here instead of re-deriving it.
 async function openWithSyncDriverFallback(dbPath, options, importError) {
@@ -95,8 +95,8 @@ export function createSqliteNativeError(error) {
   if (message.includes("NODE_MODULE_VERSION") || message.includes("ERR_DLOPEN_FAILED")) {
     return new Error(
       `better-sqlite3 native binding is incompatible with this runtime. ` +
-        `Run \`${rebuildCmd}\` in the OmniRoute project and try again. ` +
-        `Or run: omniroute runtime repair  ` +
+        `Run \`${rebuildCmd}\` in the CheapRoute project and try again. ` +
+        `Or run: cheaproute runtime repair  ` +
         `(rebuilds into a user-writable runtime; works without a C++ toolchain).`
     );
   }
@@ -107,7 +107,7 @@ export function createSqliteNativeError(error) {
   ) {
     return new Error(
       `better-sqlite3 native binding could not be found (no prebuilt addon for this platform). ` +
-        `Run: omniroute runtime repair  ` +
+        `Run: cheaproute runtime repair  ` +
         `(rebuilds into a user-writable runtime; works without a C++ toolchain).`
     );
   }
@@ -139,7 +139,7 @@ async function openSqliteDatabase(dbPath, options = {}) {
   }
 }
 
-export async function openOmniRouteDb() {
+export async function openCheapRouteDb() {
   const dataDir = resolveDataDir();
   const dbPath = resolveStoragePath(dataDir);
   fs.mkdirSync(dataDir, { recursive: true });
@@ -186,10 +186,10 @@ export async function readDatabaseHealth(dbPath) {
     const quickCheckValue = Object.values(quickCheck || {})[0];
     const hasMigrationTable = !!db
       .prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name = ?")
-      .get("_omniroute_migrations");
+      .get("_cheaproute_migrations");
     const appliedMigrationVersions = hasMigrationTable
       ? db
-          .prepare("SELECT version FROM _omniroute_migrations")
+          .prepare("SELECT version FROM _cheaproute_migrations")
           .all()
           .map((row) => row.version)
       : [];

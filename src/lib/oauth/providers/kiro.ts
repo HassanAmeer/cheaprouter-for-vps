@@ -1,5 +1,5 @@
 import { KIRO_CONFIG, AWS_REGION_PATTERN, assertValidAwsRegion } from "../constants/oauth";
-import { discoverKiroProfileArnAcrossRegions } from "@omniroute/open-sse/services/kiroRegion.ts";
+import { discoverKiroProfileArnAcrossRegions } from "@cheaproute/open-sse/services/kiroRegion.ts";
 
 export const kiro = {
   config: KIRO_CONFIG,

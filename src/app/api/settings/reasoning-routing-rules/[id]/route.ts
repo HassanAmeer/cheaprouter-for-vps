@@ -11,7 +11,7 @@ import {
 } from "@/shared/validation/schemas";
 import { validatedJsonBody } from "@/shared/validation/helpers";
 import { reasoningRuleDataToInput } from "@/lib/reasoningRouting/input";
-import { buildErrorBody, sanitizeErrorMessage } from "@omniroute/open-sse/utils/error.ts";
+import { buildErrorBody, sanitizeErrorMessage } from "@cheaproute/open-sse/utils/error.ts";
 
 function errorResponse(status: number, message: string) {
   return NextResponse.json(buildErrorBody(status, message), { status });

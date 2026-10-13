@@ -11,7 +11,7 @@ export const perplexityProvider: RegistryEntry = {
   authType: "apikey",
   authHeader: "bearer",
   headers: {
-    "X-Pplx-Integration": "omniroute",
+    "X-Pplx-Integration": "cheaproute",
   },
   models: [
     { id: "sonar-deep-research", name: "Sonar Deep Research" },

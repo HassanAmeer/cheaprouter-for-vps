@@ -9,29 +9,29 @@ import {
   buildExhaustionOptions,
 } from "../services/auth";
 import { maybeReactivateAfterExplicitProbe } from "../services/explicitInactiveProbe";
-import { connectionHasExtraKeys } from "@omniroute/open-sse/services/apiKeyRotator.ts";
-import { clearRequestRejectedStreak } from "@omniroute/open-sse/services/requestRejectedStreak.ts";
-import { createBuiltinAutoCombo } from "@omniroute/open-sse/services/autoCombo/builtinCatalog.ts";
+import { connectionHasExtraKeys } from "@cheaproute/open-sse/services/apiKeyRotator.ts";
+import { clearRequestRejectedStreak } from "@cheaproute/open-sse/services/requestRejectedStreak.ts";
+import { createBuiltinAutoCombo } from "@cheaproute/open-sse/services/autoCombo/builtinCatalog.ts";
 import * as log from "../utils/logger";
 import { updateProviderCredentials } from "../services/tokenRefresh";
-import { detectFormatFromEndpoint } from "@omniroute/open-sse/services/provider.ts";
-import { resolveChatCoreTargetFormat } from "@omniroute/open-sse/handlers/chatCore/targetFormat.ts";
-import { handleChatCore } from "@omniroute/open-sse/handlers/chatCore.ts";
+import { detectFormatFromEndpoint } from "@cheaproute/open-sse/services/provider.ts";
+import { resolveChatCoreTargetFormat } from "@cheaproute/open-sse/handlers/chatCore/targetFormat.ts";
+import { handleChatCore } from "@cheaproute/open-sse/handlers/chatCore.ts";
 import {
   checkResourcePressureGuard,
   type ResourcePressureGuardResult,
-} from "@omniroute/open-sse/utils/resourcePressure.ts";
+} from "@cheaproute/open-sse/utils/resourcePressure.ts";
 import {
   errorResponse,
   modelCooldownResponse,
   providerCircuitOpenResponse,
   unavailableResponse,
-} from "@omniroute/open-sse/utils/error.ts";
-import { inheritTrustedLocalRateLimitResponse } from "@omniroute/open-sse/services/rateLimitManager/errors.ts";
+} from "@cheaproute/open-sse/utils/error.ts";
+import { inheritTrustedLocalRateLimitResponse } from "@cheaproute/open-sse/services/rateLimitManager/errors.ts";
 import { isRequestScopedUpstreamFailure } from "./comboFailureLogging";
 import { isCodexNativeResponsesRequest } from "./requestShapeGuards";
-import { HTTP_STATUS } from "@omniroute/open-sse/config/constants.ts";
-import { getRegistryEntry } from "@omniroute/open-sse/config/providerRegistry.ts";
+import { HTTP_STATUS } from "@cheaproute/open-sse/config/constants.ts";
+import { getRegistryEntry } from "@cheaproute/open-sse/config/providerRegistry.ts";
 import { getCachedProviderNodes } from "@/lib/db/readCache";
 import {
   runWithProxyContext,
@@ -39,7 +39,7 @@ import {
   runWithTlsTracking,
   isTlsFingerprintActive,
   type AppliedProxySink,
-} from "@omniroute/open-sse/utils/proxyFetch.ts";
+} from "@cheaproute/open-sse/utils/proxyFetch.ts";
 import { resolveProxyForConnection } from "@/lib/db/settings";
 import { hasBlockingProxyAssignment } from "@/lib/db/proxies";
 import {
@@ -62,7 +62,7 @@ import { noteProxyOutcome } from "./proxyOutcomeMemory";
 import { logProxyJournal } from "./proxyJournal";
 import type { AttemptJournalEntry } from "./proxyJournal";
 import { logTranslationEvent } from "../../lib/translatorEvents";
-import { getRuntimeProviderProfile } from "@omniroute/open-sse/services/accountFallback.ts";
+import { getRuntimeProviderProfile } from "@cheaproute/open-sse/services/accountFallback.ts";
 
 // #14960: circuit-open 503 that also names the breaker's classified failure kind.
 function breakerOpenResponse(provider: string, breaker: CircuitBreaker, retryAfterSec: number) {
@@ -1191,7 +1191,7 @@ export function withSessionHeader(response: Response, sessionId: string | null):
   if (!response || !sessionId) return response;
 
   try {
-    response.headers.set("X-OmniRoute-Session-Id", sessionId);
+    response.headers.set("X-CheapRoute-Session-Id", sessionId);
     return response;
   } catch {
     const cloned = new Response(response.body, {
@@ -1199,7 +1199,7 @@ export function withSessionHeader(response: Response, sessionId: string | null):
       statusText: response.statusText,
       headers: response.headers,
     });
-    cloned.headers.set("X-OmniRoute-Session-Id", sessionId);
+    cloned.headers.set("X-CheapRoute-Session-Id", sessionId);
     return inheritTrustedLocalRateLimitResponse(response, cloned);
   }
 }
@@ -1223,7 +1223,7 @@ export function withCorrelationId(response: Response, correlationId: string | nu
 
 /**
  * Modality Bridge transparency (PR-1 Task 9): stamp the
- * `x-omniroute-modality-bridge` header on responses whose request payload was
+ * `x-cheaproute-modality-bridge` header on responses whose request payload was
  * transparently transformed (e.g. image→text describe). `value` comes from
  * buildModalityBridgeHeader(); null (untouched/rerouted request) is a no-op.
  * Same try-set/clone-fallback shape as withSessionHeader — the clone reuses
@@ -1233,7 +1233,7 @@ export function withModalityBridgeHeader(response: Response, value: string | nul
   if (!response || !value) return response;
 
   try {
-    response.headers.set("x-omniroute-modality-bridge", value);
+    response.headers.set("x-cheaproute-modality-bridge", value);
     return response;
   } catch {
     const cloned = new Response(response.body, {
@@ -1241,7 +1241,7 @@ export function withModalityBridgeHeader(response: Response, value: string | nul
       statusText: response.statusText,
       headers: response.headers,
     });
-    cloned.headers.set("x-omniroute-modality-bridge", value);
+    cloned.headers.set("x-cheaproute-modality-bridge", value);
     return cloned;
   }
 }
@@ -1269,7 +1269,7 @@ export function withSelectedConnectionHeader(
 ): Response {
   if (!response || !connectionId) return response;
   try {
-    response.headers.set("X-OmniRoute-Selected-Connection-Id", connectionId);
+    response.headers.set("X-CheapRoute-Selected-Connection-Id", connectionId);
     return response;
   } catch {
     const cloned = new Response(response.body, {
@@ -1277,7 +1277,7 @@ export function withSelectedConnectionHeader(
       statusText: response.statusText,
       headers: response.headers,
     });
-    cloned.headers.set("X-OmniRoute-Selected-Connection-Id", connectionId);
+    cloned.headers.set("X-CheapRoute-Selected-Connection-Id", connectionId);
     const trusted = inheritTrustedLocalRateLimitResponse(response, cloned);
     return inheritProviderProbeResponse(response, trusted);
   }

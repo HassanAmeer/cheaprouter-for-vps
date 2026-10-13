@@ -4,7 +4,7 @@ import {
   createCursorLoginSession,
   generateCursorAuthParams,
 } from "@/lib/oauth/services/cursorLogin";
-import { sanitizeErrorMessage } from "@omniroute/open-sse/utils/error.ts";
+import { sanitizeErrorMessage } from "@cheaproute/open-sse/utils/error.ts";
 
 async function requireOAuthAuth(request: Request) {
   return requireManagementAuth(request, { invalidApiKeyStatus: 401 });

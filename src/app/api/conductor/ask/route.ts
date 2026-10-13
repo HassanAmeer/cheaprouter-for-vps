@@ -1,5 +1,5 @@
 /**
- * POST /api/conductor/ask — proxy para o Faro (spokesperson do OmniConductor).
+ * POST /api/conductor/ask — proxy para o Faro (spokesperson do CheapConductor).
  * O /ask do Faro exige credencial do hub (server-side); o browser fala só com
  * esta rota. Resposta whitelisted {text, pending} — quando `pending` vier, a UI
  * oferece Sim/Não (a trava de confirmação é do motor do Faro; nunca contornada).

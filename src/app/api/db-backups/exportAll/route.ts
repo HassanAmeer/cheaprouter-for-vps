@@ -7,7 +7,7 @@ import path from "path";
 import os from "os";
 import { execFileSync } from "node:child_process";
 import { isAuthenticated } from "@/shared/utils/apiAuth";
-import { sanitizeErrorMessage } from "@omniroute/open-sse/utils/error";
+import { sanitizeErrorMessage } from "@cheaproute/open-sse/utils/error";
 
 /**
  * GET /api/db-backups/exportAll
@@ -31,8 +31,8 @@ export async function GET(request: NextRequest) {
     // Use mkdtempSync (exclusive creation, random suffix) instead of a
     // deterministic timestamp path — a predictable path lets a local
     // attacker pre-place a symlink and redirect the write (TOCTOU).
-    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "omniroute-export-"));
-    const zipPath = path.join(os.tmpdir(), `omniroute-full-backup-${timestamp}.zip`);
+    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "cheaproute-export-"));
+    const zipPath = path.join(os.tmpdir(), `cheaproute-full-backup-${timestamp}.zip`);
 
     try {
       // 1. Export database using native backup API
@@ -60,7 +60,7 @@ export async function GET(request: NextRequest) {
       const metadata = {
         exportedAt: new Date().toISOString(),
         version: process.env.npm_package_version || "unknown",
-        format: "omniroute-full-backup-v1",
+        format: "cheaproute-full-backup-v1",
         contents: [
           "storage.sqlite - Full database",
           "settings.json - Key-value settings",
@@ -91,7 +91,7 @@ export async function GET(request: NextRequest) {
         status: 200,
         headers: {
           "Content-Type": "application/gzip",
-          "Content-Disposition": `attachment; filename="omniroute-full-backup-${timestamp}.tar.gz"`,
+          "Content-Disposition": `attachment; filename="cheaproute-full-backup-${timestamp}.tar.gz"`,
           "Content-Length": archiveBuffer.length.toString(),
         },
       });

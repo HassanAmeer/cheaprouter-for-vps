@@ -15,7 +15,7 @@ import { reorderConnections } from "./providers/deletion";
 import { normalizeProviderSpecificData } from "@/lib/providers/requestDefaults";
 import { withDerivedCookieExpiry } from "@/shared/utils/webCookieExpiry";
 import { WEB_COOKIE_PROVIDERS } from "@/shared/constants/providers";
-import { ensureCodexFingerprintSeed } from "@omniroute/open-sse/config/codexIdentity.ts";
+import { ensureCodexFingerprintSeed } from "@cheaproute/open-sse/config/codexIdentity.ts";
 import { bumpProxyConfigGeneration, getSettings } from "./settings";
 import {
   getStoredManagementPassword,
@@ -44,7 +44,7 @@ import { applyCodexChildCooldownClearOnUpdate } from "./providers/codexAccountSt
  * persist, edit, import) is covered; the seed is never regenerated once valid,
  * so identities stay put across saves. Pre-seed connections rotate from the
  * legacy connection-id derivation exactly once on their next write — the
- * OmniRoute analog of sub2api's migration-225 backfill (v0.1.178, #5696).
+ * CheapRoute analog of sub2api's migration-225 backfill (v0.1.178, #5696).
  */
 function normalizeConnectionProviderSpecificData(
   provider: string | null,

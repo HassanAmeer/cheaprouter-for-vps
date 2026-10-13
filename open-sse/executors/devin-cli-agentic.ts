@@ -421,7 +421,7 @@ export async function runAcpTurn(args: {
 
     initializeRequestId = send("initialize", {
       protocolVersion: ACP_PROTOCOL_VERSION,
-      clientInfo: { name: "omniroute-devin-cli-agentic", version: "1.0" },
+      clientInfo: { name: "cheaproute-devin-cli-agentic", version: "1.0" },
       clientCapabilities: {},
     });
   });

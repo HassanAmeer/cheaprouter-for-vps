@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 import { getIdempotencyKey, checkIdempotency } from "@/lib/idempotencyLayer";
 import { calculateCost } from "@/lib/usage/costCalculator";
-import { attachOmniRouteMetaHeaders } from "@/domain/omnirouteResponseMeta";
+import { attachCheapRouteMetaHeaders } from "@/domain/cheaprouteResponseMeta";
 import type { EffectiveServiceTier } from "./serviceTier.ts";
 
 type HeadersLike = Headers | Record<string, unknown> | null | undefined;
@@ -169,9 +169,9 @@ export async function checkIdempotencyCache({
       : 0;
     const headers: Record<string, string> = {
       "Content-Type": "application/json",
-      "X-OmniRoute-Idempotent": "true",
+      "X-CheapRoute-Idempotent": "true",
     };
-    attachOmniRouteMetaHeaders(headers, {
+    attachCheapRouteMetaHeaders(headers, {
       provider,
       model,
       cacheHit: false,

@@ -11,7 +11,7 @@ import {
 import { updateResilienceSchema } from "@/shared/validation/schemas";
 import { isValidationFailure, validateBody } from "@/shared/validation/helpers";
 import { resetAllCircuitBreakers } from "@/shared/utils/circuitBreaker";
-import { sanitizeErrorMessage } from "@omniroute/open-sse/utils/error";
+import { sanitizeErrorMessage } from "@cheaproute/open-sse/utils/error";
 
 type JsonRecord = Record<string, unknown>;
 
@@ -113,8 +113,8 @@ function normalizeLegacyPatch(body: JsonRecord): ResilienceSettingsPatch {
 
 async function syncRuntimeSettings(resilienceSettings: ResilienceSettings) {
   const [{ applyRequestQueueSettings }, { setProviderQuotaOverrides }] = await Promise.all([
-    import("@omniroute/open-sse/services/rateLimitManager"),
-    import("@omniroute/open-sse/services/providerDefaultRateLimit"),
+    import("@cheaproute/open-sse/services/rateLimitManager"),
+    import("@cheaproute/open-sse/services/providerDefaultRateLimit"),
   ]);
   await applyRequestQueueSettings(resilienceSettings.requestQueue);
   // #6846 Phase 2: re-apply per-provider RPM/concurrency overrides on the hot

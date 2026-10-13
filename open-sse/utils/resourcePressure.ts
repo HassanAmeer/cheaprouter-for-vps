@@ -19,12 +19,12 @@ const PRESSURE_MESSAGE = "Service temporarily unavailable due to resource pressu
 
 /**
  * Absolute RSS fuse for native/external memory that is invisible to V8 heapUsed.
- * OMNIROUTE_MEMORY_MB is the configured V8 heap budget; use 2x that value with
- * a 3 GiB floor unless OMNIROUTE_RSS_PRESSURE_MB explicitly overrides it.
+ * CHEAPROUTE_MEMORY_MB is the configured V8 heap budget; use 2x that value with
+ * a 3 GiB floor unless CHEAPROUTE_RSS_PRESSURE_MB explicitly overrides it.
  */
 export function computeRssPressureThresholdMb(
-  memoryBudgetRaw: string | number | undefined = process.env.OMNIROUTE_MEMORY_MB,
-  overrideRaw: string | number | undefined = process.env.OMNIROUTE_RSS_PRESSURE_MB
+  memoryBudgetRaw: string | number | undefined = process.env.CHEAPROUTE_MEMORY_MB,
+  overrideRaw: string | number | undefined = process.env.CHEAPROUTE_RSS_PRESSURE_MB
 ): number | null {
   const explicit = Number(overrideRaw);
   if (Number.isFinite(explicit) && explicit > 0) return Math.floor(explicit);
@@ -84,8 +84,8 @@ function envFlagEnabled(raw: string | undefined): boolean {
 function resolveSelfRestartOptions(
   option: ResourcePressureRuntimeOptions["selfRestart"]
 ): ResolvedSelfRestart {
-  const enabled = option?.enabled ?? envFlagEnabled(process.env.OMNIROUTE_PRESSURE_SELF_RESTART);
-  const rawAfter = process.env.OMNIROUTE_PRESSURE_SELF_RESTART_AFTER_MS;
+  const enabled = option?.enabled ?? envFlagEnabled(process.env.CHEAPROUTE_PRESSURE_SELF_RESTART);
+  const rawAfter = process.env.CHEAPROUTE_PRESSURE_SELF_RESTART_AFTER_MS;
   const envAfter =
     rawAfter != null && rawAfter.trim().length > 0 && Number.isFinite(Number(rawAfter))
       ? Number(rawAfter)

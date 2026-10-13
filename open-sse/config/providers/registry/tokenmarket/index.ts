@@ -5,7 +5,7 @@ import { buildOpenAiCompatibleRegistryEntry } from "../../shared.ts";
  * Token Market — OpenAI-compatible multi-model API gateway.
  *
  * Models are discovered from the authenticated `/v1/models` endpoint so the
- * catalog can evolve without requiring a new OmniRoute release.
+ * catalog can evolve without requiring a new CheapRoute release.
  */
 export const tokenmarketProvider: RegistryEntry = buildOpenAiCompatibleRegistryEntry({
   id: "tokenmarket",

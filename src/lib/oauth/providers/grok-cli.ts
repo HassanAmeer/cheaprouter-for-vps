@@ -25,7 +25,7 @@ import {
   getGrokBuildOAuthHeaders,
   GROK_BUILD_OAUTH_ISSUER,
   GROK_BUILD_OAUTH_REFERRER,
-} from "@omniroute/open-sse/config/grokBuild.ts";
+} from "@cheaproute/open-sse/config/grokBuild.ts";
 import { GROK_CLI_CONFIG, GROK_BUILD_OAUTH_CONFIG } from "../constants/oauth";
 import {
   buildGrokBuildAuthUrl,

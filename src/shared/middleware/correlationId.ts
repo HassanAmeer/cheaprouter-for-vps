@@ -11,7 +11,7 @@
 import { AsyncLocalStorage } from "node:async_hooks";
 import crypto from "crypto";
 
-const CORRELATION_STORE_KEY = Symbol.for("omniroute.correlationId.store");
+const CORRELATION_STORE_KEY = Symbol.for("cheaproute.correlationId.store");
 type GlobalWithCorrelationStore = typeof globalThis & {
   [CORRELATION_STORE_KEY]?: AsyncLocalStorage<string | undefined>;
 };

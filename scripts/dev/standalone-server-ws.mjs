@@ -35,23 +35,23 @@ const createdServers = new Set();
 
 // Shutdown ownership (same model as scripts/dev/run-next.mjs, #12074). Next's start-server
 // registers SIGINT/SIGTERM handlers that server.close() and then process.exit(143) as soon as no
-// connection is left. That raced OmniRoute's async cleanup (src/lib/gracefulShutdown.ts: spend
+// connection is left. That raced CheapRoute's async cleanup (src/lib/gracefulShutdown.ts: spend
 // batch flush, call-log flush, DB checkpoint) and usually won, so a SIGTERM (docker stop,
 // systemctl stop, Ctrl+C) dropped that work. This wrapper owns process exit instead:
 //   - NEXT_MANUAL_SIG_HANDLE tells Next not to install its handlers. Next reads it once, in its
 //     'listening' handler; it is cleared right after (see the factory below) so spawned children
 //     (embedded services, some of them Next apps) do not inherit it and ignore SIGTERM.
-//   - __omnirouteCustomServerOwnsShutdown makes initGracefulShutdown() register its cleanup as
-//     globalThis.__omnirouteRequestShutdown instead of installing competing signal listeners.
+//   - __cheaprouteCustomServerOwnsShutdown makes initGracefulShutdown() register its cleanup as
+//     globalThis.__cheaprouteRequestShutdown instead of installing competing signal listeners.
 // Both must be set before ./server.js loads.
 // Consequence: Next's own SIGTERM handler is disabled in standalone, so its nextServer.close()
 // no longer runs and pending after() / waitUntil work is NOT awaited on shutdown. Anyone adding a
-// data-writing after() must flush it in OmniRoute's shutdown (src/lib/gracefulShutdown.ts).
+// data-writing after() must flush it in CheapRoute's shutdown (src/lib/gracefulShutdown.ts).
 // Empty or unset counts as "not set" (an empty value is falsy for Next, which would install its
 // handler and bring back the exit-143 race).
 const ownsNextSignalEnv = !process.env.NEXT_MANUAL_SIG_HANDLE;
 if (ownsNextSignalEnv) process.env.NEXT_MANUAL_SIG_HANDLE = "1";
-globalThis.__omnirouteCustomServerOwnsShutdown = true;
+globalThis.__cheaprouteCustomServerOwnsShutdown = true;
 
 // Bounded: gracefulShutdown waits up to SHUTDOWN_TIMEOUT_MS for in-flight requests, then cleans
 // up; the margin covers the flush/checkpoint work.
@@ -85,7 +85,7 @@ async function shutdown(signal) {
   }
   try {
     // Undefined when instrumentation never got that far (signal during boot): just exit.
-    await globalThis.__omnirouteRequestShutdown?.(signal);
+    await globalThis.__cheaprouteRequestShutdown?.(signal);
   } catch (error) {
     console.error("[Shutdown] Cleanup failed during", signal, error?.message ?? error);
   } finally {
@@ -103,17 +103,17 @@ process.on("SIGHUP", () => void shutdown("SIGHUP"));
 const { wrapRequestListenerWithMethodGuard } = methodGuard;
 const { wrapRequestListenerWithHeadResponseGuard } = headResponseGuard;
 
-// Opt-in native HTTPS (#5242). Resolved once at boot: when both OMNIROUTE_TLS_CERT
-// and OMNIROUTE_TLS_KEY point at readable files we terminate TLS on the same
+// Opt-in native HTTPS (#5242). Resolved once at boot: when both CHEAPROUTE_TLS_CERT
+// and CHEAPROUTE_TLS_KEY point at readable files we terminate TLS on the same
 // listener Next binds to (so WS `upgrade` / request wrappers keep working over
 // TLS). Absent or misconfigured → null → identical plain-HTTP behavior as before.
 const tlsOptions = resolveTlsOptions(process.env);
-process.env.OMNIROUTE_INTERNAL_SCHEME = tlsOptions ? "https" : "http";
+process.env.CHEAPROUTE_INTERNAL_SCHEME = tlsOptions ? "https" : "http";
 if (tlsOptions) {
-  console.log(`[omniroute][tls] HTTPS enabled — terminating TLS with cert=${tlsOptions.certPath}`);
+  console.log(`[cheaproute][tls] HTTPS enabled — terminating TLS with cert=${tlsOptions.certPath}`);
 }
 
-process.env.OMNIROUTE_WS_BRIDGE_SECRET ||= randomUUID();
+process.env.CHEAPROUTE_WS_BRIDGE_SECRET ||= randomUUID();
 // Per-process secret proving the trusted peer-IP stamp came from this server.
 ensurePeerStampToken();
 
@@ -134,7 +134,7 @@ function getProxy(server) {
 
   const proxy = createResponsesWsProxy({
     baseUrl: `http://127.0.0.1:${port}`,
-    bridgeSecret: process.env.OMNIROUTE_WS_BRIDGE_SECRET,
+    bridgeSecret: process.env.CHEAPROUTE_WS_BRIDGE_SECRET,
   });
   proxiesByPort.set(port, proxy);
   return proxy;
@@ -253,7 +253,7 @@ http.createServer = function createServerWithResponsesWs(...args) {
   // keep-alive HTTP clients that idle longer than that between requests (e.g.
   // the JVM java.net.http.HttpClient used by JetBrains AI Assistant), which
   // reuse a socket the server already tore down and get 0 response bytes back
-  // (#7003). This wrapper is what `omniroute serve` / Docker / Electron actually
+  // (#7003). This wrapper is what `cheaproute serve` / Docker / Electron actually
   // spawn in production (run-standalone.mjs prefers server-ws.mjs over the bare
   // Next server.js), so it needs the same fix already wired into run-next.mjs
   // (the dev-only entry point) — otherwise real installs never got it. Raise

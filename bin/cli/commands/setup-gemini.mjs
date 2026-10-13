@@ -1,4 +1,4 @@
-/** Configure Google Gemini CLI's native Gemini endpoint for OmniRoute. */
+/** Configure Google Gemini CLI's native Gemini endpoint for CheapRoute. */
 
 import { existsSync, readFileSync } from "node:fs";
 import os from "node:os";
@@ -69,7 +69,7 @@ export function resolveGeminiTarget(opts = {}) {
   let context;
   if (!baseUrl || !(opts.apiKey ?? opts["api-key"])) {
     try {
-      context = resolveActiveContext(opts.context ?? process.env.OMNIROUTE_CONTEXT);
+      context = resolveActiveContext(opts.context ?? process.env.CHEAPROUTE_CONTEXT);
     } catch {
       // Contexts are optional for local configuration.
     }
@@ -85,8 +85,8 @@ export function resolveGeminiTarget(opts = {}) {
     opts["api-key"] ??
     context?.accessToken ??
     context?.apiKey ??
-    process.env.OMNIROUTE_API_KEY ??
-    "omniroute-no-auth";
+    process.env.CHEAPROUTE_API_KEY ??
+    "cheaproute-no-auth";
   return { baseUrl: validateGeminiEndpoint(baseUrl), apiKey };
 }
 
@@ -102,7 +102,7 @@ export function mergeGeminiSettings(existing, model) {
   return next;
 }
 
-/** Replace only variables owned by the OmniRoute Gemini recipe. */
+/** Replace only variables owned by the CheapRoute Gemini recipe. */
 export function mergeGeminiEnv(existing, { baseUrl, apiKey, model }) {
   const lines = String(existing || "")
     .split(/\r?\n/)
@@ -138,13 +138,13 @@ export async function runSetupGeminiCommand(opts = {}) {
     opts.settingsPath ?? opts["settings-path"] ?? path.join(userHome, ".gemini", "settings.json");
   const envPath = opts.envPath ?? opts["env-path"] ?? path.join(path.dirname(settingsPath), ".env");
 
-  printHeading("OmniRoute → Google Gemini CLI (native Gemini API)");
+  printHeading("CheapRoute → Google Gemini CLI (native Gemini API)");
   printInfo(`GOOGLE_GEMINI_BASE_URL: ${baseUrl}`);
 
   for (const target of [settingsPath, envPath]) {
     const guard = await guardHostConfigTarget(target, {
       toolLabel: "Google Gemini CLI",
-      hostCommand: "omniroute setup-gemini",
+      hostCommand: "cheaproute setup-gemini",
       allowContainerWrite: Boolean(opts.allowContainerWrite ?? opts["allow-container-write"]),
       dryRun,
     });
@@ -191,11 +191,11 @@ export async function runSetupGeminiCommand(opts = {}) {
 export function registerSetupGemini(program) {
   program
     .command("setup-gemini")
-    .description("Configure Google Gemini CLI's native endpoint for OmniRoute")
-    .option("--port <port>", "Local OmniRoute port (ignored when --remote is set)", "20128")
-    .option("--remote <url>", "Remote OmniRoute URL")
+    .description("Configure Google Gemini CLI's native endpoint for CheapRoute")
+    .option("--port <port>", "Local CheapRoute port (ignored when --remote is set)", "20128")
+    .option("--remote <url>", "Remote CheapRoute URL")
     .option("--context <name>", "Named local/remote context")
-    .option("--api-key <key>", "OmniRoute API key")
+    .option("--api-key <key>", "CheapRoute API key")
     .option("--model <id>", "Default model id for Gemini CLI")
     .option("--gemini-home <dir>", "Gemini CLI home root (default: GEMINI_CLI_HOME or ~)")
     .option("--settings-path <path>", "Gemini CLI settings.json path")

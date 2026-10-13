@@ -2,7 +2,7 @@ import { z } from "zod";
 import { deleteProxyById } from "@/lib/db/proxies";
 import { createErrorResponse, createErrorResponseFromUnknown } from "@/lib/api/errorResponse";
 import { requireManagementAuth } from "@/lib/api/requireManagementAuth";
-import { clearDispatcherCache } from "@omniroute/open-sse/utils/proxyDispatcher";
+import { clearDispatcherCache } from "@cheaproute/open-sse/utils/proxyDispatcher";
 import { isValidationFailure, validateBody } from "@/shared/validation/helpers";
 
 const batchDeleteSchema = z.object({

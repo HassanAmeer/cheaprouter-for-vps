@@ -22,10 +22,10 @@ export function normalizeBasePath(value?: string | null): string {
 }
 
 /**
- * Resolve the deploy basePath for display URLs (e.g. `/omniroute`).
+ * Resolve the deploy basePath for display URLs (e.g. `/cheaproute`).
  *
  * Priority:
- * 1. Explicit `envBasePath` argument / `NEXT_PUBLIC_OMNIROUTE_BASE_PATH`
+ * 1. Explicit `envBasePath` argument / `NEXT_PUBLIC_CHEAPROUTE_BASE_PATH`
  * 2. Non-root path of `configuredBaseUrl` (`NEXT_PUBLIC_BASE_URL`)
  */
 export function resolveDeployBasePath(
@@ -36,7 +36,7 @@ export function resolveDeployBasePath(
   const fromEnv = normalizeBasePath(
     envBasePath ??
       (typeof process !== "undefined"
-        ? process.env.NEXT_PUBLIC_OMNIROUTE_BASE_PATH || process.env.OMNIROUTE_BASE_PATH
+        ? process.env.NEXT_PUBLIC_CHEAPROUTE_BASE_PATH || process.env.CHEAPROUTE_BASE_PATH
         : undefined)
   );
   if (fromEnv) return fromEnv;
@@ -177,7 +177,7 @@ function joinOriginAndBasePath(origin: string, basePath: string): string {
  * @param envValue          `NEXT_PUBLIC_BASE_URL` (may include a path for subpath deploys)
  * @param browserOrigin     `window.location.origin`
  * @param browserPathname   `window.location.pathname` (still includes Next basePath)
- * @param envBasePath       `NEXT_PUBLIC_OMNIROUTE_BASE_PATH` / `OMNIROUTE_BASE_PATH`
+ * @param envBasePath       `NEXT_PUBLIC_CHEAPROUTE_BASE_PATH` / `CHEAPROUTE_BASE_PATH`
  */
 export function resolveDisplayBaseUrl(
   envValue?: string,
@@ -190,7 +190,7 @@ export function resolveDisplayBaseUrl(
   const basePath = resolveDeployBasePath(envBasePath, configuredUrl, browserPathname);
 
   // Configured public URL that already includes a non-root path wins (subpath deploy).
-  // Example: NEXT_PUBLIC_BASE_URL=https://host/omniroute must not be collapsed to
+  // Example: NEXT_PUBLIC_BASE_URL=https://host/cheaproute must not be collapsed to
   // https://host when the browser origin is the same host without a path.
   if (configuredUrl && isPublicDisplayBaseUrl(configuredUrl) && urlPathname(configuredUrl)) {
     return configuredUrl;
@@ -199,7 +199,7 @@ export function resolveDisplayBaseUrl(
   // Reachable public browser origin, with basePath re-applied when configured.
   // Existing behavior: prefer the live origin over a different configured *host*
   // (tunnels / alternate domains). basePath keeps /v1 examples correct under
-  // reverse-proxy subpaths (OMNIROUTE_BASE_PATH).
+  // reverse-proxy subpaths (CHEAPROUTE_BASE_PATH).
   if (currentOrigin && isPublicDisplayBaseUrl(currentOrigin)) {
     return joinOriginAndBasePath(currentOrigin, basePath);
   }
@@ -221,7 +221,7 @@ export function resolveDisplayBaseUrl(
  * Returns the public base URL to display in the dashboard.
  *
  * Resolution chain after client mount:
- *   1. Public browser origin (+ OMNIROUTE_BASE_PATH when set) — proves the
+ *   1. Public browser origin (+ CHEAPROUTE_BASE_PATH when set) — proves the
  *      current tunnel/domain is reachable.
  *   2. Public NEXT_PUBLIC_BASE_URL (path-preserving when it includes a subpath).
  *   3. Local fallbacks (current origin / configured URL / localhost).
@@ -229,12 +229,12 @@ export function resolveDisplayBaseUrl(
  * DISPLAY ONLY — do NOT use this hook for OAuth `redirect_uri`.
  * OAuth callers must read `process.env.NEXT_PUBLIC_BASE_URL` directly to avoid
  * host-header attack surface. For server-side resolution, use
- * `src/shared/utils/resolveOmniRouteBaseUrl.ts` instead.
+ * `src/shared/utils/resolveCheapRouteBaseUrl.ts` instead.
  */
 export function useDisplayBaseUrl(): string {
   const envValue = normalizeUrl(process.env.NEXT_PUBLIC_BASE_URL);
   const envBasePath = normalizeBasePath(
-    process.env.NEXT_PUBLIC_OMNIROUTE_BASE_PATH || process.env.OMNIROUTE_BASE_PATH
+    process.env.NEXT_PUBLIC_CHEAPROUTE_BASE_PATH || process.env.CHEAPROUTE_BASE_PATH
   );
 
   const [url, setUrl] = useState<string>(() =>

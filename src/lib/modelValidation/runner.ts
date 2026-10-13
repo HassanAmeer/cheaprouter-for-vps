@@ -123,7 +123,7 @@ export async function createProofRunner(
             signal: stageSignal,
             endpoint: "/v1/chat/completions",
           },
-          userAgent: "OmniRoute-Model-Validation/1",
+          userAgent: "CheapRoute-Model-Validation/1",
           cachedSettings: { ...settings, semanticCacheEnabled: false },
           modelPinned: true,
           skipUpstreamRetry: true,

@@ -94,7 +94,7 @@ export const xkiroProvider: RegistryEntry = buildOpenAiCompatibleRegistryEntry({
     },
     {
       id: "qwen/qwen3.5-omni-flash:free",
-      name: "Qwen3.5 Omni Flash",
+      name: "Qwen3.5 Cheap Flash",
       contextLength: 262144,
       toolCalling: true,
       supportsVision: true,
@@ -199,7 +199,7 @@ export const xkiroProvider: RegistryEntry = buildOpenAiCompatibleRegistryEntry({
     },
     {
       id: "qwen/qwen3.5-omni-plus:free",
-      name: "Qwen3.5 Omni Plus",
+      name: "Qwen3.5 Cheap Plus",
       contextLength: 262144,
       toolCalling: true,
       supportsVision: true,
@@ -262,7 +262,7 @@ export const xkiroProvider: RegistryEntry = buildOpenAiCompatibleRegistryEntry({
     },
     {
       id: "qwen/qwen3-omni-flash:free",
-      name: "Qwen3 Omni Flash",
+      name: "Qwen3 Cheap Flash",
       contextLength: 262144,
       toolCalling: true,
       supportsVision: true,

@@ -5,12 +5,12 @@
  * no `Authorization` header at all, and 200 for a bogus key — so the account-setup dialog
  * greened any string and the first request Zylo actually authenticates was the user's own
  * model test, which came back `401 {"error":"Key not found: zk-…"}` (#13828; that message
- * is Zylo's own text, not OmniRoute's).
+ * is Zylo's own text, not CheapRoute's).
  *
  * `POST /v1/chat/completions` is the authenticated route, so a single probe there is the
  * correct auth check — the same remedy already applied to dify (#11002) and bytez (#5422).
  */
-import { getRegistryEntry } from "@omniroute/open-sse/config/providerRegistry.ts";
+import { getRegistryEntry } from "@cheaproute/open-sse/config/providerRegistry.ts";
 import { normalizeBaseUrl } from "./urlHelpers";
 import { buildBearerHeaders } from "./headers";
 import { validateDirectChatProvider } from "./directChatProbe";

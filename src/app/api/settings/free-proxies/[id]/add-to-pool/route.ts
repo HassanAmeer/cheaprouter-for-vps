@@ -5,7 +5,7 @@ import { getFreeProxyById, promoteFreeProxyToPool } from "@/lib/db/freeProxies";
 import {
   createProxyDispatcher,
   proxyConfigToUrl,
-} from "@omniroute/open-sse/utils/proxyDispatcher.ts";
+} from "@cheaproute/open-sse/utils/proxyDispatcher.ts";
 import { probeEchoTargets } from "@/lib/proxyEchoTarget";
 
 type ConnectivityTester = (
