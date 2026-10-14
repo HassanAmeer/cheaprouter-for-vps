@@ -5,7 +5,7 @@ import type {
 
 // ─── Item arrays ────────────────────────────────────────────────────────────
 
-// Top standalone items: Home, Users — no section header
+// Top standalone items: Home — no section header
 const TOP_STANDALONE_ITEMS: readonly SidebarItemDefinition[] = [
   {
     id: "home",
@@ -15,18 +15,9 @@ const TOP_STANDALONE_ITEMS: readonly SidebarItemDefinition[] = [
     icon: "home",
     exact: true,
   },
-  {
-    id: "users",
-    href: "/dashboard/users",
-    i18nKey: "users",
-    labelFallback: "Users",
-    subtitleKey: "usersSubtitle",
-    subtitleFallback: "Reseller users, plans & BYOK keys",
-    icon: "groups",
-  },
 ];
 
-// CheapProxy section: Providers, Combos, Limits, API Keys, Usage
+// CheapProxy section: Providers, Manage Models, Combos, Limits, API Keys, Users, Usage
 const CHEAP_PROXY_ITEMS: readonly SidebarItemDefinition[] = [
   {
     id: "providers",
@@ -66,6 +57,15 @@ const CHEAP_PROXY_ITEMS: readonly SidebarItemDefinition[] = [
     i18nKey: "apiManager",
     subtitleKey: "apiManagerSubtitle",
     icon: "vpn_key",
+  },
+  {
+    id: "users",
+    href: "/dashboard/users",
+    i18nKey: "users",
+    labelFallback: "Users",
+    subtitleKey: "usersSubtitle",
+    subtitleFallback: "Reseller users, plans & BYOK keys",
+    icon: "groups",
   },
   {
     id: "usage",
@@ -157,7 +157,7 @@ const BOTTOM_STANDALONE_ITEMS: readonly SidebarItemDefinition[] = [
 // ─── Sections ────────────────────────────────────────────────────────────────
 
 export const SIDEBAR_SECTIONS: readonly SidebarSectionDefinition[] = [
-  // 1. Top standalone: Home, Users, Usage
+  // 1. Top standalone: Home
   {
     id: "top",
     titleKey: "home",
