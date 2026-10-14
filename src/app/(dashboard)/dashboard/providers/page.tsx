@@ -890,17 +890,12 @@ function ProvidersPageContent() {
           activeCategory={null}
           activeServiceKind={activeServiceKind}
           onServiceKindChange={setActiveServiceKind}
-          disabledConfigured={connections.length === 0}
-          displayMode={effectiveProviderDisplayMode}
           modelSearchQuery={modelSearchQuery}
           onBatchTest={handleBatchTest}
           onCategoryChange={(_category, _freeOnly) => {
             // Category selection is now handled by tabs; keep showFreeOnly state
             setShowFreeOnly(_freeOnly);
           }}
-          onDisplayModeChange={setProviderDisplayMode}
-          onNewProvider={() => router.push("/dashboard/providers/new")}
-          onImportFromFile={() => setShowImportFromFileModal(true)}
           searchQuery={searchQuery}
           setModelSearchQuery={setModelSearchQuery}
           setSearchQuery={setSearchQuery}

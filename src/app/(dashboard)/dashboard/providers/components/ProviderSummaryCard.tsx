@@ -1,9 +1,8 @@
 "use client";
 
-import { Button, Card, Input } from "@/shared/components";
+import { Card, Input } from "@/shared/components";
 import type { ProviderDisplayMode } from "../providerPageStorage";
 import { CategoryDot } from "./CategoryDot";
-import ProviderDisplayModeControl from "./ProviderDisplayModeControl";
 
 type ProviderMessageTranslator = ((key: string, values?: Record<string, unknown>) => string) & {
   has?: (key: string) => boolean;
@@ -35,14 +34,14 @@ interface ProviderSummaryCardProps {
   activeCategory: string | null;
   activeServiceKind: string | null;
   onServiceKindChange(kind: string | null): void;
-  disabledConfigured: boolean;
-  displayMode: ProviderDisplayMode;
+  disabledConfigured?: boolean;
+  displayMode?: ProviderDisplayMode;
   modelSearchQuery: string;
   onBatchTest(mode: string): void;
   onCategoryChange(category: string | null, freeOnly: boolean): void;
-  onDisplayModeChange(mode: ProviderDisplayMode): void;
-  onNewProvider(): void;
-  onImportFromFile(): void;
+  onDisplayModeChange?(mode: ProviderDisplayMode): void;
+  onNewProvider?(): void;
+  onImportFromFile?(): void;
   searchQuery: string;
   setModelSearchQuery(value: string): void;
   setSearchQuery(value: string): void;
@@ -90,14 +89,14 @@ export default function ProviderSummaryCard({
   activeCategory,
   activeServiceKind,
   onServiceKindChange,
-  disabledConfigured,
-  displayMode,
+  disabledConfigured: _disabledConfigured,
+  displayMode: _displayMode,
   modelSearchQuery,
   onBatchTest,
   onCategoryChange,
-  onDisplayModeChange,
-  onNewProvider,
-  onImportFromFile,
+  onDisplayModeChange: _onDisplayModeChange,
+  onNewProvider: _onNewProvider,
+  onImportFromFile: _onImportFromFile,
   searchQuery,
   setModelSearchQuery,
   setSearchQuery,
@@ -218,18 +217,6 @@ export default function ProviderSummaryCard({
               </button>
             )}
           </div>
-          <ProviderDisplayModeControl
-            disabledConfigured={disabledConfigured}
-            mode={displayMode}
-            onChange={onDisplayModeChange}
-            t={t}
-          />
-          <Button size="sm" icon="add" onClick={onNewProvider}>
-            {providerText(t, "onboardingWizardShort", "Onboarding Wizard")}
-          </Button>
-          <Button size="sm" variant="secondary" icon="upload_file" onClick={onImportFromFile}>
-            {providerText(t, "importFromFile", "Import from file")}
-          </Button>
           <button
             onClick={() => onBatchTest("all")}
             disabled={!!testingMode}
