@@ -368,10 +368,15 @@ export const apZaiProvider: RegistryEntry = buildOpenAiCompatibleRegistryEntry({
 export const apKilocodeProvider: RegistryEntry = buildOpenAiCompatibleRegistryEntry({
   id: "ap_kilocode",
   alias: "ap_kilocode",
-  baseUrl: "https://api.kilocode.ai/v1/chat/completions",
-  modelsUrl: "https://api.kilocode.ai/v1/models",
+  baseUrl: "https://api.kilo.ai/api/openrouter/chat/completions",
+  modelsUrl: "https://api.kilo.ai/api/openrouter/models",
+  anonymousApiKey: "anonymous",
+  headers: {
+    "X-KILOCODE-EDITORNAME": "CheapRoute",
+  },
   passthroughModels: true,
   models: [
+    { id: "openrouter/free", name: "Free Models Router" },
     { id: "stepfun/step-3.7-flash:free", name: "Step 3.7 Flash Free" },
     { id: "poolside/laguna-m.1:free", name: "Laguna M.1 Free" },
     { id: "nvidia/nemotron-3-ultra-550b-a55b:free", name: "Nemotron 3 Ultra Free" },

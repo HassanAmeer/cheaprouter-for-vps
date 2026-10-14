@@ -377,11 +377,12 @@ export const APIKEY_PROVIDERS_AP = {
     icon: "hub",
     color: "#059669",
     textIcon: "KI",
-    website: "https://api.kilocode.ai",
+    website: "https://kilo.ai",
     hasFree: true,
-    freeNote: "Free-tier models with :free suffix",
+    anonymousFallback: true,
+    freeNote: "Free-tier models with :free suffix or openrouter/free (no login required)",
     apiHint:
-      "Create a KiloCode API key, then paste it here as a Bearer token. OpenAI-compatible endpoint at https://api.kilocode.ai/v1.",
+      "Paste a KiloCode API key, or use free models directly without an account.",
     passthroughModels: true,
   },
   ap_clinecode: {

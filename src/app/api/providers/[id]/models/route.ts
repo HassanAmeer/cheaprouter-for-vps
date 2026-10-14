@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import {
+  getProviderById,
   getProviderConnectionFamilyIds,
   isClaudeCodeCompatibleProvider,
   isAnthropicCompatibleProvider,
@@ -202,6 +203,28 @@ export async function GET(
               ...(matchedNode.customHeaders ? { customHeaders: matchedNode.customHeaders } : {}),
             },
           };
+        } else {
+          const regEntry = getRegistryEntry(id);
+          const provDef = getProviderById(id);
+          if (
+            regEntry?.anonymousApiKey ||
+            provDef?.anonymousFallback ||
+            id === "kilocode" ||
+            id === "ap_kilocode"
+          ) {
+            connection = {
+              id: `${id}-anonymous`,
+              provider: id,
+              name: `${provDef?.name || id} (Anonymous / Free)`,
+              apiKey: regEntry?.anonymousApiKey || "anonymous",
+              isActive: true,
+              authType: "anonymous",
+              providerSpecificData: {
+                baseUrl: regEntry?.baseUrl,
+                modelsUrl: regEntry?.modelsUrl,
+              },
+            };
+          }
         }
       } catch {
         // Fall through to 404 if not found

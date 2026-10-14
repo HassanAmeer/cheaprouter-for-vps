@@ -839,7 +839,15 @@ export const PROVIDER_MODELS_CONFIG: Record<string, ProviderModelsConfigEntry> =
   kilocode: {
     url: "https://api.kilo.ai/api/openrouter/models",
     method: "GET",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", "X-KILOCODE-EDITORNAME": "CheapRoute" },
+    authHeader: "Authorization",
+    authPrefix: "Bearer ",
+    parseResponse: (data) => data.data || data.models || [],
+  },
+  ap_kilocode: {
+    url: "https://api.kilo.ai/api/openrouter/models",
+    method: "GET",
+    headers: { "Content-Type": "application/json", "X-KILOCODE-EDITORNAME": "CheapRoute" },
     authHeader: "Authorization",
     authPrefix: "Bearer ",
     parseResponse: (data) => data.data || data.models || [],
