@@ -556,40 +556,54 @@ export default function ManageModelsPanel() {
 
   if (providerIds.length === 0) {
     return (
-      <div className="flex flex-col gap-6">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-text-main flex items-center gap-2.5">
-            <span className="material-symbols-outlined text-cyan-400 text-3xl">tune</span>
-            Manage Models
-          </h1>
-          <p className="text-sm text-text-muted mt-1">
-            Configure active models, custom aliases, live capability verification, and billing tiers.
-          </p>
+      <div className="flex flex-col gap-5">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-white/10">
+          <div className="flex items-center gap-2.5">
+            <div className="size-8 rounded-xl bg-cyan-500/15 border border-cyan-400/25 flex items-center justify-center text-cyan-400 shadow-sm shadow-cyan-500/10">
+              <span className="material-symbols-outlined text-[20px]">tune</span>
+            </div>
+            <div>
+              <h1 className="text-xl font-bold tracking-tight text-white">Manage Models</h1>
+              <p className="text-xs text-zinc-400">
+                Configure active models, custom aliases, live capability verification, and billing tiers.
+              </p>
+            </div>
+          </div>
+          <div className="self-end sm:self-auto">
+            <DefaultCapabilitiesPromptModal
+              testPrompt={testPrompt}
+              onPromptChange={setTestPrompt}
+              isOpen={showCapabilityPrompt}
+              onToggle={() => setShowCapabilityPrompt((prev) => !prev)}
+            />
+          </div>
         </div>
-        <Card className="p-6">
-          <p className="text-sm text-text-muted">
-            No connected providers yet. Connect a provider first — its models will appear here for
+        <div className="p-6 rounded-2xl border border-white/10 bg-[#161618]/80 backdrop-blur-xl shadow-lg">
+          <p className="text-xs text-zinc-400">
+            No active connected providers found. Connect a provider first — its models will appear here for
             activation, aliasing, and testing.
           </p>
-        </Card>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col gap-4">
-      {/* ── Top Header Bar with Capabilities Test Suite Trigger ── */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-border/40">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-text-main flex items-center gap-2.5">
-            <span className="material-symbols-outlined text-cyan-400 text-3xl">tune</span>
-            Manage Models
-          </h1>
-          <p className="text-sm text-text-muted mt-1">
-            Configure active models, custom aliases, live capability verification, and billing tiers.
-          </p>
+    <div className="flex flex-col gap-3">
+      {/* ── Top Header Bar with Cupertino Outline Trigger Button ── */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-white/10">
+        <div className="flex items-center gap-2.5 min-w-0">
+          <div className="size-8 rounded-xl bg-cyan-500/15 border border-cyan-400/25 flex items-center justify-center text-cyan-400 shadow-sm shadow-cyan-500/10 shrink-0">
+            <span className="material-symbols-outlined text-[20px]">tune</span>
+          </div>
+          <div className="min-w-0">
+            <h1 className="text-xl font-bold tracking-tight text-white truncate">Manage Models</h1>
+            <p className="text-xs text-zinc-400 truncate">
+              Cupertino studio for active connected models, custom aliases & capability tests.
+            </p>
+          </div>
         </div>
-        <div className="self-end sm:self-auto">
+        <div className="self-end sm:self-auto shrink-0">
           <DefaultCapabilitiesPromptModal
             testPrompt={testPrompt}
             onPromptChange={setTestPrompt}
@@ -599,428 +613,433 @@ export default function ManageModelsPanel() {
         </div>
       </div>
 
-      <div className="flex flex-wrap items-center gap-3">
-        <div className="relative flex-1 min-w-[220px]">
-          <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-[18px] text-text-muted">
+      {/* ── Cupertino Inset Search & Modality Segmented Bar ── */}
+      <div className="flex flex-col sm:flex-row sm:items-center gap-2.5">
+        <div className="relative flex-1 min-w-[200px]">
+          <span className="material-symbols-outlined absolute left-2.5 top-1/2 -translate-y-1/2 text-[16px] text-zinc-400">
             search
           </span>
           <input
             value={filter}
             onChange={(e) => setFilter(e.target.value)}
             placeholder="Filter models by id or name…"
-            className="w-full rounded-lg border border-border bg-bg-subtle pl-10 pr-3 py-2 text-sm text-text-main placeholder:text-text-muted focus:outline-none focus:border-primary/50"
+            className="w-full h-8 rounded-xl border border-white/10 bg-white/[0.04] pl-8 pr-7 py-1 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-cyan-400/60 focus:ring-1 focus:ring-cyan-400/30 transition-all font-mono"
           />
-        </div>
-        <p className="text-xs text-text-muted">
-          Only checked models are active downstream (combos, API keys, /v1/models execution).
-        </p>
-      </div>
-
-      {/* Capability Filter Buttons Bar */}
-      <div className="flex items-center gap-1.5 overflow-x-auto text-xs py-1 scrollbar-none">
-        <span className="text-[11px] font-semibold text-text-muted uppercase tracking-wider mr-1 shrink-0">
-          Filter:
-        </span>
-        {CAPABILITY_FILTER_BUTTONS.map((opt) => {
-          const isActive = capabilityFilter === opt.key;
-          const count = filterCounts[opt.key] ?? 0;
-          return (
+          {filter && (
             <button
-              key={opt.key}
               type="button"
-              onClick={() => setCapabilityFilter(opt.key)}
-              className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium transition-all cursor-pointer shrink-0 ${
-                isActive
-                  ? "bg-text-main text-bg font-semibold shadow-xs"
-                  : "bg-bg-subtle text-text-muted hover:text-text-main hover:bg-bg border border-border"
-              }`}
+              onClick={() => setFilter("")}
+              className="absolute right-2 top-1/2 -translate-y-1/2 size-4 rounded-full bg-white/20 hover:bg-white/30 text-white flex items-center justify-center transition-colors cursor-pointer"
             >
-              {opt.icon && (
-                <span className="material-symbols-outlined text-[14px] leading-none">
-                  {opt.icon}
-                </span>
-              )}
-              <span>{opt.label}</span>
-              <span
-                className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono ${
+              <span className="material-symbols-outlined text-[12px]">close</span>
+            </button>
+          )}
+        </div>
+
+        {/* Capability Segmented Control Pills */}
+        <div className="flex items-center gap-1 overflow-x-auto p-0.5 rounded-xl bg-black/40 border border-white/10 scrollbar-none shrink-0">
+          {CAPABILITY_FILTER_BUTTONS.map((opt) => {
+            const isActive = capabilityFilter === opt.key;
+            const count = filterCounts[opt.key] ?? 0;
+            return (
+              <button
+                key={opt.key}
+                type="button"
+                onClick={() => setCapabilityFilter(opt.key)}
+                className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-medium transition-all cursor-pointer shrink-0 ${
                   isActive
-                    ? "bg-bg/20 text-bg font-bold"
-                    : "bg-bg border border-border text-text-muted"
+                    ? "bg-cyan-500/25 text-cyan-300 border border-cyan-400/40 shadow-xs font-semibold"
+                    : "text-zinc-400 hover:text-white hover:bg-white/5"
                 }`}
               >
-                {count}
-              </span>
-            </button>
-          );
-        })}
+                {opt.icon && (
+                  <span className="material-symbols-outlined text-[13px] leading-none">
+                    {opt.icon}
+                  </span>
+                )}
+                <span>{opt.label}</span>
+                <span className="text-[9px] px-1 py-0.2 rounded-full font-mono bg-white/10 text-zinc-300">
+                  {count}
+                </span>
+              </button>
+            );
+          })}
+        </div>
       </div>
 
-      {providerIds.map((providerId) => {
-        const all = modelsByProvider[providerId] ?? [];
-        const models = all.filter((m) => {
-          const cust = customizationByModel.get(`${providerId}::${m.id}`);
-          if (
-            capabilityFilter !== "all" &&
-            !matchesSyncedModelFilter(m, capabilityFilter, cust)
-          ) {
-            return false;
-          }
+      {/* ── Connected Provider Inset Group Cards ── */}
+      <div className="space-y-2.5">
+        {providerIds.map((providerId) => {
+          const all = modelsByProvider[providerId] ?? [];
+          const models = all.filter((m) => {
+            const cust = customizationByModel.get(`${providerId}::${m.id}`);
+            if (
+              capabilityFilter !== "all" &&
+              !matchesSyncedModelFilter(m, capabilityFilter, cust)
+            ) {
+              return false;
+            }
+            return (
+              matchesSearch(m.id, filter) || (Boolean(m.name) && matchesSearch(m.name!, filter))
+            );
+          });
+          const activeCount = all.filter(
+            (m) => customizationByModel.get(`${providerId}::${m.id}`)?.isActive !== false
+          ).length;
+          const isOpen = expanded[providerId] !== false;
+
           return (
-            matchesSearch(m.id, filter) || (Boolean(m.name) && matchesSearch(m.name!, filter))
-          );
-        });
-        const activeCount = all.filter(
-          (m) => customizationByModel.get(`${providerId}::${m.id}`)?.isActive !== false
-        ).length;
-        const isOpen = expanded[providerId] !== false;
-        return (
-          <Card key={providerId} className="p-0 overflow-hidden">
-            <div className="w-full flex items-center justify-between px-4 py-3 hover:bg-bg-subtle/60 transition-colors">
-              <button
-                type="button"
-                onClick={() => setExpanded((prev) => ({ ...prev, [providerId]: !isOpen }))}
-                className="flex items-center gap-3 text-left flex-1"
-              >
-                <span className="material-symbols-outlined text-[20px] text-text-muted transition-transform">
-                  {isOpen ? "expand_less" : "expand_more"}
-                </span>
-                <span className="font-semibold text-text-main">{providerId}</span>
-                <span className="text-xs px-2 py-0.5 rounded-full bg-bg-subtle border border-border text-text-muted">
-                  {activeCount}/{all.length} active
-                </span>
-              </button>
-
-              <button
-                type="button"
-                disabled={fetchingProviderId === providerId}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  void handleFetchModelsForProvider(providerId);
-                }}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border bg-bg-subtle hover:bg-bg hover:border-primary/40 text-text-main text-xs font-medium transition disabled:opacity-50 cursor-pointer shadow-sm shrink-0"
-                title={`Fetch live models for ${providerId} from /v1/models`}
-              >
-                <span
-                  className={`material-symbols-outlined text-[15px] ${
-                    fetchingProviderId === providerId ? "animate-spin" : ""
-                  }`}
+            <div
+              key={providerId}
+              className="rounded-2xl border border-white/10 bg-[#161618]/85 backdrop-blur-xl shadow-md overflow-hidden transition-all"
+            >
+              {/* Group Header */}
+              <div className="w-full flex items-center justify-between px-3.5 py-2 hover:bg-white/[0.03] transition-colors">
+                <button
+                  type="button"
+                  onClick={() => setExpanded((prev) => ({ ...prev, [providerId]: !isOpen }))}
+                  className="flex items-center gap-2.5 text-left flex-1 cursor-pointer min-w-0"
                 >
-                  {fetchingProviderId === providerId ? "progress_activity" : "cloud_sync"}
-                </span>
-                <span>
-                  {fetchingProviderId === providerId ? "Fetching..." : "Fetch All Models"}
-                </span>
-              </button>
-            </div>
-
-            {/* Provider Fetch Error Alert */}
-            {fetchErrorByProvider[providerId] && (
-              <div className="px-4 py-2.5 bg-red-950/30 border-y border-red-800/40 text-red-200 text-xs flex items-start gap-2">
-                <span className="material-symbols-outlined text-red-400 text-[17px] flex-shrink-0 mt-0.5">
-                  error
-                </span>
-                <div className="flex flex-col gap-0.5">
-                  <span className="font-semibold text-red-300">Model Discovery Failed</span>
-                  <span className="font-mono text-[11px] text-red-200/90 break-all">
-                    {fetchErrorByProvider[providerId]}
+                  <span
+                    className={`material-symbols-outlined text-[18px] text-zinc-400 transition-transform duration-200 ${
+                      isOpen ? "rotate-90" : ""
+                    }`}
+                  >
+                    chevron_right
                   </span>
-                </div>
+                  <span className="font-semibold text-xs tracking-tight text-white truncate">
+                    {providerId}
+                  </span>
+                  <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-white/5 border border-white/10 text-zinc-400 shrink-0">
+                    {activeCount}/{all.length} active
+                  </span>
+                </button>
+
+                <button
+                  type="button"
+                  disabled={fetchingProviderId === providerId}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    void handleFetchModelsForProvider(providerId);
+                  }}
+                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-white/15 bg-white/5 hover:bg-white/10 text-zinc-200 text-[11px] font-medium transition-all disabled:opacity-50 cursor-pointer active:scale-95 shrink-0"
+                  title={`Fetch live models for ${providerId} from /v1/models`}
+                >
+                  <span
+                    className={`material-symbols-outlined text-[14px] ${
+                      fetchingProviderId === providerId ? "animate-spin" : ""
+                    }`}
+                  >
+                    {fetchingProviderId === providerId ? "progress_activity" : "cloud_sync"}
+                  </span>
+                  <span>{fetchingProviderId === providerId ? "Syncing…" : "Fetch Models"}</span>
+                </button>
               </div>
-            )}
 
-            {isOpen && (
-              <div className="border-t border-border divide-y divide-border/60">
-                {models.length === 0 && (
-                  <p className="px-4 py-4 text-sm text-text-muted">
-                    {all.length === 0
-                      ? "No synced models for this provider yet — open the provider page and use Fetch All Models."
-                      : "No models match the filter."}
-                  </p>
-                )}
-                {models.map((m) => {
-                  const key = `${providerId}::${m.id}`;
-                  const cust = customizationByModel.get(key);
-                  const isActive = cust?.isActive !== false;
-                  const draft = aliasDrafts[key] ?? {
-                    name: cust?.customName ?? "",
-                    alias: cust?.customAlias ?? "",
-                  };
-                  const ctxTokens = cust?.contextWindow ?? m.contextWindow ?? m.inputTokenLimit;
-                  const ctxLabel = formatContextWindow(ctxTokens ?? null);
-                  const capsMeta = getSyncedModelCapabilities(m, cust);
-                  const selectedCap = selectedCapabilities[key] || "text";
-                  const autoFree = m.isFree === true || isCatalogFreeModel(providerId, m.id);
-                  const isFree =
-                    cust?.isFreeOverride === true
-                      ? true
-                      : cust?.isFreeOverride === false
-                        ? false
-                        : autoFree;
-                  const test = testResults[key];
-                  const cachedBadge = !test && cust?.isTested && cust.testStatus;
-                  return (
-                    <div key={m.id} className="px-4 py-3 flex flex-col gap-2">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <input
-                          type="checkbox"
-                          checked={isActive}
-                          onChange={(e) =>
-                            void handleToggleActive(providerId, m.id, e.target.checked)
-                          }
-                          aria-label={`Activate ${m.id}`}
-                          className="size-4 accent-current"
-                        />
-                        <span className="font-mono text-sm text-text-main break-all">{m.id}</span>
-                        <button
-                          type="button"
-                          onClick={() => handleCopy(m.id)}
-                          title="Copy model ID"
-                          aria-label={`Copy model ID ${m.id}`}
-                          className="p-1 rounded-md text-text-muted hover:text-text-main hover:bg-bg-subtle transition-colors"
-                        >
-                          <span className="material-symbols-outlined text-[16px]">
-                            {copiedId === m.id ? "check" : "content_copy"}
-                          </span>
-                        </button>
-                        <button
-                          type="button"
-                          title="Toggle FREE/PAID override (auto → FREE → PAID)"
-                          onClick={() =>
-                            void handleFreeOverride(
-                              providerId,
-                              m.id,
-                              cust?.isFreeOverride == null
-                                ? true
-                                : cust.isFreeOverride === true
-                                  ? false
-                                  : null
-                            )
-                          }
-                          className={`text-[10px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded ${
-                            isFree
-                              ? "bg-emerald-500/15 text-emerald-500"
-                              : "bg-amber-500/15 text-amber-500"
-                          }`}
-                        >
-                          {isFree ? "FREE" : "PAID"}
-                          {cust?.isFreeOverride != null && (
-                            <span className="ml-1 opacity-70 normal-case">manual</span>
-                          )}
-                        </button>
-                        {ctxLabel && (
-                          <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-bg-subtle border border-border text-text-muted">
-                            {ctxLabel} ctx
-                          </span>
-                        )}
+              {/* Provider Fetch Error Alert */}
+              {fetchErrorByProvider[providerId] && (
+                <div className="px-3.5 py-2 bg-red-950/40 border-y border-red-800/40 text-red-200 text-xs flex items-start gap-2">
+                  <span className="material-symbols-outlined text-red-400 text-[16px] shrink-0 mt-0.5">
+                    error
+                  </span>
+                  <div className="flex flex-col gap-0.5">
+                    <span className="font-semibold text-red-300 text-[11px]">Sync Failed</span>
+                    <span className="font-mono text-[10px] text-red-200/90 break-all">
+                      {fetchErrorByProvider[providerId]}
+                    </span>
+                  </div>
+                </div>
+              )}
 
-                        {/* Interactive Capability Selection for Testing */}
-                        <div className="flex items-center gap-1 flex-wrap">
-                          {capsMeta.hasChat && (
-                            <button
-                              type="button"
-                              onClick={() => handleSelectCapability(key, "text")}
-                              title={`Text: Dialogue & instruction prompt (${
-                                selectedCap === "text"
-                                  ? "Active for test"
-                                  : "Click to select for test"
-                              })`}
-                              className={`px-1.5 py-0.5 rounded text-[10px] font-medium transition-all inline-flex items-center gap-1 cursor-pointer ${
-                                selectedCap === "text"
-                                  ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/50 ring-1 ring-emerald-500/30 font-semibold scale-105"
-                                  : "bg-bg-subtle border border-border text-text-muted hover:text-text-main"
-                              }`}
-                            >
-                              <span className="material-symbols-outlined text-[12px] leading-none">
-                                chat
-                              </span>
-                              {selectedCap === "text" && (
-                                <span className="uppercase text-[9px] font-semibold">text</span>
-                              )}
-                            </button>
-                          )}
-                          {capsMeta.hasCode && (
-                            <button
-                              type="button"
-                              onClick={() => handleSelectCapability(key, "code")}
-                              title={`Code: Programming & syntax prompt (${
-                                selectedCap === "code"
-                                  ? "Active for test"
-                                  : "Click to select for test"
-                              })`}
-                              className={`px-1.5 py-0.5 rounded text-[10px] font-medium transition-all inline-flex items-center gap-1 cursor-pointer ${
-                                selectedCap === "code"
-                                  ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/50 ring-1 ring-emerald-500/30 font-semibold scale-105"
-                                  : "bg-bg-subtle border border-border text-text-muted hover:text-text-main"
-                              }`}
-                            >
-                              <span className="material-symbols-outlined text-[12px] leading-none">
-                                code
-                              </span>
-                              {selectedCap === "code" && (
-                                <span className="uppercase text-[9px] font-semibold">code</span>
-                              )}
-                            </button>
-                          )}
-                          {capsMeta.hasVision && (
-                            <button
-                              type="button"
-                              onClick={() => handleSelectCapability(key, "vision")}
-                              title={`Vision: Multimodal image analysis prompt (${
-                                selectedCap === "vision"
-                                  ? "Active for test"
-                                  : "Click to select for test"
-                              })`}
-                              className={`px-1.5 py-0.5 rounded text-[10px] font-medium transition-all inline-flex items-center gap-1 cursor-pointer ${
-                                selectedCap === "vision"
-                                  ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/50 ring-1 ring-emerald-500/30 font-semibold scale-105"
-                                  : "bg-bg-subtle border border-border text-text-muted hover:text-text-main"
-                              }`}
-                            >
-                              <span className="material-symbols-outlined text-[12px] leading-none">
-                                visibility
-                              </span>
-                              {selectedCap === "vision" && (
-                                <span className="uppercase text-[9px] font-semibold">vision</span>
-                              )}
-                            </button>
-                          )}
-                          {capsMeta.hasReasoning && (
-                            <button
-                              type="button"
-                              onClick={() => handleSelectCapability(key, "reasoning")}
-                              title={`Reasoning: Chain-of-thought prompt (${
-                                selectedCap === "reasoning"
-                                  ? "Active for test"
-                                  : "Click to select for test"
-                              })`}
-                              className={`px-1.5 py-0.5 rounded text-[10px] font-medium transition-all inline-flex items-center gap-1 cursor-pointer ${
-                                selectedCap === "reasoning"
-                                  ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/50 ring-1 ring-emerald-500/30 font-semibold scale-105"
-                                  : "bg-bg-subtle border border-border text-text-muted hover:text-text-main"
-                              }`}
-                            >
-                              <span className="material-symbols-outlined text-[12px] leading-none">
-                                psychology
-                              </span>
-                              {selectedCap === "reasoning" && (
-                                <span className="uppercase text-[9px] font-semibold">reason</span>
-                              )}
-                            </button>
-                          )}
-                          {capsMeta.hasSearch && (
-                            <button
-                              type="button"
-                              onClick={() => handleSelectCapability(key, "search")}
-                              title={`Search: Grounded web search prompt (${
-                                selectedCap === "search"
-                                  ? "Active for test"
-                                  : "Click to select for test"
-                              })`}
-                              className={`px-1.5 py-0.5 rounded text-[10px] font-medium transition-all inline-flex items-center gap-1 cursor-pointer ${
-                                selectedCap === "search"
-                                  ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/50 ring-1 ring-emerald-500/30 font-semibold scale-105"
-                                  : "bg-bg-subtle border border-border text-text-muted hover:text-text-main"
-                              }`}
-                            >
-                              <span className="material-symbols-outlined text-[12px] leading-none">
-                                travel_explore
-                              </span>
-                              {selectedCap === "search" && (
-                                <span className="uppercase text-[9px] font-semibold">search</span>
-                              )}
-                            </button>
-                          )}
-                          {capsMeta.hasAudio && (
-                            <button
-                              type="button"
-                              onClick={() => handleSelectCapability(key, "audio")}
-                              title={`Audio: Speech transcription prompt (${
-                                selectedCap === "audio"
-                                  ? "Active for test"
-                                  : "Click to select for test"
-                              })`}
-                              className={`px-1.5 py-0.5 rounded text-[10px] font-medium transition-all inline-flex items-center gap-1 cursor-pointer ${
-                                selectedCap === "audio"
-                                  ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/50 ring-1 ring-emerald-500/30 font-semibold scale-105"
-                                  : "bg-bg-subtle border border-border text-text-muted hover:text-text-main"
-                              }`}
-                            >
-                              <span className="material-symbols-outlined text-[12px] leading-none">
-                                volume_up
-                              </span>
-                              {selectedCap === "audio" && (
-                                <span className="uppercase text-[9px] font-semibold">audio</span>
-                              )}
-                            </button>
-                          )}
-                        </div>
-                        <span className="flex-1" />
-                        {(test || cachedBadge) && (
-                          <span
-                            className={`text-[10px] font-bold uppercase px-1.5 py-0.5 rounded ${
-                              (test ? test.ok : cust?.testStatus === "verified")
-                                ? "bg-emerald-500/15 text-emerald-500"
-                                : "bg-red-500/15 text-red-500"
-                            }`}
-                          >
-                            {(test ? test.ok : cust?.testStatus === "verified")
-                              ? "Verified"
-                              : "Failed"}
-                            {(test?.httpStatus ?? cust?.testHttpStatus) != null &&
-                              ` · ${test?.httpStatus ?? cust?.testHttpStatus}`}
-                          </span>
-                        )}
-                        <button
-                          type="button"
-                          onClick={() => void handleTest(providerId, m.id)}
-                          disabled={testingId === key}
-                          className="flex items-center gap-1 px-2.5 py-1 rounded-lg border border-border text-xs font-medium text-text-muted hover:text-text-main hover:border-primary/40 transition-colors disabled:opacity-50 cursor-pointer"
-                          title={`Test model with ${selectedCap.toUpperCase()} capability prompt`}
-                        >
-                          <span
-                            className={`material-symbols-outlined text-[14px]${
-                              testingId === key ? " animate-spin" : ""
-                            }`}
-                          >
-                            {testingId === key ? "progress_activity" : "play_arrow"}
-                          </span>
-                          {testingId === key ? `Testing (${selectedCap})…` : `Test (${selectedCap})`}
-                        </button>
-                      </div>
+              {/* Models List */}
+              {isOpen && (
+                <div className="border-t border-white/[0.06] divide-y divide-white/[0.04]">
+                  {models.length === 0 && (
+                    <p className="px-4 py-3 text-xs text-zinc-400 font-mono">
+                      {all.length === 0
+                        ? "No synced models for this provider yet — click Fetch Models above."
+                        : "No models match your search."}
+                    </p>
+                  )}
+                  {models.map((m) => {
+                    const key = `${providerId}::${m.id}`;
+                    const cust = customizationByModel.get(key);
+                    const isActive = cust?.isActive !== false;
+                    const draft = aliasDrafts[key] ?? {
+                      name: cust?.customName ?? "",
+                      alias: cust?.customAlias ?? "",
+                    };
+                    const ctxTokens = cust?.contextWindow ?? m.contextWindow ?? m.inputTokenLimit;
+                    const ctxLabel = formatContextWindow(ctxTokens ?? null);
+                    const capsMeta = getSyncedModelCapabilities(m, cust);
+                    const selectedCap = selectedCapabilities[key] || "text";
+                    const autoFree = m.isFree === true || isCatalogFreeModel(providerId, m.id);
+                    const isFree =
+                      cust?.isFreeOverride === true
+                        ? true
+                        : cust?.isFreeOverride === false
+                          ? false
+                          : autoFree;
+                    const test = testResults[key];
+                    const cachedBadge = !test && cust?.isTested && cust.testStatus;
 
-                      {(test?.preview || (cachedBadge && cust?.testResponse)) && (
-                        <p className="text-xs text-text-muted bg-bg-subtle/70 border border-border/60 rounded-lg px-3 py-2 break-words whitespace-pre-wrap">
-                          {(test?.preview ?? cust?.testResponse ?? "").slice(0, 500)}
-                          {(test?.latencyMs ?? cust?.testLatencyMs) != null &&
-                            ` — ${test?.latencyMs ?? cust?.testLatencyMs}ms`}
-                        </p>
-                      )}
-
-                      {isActive && (
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-1">
-                          <label className="flex flex-col gap-1 text-xs text-text-muted">
-                            <span>
-                              Original name:{" "}
-                              <span className="text-text-main font-mono">{m.name || m.id}</span>
-                            </span>
+                    return (
+                      <div key={m.id} className="px-3.5 py-2 space-y-1.5 hover:bg-white/[0.015] transition-colors">
+                        {/* Compact Top Bar: Toggle, ID, Badges, Modality Pills, Test Button */}
+                        <div className="flex flex-wrap items-center gap-2">
+                          {/* Cupertino iOS Switch for Active Status */}
+                          <label className="relative inline-flex items-center cursor-pointer shrink-0" title={isActive ? "Active (downstream accessible)" : "Disabled"}>
                             <input
-                              value={draft.name}
+                              type="checkbox"
+                              checked={isActive}
                               onChange={(e) =>
-                                setAliasDrafts((prev) => ({
-                                  ...prev,
-                                  [key]: { ...draft, name: e.target.value },
-                                }))
+                                void handleToggleActive(providerId, m.id, e.target.checked)
                               }
-                              placeholder="Custom display name (blank = original)"
-                              className="rounded-lg border border-border bg-bg-subtle px-2.5 py-1.5 text-sm text-text-main placeholder:text-text-muted focus:outline-none focus:border-primary/50"
+                              aria-label={`Activate ${m.id}`}
+                              className="sr-only"
                             />
+                            <div
+                              className={`w-7.5 h-4.5 rounded-full transition-colors duration-200 ease-in-out p-0.5 flex items-center ${
+                                isActive ? "bg-cyan-500 shadow-sm shadow-cyan-500/30" : "bg-white/20"
+                              }`}
+                            >
+                              <div
+                                className={`size-3.5 rounded-full bg-white shadow-sm transform transition-transform duration-200 ease-in-out ${
+                                  isActive ? "translate-x-3" : "translate-x-0"
+                                }`}
+                              />
+                            </div>
                           </label>
-                          <label className="flex flex-col gap-1 text-xs text-text-muted">
-                            <span>
-                              Original API id:{" "}
-                              <span className="text-text-main font-mono">{m.id}</span>
+
+                          <span className="font-mono text-xs font-semibold text-white break-all select-all">
+                            {m.id}
+                          </span>
+
+                          <button
+                            type="button"
+                            onClick={() => handleCopy(m.id)}
+                            title="Copy model ID"
+                            aria-label={`Copy model ID ${m.id}`}
+                            className="size-5 rounded hover:bg-white/10 text-zinc-400 hover:text-white flex items-center justify-center transition-colors cursor-pointer"
+                          >
+                            <span className="material-symbols-outlined text-[14px]">
+                              {copiedId === m.id ? "check" : "content_copy"}
                             </span>
-                            <span className="flex gap-2">
+                          </button>
+
+                          {/* Cupertino FREE / PAID pill button */}
+                          <button
+                            type="button"
+                            title="Toggle FREE/PAID tier override"
+                            onClick={() =>
+                              void handleFreeOverride(
+                                providerId,
+                                m.id,
+                                cust?.isFreeOverride == null
+                                  ? true
+                                  : cust.isFreeOverride === true
+                                    ? false
+                                    : null
+                              )
+                            }
+                            className={`text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border transition-all cursor-pointer active:scale-95 ${
+                              isFree
+                                ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/25"
+                                : "bg-amber-500/15 text-amber-400 border-amber-500/30 hover:bg-amber-500/25"
+                            }`}
+                          >
+                            {isFree ? "FREE" : "PAID"}
+                            {cust?.isFreeOverride != null && (
+                              <span className="ml-1 opacity-70 normal-case text-[8px]">manual</span>
+                            )}
+                          </button>
+
+                          {ctxLabel && (
+                            <span className="text-[9px] font-mono px-2 py-0.5 rounded-full bg-white/5 border border-white/10 text-zinc-400">
+                              {ctxLabel} ctx
+                            </span>
+                          )}
+
+                          {/* Cupertino Capability Selector Segmented Control */}
+                          <div className="inline-flex items-center p-0.5 rounded-full bg-black/40 border border-white/10 gap-0.5">
+                            {capsMeta.hasChat && (
+                              <button
+                                type="button"
+                                onClick={() => handleSelectCapability(key, "text")}
+                                title="Text capability"
+                                className={`px-1.5 py-0.5 rounded-full text-[9px] font-medium transition-all inline-flex items-center gap-1 cursor-pointer ${
+                                  selectedCap === "text"
+                                    ? "bg-cyan-500/25 text-cyan-300 border border-cyan-400/40 ring-1 ring-cyan-400/20 font-semibold"
+                                    : "text-zinc-400 hover:text-white"
+                                }`}
+                              >
+                                <span className="material-symbols-outlined text-[12px] leading-none">
+                                  chat
+                                </span>
+                                {selectedCap === "text" && <span>text</span>}
+                              </button>
+                            )}
+                            {capsMeta.hasCode && (
+                              <button
+                                type="button"
+                                onClick={() => handleSelectCapability(key, "code")}
+                                title="Code capability"
+                                className={`px-1.5 py-0.5 rounded-full text-[9px] font-medium transition-all inline-flex items-center gap-1 cursor-pointer ${
+                                  selectedCap === "code"
+                                    ? "bg-cyan-500/25 text-cyan-300 border border-cyan-400/40 ring-1 ring-cyan-400/20 font-semibold"
+                                    : "text-zinc-400 hover:text-white"
+                                }`}
+                              >
+                                <span className="material-symbols-outlined text-[12px] leading-none">
+                                  code
+                                </span>
+                                {selectedCap === "code" && <span>code</span>}
+                              </button>
+                            )}
+                            {capsMeta.hasVision && (
+                              <button
+                                type="button"
+                                onClick={() => handleSelectCapability(key, "vision")}
+                                title="Vision capability"
+                                className={`px-1.5 py-0.5 rounded-full text-[9px] font-medium transition-all inline-flex items-center gap-1 cursor-pointer ${
+                                  selectedCap === "vision"
+                                    ? "bg-cyan-500/25 text-cyan-300 border border-cyan-400/40 ring-1 ring-cyan-400/20 font-semibold"
+                                    : "text-zinc-400 hover:text-white"
+                                }`}
+                              >
+                                <span className="material-symbols-outlined text-[12px] leading-none">
+                                  visibility
+                                </span>
+                                {selectedCap === "vision" && <span>vision</span>}
+                              </button>
+                            )}
+                            {capsMeta.hasReasoning && (
+                              <button
+                                type="button"
+                                onClick={() => handleSelectCapability(key, "reasoning")}
+                                title="Reasoning capability"
+                                className={`px-1.5 py-0.5 rounded-full text-[9px] font-medium transition-all inline-flex items-center gap-1 cursor-pointer ${
+                                  selectedCap === "reasoning"
+                                    ? "bg-cyan-500/25 text-cyan-300 border border-cyan-400/40 ring-1 ring-cyan-400/20 font-semibold"
+                                    : "text-zinc-400 hover:text-white"
+                                }`}
+                              >
+                                <span className="material-symbols-outlined text-[12px] leading-none">
+                                  psychology
+                                </span>
+                                {selectedCap === "reasoning" && <span>reason</span>}
+                              </button>
+                            )}
+                            {capsMeta.hasSearch && (
+                              <button
+                                type="button"
+                                onClick={() => handleSelectCapability(key, "search")}
+                                title="Search capability"
+                                className={`px-1.5 py-0.5 rounded-full text-[9px] font-medium transition-all inline-flex items-center gap-1 cursor-pointer ${
+                                  selectedCap === "search"
+                                    ? "bg-cyan-500/25 text-cyan-300 border border-cyan-400/40 ring-1 ring-cyan-400/20 font-semibold"
+                                    : "text-zinc-400 hover:text-white"
+                                }`}
+                              >
+                                <span className="material-symbols-outlined text-[12px] leading-none">
+                                  travel_explore
+                                </span>
+                                {selectedCap === "search" && <span>search</span>}
+                              </button>
+                            )}
+                            {capsMeta.hasAudio && (
+                              <button
+                                type="button"
+                                onClick={() => handleSelectCapability(key, "audio")}
+                                title="Audio capability"
+                                className={`px-1.5 py-0.5 rounded-full text-[9px] font-medium transition-all inline-flex items-center gap-1 cursor-pointer ${
+                                  selectedCap === "audio"
+                                    ? "bg-cyan-500/25 text-cyan-300 border border-cyan-400/40 ring-1 ring-cyan-400/20 font-semibold"
+                                    : "text-zinc-400 hover:text-white"
+                                }`}
+                              >
+                                <span className="material-symbols-outlined text-[12px] leading-none">
+                                  volume_up
+                                </span>
+                                {selectedCap === "audio" && <span>audio</span>}
+                              </button>
+                            )}
+                          </div>
+
+                          <div className="flex-1" />
+
+                          {/* Test Status Badge */}
+                          {(test || cachedBadge) && (
+                            <span
+                              className={`text-[9px] font-bold uppercase px-2 py-0.5 rounded-full border ${
+                                (test ? test.ok : cust?.testStatus === "verified")
+                                  ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/30"
+                                  : "bg-red-500/15 text-red-400 border-red-500/30"
+                              }`}
+                            >
+                              {(test ? test.ok : cust?.testStatus === "verified")
+                                ? "Verified"
+                                : "Failed"}
+                              {(test?.httpStatus ?? cust?.testHttpStatus) != null &&
+                                ` · ${test?.httpStatus ?? cust?.testHttpStatus}`}
+                            </span>
+                          )}
+
+                          {/* Cupertino Test Button */}
+                          <button
+                            type="button"
+                            onClick={() => void handleTest(providerId, m.id)}
+                            disabled={testingId === key}
+                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-white/10 hover:bg-white/15 active:scale-95 text-white border border-white/15 transition-all disabled:opacity-50 cursor-pointer shadow-xs"
+                            title={`Test model with ${selectedCap.toUpperCase()} prompt`}
+                          >
+                            <span
+                              className={`material-symbols-outlined text-[13px] ${
+                                testingId === key ? "animate-spin" : ""
+                              }`}
+                            >
+                              {testingId === key ? "progress_activity" : "play_arrow"}
+                            </span>
+                            <span>{testingId === key ? `Testing…` : `Test (${selectedCap})`}</span>
+                          </button>
+                        </div>
+
+                        {/* Test Response Preview */}
+                        {(test?.preview || (cachedBadge && cust?.testResponse)) && (
+                          <div className="p-2 rounded-xl bg-black/50 border border-white/10 text-[11px] font-mono text-zinc-300 break-words leading-relaxed">
+                            <span>{(test?.preview ?? cust?.testResponse ?? "").slice(0, 500)}</span>
+                            {(test?.latencyMs ?? cust?.testLatencyMs) != null && (
+                              <span className="text-zinc-500 font-sans ml-2 text-[10px]">
+                                · {test?.latencyMs ?? cust?.testLatencyMs}ms
+                              </span>
+                            )}
+                          </div>
+                        )}
+
+                        {/* Cupertino Inset Manageable Alias Fields with Minimal Gaps */}
+                        {isActive && (
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1 border-t border-white/[0.04]">
+                            <div className="flex items-center gap-1.5 min-w-0">
+                              <span className="text-[10px] uppercase font-mono tracking-wider text-zinc-500 shrink-0">
+                                Display:
+                              </span>
+                              <input
+                                value={draft.name}
+                                onChange={(e) =>
+                                  setAliasDrafts((prev) => ({
+                                    ...prev,
+                                    [key]: { ...draft, name: e.target.value },
+                                  }))
+                                }
+                                placeholder={m.name || m.id}
+                                className="flex-1 h-6.5 px-2 py-0.5 text-[11px] bg-black/40 border border-white/10 rounded-md text-white font-mono placeholder:text-zinc-600 focus:outline-none focus:border-cyan-400/60 focus:ring-1 focus:ring-cyan-400/30 transition-all"
+                              />
+                            </div>
+
+                            <div className="flex items-center gap-1.5 min-w-0">
+                              <span className="text-[10px] uppercase font-mono tracking-wider text-zinc-500 shrink-0">
+                                Alias ID:
+                              </span>
                               <input
                                 value={draft.alias}
                                 onChange={(e) =>
@@ -1029,29 +1048,29 @@ export default function ManageModelsPanel() {
                                     [key]: { ...draft, alias: e.target.value },
                                   }))
                                 }
-                                placeholder="Custom API call id / alias"
-                                className="flex-1 rounded-lg border border-border bg-bg-subtle px-2.5 py-1.5 text-sm text-text-main placeholder:text-text-muted focus:outline-none focus:border-primary/50"
+                                placeholder={m.id}
+                                className="flex-1 h-6.5 px-2 py-0.5 text-[11px] bg-black/40 border border-white/10 rounded-md text-white font-mono placeholder:text-zinc-600 focus:outline-none focus:border-cyan-400/60 focus:ring-1 focus:ring-cyan-400/30 transition-all"
                               />
                               <button
                                 type="button"
                                 onClick={() => void handleSaveAlias(providerId, m.id)}
                                 disabled={savingAlias === key}
-                                className="px-2.5 py-1.5 rounded-lg border border-border text-xs font-medium text-text-muted hover:text-text-main hover:border-primary/40 transition-colors disabled:opacity-50"
+                                className="h-6.5 px-2.5 rounded-md text-[11px] font-semibold bg-cyan-500/20 text-cyan-300 hover:bg-cyan-500/30 border border-cyan-400/30 active:scale-95 transition-all disabled:opacity-50 cursor-pointer shrink-0"
                               >
                                 {savingAlias === key ? "Saving…" : "Save"}
                               </button>
-                            </span>
-                          </label>
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </Card>
-        );
-      })}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }

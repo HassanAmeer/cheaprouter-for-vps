@@ -362,23 +362,20 @@ export default function DefaultCapabilitiesPromptModal({
 
   return (
     <>
-      {/* ── Top-Right Header Trigger Button ── */}
+      {/* ── Top-Right Header Trigger Button (Cupertino iOS Outline Style) ── */}
       <button
         type="button"
         onClick={onToggle}
-        className={`inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-medium border transition-all cursor-pointer shadow-sm ${
+        className={`inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-semibold border transition-all cursor-pointer shadow-sm active:scale-95 ${
           isOpen
-            ? "bg-white text-black border-white ring-2 ring-white/20"
-            : "bg-[#141414] text-[#C0C0C0] hover:text-white hover:bg-[#1C1C1C] border-[#2A2A2A] hover:border-[#404040]"
+            ? "bg-cyan-500/20 text-cyan-300 border-cyan-400/80 ring-2 ring-cyan-400/30"
+            : "border-cyan-500/40 bg-cyan-500/[0.06] text-cyan-400 hover:bg-cyan-500/15 hover:border-cyan-400/70"
         }`}
         title="Configure the global capabilities prompt sent during model verification"
       >
         <span className="material-symbols-outlined text-[17px] text-cyan-400">psychology_alt</span>
-        <span className="font-semibold">Default Capabilities Prompt</span>
-        <span className="material-symbols-outlined text-[15px] opacity-60">info</span>
-        <span className="material-symbols-outlined text-[16px] transition-transform">
-          {isOpen ? "close" : "tune"}
-        </span>
+        <span>Default Capabilities Prompt</span>
+        <span className="material-symbols-outlined text-[15px] opacity-70">tune</span>
       </button>
 
       {/* ── Render Cupertino Right-Side Sheet into Portal ── */}

@@ -73,14 +73,27 @@ export async function GET(request: Request) {
       // ignore
     }
 
-    const rawConnectedIds = connections
-      .map((c) => (typeof c.provider === "string" ? c.provider : ""))
-      .filter(Boolean);
-    const nodeIds = providerNodes
-      .map((n) => (n.prefix ? String(n.prefix) : String(n.id || "")))
-      .filter(Boolean);
+    const { isProviderConnectionConnected } = await import(
+      "@/shared/utils/providerConnectionStatus"
+    );
 
-    const connectedProviderIds = Array.from(new Set([...rawConnectedIds, ...nodeIds]));
+    // Only active, genuinely connected connections (not paused, not disabled)
+    const activeConnections = connections.filter((c) => isProviderConnectionConnected(c));
+    const activeConnectedProviderSet = new Set(
+      activeConnections
+        .map((c) => (typeof c.provider === "string" ? c.provider : ""))
+        .filter(Boolean)
+    );
+
+    // Active custom provider nodes that have an active connection
+    const activeNodeIds = providerNodes
+      .filter((n: any) => n.isActive !== false)
+      .map((n) => (n.prefix ? String(n.prefix) : String(n.id || "")))
+      .filter((nid) => activeConnectedProviderSet.has(nid));
+
+    const connectedProviderIds = Array.from(
+      new Set([...Array.from(activeConnectedProviderSet), ...activeNodeIds])
+    );
 
     const { getCustomModels } = await import("@/lib/db/models");
     const { getModelsByProviderId } = await import("@/shared/constants/models");
