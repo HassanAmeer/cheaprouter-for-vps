@@ -1031,6 +1031,8 @@
     "home": "Home",
     "dashboard": "Dashboard",
     "providers": "Providers",
+    "manageModels": "Manage Models",
+    "manageModelsSubtitle": "Activate, alias & test models",
     "combos": "Combos",
     "usage": "Usage",
     "analytics": "Analytics",

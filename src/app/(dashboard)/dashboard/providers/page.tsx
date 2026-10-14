@@ -38,7 +38,6 @@ import {
 import type { ProviderEntry, OpenRouterProviderStatsEntry } from "./providerPageUtils";
 import { OpenRouterProviderStatsProvider } from "./context/openRouterProviderStatsContext";
 import { ProviderTabs } from "./components/ProviderTabs";
-import ManageModelsPanel from "./components/ManageModelsPanel";
 import ResellerApiPanel from "./components/ResellerApiPanel";
 import {
   shouldSyncProviderDisplayMode,
@@ -908,13 +907,10 @@ function ProvidersPageContent() {
           onTabChange={setActiveTab}
         />
 
-        {/* Reseller Tab 4: Manage Models — studio for connected providers only */}
-        {activeTab === "manage-models" && <ManageModelsPanel />}
-
-        {/* Reseller Tab 5: Reseller API — exposure + master BYOK switch */}
+        {/* Reseller API — exposure + master BYOK switch */}
         {activeTab === "reseller-api" && <ResellerApiPanel />}
 
-        {activeTab !== "manage-models" && activeTab !== "reseller-api" && (
+        {activeTab !== "reseller-api" && (
         <>
         <ProviderSummaryCard
           activeCategory={activeCategory}

@@ -36,6 +36,15 @@ const CHEAP_PROXY_ITEMS: readonly SidebarItemDefinition[] = [
     icon: "dns",
   },
   {
+    id: "manage-models",
+    href: "/dashboard/manage-models",
+    i18nKey: "manageModels",
+    labelFallback: "Manage Models",
+    subtitleKey: "manageModelsSubtitle",
+    subtitleFallback: "Activate, alias & test models",
+    icon: "tune",
+  },
+  {
     id: "combos",
     href: "/dashboard/combos",
     i18nKey: "combos",

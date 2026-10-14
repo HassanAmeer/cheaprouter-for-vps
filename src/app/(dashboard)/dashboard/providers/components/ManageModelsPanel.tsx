@@ -556,24 +556,37 @@ export default function ManageModelsPanel() {
 
   if (providerIds.length === 0) {
     return (
-      <Card className="p-6">
-        <p className="text-sm text-text-muted">
-          No connected providers yet. Connect a provider first — its models will appear here for
-          activation, aliasing, and testing.
-        </p>
-      </Card>
+      <div className="flex flex-col gap-6">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight text-text-main flex items-center gap-2.5">
+            <span className="material-symbols-outlined text-cyan-400 text-3xl">tune</span>
+            Manage Models
+          </h1>
+          <p className="text-sm text-text-muted mt-1">
+            Configure active models, custom aliases, live capability verification, and billing tiers.
+          </p>
+        </div>
+        <Card className="p-6">
+          <p className="text-sm text-text-muted">
+            No connected providers yet. Connect a provider first — its models will appear here for
+            activation, aliasing, and testing.
+          </p>
+        </Card>
+      </div>
     );
   }
 
   return (
     <div className="flex flex-col gap-4">
       {/* ── Top Header Bar with Capabilities Test Suite Trigger ── */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2 border-b border-border/40">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-border/40">
         <div>
-          <h2 className="text-base font-semibold text-text-main">Manage Models Studio</h2>
-          <p className="text-xs text-text-muted">
-            Configure active models, custom aliases, live capability verification, and billing
-            tiers.
+          <h1 className="text-2xl font-bold tracking-tight text-text-main flex items-center gap-2.5">
+            <span className="material-symbols-outlined text-cyan-400 text-3xl">tune</span>
+            Manage Models
+          </h1>
+          <p className="text-sm text-text-muted mt-1">
+            Configure active models, custom aliases, live capability verification, and billing tiers.
           </p>
         </div>
         <div className="self-end sm:self-auto">

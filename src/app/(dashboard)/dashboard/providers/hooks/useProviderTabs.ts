@@ -2,7 +2,6 @@ export type ProviderTab =
   | "all-providers"
   | "connected"
   | "unconnected"
-  | "manage-models"
   | "reseller-api";
 
 export type ProviderTabsConfig = Array<{
@@ -40,14 +39,6 @@ export const PROVIDER_TABS_CONFIG: ProviderTabsConfig = [
     icon: "add_circle",
   },
   {
-    id: "manage-models",
-    key: "manageModelsTab",
-    fallback: "Manage Models",
-    descriptionKey: "manageModelsTabDesc",
-    descriptionFallback: "Activate, alias, and test models from connected providers.",
-    icon: "tune",
-  },
-  {
     id: "reseller-api",
     key: "resellerApiTab",
     fallback: "Reseller API Manage Providers",
@@ -61,7 +52,7 @@ export const PROVIDER_TABS_CONFIG: ProviderTabsConfig = [
  * Maps a ProviderTab to the underlying provider category strings used for
  * filtering the provider list. Only relevant for the list-based tabs.
  */
-export function tabToCategories(tab: ProviderTab): string[] {
+export function tabToCategories(_tab: ProviderTab): string[] {
   // All category-based tabs show the full list; filtering is done by connection status
   return [
     "apikey",

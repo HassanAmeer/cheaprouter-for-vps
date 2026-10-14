@@ -7,6 +7,7 @@ export const HIDEABLE_SIDEBAR_ITEM_IDS = [
   // CheapProxy
   "api-manager",
   "providers",
+  "manage-models",
   "combos",
   "limits",
   // Multi-tenant / reseller
