@@ -105,31 +105,31 @@ export function PayloadSection({
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-2">
-        <div className="flex items-center gap-3">
-          <h3 className="text-[11px] text-text-muted uppercase tracking-wider font-bold">
+      <div className="flex items-center justify-between mb-1 sm:mb-1.5">
+        <div className="flex items-center gap-2">
+          <h3 className="text-[10px] text-white/50 uppercase tracking-wider font-semibold">
             {title}
           </h3>
           {collapsible && (
             <button
               onClick={() => setOpen((v) => !v)}
-              className="p-1 rounded hover:bg-bg-subtle text-text-muted hover:text-text-primary transition-colors"
+              className="p-0.5 rounded-full hover:bg-white/10 text-white/50 hover:text-white transition-colors"
               aria-label={open ? t("collapse", { title }) : t("expand", { title })}
             >
-              <span className="material-symbols-outlined text-[16px]">
+              <span className="material-symbols-outlined text-[15px]">
                 {open ? "expand_less" : "expand_more"}
               </span>
             </button>
           )}
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5">
           {!notice && (
             <button
               onClick={handleCopy}
-              className="flex items-center gap-1 px-2 py-1 text-xs text-text-muted hover:text-text-primary transition-colors"
+              className="flex items-center gap-1 px-2 py-0.5 text-[11px] rounded-full bg-white/5 hover:bg-white/10 text-white/60 hover:text-white transition-colors"
               aria-label={t("copyTitle", { title })}
             >
-              <span className="material-symbols-outlined text-[14px]">
+              <span className="material-symbols-outlined text-[13px]">
                 {copied ? "check" : "content_copy"}
               </span>
               {copied ? t("copied") : t("copy")}
@@ -139,7 +139,7 @@ export function PayloadSection({
         </div>
       </div>
       {open && notice && (
-        <div className="p-4 rounded-xl border border-amber-500/40 bg-amber-500/10 text-xs text-amber-700 dark:text-amber-300 flex items-start gap-2">
+        <div className="p-2.5 rounded-xl border border-amber-500/30 bg-amber-500/10 text-xs text-amber-300 flex items-start gap-1.5">
           <span className="material-symbols-outlined text-[16px] shrink-0">warning</span>
           <span>{t("payloadSizeLimitOmitted")}</span>
         </div>
@@ -147,7 +147,7 @@ export function PayloadSection({
       {open && !notice && parsedJson !== null && (
         <div
           ref={treeContainerRef}
-          className="rounded-xl bg-black/5 dark:bg-black/30 border border-border max-h-150 overflow-auto p-4 text-xs font-mono"
+          className="rounded-xl bg-black/40 border border-white/[0.08] max-h-120 overflow-auto p-2.5 sm:p-3 text-xs font-mono"
         >
           <JsonView
             src={parsedJson}
@@ -159,7 +159,7 @@ export function PayloadSection({
         </div>
       )}
       {open && !notice && parsedJson === null && (
-        <pre className="p-4 rounded-xl bg-black/5 dark:bg-black/30 border border-border overflow-x-auto text-xs font-mono text-text-main max-h-150 overflow-y-auto leading-relaxed whitespace-pre-wrap break-words">
+        <pre className="p-2.5 sm:p-3 rounded-xl bg-black/40 border border-white/[0.08] overflow-x-auto text-xs font-mono text-white/90 max-h-120 overflow-y-auto leading-relaxed whitespace-pre-wrap break-words">
           {json}
         </pre>
       )}
@@ -298,31 +298,27 @@ export function ConversationContextSection({ log, detail }) {
 
   return (
     <div>
-      <div className="flex items-center justify-between gap-3 mb-2">
-        <div className="flex items-center gap-3">
-          <h3 className="text-[11px] text-text-muted uppercase tracking-wider font-bold">
+      <div className="flex items-center justify-between gap-2 mb-1 sm:mb-1.5">
+        <div className="flex items-center gap-2">
+          <h3 className="text-[10px] text-white/50 uppercase tracking-wider font-semibold">
             Conversation Context
           </h3>
           <button
             onClick={() => setOpen((v) => !v)}
-            className="p-1 rounded hover:bg-bg-subtle text-text-muted hover:text-text-primary transition-colors"
+            className="p-0.5 rounded-full hover:bg-white/10 text-white/50 hover:text-white transition-colors"
             aria-label={open ? "Collapse Conversation Context" : "Expand Conversation Context"}
           >
-            <span className="material-symbols-outlined text-[16px]">
+            <span className="material-symbols-outlined text-[15px]">
               {open ? "expand_less" : "expand_more"}
             </span>
           </button>
           {liveDetail?.parentLogId && (
-            // Full navigation, not client-side routing: the logs page only reads
-            // ?id from a fresh mount (useState(() => searchParams.get("id")) in
-            // dashboard/logs/page.tsx), so an in-page route change wouldn't load
-            // the parent entry if the user is already on this page.
             <a
               href={`/dashboard/logs?id=${encodeURIComponent(liveDetail.parentLogId)}`}
-              className="flex items-center gap-1 text-[11px] text-text-muted hover:text-primary transition-colors"
+              className="flex items-center gap-1 text-[10px] text-white/50 hover:text-primary transition-colors"
               title={`Continues from ${liveDetail.parentLogId}`}
             >
-              <span className="material-symbols-outlined text-[14px]">reply</span>
+              <span className="material-symbols-outlined text-[13px]">reply</span>
               continues from parent
             </a>
           )}
@@ -333,10 +329,10 @@ export function ConversationContextSection({ log, detail }) {
               <button
                 onClick={toggleLiveRefresh}
                 title={liveRefresh ? "Live refresh: on" : "Live refresh: off"}
-                className={`p-1 rounded hover:bg-bg-subtle text-text-muted hover:text-text-primary transition-colors ${liveRefresh ? "text-primary" : ""}`}
+                className={`p-0.5 rounded-full hover:bg-white/10 text-white/50 hover:text-white transition-colors ${liveRefresh ? "text-primary" : ""}`}
                 aria-pressed={liveRefresh}
               >
-                <span className="material-symbols-outlined text-[18px]">
+                <span className="material-symbols-outlined text-[16px]">
                   {liveRefresh ? "sync" : "sync_disabled"}
                 </span>
               </button>
@@ -344,10 +340,10 @@ export function ConversationContextSection({ log, detail }) {
             <button
               onClick={scrollToBottom}
               title="Go to bottom"
-              className="p-1 rounded hover:bg-bg-subtle text-text-muted hover:text-text-primary transition-colors"
+              className="p-0.5 rounded-full hover:bg-white/10 text-white/50 hover:text-white transition-colors"
               aria-label="Go to bottom"
             >
-              <span className="material-symbols-outlined text-[18px]">vertical_align_bottom</span>
+              <span className="material-symbols-outlined text-[16px]">vertical_align_bottom</span>
             </button>
           </div>
         )}
@@ -355,7 +351,7 @@ export function ConversationContextSection({ log, detail }) {
       {open && (
         <div
           ref={turnsBoxRef}
-          className="rounded-xl bg-black/5 dark:bg-black/30 border border-border max-h-150 overflow-y-auto p-3 space-y-2"
+          className="rounded-xl bg-black/40 border border-white/[0.08] max-h-120 overflow-y-auto p-2.5 space-y-1.5"
         >
           {allTurns.map((turn, i) => (
             <ChatBubble key={i} turn={turn} />

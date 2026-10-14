@@ -239,45 +239,45 @@ function StreamSection({ title, sectionId, json, onCopy }) {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-2">
-        <div className="flex items-center gap-3">
-          <h3 className="text-[11px] text-text-muted uppercase tracking-wider font-bold">
+      <div className="flex items-center justify-between mb-1 sm:mb-1.5">
+        <div className="flex items-center gap-2">
+          <h3 className="text-[10px] text-white/50 uppercase tracking-wider font-semibold">
             {title}
           </h3>
           <button
             onClick={() => setOpen((v) => !v)}
-            className="p-1 rounded hover:bg-bg-subtle text-text-muted hover:text-text-primary transition-colors"
+            className="p-0.5 rounded-full hover:bg-white/10 text-white/50 hover:text-white transition-colors"
             aria-label={open ? t("collapse", { title }) : t("expand", { title })}
           >
-            <span className="material-symbols-outlined text-[16px]">
+            <span className="material-symbols-outlined text-[15px]">
               {open ? "expand_less" : "expand_more"}
             </span>
           </button>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5">
           <button
             onClick={toggleRaw}
             title={showRaw ? t("rawViewOn") : t("rawViewOff")}
             aria-label={showRaw ? t("rawViewOn") : t("rawViewOff")}
-            className={`p-1 rounded hover:bg-bg-subtle text-text-muted hover:text-text-primary transition-colors ${showRaw ? "text-primary" : ""}`}
+            className={`p-0.5 rounded-full hover:bg-white/10 text-white/50 hover:text-white transition-colors ${showRaw ? "text-primary" : ""}`}
             aria-pressed={showRaw}
           >
-            <span className="material-symbols-outlined text-[18px]">code</span>
+            <span className="material-symbols-outlined text-[16px]">code</span>
           </button>
           <button
             onClick={toggleAutoscroll}
             title={autoscroll ? t("autoscrollOn") : t("autoscrollOff")}
-            className={`p-1 rounded hover:bg-bg-subtle text-text-muted hover:text-text-primary transition-colors ${autoscroll ? "text-primary" : ""}`}
+            className={`p-0.5 rounded-full hover:bg-white/10 text-white/50 hover:text-white transition-colors ${autoscroll ? "text-primary" : ""}`}
             aria-pressed={autoscroll}
           >
-            <span className="material-symbols-outlined text-[18px]">vertical_align_bottom</span>
+            <span className="material-symbols-outlined text-[16px]">vertical_align_bottom</span>
           </button>
           <button
             onClick={handleCopy}
-            className="flex items-center gap-1 px-2 py-1 text-xs text-text-muted hover:text-text-primary transition-colors"
+            className="flex items-center gap-1 px-2 py-0.5 text-[11px] rounded-full bg-white/5 hover:bg-white/10 text-white/60 hover:text-white transition-colors"
             aria-label={t("copyTitle", { title })}
           >
-            <span className="material-symbols-outlined text-[14px]">
+            <span className="material-symbols-outlined text-[13px]">
               {copied ? "check" : "content_copy"}
             </span>
             {copied ? t("copied") : t("copy")}
@@ -290,7 +290,7 @@ function StreamSection({ title, sectionId, json, onCopy }) {
       {open && (
         <div
           ref={ref}
-          className="p-4 rounded-xl bg-black/5 dark:bg-black/30 border border-border overflow-x-auto text-xs font-mono text-text-main max-h-150 overflow-y-auto leading-relaxed"
+          className="p-2.5 sm:p-3 rounded-xl bg-black/40 border border-white/[0.08] overflow-x-auto text-xs font-mono text-white/90 max-h-120 overflow-y-auto leading-relaxed"
         >
           {showRaw ? (
             <pre className="whitespace-pre-wrap break-words">{json}</pre>
@@ -476,7 +476,15 @@ export default function RequestLoggerDetail({
   };
 
   const pipelinePayloads = detail?.pipelinePayloads || null;
-  const payloadSections = pipelinePayloads
+  const effectivePipelinePayloads = useMemo(() => {
+    const payloads: Record<string, unknown> = { ...(pipelinePayloads || {}) };
+    if (!payloads.providerResponse && (detail?.responseBody || log?.responseBody)) {
+      payloads.providerResponse = detail?.responseBody || log?.responseBody;
+    }
+    return Object.keys(payloads).length > 0 ? payloads : null;
+  }, [pipelinePayloads, detail?.responseBody, log?.responseBody]);
+
+  const payloadSections = effectivePipelinePayloads
     ? buildPipelinePayloadSections(
         [
           ["clientRawRequest", t("payload.clientRawRequest")],
@@ -487,9 +495,25 @@ export default function RequestLoggerDetail({
           ["clientResponse", t("payload.clientResponse")],
           ["error", t("payload.pipelineError")],
         ],
-        pipelinePayloads
+        effectivePipelinePayloads
       )
     : [];
+
+  const rawUpstreamError = useMemo(() => {
+    if (detail?.errorDetails) return detail.errorDetails;
+    if (log?.errorDetails) return log.errorDetails;
+    const provResp = detail?.pipelinePayloads?.providerResponse;
+    if (provResp && typeof provResp === "object") {
+      if ("body" in provResp && (provResp as Record<string, unknown>).body) {
+        return (provResp as Record<string, unknown>).body;
+      }
+      return provResp;
+    }
+    if (detail?.responseBody && (log.status >= 400 || log.status === 0)) {
+      return detail.responseBody;
+    }
+    return null;
+  }, [detail, log]);
   const requestBodyOmitted = isBodySizeLimitOmission(detail?.requestBody);
   const responseBodyOmitted = isBodySizeLimitOmission(detail?.responseBody);
   const requestJson = detail?.requestBody ? toPrettyJson(detail.requestBody) : null;
@@ -560,62 +584,56 @@ export default function RequestLoggerDetail({
   const codexAccountRotation = getCodexAccountRotation(detail);
   return (
     <div
-      className="fixed inset-0 z-50 flex items-start justify-center px-2 pt-[5vh] sm:px-4"
+      className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4"
       onClick={onClose}
       onWheel={handleOverlayWheel}
       role="dialog"
       aria-modal="true"
       aria-label={t("ariaLabel")}
     >
-      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+      <div className="absolute inset-0 bg-black/70 backdrop-blur-md" />
       <div
         ref={modalScrollRef}
-        className="relative w-full max-w-225 max-h-[90vh] overflow-x-hidden overflow-y-auto rounded-xl border border-border bg-bg-primary shadow-2xl"
+        className="relative w-[90%] max-w-[90%] sm:w-full sm:max-w-3xl lg:max-w-4xl max-h-[92vh] overflow-x-hidden overflow-y-auto rounded-2xl border border-white/10 bg-[#1c1c1e] text-white shadow-2xl transition-all"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Modal Header */}
-        <div className="sticky top-0 z-10 flex flex-wrap items-center justify-between gap-x-3 gap-y-2 px-4 py-3 border-b border-border bg-bg-primary/95 backdrop-blur-sm rounded-t-xl sm:px-6 sm:py-4">
-          <div className="flex flex-wrap items-center gap-2 min-w-0 sm:gap-3">
-            <div className="flex flex-col">
-              <div className="flex items-center gap-2">
-                {log.active ? (
-                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded text-xs font-bold bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/30">
-                    <span className="inline-block h-3 w-3 rounded-full border-2 border-current border-t-transparent animate-spin" />
-                  </span>
-                ) : log.status === 0 ? (
-                  <span className="inline-block px-2.5 py-1 rounded text-xs font-bold bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30">
-                    {t("completed")}
-                  </span>
-                ) : (
-                  <span
-                    className="inline-block px-2.5 py-1 rounded text-xs font-bold"
-                    style={{ backgroundColor: statusStyle.bg, color: statusStyle.text }}
-                  >
-                    {log.status}
-                  </span>
-                )}
-                {hasStatusDiscrepancy && (
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-bg-subtle border border-border text-text-muted">
-                    {t("upstreamStatus", { status: providerStatus })}
-                  </span>
-                )}
-                {log.method && <span className="font-bold text-lg">{log.method}</span>}
-              </div>
-              {hasStatusDiscrepancy && (
-                <span className="text-[10px] text-amber-600 dark:text-amber-400 font-medium mt-0.5">
-                  {t("statusDiscrepancy", { status: log.status, provider: providerStatus })}
+        <div className="sticky top-0 z-20 flex flex-wrap items-center justify-between gap-2 px-3 py-2 sm:px-4 sm:py-2.5 border-b border-white/10 bg-[#1c1c1e]/90 backdrop-blur-xl">
+          <div className="flex flex-wrap items-center gap-1.5 sm:gap-2.5 min-w-0">
+            <div className="flex items-center gap-1.5">
+              {log.active ? (
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-amber-500/15 text-amber-400 border border-amber-500/30">
+                  <span className="inline-block h-2 w-2 rounded-full border-2 border-current border-t-transparent animate-spin" />
+                  <span>Active</span>
+                </span>
+              ) : log.status === 0 ? (
+                <span className="inline-block px-2 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+                  {t("completed")}
+                </span>
+              ) : (
+                <span
+                  className="inline-block px-2 py-0.5 rounded-full text-[11px] font-semibold"
+                  style={{ backgroundColor: statusStyle.bg, color: statusStyle.text }}
+                >
+                  {log.status}
                 </span>
               )}
+              {hasStatusDiscrepancy && (
+                <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-white/10 border border-white/10 text-white/70">
+                  {t("upstreamStatus", { status: providerStatus })}
+                </span>
+              )}
+              {log.method && <span className="font-bold text-xs sm:text-sm text-white/90">{log.method}</span>}
             </div>
-            <span className="text-text-muted font-mono text-sm self-center ml-2">{log.path}</span>
+            <span className="text-white/60 font-mono text-xs truncate max-w-[140px] sm:max-w-xs">{log.path}</span>
             {log.id && (
-              <span className="text-[10px] text-text-muted/50 font-mono self-center ml-2 px-1.5 py-0.5 rounded bg-bg-subtle border border-border/40 select-all">
+              <span className="text-[9px] text-white/40 font-mono px-1 py-0.5 rounded bg-white/5 border border-white/10 select-all hidden sm:inline-block">
                 {log.id}
               </span>
             )}
             {log.correlationId && (
               <span
-                className="text-[10px] text-text-muted/50 font-mono self-center ml-2 px-1.5 py-0.5 rounded bg-bg-subtle border border-border/40 select-all"
+                className="text-[9px] text-white/40 font-mono px-1 py-0.5 rounded bg-white/5 border border-white/10 select-all hidden sm:inline-block"
                 title={t("correlationId")}
               >
                 {t("correlationIdValue", { id: log.correlationId })}
@@ -625,111 +643,107 @@ export default function RequestLoggerDetail({
           <div className="flex items-center gap-1 shrink-0">
             <button
               onClick={handleCopyAll}
-              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg hover:bg-bg-subtle text-text-muted hover:text-text-primary transition-colors"
+              className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-white/10 hover:bg-white/15 text-white/80 hover:text-white transition-all text-xs font-medium active:scale-95"
               aria-label={t("copyAll")}
               title={t("copyAll")}
             >
-              <span className="material-symbols-outlined text-[16px]">
+              <span className="material-symbols-outlined text-[14px]">
                 {copiedAll ? "check" : "content_copy"}
               </span>
-              <span className="text-xs font-medium">
+              <span className="hidden sm:inline text-xs">
                 {copiedAll ? t("copiedAll") : t("copyAll")}
               </span>
             </button>
-            {/* Only rendered when a caller actually wires up navigation (RequestLoggerV2's
-                list view) — a caller with no ordered-list context to navigate through
-                (conversations page, RequestTimeline) passes neither, so there's nothing
-                to show instead of a permanently-disabled dead button. */}
             {(onPrevious || onNext) && (
               <>
                 <button
                   onClick={onPrevious}
                   disabled={!onPrevious}
-                  className="p-1.5 rounded-lg hover:bg-bg-subtle text-text-muted hover:text-text-primary transition-colors disabled:opacity-30 disabled:pointer-events-none"
+                  className="p-1 rounded-full bg-white/10 hover:bg-white/15 text-white/80 hover:text-white transition-all disabled:opacity-30 disabled:pointer-events-none active:scale-95"
                   aria-label={t("previousRequest")}
                 >
-                  <span className="material-symbols-outlined text-[18px]">chevron_left</span>
+                  <span className="material-symbols-outlined text-[16px]">chevron_left</span>
                 </button>
                 <button
                   onClick={onNext}
                   disabled={!onNext}
-                  className="p-1.5 rounded-lg hover:bg-bg-subtle text-text-muted hover:text-text-primary transition-colors disabled:opacity-30 disabled:pointer-events-none"
+                  className="p-1 rounded-full bg-white/10 hover:bg-white/15 text-white/80 hover:text-white transition-all disabled:opacity-30 disabled:pointer-events-none active:scale-95"
                   aria-label={t("nextRequest")}
                 >
-                  <span className="material-symbols-outlined text-[18px]">chevron_right</span>
+                  <span className="material-symbols-outlined text-[16px]">chevron_right</span>
                 </button>
               </>
             )}
             <button
               onClick={onClose}
-              className="p-1.5 rounded-lg hover:bg-bg-subtle text-text-muted hover:text-text-primary transition-colors"
+              className="h-6 w-6 rounded-full bg-white/10 hover:bg-white/20 text-white/70 hover:text-white flex items-center justify-center transition-all active:scale-95 ml-1"
               aria-label={t("close")}
             >
-              <span className="material-symbols-outlined">close</span>
+              <span className="material-symbols-outlined text-[16px]">close</span>
             </button>
           </div>
         </div>
 
-        <div className="p-4 flex flex-col gap-6 sm:p-6">
+        <div className="p-2.5 sm:p-3 flex flex-col gap-2">
           {/* Metadata Grid */}
           {log.active ? (
-            <div className="flex flex-wrap gap-4 p-4 bg-bg-subtle rounded-xl border border-border">
-              <div className="min-w-[140px] flex-1">
-                <div className="text-[10px] text-text-muted uppercase tracking-wider mb-1">
+            <div className="flex flex-wrap gap-2 p-2.5 bg-white/[0.04] rounded-xl border border-white/[0.08]">
+              <div className="min-w-[120px] flex-1">
+                <div className="text-[9px] text-white/40 uppercase tracking-wider font-semibold mb-0.5">
                   {t("startedAt")}
                 </div>
-                <div className="text-sm font-medium">{formatDate(log.timestamp)}</div>
+                <div className="text-xs font-medium text-white/90">{formatDate(log.timestamp)}</div>
               </div>
-              <div className="min-w-[100px] flex-1">
-                <div className="text-[10px] text-text-muted uppercase tracking-wider mb-1">
+              <div className="min-w-[80px] flex-1">
+                <div className="text-[9px] text-white/40 uppercase tracking-wider font-semibold mb-0.5">
                   {t("duration")}
                 </div>
-                <div className="text-sm font-medium">{formatDuration(log.duration)}</div>
+                <div className="text-xs font-medium text-white/90">{formatDuration(log.duration)}</div>
               </div>
-              <div className="min-w-[100px] flex-1">
-                <div className="text-[10px] text-text-muted uppercase tracking-wider mb-1">
+              <div className="min-w-[80px] flex-1">
+                <div className="text-[9px] text-white/40 uppercase tracking-wider font-semibold mb-0.5">
                   {t("addedWait")}
                 </div>
-                <div className="text-sm font-medium">
+                <div className="text-xs font-medium text-white/90">
                   {typeof log.addedWaitMs === "number" && log.addedWaitMs > 0
                     ? `${formatDuration(log.addedWaitMs)}${log.addedWaitCause ? ` (${log.addedWaitCause})` : ""}`
                     : "—"}
                 </div>
               </div>
-              <div className="min-w-[140px] flex-1">
-                <div className="text-[10px] text-text-muted uppercase tracking-wider mb-1">
+              <div className="min-w-[120px] flex-1">
+                <div className="text-[9px] text-white/40 uppercase tracking-wider font-semibold mb-0.5">
                   {t("model")}
                 </div>
-                <div className="text-sm font-medium text-primary font-mono">{log.model}</div>
+                <div className="text-xs font-medium text-primary font-mono truncate">{log.model}</div>
               </div>
-              <div className="min-w-[120px] flex-1">
-                <div className="text-[10px] text-text-muted uppercase tracking-wider mb-1">
+              <div className="min-w-[100px] flex-1">
+                <div className="text-[9px] text-white/40 uppercase tracking-wider font-semibold mb-0.5">
                   {t("provider")}
                 </div>
                 <span
-                  className="inline-block px-2.5 py-1 rounded text-[10px] font-bold uppercase"
+                  className="inline-block px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase"
                   style={{ backgroundColor: providerColor.bg, color: providerColor.text }}
                 >
                   {providerLabel}
                 </span>
               </div>
-              <div className="min-w-[120px] flex-1">
-                <div className="text-[10px] text-text-muted uppercase tracking-wider mb-1">
+              <div className="min-w-[100px] flex-1">
+                <div className="text-[9px] text-white/40 uppercase tracking-wider font-semibold mb-0.5">
                   {t("account")}
                 </div>
-                <div className="text-sm font-medium">{accountLabel}</div>
+                <div className="text-xs font-medium text-white/90 truncate">{accountLabel}</div>
               </div>
             </div>
           ) : (
             <div
-              className="grid grid-cols-2 md:grid-cols-4 gap-4 p-4 bg-bg-subtle rounded-xl border border-border"
+              className="grid grid-cols-2 md:grid-cols-4 gap-2 p-2.5 bg-white/[0.04] rounded-xl border border-white/[0.08]"
               data-testid="request-log-metadata-grid"
             >
               <div>
-                <div className="text-[10px] text-text-muted uppercase tracking-wider mb-1">
+                <div className="text-[9px] text-white/40 uppercase tracking-wider font-semibold mb-0.5">
                   {t("startedAt")}
                 </div>
-                <div className="text-sm font-medium">
+                <div className="text-xs font-medium text-white/90 truncate">
                   {(() => {
                     try {
                       const ts = new Date(log.timestamp).getTime();
@@ -742,43 +756,43 @@ export default function RequestLoggerDetail({
                 </div>
               </div>
               <div>
-                <div className="text-[10px] text-text-muted uppercase tracking-wider mb-1">
+                <div className="text-[9px] text-white/40 uppercase tracking-wider font-semibold mb-0.5">
                   {t("endedAt")}
                 </div>
-                <div className="text-sm font-medium">{formatDate(log.timestamp)}</div>
+                <div className="text-xs font-medium text-white/90 truncate">{formatDate(log.timestamp)}</div>
               </div>
               <div>
-                <div className="text-[10px] text-text-muted uppercase tracking-wider mb-1">
+                <div className="text-[9px] text-white/40 uppercase tracking-wider font-semibold mb-0.5">
                   {t("duration")}
                 </div>
-                <div className="text-sm font-medium">{formatDuration(log.duration)}</div>
+                <div className="text-xs font-medium text-white/90">{formatDuration(log.duration)}</div>
               </div>
               {typeof log.ttft === "number" && log.ttft > 0 && (
                 <div>
                   <div
-                    className="text-[10px] text-text-muted uppercase tracking-wider mb-1"
+                    className="text-[9px] text-white/40 uppercase tracking-wider font-semibold mb-0.5"
                     title={`${tColumns("ttft")}: time to first forwarded stream token; generation ran for ${formatDuration(Math.max(0, (log.duration || 0) - log.ttft))} (#13130)`}
                   >
                     {tColumns("ttft")}
                   </div>
-                  <div className="text-sm font-medium">{formatDuration(log.ttft)}</div>
+                  <div className="text-xs font-medium text-white/90">{formatDuration(log.ttft)}</div>
                 </div>
               )}
               <div>
-                <div className="text-[10px] text-text-muted uppercase tracking-wider mb-1">
+                <div className="text-[9px] text-white/40 uppercase tracking-wider font-semibold mb-0.5">
                   {t("input")}
                 </div>
                 <div
-                  className="flex flex-wrap items-center gap-1.5"
+                  className="flex flex-wrap items-center gap-1"
                   data-testid="token-group-input"
                 >
-                  <span className="px-2 py-0.5 rounded bg-primary/20 text-primary text-xs font-bold">
+                  <span className="px-1.5 py-0.5 rounded bg-primary/20 text-primary text-[10px] font-semibold">
                     {t("totalIn", { value: formatTokenValue(tokenStats.totalIn) })}
                   </span>
-                  <span className="px-2 py-0.5 rounded bg-sky-500/20 text-sky-700 dark:text-sky-400 text-xs font-bold">
+                  <span className="px-1.5 py-0.5 rounded bg-sky-500/20 text-sky-400 text-[10px] font-semibold">
                     {t("cacheRead", { value: formatTokenValue(tokenStats.cacheRead) })}
                   </span>
-                  <span className="px-2 py-0.5 rounded bg-amber-500/20 text-amber-700 dark:text-amber-400 text-xs font-bold">
+                  <span className="px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-400 text-[10px] font-semibold">
                     {t("cacheWrite", { value: formatTokenValue(tokenStats.cacheWrite) })}
                   </span>
                   {tokenStats.compressed != null &&
@@ -791,7 +805,7 @@ export default function RequestLoggerDetail({
                           ? Math.max(0, Math.min(100, Math.round((saved / fromTokens) * 100)))
                           : 100;
                       return (
-                        <span className="px-2 py-0.5 rounded bg-purple-500/20 text-purple-700 dark:text-purple-300 text-xs font-bold">
+                        <span className="px-1.5 py-0.5 rounded bg-purple-500/20 text-purple-300 text-[10px] font-semibold">
                           {t("compressed", {
                             from: fromTokens.toLocaleString(),
                             to: Math.max(0, tokenStats.totalIn).toLocaleString(),
@@ -803,70 +817,70 @@ export default function RequestLoggerDetail({
                 </div>
               </div>
               <div>
-                <div className="text-[10px] text-text-muted uppercase tracking-wider mb-1">
+                <div className="text-[9px] text-white/40 uppercase tracking-wider font-semibold mb-0.5">
                   {t("output")}
                 </div>
                 <div
-                  className="flex flex-wrap items-center gap-1.5"
+                  className="flex flex-wrap items-center gap-1"
                   data-testid="token-group-output"
                 >
-                  <span className="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 text-xs font-bold">
+                  <span className="px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-400 text-[10px] font-semibold">
                     {t("totalOut", { value: formatTokenValue(tokenStats.totalOut) })}
                   </span>
-                  <span className="px-2 py-0.5 rounded bg-violet-500/20 text-violet-700 dark:text-violet-400 text-xs font-bold">
+                  <span className="px-1.5 py-0.5 rounded bg-violet-500/20 text-violet-400 text-[10px] font-semibold">
                     {t("reasoning", { value: formatReasoningStat(tokenStats, t) })}
                   </span>
                 </div>
               </div>
               <div>
-                <div className="text-[10px] text-text-muted uppercase tracking-wider mb-1">
+                <div className="text-[9px] text-white/40 uppercase tracking-wider font-semibold mb-0.5">
                   {t("model")}
                 </div>
-                <div className="text-sm font-medium text-primary font-mono">{log.model}</div>
+                <div className="text-xs font-medium text-primary font-mono truncate">{log.model}</div>
               </div>
               <div>
-                <div className="text-[10px] text-text-muted uppercase tracking-wider mb-1">
+                <div className="text-[9px] text-white/40 uppercase tracking-wider font-semibold mb-0.5">
                   {t("requestedModel")}
                 </div>
                 <div
-                  className={`text-sm font-medium font-mono ${
+                  className={`text-xs font-medium font-mono truncate ${
                     (detail?.requestedModel || log.requestedModel) &&
                     (detail?.requestedModel || log.requestedModel) !== log.model
-                      ? "text-amber-600 dark:text-amber-400"
-                      : "text-text-muted"
+                      ? "text-amber-400"
+                      : "text-white/50"
                   }`}
                 >
                   {detail?.requestedModel || log.requestedModel || "\u2014"}
                 </div>
               </div>
               <div>
-                <div className="text-[10px] text-text-muted uppercase tracking-wider mb-1">
+                <div className="text-[9px] text-white/40 uppercase tracking-wider font-semibold mb-0.5">
                   {t("provider")}
                 </div>
                 <span
-                  className="inline-block px-2.5 py-1 rounded text-[10px] font-bold uppercase"
+                  className="inline-block px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase"
                   style={{ backgroundColor: providerColor.bg, color: providerColor.text }}
                 >
                   {providerLabel}
                 </span>
               </div>
               <div>
-                <div className="text-[10px] text-text-muted uppercase tracking-wider mb-1">
+                <div className="text-[9px] text-white/40 uppercase tracking-wider font-semibold mb-0.5">
                   {t("requestProtocol")}
                 </div>
                 <span
-                  className="inline-block px-2.5 py-1 rounded text-[10px] font-bold uppercase"
+                  className="inline-block px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase"
                   style={{ backgroundColor: protocol.bg, color: protocol.text }}
                 >
                   {protocol.label}
                 </span>
               </div>
               <div>
-                <div className="text-[10px] text-text-muted uppercase tracking-wider mb-1">
+                <div className="text-[9px] text-white/40 uppercase tracking-wider font-semibold mb-0.5">
                   {t("cacheSource")}
                 </div>
                 <span
-                  className={`inline-block px-2.5 py-1 rounded text-[10px] font-bold border ${cacheSourceClassName}`}
+                  className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-semibold border ${cacheSourceClassName}`}
                 >
                   {cacheSourceLabel}
                 </span>
@@ -882,11 +896,11 @@ export default function RequestLoggerDetail({
               />
               {(detail?.modelPinned || log.modelPinned) && (
                 <div>
-                  <div className="text-[10px] text-text-muted uppercase tracking-wider mb-1">
+                  <div className="text-[9px] text-white/40 uppercase tracking-wider font-semibold mb-0.5">
                     {t("modelPinning")}
                   </div>
-                  <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded text-[10px] font-bold bg-violet-500/15 text-violet-600 dark:text-violet-400 border border-violet-500/25">
-                    <svg className="w-3 h-3" viewBox="0 0 16 16" fill="currentColor">
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-violet-500/15 text-violet-400 border border-violet-500/25">
+                    <svg className="w-2.5 h-2.5" viewBox="0 0 16 16" fill="currentColor">
                       <path d="M4.5 2A1.5 1.5 0 003 3.5v1.9l-1.4 2.8A.5.5 0 002 9h4v4.5a.5.5 0 00.5.5h3a.5.5 0 00.5-.5V9h4a.5.5 0 00.44-.73L13 5.4V3.5A1.5 1.5 0 0011.5 2h-7z" />
                     </svg>
                     {t("activeModelPinning")}
@@ -894,13 +908,13 @@ export default function RequestLoggerDetail({
                 </div>
               )}
               <div>
-                <div className="text-[10px] text-text-muted uppercase tracking-wider mb-1">
+                <div className="text-[9px] text-white/40 uppercase tracking-wider font-semibold mb-0.5">
                   {t("account")}
                 </div>
-                <div className="text-sm font-medium">{accountLabel}</div>
+                <div className="text-xs font-medium text-white/90 truncate">{accountLabel}</div>
                 {codexAccountRotation && (
                   <div
-                    className="mt-1 text-[10px] text-amber-600 dark:text-amber-400 font-mono"
+                    className="mt-0.5 text-[9px] text-amber-400 font-mono"
                     title={`${codexAccountRotation.initialConnectionId} -> ${codexAccountRotation.finalConnectionId}`}
                   >
                     {t("rotated", {
@@ -911,11 +925,11 @@ export default function RequestLoggerDetail({
                 )}
               </div>
               <div>
-                <div className="text-[10px] text-text-muted uppercase tracking-wider mb-1">
+                <div className="text-[9px] text-white/40 uppercase tracking-wider font-semibold mb-0.5">
                   {t("apiKey")}
                 </div>
                 <div
-                  className="text-sm font-medium"
+                  className="text-xs font-medium text-white/90 truncate"
                   title={
                     detail?.apiKeyName ||
                     detail?.apiKeyId ||
@@ -931,51 +945,52 @@ export default function RequestLoggerDetail({
                 </div>
               </div>
               <div>
-                <div className="text-[10px] text-text-muted uppercase tracking-wider mb-1">
+                <div className="text-[9px] text-white/40 uppercase tracking-wider font-semibold mb-0.5">
                   {t("combo")}
                 </div>
                 {detail?.comboName || log.comboName ? (
-                  <span className="inline-block px-2.5 py-1 rounded-full text-[10px] font-bold bg-violet-500/20 text-violet-700 dark:text-violet-300 border border-violet-500/30">
+                  <span className="inline-block px-2 py-0.5 rounded-full text-[10px] font-semibold bg-violet-500/20 text-violet-300 border border-violet-500/30">
                     {detail?.comboName || log.comboName}
                   </span>
                 ) : (
-                  <div className="text-sm text-text-muted">{"\u2014"}</div>
+                  <div className="text-xs text-white/40">{"\u2014"}</div>
                 )}
               </div>
               <div>
-                <div className="text-[10px] text-text-muted uppercase tracking-wider mb-1">
+                <div className="text-[9px] text-white/40 uppercase tracking-wider font-semibold mb-0.5">
                   Conversation
                 </div>
                 {detail?.sessionTag || log.sessionTag ? (
                   <div
-                    className="text-sm font-mono select-all"
+                    className="text-xs font-mono text-white/90 truncate select-all"
                     title={detail?.sessionTag || log.sessionTag}
                   >
                     {(detail?.sessionTag || log.sessionTag).slice(0, 20)}
                     {"\u2026"}
                   </div>
                 ) : (
-                  <div className="text-sm text-text-muted">{"\u2014"}</div>
+                  <div className="text-xs text-white/40">{"\u2014"}</div>
                 )}
               </div>
             </div>
           )}
 
-          {/* Error Message */}
-          {(detail?.error || log.error) && (
-            <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/30">
+
+          {/* Error Message & Raw Upstream Response */}
+          {(detail?.error || log.error || rawUpstreamError) && (
+            <div className="p-2.5 rounded-xl bg-red-500/10 border border-red-500/25">
               <div className="flex items-center justify-between mb-1">
-                <div className="text-[10px] text-red-600 dark:text-red-400 uppercase tracking-wider font-bold">
-                  {t("error")}
+                <div className="text-[10px] text-red-400 uppercase tracking-wider font-bold flex items-center gap-1">
+                  <span className="material-symbols-outlined text-[14px]">error</span>
+                  <span>{t("error")}</span>
                 </div>
                 {isCombo503 && !cleared && (
                   <button
                     onClick={handleUnblockAll}
                     disabled={unblockAllBusy}
-                    className="flex items-center gap-1 px-2.5 py-1 text-[10px] font-medium rounded-lg
-                      bg-amber-500/10 border border-amber-500/30 text-amber-600
-                      hover:bg-amber-500/15 hover:border-amber-500/50
-                      dark:text-amber-400 transition-all duration-200
+                    className="flex items-center gap-1 px-2 py-0.5 text-[10px] font-medium rounded-full
+                      bg-amber-500/15 border border-amber-500/30 text-amber-400
+                      hover:bg-amber-500/25 transition-all
                       disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <svg
@@ -994,7 +1009,7 @@ export default function RequestLoggerDetail({
                   </button>
                 )}
                 {isCombo503 && cleared && (
-                  <span className="flex items-center gap-1 px-2.5 py-1 text-[10px] font-medium rounded-lg bg-green-500/10 border border-green-500/30 text-green-600 dark:text-green-400">
+                  <span className="flex items-center gap-1 px-2 py-0.5 text-[10px] font-medium rounded-full bg-green-500/10 border border-green-500/30 text-green-400">
                     <svg
                       width="10"
                       height="10"
@@ -1012,10 +1027,9 @@ export default function RequestLoggerDetail({
                   <button
                     onClick={handleUnblockModel}
                     disabled={unblocking}
-                    className="flex items-center gap-1 px-2.5 py-1 text-[10px] font-medium rounded-lg
-                      bg-amber-500/10 border border-amber-500/30 text-amber-600
-                      hover:bg-amber-500/15 hover:border-amber-500/50
-                      dark:text-amber-400 transition-all duration-200
+                    className="flex items-center gap-1 px-2 py-0.5 text-[10px] font-medium rounded-full
+                      bg-amber-500/15 border border-amber-500/30 text-amber-400
+                      hover:bg-amber-500/25 transition-all
                       disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <svg
@@ -1034,7 +1048,7 @@ export default function RequestLoggerDetail({
                   </button>
                 )}
                 {isModelCooldown && cleared && (
-                  <span className="flex items-center gap-1 px-2.5 py-1 text-[10px] font-medium rounded-lg bg-green-500/10 border border-green-500/30 text-green-600 dark:text-green-400">
+                  <span className="flex items-center gap-1 px-2 py-0.5 text-[10px] font-medium rounded-full bg-green-500/10 border border-green-500/30 text-green-400">
                     <svg
                       width="10"
                       height="10"
@@ -1049,16 +1063,35 @@ export default function RequestLoggerDetail({
                   </span>
                 )}
               </div>
-              <div className="text-sm text-red-600 dark:text-red-300 font-mono whitespace-pre-wrap break-words">
-                {formatErrorForDisplay(detail?.error || log.error)}
+              <div className="text-xs text-red-300 font-mono whitespace-pre-wrap break-words">
+                {formatErrorForDisplay(detail?.error || log.error) || "Error occurred"}
               </div>
+
+              {rawUpstreamError && (
+                <div className="mt-2 pt-2 border-t border-red-500/20">
+                  <div className="text-[10px] text-red-400/80 uppercase tracking-wider font-semibold mb-1 flex items-center gap-1">
+                    <span className="material-symbols-outlined text-[13px]">dns</span>
+                    <span>Upstream Server Response (Raw)</span>
+                    {providerStatus ? (
+                      <span className="text-[9px] px-1.5 py-0.2 rounded bg-red-500/20 text-red-300 font-mono">
+                        HTTP {providerStatus}
+                      </span>
+                    ) : null}
+                  </div>
+                  <pre className="text-xs text-red-200/95 font-mono whitespace-pre-wrap break-words bg-black/40 p-2 rounded-lg max-h-48 overflow-y-auto leading-relaxed border border-red-500/20">
+                    {typeof rawUpstreamError === "object"
+                      ? JSON.stringify(rawUpstreamError, null, 2)
+                      : String(rawUpstreamError)}
+                  </pre>
+                </div>
+              )}
             </div>
           )}
 
           {/* Related Requests (same correlation ID) */}
           {relatedLogs.length > 1 && (
-            <div className="p-4 rounded-xl bg-bg-subtle border border-border">
-              <div className="text-[10px] text-text-muted uppercase tracking-wider mb-2 font-bold">
+            <div className="p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.08]">
+              <div className="text-[9px] text-white/40 uppercase tracking-wider mb-1.5 font-semibold">
                 {t("relatedRequests", { count: relatedLogs.length })}
               </div>
               <div className="flex flex-col gap-1">
@@ -1077,10 +1110,10 @@ export default function RequestLoggerDetail({
                         key={r.id}
                         onClick={() => !isCurrent && onSelectRelated?.(r)}
                         disabled={isCurrent}
-                        className={`flex items-center gap-2 px-2 py-1.5 rounded text-left text-xs transition-colors ${
+                        className={`flex items-center gap-2 px-2 py-1 rounded text-left text-xs transition-colors ${
                           isCurrent
                             ? "bg-primary/10 border border-primary/30 cursor-default"
-                            : "hover:bg-bg-hover cursor-pointer"
+                            : "hover:bg-white/5 cursor-pointer"
                         }`}
                       >
                         <span
@@ -1093,12 +1126,12 @@ export default function RequestLoggerDetail({
                         >
                           {r.status || "..."}
                         </span>
-                        <span className="font-mono text-text-muted">{r.id}</span>
-                        <span className="text-text-muted">{r.model}</span>
-                        <span className="text-text-muted text-[10px]">
+                        <span className="font-mono text-white/40">{r.id}</span>
+                        <span className="text-white/70">{r.model}</span>
+                        <span className="text-white/40 text-[10px]">
                           {startTime.toLocaleTimeString(locale, { hour12: false })}
                         </span>
-                        <span className="text-text-muted ml-auto">
+                        <span className="text-white/40 ml-auto">
                           {formatDuration(r.duration)}
                         </span>
                         {isCurrent && (
@@ -1114,16 +1147,16 @@ export default function RequestLoggerDetail({
           )}
 
           {detailIssue && (
-            <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/30">
-              <div className="text-[10px] text-amber-700 dark:text-amber-400 uppercase tracking-wider mb-1 font-bold">
+            <div className="p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/30">
+              <div className="text-[9px] text-amber-400 uppercase tracking-wider mb-1 font-bold">
                 {t("detailStatus")}
               </div>
-              <div className="text-sm text-amber-700 dark:text-amber-200">{detailIssue}</div>
+              <div className="text-xs text-amber-200">{detailIssue}</div>
             </div>
           )}
 
           {loading ? (
-            <div className="p-8 text-center text-text-muted animate-pulse">
+            <div className="p-6 text-center text-white/40 animate-pulse text-xs">
               {t("loadingDetails")}
             </div>
           ) : (
@@ -1202,20 +1235,21 @@ export default function RequestLoggerDetail({
                   />
                 ))}
 
-              {payloadSections.length === 0 && responseJson && (
+              {/* Ensure Provider Response and Request are always shown even if not in payloadSections */}
+              {!payloadSections.some((s) => s.key === "providerResponse" || s.key === "clientResponse") && responseJson && (
                 <PayloadSection
-                  title={t("responsePayloadLegacy")}
-                  sectionId="responsePayloadLegacy"
+                  title={t("payload.providerResponse")}
+                  sectionId="providerResponseFallback"
                   json={responseJson}
                   notice={responseBodyOmitted}
                   onCopy={() => onCopy(responseJson)}
                 />
               )}
 
-              {payloadSections.length === 0 && requestJson && (
+              {!payloadSections.some((s) => s.key === "clientRequest" || s.key === "providerRequest") && requestJson && (
                 <PayloadSection
-                  title={t("requestPayloadLegacy")}
-                  sectionId="requestPayloadLegacy"
+                  title={t("payload.clientRequest")}
+                  sectionId="clientRequestFallback"
                   json={requestJson}
                   notice={requestBodyOmitted}
                   onCopy={() => onCopy(requestJson)}
@@ -1223,12 +1257,12 @@ export default function RequestLoggerDetail({
               )}
 
               {payloadSections.length === 0 && !requestJson && !responseJson && !loading && (
-                <div className="p-6 text-center text-text-muted">
-                  <span className="material-symbols-outlined text-[32px] mb-2 block opacity-40">
+                <div className="p-4 text-center text-white/40">
+                  <span className="material-symbols-outlined text-[28px] mb-1 block opacity-40">
                     info
                   </span>
-                  <p className="text-sm">{t("noPayload")}</p>
-                  <p className="text-xs mt-1">{t("detailedPayloadInfo")}</p>
+                  <p className="text-xs">{t("noPayload")}</p>
+                  <p className="text-[10px] mt-0.5">{t("detailedPayloadInfo")}</p>
                 </div>
               )}
             </>
