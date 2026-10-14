@@ -474,20 +474,30 @@ export async function runSingleModelTest(
     streamChat = true,
   } = options;
 
+  let cleanModelId = modelId;
+  if (cleanModelId.startsWith(`${providerId}/`)) {
+    cleanModelId = cleanModelId.slice(providerId.length + 1);
+  }
+  try {
+    const node = (await getProviderNodeById(providerId)) as { prefix?: unknown } | null;
+    const prefix = typeof node?.prefix === "string" ? node.prefix : undefined;
+    if (prefix && cleanModelId.startsWith(`${prefix}/`)) {
+      cleanModelId = cleanModelId.slice(prefix.length + 1);
+    }
+  } catch {
+    // ignore
+  }
+
+  const fullModelStr = `${providerId}/${cleanModelId}`;
+
   if (connectionId && (await isConnectionUnavailableToAuxiliaryActivity(connectionId))) {
-    const fullModelId = modelId.includes("/") ? modelId : `${providerId}/${modelId}`;
     return {
-      modelId: fullModelId,
+      modelId: cleanModelId,
       status: "error",
       latencyMs: 0,
       httpStatus: 409,
       error: "Model tests are unavailable for managed lease connections",
     };
-  }
-
-  let fullModelStr = modelId;
-  if (!fullModelStr.includes("/")) {
-    fullModelStr = `${providerId}/${modelId}`;
   }
   if (shouldSkipWebSessionModelTest(providerId)) {
     return {

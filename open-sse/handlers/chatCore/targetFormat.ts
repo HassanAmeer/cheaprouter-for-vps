@@ -37,7 +37,10 @@ export function resolveChatCoreTargetFormat(opts: {
     nativeXaiResponsesPassthrough = false,
     nativeOpenAICompatibleResponsesPassthrough = false,
   } = opts;
-  const alias = PROVIDER_ID_TO_ALIAS[provider] || provider;
+  const nodePrefix =
+    (providerSpecificData as { prefix?: string; nodePrefix?: string } | null | undefined)?.prefix ||
+    (providerSpecificData as { prefix?: string; nodePrefix?: string } | null | undefined)?.nodePrefix;
+  const alias = PROVIDER_ID_TO_ALIAS[provider] || nodePrefix || provider;
   const modelTargetFormat = getModelTargetFormat(alias, resolvedModel);
   const explicitConnectionTargetFormat = (
     providerSpecificData as { targetFormat?: unknown } | null | undefined

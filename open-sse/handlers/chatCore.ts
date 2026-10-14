@@ -2744,6 +2744,12 @@ async function handleChatCoreInner({
     } else if (alias && finalModelToUpstream.startsWith(`${alias}/`)) {
       finalModelToUpstream = finalModelToUpstream.slice(alias.length + 1);
     }
+    const nodePrefix =
+      (credentials?.providerSpecificData as { prefix?: string; nodePrefix?: string } | undefined)?.prefix ||
+      (credentials?.providerSpecificData as { prefix?: string; nodePrefix?: string } | undefined)?.nodePrefix;
+    if (nodePrefix && finalModelToUpstream.startsWith(`${nodePrefix}/`)) {
+      finalModelToUpstream = finalModelToUpstream.slice(nodePrefix.length + 1);
+    }
   }
   translatedBody.model = finalModelToUpstream;
 

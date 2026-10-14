@@ -31,6 +31,7 @@ export interface AvailableModelsTableProps {
   onFetchModels?: () => Promise<void> | void;
   isFetchingModels?: boolean;
   fetchError?: string | null;
+  connectionId?: string;
 }
 
 export function formatContextWindow(tokens?: number): string {
@@ -48,7 +49,7 @@ export function formatContextWindow(tokens?: number): string {
 
 export default function AvailableModelsTable({
   providerId,
-  providerDisplayAlias,
+  providerDisplayAlias: _providerDisplayAlias,
   models,
   testPrompt,
   onRefreshModels,
@@ -57,6 +58,7 @@ export default function AvailableModelsTable({
   onFetchModels,
   isFetchingModels = false,
   fetchError = null,
+  connectionId,
 }: AvailableModelsTableProps) {
   const notify = useNotificationStore();
   const [search, setSearch] = useState("");
@@ -115,14 +117,14 @@ export default function AvailableModelsTable({
 
   const handleRunTest = async (modelId: string) => {
     setTestingModelId(modelId);
-    const fullModel = `${providerDisplayAlias}/${modelId}`;
     try {
       const res = await fetch("/api/models/test", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           providerId,
-          modelId: fullModel,
+          modelId,
+          ...(connectionId ? { connectionId } : {}),
           prompt: testPrompt || "Hi",
         }),
       });

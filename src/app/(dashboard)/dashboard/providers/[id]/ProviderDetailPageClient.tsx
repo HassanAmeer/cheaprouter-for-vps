@@ -337,6 +337,7 @@ export default function ProviderDetailPageClient() {
         onFetchModels={handleFetchAllModels}
         isFetchingModels={fetchingAllModels}
         fetchError={fetchError}
+        connectionId={connections?.[0]?.id}
       />
 
       {providerNode && (
