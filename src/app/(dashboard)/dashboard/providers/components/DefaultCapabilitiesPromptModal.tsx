@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
+import { createPortal } from "react-dom";
 
 export interface CapabilityPreset {
   id: string;
@@ -115,6 +116,8 @@ export interface DefaultCapabilitiesPromptModalProps {
   onToggle: () => void;
 }
 
+const emptySubscribe = () => () => {};
+
 export default function DefaultCapabilitiesPromptModal({
   testPrompt,
   onPromptChange,
@@ -122,125 +125,184 @@ export default function DefaultCapabilitiesPromptModal({
   onToggle,
 }: DefaultCapabilitiesPromptModalProps) {
   const [selectedPresetId, setSelectedPresetId] = useState<string>("text-hi");
+  const isMounted = useSyncExternalStore(
+    emptySubscribe,
+    () => true,
+    () => false
+  );
+
+  // Lock body scroll when the right-side sheet is open
+  useEffect(() => {
+    if (!isOpen) return;
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prevOverflow;
+    };
+  }, [isOpen]);
+
+  // Handle ESC key to dismiss sheet
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        onToggle();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isOpen, onToggle]);
 
   const handleSelectPreset = (preset: CapabilityPreset) => {
     setSelectedPresetId(preset.id);
     onPromptChange(preset.prompt);
   };
 
-  return (
-    <div className="relative">
-      {/* ── Top-Right Header Trigger Button ── */}
-      <button
-        type="button"
+  const sheetContent = (
+    <div
+      className={`fixed inset-0 z-[10000] transition-opacity duration-300 ${
+        isOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
+      }`}
+      aria-modal="true"
+      role="dialog"
+    >
+      {/* ── Cupertino Frosted Backdrop Overlay ── */}
+      <div
+        className="fixed inset-0 bg-black/60 backdrop-blur-md transition-opacity duration-300"
         onClick={onToggle}
-        className={`inline-flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-medium border transition-all cursor-pointer shadow-sm ${
-          isOpen
-            ? "bg-white text-black border-white ring-2 ring-white/20"
-            : "bg-[#141414] text-[#C0C0C0] hover:text-white hover:bg-[#1C1C1C] border-[#2A2A2A] hover:border-[#404040]"
-        }`}
-        title="Configure the global capabilities prompt sent during model verification"
-      >
-        <span className="material-symbols-outlined text-[17px] text-[#A3A3A3]">psychology_alt</span>
-        <span className="font-semibold">Default Capabilities Prompt</span>
-        <span className="material-symbols-outlined text-[15px] opacity-60">info</span>
-        <span className="material-symbols-outlined text-[16px] transition-transform">
-          {isOpen ? "expand_less" : "expand_more"}
-        </span>
-      </button>
+        aria-hidden="true"
+      />
 
-      {/* ── Expandable Drawer / Modal ── */}
-      {isOpen && (
-        <div className="mt-3 p-5 rounded-xl border border-[#2A2A2A] bg-[#101010] shadow-2xl flex flex-col gap-4 text-white animate-in fade-in slide-in-from-top-2 duration-150">
-          <div className="flex items-center justify-between border-b border-[#222] pb-3">
-            <div className="flex items-center gap-2.5">
-              <span className="material-symbols-outlined text-[20px] text-[#C0C0C0]">tune</span>
-              <div>
-                <h4 className="text-sm font-semibold text-white">
-                  Default Capabilities Test Suite
-                </h4>
-                <p className="text-[11px] text-[#737373] mt-0.5">
-                  Select a multimodal capability preset or customize your prompt below. When
-                  clicking &ldquo;Test&rdquo; on any model, this payload is sent.
-                </p>
-              </div>
+      {/* ── Cupertino iOS Right-Side Sheet ── */}
+      <div
+        className={`fixed inset-y-0 right-0 z-[10001] w-[90vw] sm:w-[500px] md:w-[540px] max-w-[90vw] sm:max-w-[540px] flex flex-col bg-[#161618]/95 dark:bg-[#121214]/95 text-white backdrop-blur-2xl border-l border-white/10 shadow-[-16px_0px_48px_rgba(0,0,0,0.7)] rounded-l-[28px] sm:rounded-l-[32px] overflow-hidden transform transition-transform duration-300 ease-out ${
+          isOpen ? "translate-x-0" : "translate-x-full"
+        }`}
+      >
+        {/* iOS Pull / Grabber Bar */}
+        <div className="w-10 h-1.2 rounded-full bg-white/20 mx-auto mt-2.5 mb-1 shrink-0" />
+
+        {/* ── Cupertino Header ── */}
+        <div className="flex items-center justify-between px-5 py-3 border-b border-white/10 shrink-0">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="size-9 rounded-2xl bg-cyan-500/15 border border-cyan-400/25 flex items-center justify-center text-cyan-400 shrink-0 shadow-sm shadow-cyan-500/10">
+              <span className="material-symbols-outlined text-[20px]">psychology_alt</span>
+            </div>
+            <div className="min-w-0">
+              <h3 className="text-sm font-semibold tracking-tight text-white truncate">
+                Capabilities Test Suite
+              </h3>
+              <p className="text-[11px] text-zinc-400 truncate">
+                Cupertino model capability verification studio
+              </p>
+            </div>
+          </div>
+
+          {/* Top-Right Secondary Close Icon Button */}
+          <button
+            type="button"
+            onClick={onToggle}
+            className="size-8 rounded-full bg-white/10 hover:bg-white/20 active:scale-95 text-zinc-300 hover:text-white flex items-center justify-center transition-all cursor-pointer shrink-0"
+            title="Close"
+            aria-label="Close"
+          >
+            <span className="material-symbols-outlined text-[18px]">close</span>
+          </button>
+        </div>
+
+        {/* ── Scrollable Presets & Config Area ── */}
+        <div className="flex-1 overflow-y-auto px-5 py-4 space-y-5 pb-24">
+          {/* Information Banner */}
+          <div className="p-3.5 rounded-2xl bg-white/[0.04] border border-white/8 backdrop-blur-md flex items-start gap-3">
+            <span className="material-symbols-outlined text-cyan-400 text-[18px] shrink-0 mt-0.5">
+              info
+            </span>
+            <p className="text-xs text-zinc-300 leading-relaxed">
+              Select a capability preset below or edit the prompt. When clicking{" "}
+              <strong className="text-white font-medium">Test</strong> on any model row, this
+              payload is sent upstream to verify capabilities.
+            </p>
+          </div>
+
+          {/* Preset Cards Section */}
+          <div className="space-y-2.5">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-semibold text-zinc-300 tracking-wider uppercase text-[10px]">
+                Modality Presets ({CAPABILITY_PRESETS.length})
+              </span>
+              <span className="text-[10px] text-zinc-400 font-mono">Tap to apply</span>
             </div>
 
-            <button
-              type="button"
-              onClick={onToggle}
-              className="p-1 rounded-md text-[#737373] hover:text-white hover:bg-[#1F1F1F] transition-colors"
-              title="Close panel"
-            >
-              <span className="material-symbols-outlined text-[18px]">close</span>
-            </button>
-          </div>
-
-          {/* ── Preset Cards Grid (9 comprehensive modalities with images) ── */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 max-h-[360px] overflow-y-auto pr-1">
-            {CAPABILITY_PRESETS.map((preset) => {
-              const isSelected = testPrompt === preset.prompt || selectedPresetId === preset.id;
-              return (
-                <button
-                  key={preset.id}
-                  type="button"
-                  onClick={() => handleSelectPreset(preset)}
-                  className={`flex items-start gap-2.5 p-2.5 rounded-lg border text-left transition-all cursor-pointer relative overflow-hidden group ${
-                    isSelected
-                      ? "bg-white/10 border-white/40 text-white shadow-md ring-1 ring-white/20"
-                      : "bg-[#161616] border-[#262626] text-[#A3A3A3] hover:bg-[#1D1D1D] hover:text-white hover:border-[#383838]"
-                  }`}
-                >
-                  {/* Optional Image Thumbnail Preview */}
-                  {preset.imageUrl ? (
-                    <div className="relative size-12 rounded-md overflow-hidden flex-shrink-0 border border-white/10 bg-[#0A0A0A]">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src={preset.imageUrl}
-                        alt={preset.label}
-                        className="size-full object-cover group-hover:scale-105 transition-transform duration-200"
-                        loading="lazy"
-                      />
-                      <span className="absolute bottom-0 right-0 p-0.5 bg-black/70 rounded-tl text-[10px]">
-                        <span className="material-symbols-outlined text-[11px] leading-none text-white">
-                          {preset.icon}
+            <div className="grid grid-cols-1 gap-2.5">
+              {CAPABILITY_PRESETS.map((preset) => {
+                const isSelected =
+                  testPrompt === preset.prompt || selectedPresetId === preset.id;
+                return (
+                  <button
+                    key={preset.id}
+                    type="button"
+                    onClick={() => handleSelectPreset(preset)}
+                    className={`flex items-start gap-3 p-3 rounded-2xl border text-left transition-all duration-150 cursor-pointer relative overflow-hidden group active:scale-[0.99] ${
+                      isSelected
+                        ? "bg-white/[0.12] border-cyan-400/50 text-white shadow-lg shadow-cyan-500/10 ring-1 ring-cyan-400/30"
+                        : "bg-white/[0.03] border-white/8 text-zinc-300 hover:bg-white/[0.07] hover:border-white/15 hover:text-white"
+                    }`}
+                  >
+                    {/* Optional Image Thumbnail Preview */}
+                    {preset.imageUrl ? (
+                      <div className="relative size-12 rounded-xl overflow-hidden flex-shrink-0 border border-white/10 bg-[#0A0A0A]">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={preset.imageUrl}
+                          alt={preset.label}
+                          className="size-full object-cover group-hover:scale-105 transition-transform duration-200"
+                          loading="lazy"
+                        />
+                        <span className="absolute bottom-0 right-0 p-0.5 bg-black/75 rounded-tl-md text-[10px]">
+                          <span className="material-symbols-outlined text-[11px] leading-none text-white">
+                            {preset.icon}
+                          </span>
                         </span>
-                      </span>
-                    </div>
-                  ) : (
-                    <div className="size-10 rounded-md bg-[#222] border border-white/10 flex items-center justify-center flex-shrink-0 text-[#C0C0C0]">
-                      <span className="material-symbols-outlined text-[18px]">{preset.icon}</span>
-                    </div>
-                  )}
+                      </div>
+                    ) : (
+                      <div className="size-12 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center flex-shrink-0 text-zinc-300">
+                        <span className="material-symbols-outlined text-[20px]">{preset.icon}</span>
+                      </div>
+                    )}
 
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between gap-1">
-                      <span className="text-xs font-semibold truncate text-white">
-                        {preset.label}
-                      </span>
-                      <span className="text-[9px] font-mono uppercase px-1.5 py-0.2 rounded bg-white/5 border border-white/10 text-[#737373]">
-                        {preset.category}
-                      </span>
+                    <div className="flex-1 min-w-0 pr-4">
+                      <div className="flex items-center justify-between gap-1.5">
+                        <span className="text-xs font-semibold truncate text-white">
+                          {preset.label}
+                        </span>
+                        <span className="text-[9px] font-mono uppercase px-2 py-0.5 rounded-full bg-white/8 border border-white/10 text-zinc-400">
+                          {preset.category}
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-zinc-400 mt-1 line-clamp-2 leading-relaxed">
+                        {preset.description}
+                      </p>
                     </div>
-                    <p className="text-[10px] text-[#737373] mt-0.5 line-clamp-2 leading-tight">
-                      {preset.description}
-                    </p>
-                  </div>
 
-                  {isSelected && (
-                    <span className="absolute top-1.5 right-1.5 size-1.5 rounded-full bg-emerald-400 ring-2 ring-emerald-400/30" />
-                  )}
-                </button>
-              );
-            })}
+                    {isSelected && (
+                      <div className="absolute top-3 right-3">
+                        <span className="material-symbols-outlined text-cyan-400 text-[18px]">
+                          check_circle
+                        </span>
+                      </div>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
           </div>
 
-          {/* ── Active Prompt Editor Textarea ── */}
-          <div className="flex flex-col gap-1.5 pt-2 border-t border-[#222]">
+          {/* Active Prompt Textarea */}
+          <div className="p-4 rounded-2xl bg-white/[0.03] border border-white/8 space-y-2.5">
             <div className="flex items-center justify-between">
-              <label className="text-xs font-medium text-[#C0C0C0] flex items-center gap-1.5">
+              <label className="text-xs font-semibold text-zinc-200 flex items-center gap-1.5">
                 <span>Active Test Prompt</span>
-                <span className="text-[10px] font-mono text-[#737373]">
+                <span className="text-[10px] font-mono text-zinc-400">
                   ({testPrompt.length} chars)
                 </span>
               </label>
@@ -248,7 +310,7 @@ export default function DefaultCapabilitiesPromptModal({
               <button
                 type="button"
                 onClick={() => onPromptChange("Hi")}
-                className="text-[10px] font-mono text-[#737373] hover:text-white underline underline-offset-2"
+                className="text-[11px] text-cyan-400 hover:text-cyan-300 font-medium underline underline-offset-2 transition-colors cursor-pointer"
               >
                 Reset to &ldquo;Hi&rdquo;
               </button>
@@ -259,31 +321,69 @@ export default function DefaultCapabilitiesPromptModal({
               onChange={(e) => onPromptChange(e.target.value)}
               rows={3}
               placeholder="Enter custom prompt to verify model capabilities..."
-              className="w-full p-3 text-xs bg-[#141414] text-white border border-[#2E2E2E] rounded-lg font-mono focus:outline-none focus:border-[#C0C0C0] transition-colors resize-y placeholder-[#555]"
+              className="w-full p-3.5 text-xs bg-black/40 text-white border border-white/10 rounded-xl font-mono focus:outline-none focus:border-cyan-400/60 focus:ring-1 focus:ring-cyan-400/40 transition-all resize-y placeholder-zinc-500 shadow-inner"
             />
 
-            <div className="text-[11px] text-[#737373] flex items-center justify-between mt-0.5">
-              <div className="flex items-center gap-1.5">
-                <span className="material-symbols-outlined text-[13px] text-emerald-400">
-                  check_circle
-                </span>
-                <span>
-                  Dispatched upstream when clicking &ldquo;Test&rdquo; on any model row in the table
-                  below.
-                </span>
-              </div>
-              <button
-                type="button"
-                onClick={onToggle}
-                className="px-3 py-1 rounded bg-white text-black font-semibold text-xs hover:bg-[#E5E5E5] transition-colors cursor-pointer"
-              >
-                Done
-              </button>
+            <div className="flex items-center gap-1.5 text-[11px] text-zinc-400">
+              <span className="material-symbols-outlined text-[14px] text-emerald-400">
+                check_circle
+              </span>
+              <span>Automatically applied when running tests on models table.</span>
             </div>
           </div>
         </div>
-      )}
+
+        {/* ── Cupertino Bottom Bar with Right-Bottom Close Button ── */}
+        <div className="p-4 border-t border-white/10 bg-[#161618]/90 backdrop-blur-xl shrink-0 flex items-center justify-between">
+          <button
+            type="button"
+            onClick={onToggle}
+            className="px-4 py-2 rounded-xl bg-white/10 hover:bg-white/15 active:scale-95 text-xs font-semibold text-white transition-all cursor-pointer"
+          >
+            Done
+          </button>
+
+          {/* User-requested: Right bottom side par close ka icon button in Cupertino iOS style */}
+          <button
+            type="button"
+            onClick={onToggle}
+            className="group size-11 rounded-full bg-white/15 hover:bg-white/25 active:scale-90 border border-white/25 backdrop-blur-xl shadow-lg shadow-black/50 flex items-center justify-center text-white transition-all duration-200 cursor-pointer"
+            title="Close Capabilities Sheet"
+            aria-label="Close"
+          >
+            <span className="material-symbols-outlined text-[22px] group-hover:rotate-90 transition-transform duration-200">
+              close
+            </span>
+          </button>
+        </div>
+      </div>
     </div>
+  );
+
+  return (
+    <>
+      {/* ── Top-Right Header Trigger Button ── */}
+      <button
+        type="button"
+        onClick={onToggle}
+        className={`inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-medium border transition-all cursor-pointer shadow-sm ${
+          isOpen
+            ? "bg-white text-black border-white ring-2 ring-white/20"
+            : "bg-[#141414] text-[#C0C0C0] hover:text-white hover:bg-[#1C1C1C] border-[#2A2A2A] hover:border-[#404040]"
+        }`}
+        title="Configure the global capabilities prompt sent during model verification"
+      >
+        <span className="material-symbols-outlined text-[17px] text-cyan-400">psychology_alt</span>
+        <span className="font-semibold">Default Capabilities Prompt</span>
+        <span className="material-symbols-outlined text-[15px] opacity-60">info</span>
+        <span className="material-symbols-outlined text-[16px] transition-transform">
+          {isOpen ? "close" : "tune"}
+        </span>
+      </button>
+
+      {/* ── Render Cupertino Right-Side Sheet into Portal ── */}
+      {isMounted && typeof document !== "undefined" && createPortal(sheetContent, document.body)}
+    </>
   );
 }
 
