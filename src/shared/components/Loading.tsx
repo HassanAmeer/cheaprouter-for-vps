@@ -66,48 +66,31 @@ export function Spinner({ size = "md", className, label }: SpinnerProps) {
   );
 }
 
-// Full page loading
-export function PageLoading({ message, className }: PageLoadingProps) {
-  const t = useTranslations("common");
-  return (
-    <div
-      className={cn(
-        "fixed inset-0 z-50 flex flex-col items-center justify-center bg-bg px-6",
-        className
-      )}
-      role="status"
-      aria-live="polite"
-      aria-busy="true"
-    >
-      <Spinner size="xl" />
-      <p className="mt-4 text-text-muted text-center">{message ?? t("loading")}</p>
-    </div>
-  );
+import { ShimmerCard, ShimmerPageLoader, type ShimmerPageVariant } from "./Shimmer";
+
+// Full page loading using rich shimmer skeleton
+export function PageLoading({
+  message,
+  variant = "default",
+  className,
+}: PageLoadingProps & { variant?: ShimmerPageVariant }) {
+  return <ShimmerPageLoader variant={variant} message={message} className={className} />;
 }
 
-// Skeleton loading
+// Skeleton loading with shimmer effect
 export function Skeleton({ className, ...props }: SkeletonProps) {
   return (
     <div
       aria-hidden="true"
-      className={cn("animate-pulse motion-reduce:animate-none rounded-lg bg-border", className)}
+      className={cn("shimmer rounded-lg bg-border", className)}
       {...props}
     />
   );
 }
 
 // Card skeleton
-export function CardSkeleton() {
-  return (
-    <div className="p-6 rounded-xl border border-border bg-surface" aria-hidden="true">
-      <div className="flex items-center justify-between mb-4 gap-4">
-        <Skeleton className="h-4 w-24" />
-        <Skeleton className="size-10 rounded-lg" />
-      </div>
-      <Skeleton className="h-8 w-16 mb-2" />
-      <Skeleton className="h-3 w-20" />
-    </div>
-  );
+export function CardSkeleton({ className }: { className?: string }) {
+  return <ShimmerCard className={className} />;
 }
 
 // Default export

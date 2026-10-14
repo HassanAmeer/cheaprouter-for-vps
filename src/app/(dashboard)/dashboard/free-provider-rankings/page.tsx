@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useTranslations } from "next-intl";
-import { Card } from "@/shared/components";
+import { Card, ShimmerPageLoader } from "@/shared/components";
 import {
   filterRankingsByAuthType,
   sortRankingsAuthTypeFirst,
@@ -208,9 +208,7 @@ export default function FreeProviderRankingsPage() {
       {error && <div className="p-3 rounded-lg bg-red-500/10 text-red-400 text-sm">{error}</div>}
 
       {loading ? (
-        <div className="flex items-center justify-center min-h-[200px]">
-          <div className="text-text-muted">{t("loading")}</div>
-        </div>
+        <ShimmerPageLoader variant="table" />
       ) : (
         <>
           {/* Top 3 Podium */}

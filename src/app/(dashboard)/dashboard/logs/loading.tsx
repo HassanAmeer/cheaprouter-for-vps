@@ -1,9 +1,5 @@
-import { ShimmerList, ShimmerPage } from "@/shared/components";
+import { ShimmerPageLoader } from "@/shared/components";
 
 export default function Loading() {
-  return (
-    <ShimmerPage toolbar>
-      <ShimmerList rows={8} />
-    </ShimmerPage>
-  );
+  return <ShimmerPageLoader variant="logs" />;
 }

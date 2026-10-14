@@ -34,29 +34,38 @@ async function fetchActiveCandidates(): Promise<Candidate[]> {
   if (!res.ok) throw new Error(`Curation API returned ${res.status}`);
   const data = await res.json();
   const modelsByProvider: Record<string, Array<{ id: string }>> = data?.modelsByProvider ?? {};
+  const connectedProviderIds: string[] = Array.isArray(data?.connectedProviderIds)
+    ? data.connectedProviderIds
+    : [];
+  const connectedSet = new Set(connectedProviderIds);
   const customizations: Array<{
     providerId: string;
     originalModelId: string;
     customAlias?: string | null;
     isActive?: boolean;
   }> = Array.isArray(data?.customizations) ? data.customizations : [];
-  const aliasByModel = new Map<string, string>();
-  const inactive = new Set<string>();
+
+  const activeCustomizations = new Map<string, { customAlias?: string | null }>();
   for (const c of customizations) {
-    const k = `${c.providerId}::${c.originalModelId}`;
-    if (c.isActive === false) inactive.add(k);
-    else if (c.customAlias) aliasByModel.set(k, c.customAlias);
+    if (c.isActive === true) {
+      activeCustomizations.set(`${c.providerId}::${c.originalModelId}`, {
+        customAlias: c.customAlias,
+      });
+    }
   }
+
   const out: Candidate[] = [];
   for (const [providerId, models] of Object.entries(modelsByProvider)) {
+    if (!connectedSet.has(providerId)) continue;
     for (const m of models) {
       const k = `${providerId}::${m.id}`;
-      if (inactive.has(k)) continue;
+      const cust = activeCustomizations.get(k);
+      if (!cust) continue;
       out.push({
         key: k,
         providerId,
         modelId: m.id,
-        target: aliasByModel.get(k) ?? `${providerId}/${m.id}`,
+        target: cust.customAlias || `${providerId}/${m.id}`,
       });
     }
   }

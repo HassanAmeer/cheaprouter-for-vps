@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo, useCallback } from "react";
-import { Card, Button, Input, Modal, CardSkeleton } from "@/shared/components";
+import { Card, Button, Input, Modal, CardSkeleton, ShimmerPageLoader } from "@/shared/components";
 import Toggle from "@/shared/components/Toggle";
 import { useCopyToClipboard } from "@/shared/hooks/useCopyToClipboard";
 import { isPublicDisplayBaseUrl, useDisplayBaseUrl } from "@/shared/hooks";
@@ -1060,12 +1060,7 @@ export default function APIPageClient({ machineId }: Readonly<APIPageClientProps
   const cloudEndpointNew = normalizedCloudBaseUrl ? `${normalizedCloudBaseUrl}/v1` : null;
 
   if (loading) {
-    return (
-      <div className="flex flex-col gap-8">
-        <CardSkeleton />
-        <CardSkeleton />
-      </div>
-    );
+    return <ShimmerPageLoader variant="endpoints" />;
   }
 
   const activeTunnelUrls = [

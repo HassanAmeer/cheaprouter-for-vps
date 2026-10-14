@@ -9,11 +9,12 @@ import { getSyncedCapabilities } from "@/lib/modelsDevSync";
 import { getModelsByProviderId } from "@/shared/constants/models";
 import {
   AI_PROVIDERS,
-  NOAUTH_PROVIDERS,
   isAnthropicCompatibleProvider,
   isClaudeCodeCompatibleProvider,
   isOpenAICompatibleProvider,
 } from "@/shared/constants/providers";
+import { isProviderConnectionConnected } from "@/shared/utils/providerConnectionStatus";
+import { getAllCustomizations } from "@/lib/db/providerModelCustomizations";
 import type { RegistryModel } from "@cheaproute/open-sse/config/providerRegistry.ts";
 import { appendSyncedEffortVariants } from "@cheaproute/open-sse/utils/syncedEffortVariants";
 
@@ -371,7 +372,8 @@ function buildModelOptions(
   providerId: string,
   builtInModels: RegistryModel[],
   syncedModels: SyncedModelLike[],
-  customModels: CustomModelLike[]
+  customModels: CustomModelLike[],
+  activeCustomizations?: Map<string, { customAlias?: string | null; customName?: string | null }>
 ): Map<string, ComboBuilderModelOption> {
   const modelMap = new Map<string, ComboBuilderModelOption>();
   const fallbackModels = getCompatibleFallbackModels(providerId, builtInModels);
@@ -562,6 +564,25 @@ function buildModelOptions(
   }
 
   disambiguateCollidingModelNames(modelMap);
+
+  if (activeCustomizations && activeCustomizations.size > 0) {
+    for (const [modelId, option] of Array.from(modelMap.entries())) {
+      const cust = activeCustomizations.get(modelId);
+      if (!cust) {
+        modelMap.delete(modelId);
+        continue;
+      }
+      if (cust.customName) {
+        option.name = cust.customName;
+      }
+      if (cust.customAlias) {
+        option.qualifiedModel = cust.customAlias;
+      }
+    }
+  } else {
+    modelMap.clear();
+  }
+
   return modelMap;
 }
 
@@ -649,7 +670,7 @@ function normalizeSyncedModels(raw: unknown): SyncedModelLike[] {
 
 export async function getComboBuilderOptions(): Promise<ComboBuilderOptionsPayload> {
   getSyncedCapabilities();
-  const [connections, providerNodes, customModelsMap, syncedModelsMap, combos, settings] =
+  const [connections, providerNodes, customModelsMap, syncedModelsMap, combos, _settings] =
     await Promise.all([
       getProviderConnections(),
       getProviderNodes(),
@@ -658,11 +679,22 @@ export async function getComboBuilderOptions(): Promise<ComboBuilderOptionsPaylo
       getCombos(),
       getSettings().catch(() => ({}) as Record<string, unknown>),
     ]);
-  const blockedProviders = new Set(
-    Array.isArray((settings as Record<string, unknown>).blockedProviders)
-      ? ((settings as Record<string, unknown>).blockedProviders as string[])
-      : []
-  );
+
+  const customizations = getAllCustomizations();
+  const activeCustomizationsByProvider = new Map<
+    string,
+    Map<string, { customAlias?: string | null; customName?: string | null }>
+  >();
+  for (const c of customizations) {
+    if (c.isActive === true) {
+      let pMap = activeCustomizationsByProvider.get(c.providerId);
+      if (!pMap) {
+        pMap = new Map();
+        activeCustomizationsByProvider.set(c.providerId, pMap);
+      }
+      pMap.set(c.originalModelId, { customAlias: c.customAlias, customName: c.customName });
+    }
+  }
 
   const providerNodeMap = new Map<string, ProviderNodeLike>();
   for (const providerNode of providerNodes as ProviderNodeLike[]) {
@@ -671,8 +703,13 @@ export async function getComboBuilderOptions(): Promise<ComboBuilderOptionsPaylo
     providerNodeMap.set(providerId, providerNode);
   }
 
+  // Only consider connections that are genuinely connected and not paused
+  const activeConnections = (connections as ProviderConnectionLike[]).filter((c) =>
+    isProviderConnectionConnected(c)
+  );
+
   const connectionsByProvider = new Map<string, ProviderConnectionLike[]>();
-  for (const connection of connections as ProviderConnectionLike[]) {
+  for (const connection of activeConnections) {
     const providerId = toStringOrNull(connection.provider);
     if (!providerId) continue;
     const list = connectionsByProvider.get(providerId) || [];
@@ -697,11 +734,18 @@ export async function getComboBuilderOptions(): Promise<ComboBuilderOptionsPaylo
       isOpenAICompatibleProvider(providerId) ||
       isAnthropicCompatibleProvider(providerId) ||
       isClaudeCodeCompatibleProvider(providerId);
+
+    const activeCustomizations =
+      activeCustomizationsByProvider.get(providerId) ||
+      (providerVisual.alias ? activeCustomizationsByProvider.get(providerVisual.alias) : undefined) ||
+      (providerNode?.prefix ? activeCustomizationsByProvider.get(providerNode.prefix) : undefined);
+
     const modelMap = buildModelOptions(
       providerId,
       builtInModels as RegistryModel[],
       syncedModels,
-      customModels
+      customModels,
+      activeCustomizations
     );
 
     // #2901 follow-up: a configured OpenCode connection shadows the no-auth
@@ -728,83 +772,25 @@ export async function getComboBuilderOptions(): Promise<ComboBuilderOptionsPaylo
       getProviderDisplayName(providerId, providerNode) ||
       providerId) as string;
 
-    providers.push({
-      providerId,
-      providerType: providerVisual.providerType,
-      displayName,
-      alias: providerVisual.alias,
-      prefix: toStringOrNull(providerNode?.prefix),
-      icon: providerVisual.icon,
-      color: providerVisual.color,
-      source: providerVisual.source,
-      acceptsArbitraryModel,
-      connectionCount: normalizedConnections.length,
-      activeConnectionCount,
-      modelCount: modelMap.size,
-      connections: normalizedConnections,
-      models: Array.from(modelMap.values()).sort(compareModels),
-    });
-  }
-
-  // No-auth providers have no rows in provider_connections, so they are never included in the
-  // connectionsByProvider loop above. Add them unless the provider is explicitly blocked.
-  for (const noAuthProvider of Object.values(NOAUTH_PROVIDERS)) {
-    const providerId = noAuthProvider.id;
-    if (
-      blockedProviders.has(providerId) ||
-      (typeof noAuthProvider.alias === "string" && blockedProviders.has(noAuthProvider.alias))
-    )
-      continue;
-    // Skip if already covered (defensive: shouldn't happen for true no-auth providers)
-    if (connectionsByProvider.has(providerId)) continue;
-
-    const providerVisual = getProviderVisual(providerId, null);
-    const builtInModels = getModelsByProviderId(providerId);
-    const syncedModels = normalizeSyncedModels(
-      (syncedModelsMap as Record<string, unknown>)[providerId]
-    );
-    const customModels = normalizeCustomModels(
-      (customModelsMap as Record<string, unknown>)[providerId]
-    );
-    const acceptsArbitraryModel =
-      Boolean((AI_PROVIDERS[providerId] as JsonRecord | undefined)?.passthroughModels) ||
-      isOpenAICompatibleProvider(providerId) ||
-      isAnthropicCompatibleProvider(providerId) ||
-      isClaudeCodeCompatibleProvider(providerId);
-    const modelMap = buildModelOptions(
-      providerId,
-      builtInModels as RegistryModel[],
-      syncedModels,
-      customModels
-    );
-
-    // #2901: no-auth providers must route under their alias (e.g. "oc"), not
-    // their id — "opencode/<model>" misroutes to the opencode-zen api-key tier
-    // (manual ALIAS_TO_PROVIDER_ID override), while "oc/<model>" resolves to the
-    // no-auth "opencode" provider. Rewrite qualifiedModel to the alias prefix.
-    const routingPrefix = noAuthProvider.alias || providerId;
-    rewriteQualifiedModelPrefix(modelMap, providerId, routingPrefix);
-
-    const displayName = (providerEntryName(providerId) ||
-      getProviderDisplayName(providerId, null) ||
-      providerId) as string;
-
-    providers.push({
-      providerId,
-      providerType: providerVisual.providerType,
-      displayName,
-      alias: providerVisual.alias,
-      prefix: null,
-      icon: providerVisual.icon,
-      color: providerVisual.color,
-      source: providerVisual.source,
-      acceptsArbitraryModel,
-      connectionCount: 0,
-      activeConnectionCount: 0,
-      modelCount: modelMap.size,
-      connections: [],
-      models: Array.from(modelMap.values()).sort(compareModels),
-    });
+    // Only include provider in Combo Builder if it has active connections and active models
+    if (normalizedConnections.length > 0 && activeConnectionCount > 0 && modelMap.size > 0) {
+      providers.push({
+        providerId,
+        providerType: providerVisual.providerType,
+        displayName,
+        alias: providerVisual.alias,
+        prefix: toStringOrNull(providerNode?.prefix),
+        icon: providerVisual.icon,
+        color: providerVisual.color,
+        source: providerVisual.source,
+        acceptsArbitraryModel,
+        connectionCount: normalizedConnections.length,
+        activeConnectionCount,
+        modelCount: modelMap.size,
+        connections: normalizedConnections,
+        models: Array.from(modelMap.values()).sort(compareModels),
+      });
+    }
   }
 
   const comboRefs = (combos as JsonRecord[])

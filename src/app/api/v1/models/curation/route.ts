@@ -9,6 +9,7 @@ import {
   getAllCustomizations,
   upsertCustomization,
   setModelActive,
+  setAllModelsActive,
   deleteCustomization,
 } from "@/lib/db/providerModelCustomizations";
 import { getProviderConnections } from "@/lib/db/providers";
@@ -30,6 +31,13 @@ const activeSchema = z.object({
   action: z.literal("setActive"),
   providerId: z.string().min(1),
   originalModelId: z.string().min(1),
+  active: z.boolean(),
+});
+
+const setAllActiveSchema = z.object({
+  action: z.literal("setAllActive"),
+  providerId: z.string().min(1),
+  modelIds: z.array(z.string().min(1)),
   active: z.boolean(),
 });
 
@@ -68,7 +76,8 @@ export async function GET(request: Request) {
     let providerNodes: Array<{ id: string; prefix?: string; name?: string }> = [];
     try {
       const { getProviderNodes } = await import("@/lib/db/providers");
-      providerNodes = (await getProviderNodes()) || [];
+      providerNodes =
+        ((await getProviderNodes()) as Array<{ id: string; prefix?: string; name?: string }>) || [];
     } catch {
       // ignore
     }
@@ -197,6 +206,15 @@ export async function POST(request: Request) {
       setModelActive(providerId, originalModelId, active);
       const row = getCustomization(providerId, originalModelId);
       return NextResponse.json({ success: true, customization: row });
+    }
+
+    // ── Set all active / inactive ──
+    const setAllActiveResult = setAllActiveSchema.safeParse(body);
+    if (setAllActiveResult.success) {
+      const { providerId, modelIds, active } = setAllActiveResult.data;
+      setAllModelsActive(providerId, modelIds, active);
+      const rows = getCustomizationsForProvider(providerId);
+      return NextResponse.json({ success: true, customizations: rows });
     }
 
     // ── Live test ──

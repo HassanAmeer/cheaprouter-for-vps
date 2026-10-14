@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
-import { CardSkeleton } from "@/shared/components";
+import { CardSkeleton, ShimmerPageLoader } from "@/shared/components";
 import {
   getProviderAlias,
   isOpenAICompatibleProvider,
@@ -238,12 +238,7 @@ export default function ProviderDetailPageClient() {
   };
 
   if (loading) {
-    return (
-      <div className="flex flex-col gap-6 p-6">
-        <CardSkeleton />
-        <CardSkeleton />
-      </div>
-    );
+    return <ShimmerPageLoader variant="provider-detail" />;
   }
 
   if (!providerInfo) {

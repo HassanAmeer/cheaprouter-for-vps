@@ -17,7 +17,7 @@
  */
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Card } from "@/shared/components";
+import { Card, ShimmerPageLoader } from "@/shared/components";
 import { isCatalogFreeModel } from "@/shared/utils/freeModels";
 import { matchesSearch } from "@/shared/utils/turkishText";
 import DefaultCapabilitiesPromptModal, {
@@ -380,6 +380,22 @@ export default function ManageModelsPanel() {
     [patchCustomization, refresh]
   );
 
+  const handleToggleAll = useCallback(
+    async (providerId: string, active: boolean) => {
+      const models = modelsByProvider[providerId] ?? [];
+      if (models.length === 0) return;
+      const modelIds = models.map((m) => m.id);
+      await postCuration({
+        action: "setAllActive",
+        providerId,
+        modelIds,
+        active,
+      });
+      void refresh();
+    },
+    [modelsByProvider, refresh]
+  );
+
   const handleCopy = useCallback((modelId: string) => {
     const done = () => {
       setCopiedId(modelId);
@@ -522,11 +538,7 @@ export default function ManageModelsPanel() {
   // Turkish-safe search via matchesSearch (empty query matches all).
 
   if (loading) {
-    return (
-      <Card className="p-6">
-        <p className="text-sm text-text-muted">Loading connected-provider models…</p>
-      </Card>
-    );
+    return <ShimmerPageLoader variant="table" />;
   }
 
   if (loadError) {
@@ -684,7 +696,7 @@ export default function ManageModelsPanel() {
             );
           });
           const activeCount = all.filter(
-            (m) => customizationByModel.get(`${providerId}::${m.id}`)?.isActive !== false
+            (m) => customizationByModel.get(`${providerId}::${m.id}`)?.isActive === true
           ).length;
           const isOpen = expanded[providerId] !== false;
 
@@ -715,25 +727,51 @@ export default function ManageModelsPanel() {
                   </span>
                 </button>
 
-                <button
-                  type="button"
-                  disabled={fetchingProviderId === providerId}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    void handleFetchModelsForProvider(providerId);
-                  }}
-                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-white/15 bg-white/5 hover:bg-white/10 text-zinc-200 text-[11px] font-medium transition-all disabled:opacity-50 cursor-pointer active:scale-95 shrink-0"
-                  title={`Fetch live models for ${providerId} from /v1/models`}
-                >
-                  <span
-                    className={`material-symbols-outlined text-[14px] ${
-                      fetchingProviderId === providerId ? "animate-spin" : ""
-                    }`}
+                <div className="flex items-center gap-1.5 shrink-0">
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      void handleToggleAll(providerId, true);
+                    }}
+                    className="inline-flex items-center gap-1 px-2 py-1 rounded-lg border border-white/10 bg-white/5 hover:bg-white/10 text-zinc-300 text-[10px] font-medium transition-all cursor-pointer active:scale-95"
+                    title={`Select all models for ${providerId}`}
                   >
-                    {fetchingProviderId === providerId ? "progress_activity" : "cloud_sync"}
-                  </span>
-                  <span>{fetchingProviderId === providerId ? "Syncing…" : "Fetch Models"}</span>
-                </button>
+                    <span className="material-symbols-outlined text-[12px] text-emerald-400">done_all</span>
+                    <span>Select All</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      void handleToggleAll(providerId, false);
+                    }}
+                    className="inline-flex items-center gap-1 px-2 py-1 rounded-lg border border-white/10 bg-white/5 hover:bg-white/10 text-zinc-300 text-[10px] font-medium transition-all cursor-pointer active:scale-95"
+                    title={`Deselect all models for ${providerId}`}
+                  >
+                    <span className="material-symbols-outlined text-[12px] text-zinc-400">remove_done</span>
+                    <span>Deselect All</span>
+                  </button>
+                  <button
+                    type="button"
+                    disabled={fetchingProviderId === providerId}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      void handleFetchModelsForProvider(providerId);
+                    }}
+                    className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-white/15 bg-white/5 hover:bg-white/10 text-zinc-200 text-[11px] font-medium transition-all disabled:opacity-50 cursor-pointer active:scale-95 shrink-0"
+                    title={`Fetch live models for ${providerId} from /v1/models`}
+                  >
+                    <span
+                      className={`material-symbols-outlined text-[14px] ${
+                        fetchingProviderId === providerId ? "animate-spin" : ""
+                      }`}
+                    >
+                      {fetchingProviderId === providerId ? "progress_activity" : "cloud_sync"}
+                    </span>
+                    <span>{fetchingProviderId === providerId ? "Syncing…" : "Fetch Models"}</span>
+                  </button>
+                </div>
               </div>
 
               {/* Provider Fetch Error Alert */}
@@ -764,7 +802,7 @@ export default function ManageModelsPanel() {
                   {models.map((m) => {
                     const key = `${providerId}::${m.id}`;
                     const cust = customizationByModel.get(key);
-                    const isActive = cust?.isActive !== false;
+                    const isActive = cust ? cust.isActive === true : false;
                     const draft = aliasDrafts[key] ?? {
                       name: cust?.customName ?? "",
                       alias: cust?.customAlias ?? "",

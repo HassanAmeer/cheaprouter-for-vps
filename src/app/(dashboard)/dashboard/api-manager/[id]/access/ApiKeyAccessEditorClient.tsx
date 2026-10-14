@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { Card, Button, CardSkeleton } from "@/shared/components";
+import { Card, Button, CardSkeleton, ShimmerPageLoader } from "@/shared/components";
 import { useNotificationStore } from "@/store/notificationStore";
 import { getProviderDisplayName } from "@/lib/display/names";
 import { compareTr, matchesSearch } from "@/shared/utils/turkishText";
@@ -779,14 +779,7 @@ function useAccessEditorData(apiKeyId: string, t: ReturnType<typeof useTranslati
 }
 
 function AccessEditorLoading() {
-  const tc = useTranslations("common");
-  return (
-    <div className="flex flex-col gap-6" role="status" aria-live="polite" aria-busy="true">
-      <span className="sr-only">{tc("loading")}</span>
-      <CardSkeleton />
-      <CardSkeleton />
-    </div>
-  );
+  return <ShimmerPageLoader variant="table" />;
 }
 function useAccessEditorTab(tabParam: AccessEditorTab | null) {
   // Deep-linked tab

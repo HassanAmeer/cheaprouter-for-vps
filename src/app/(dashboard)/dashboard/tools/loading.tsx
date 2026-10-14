@@ -1,9 +1,5 @@
-import { ShimmerCards, ShimmerPage } from "@/shared/components";
+import { ShimmerPageLoader } from "@/shared/components";
 
 export default function Loading() {
-  return (
-    <ShimmerPage>
-      <ShimmerCards count={6} />
-    </ShimmerPage>
-  );
+  return <ShimmerPageLoader variant="default" />;
 }

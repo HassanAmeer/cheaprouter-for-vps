@@ -5,7 +5,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
 
 import Card from "@/shared/components/Card";
-import { CardSkeleton } from "@/shared/components/Loading";
+import { CardSkeleton, ShimmerPageLoader } from "@/shared/components";
 import {
   extractComboRuntimeConfig,
   getComboControlCenterTargets,
@@ -310,13 +310,7 @@ export default function ComboControlCenterClient({ comboId }: { comboId: string 
   const runtimeConfig = useMemo(() => (combo ? extractComboRuntimeConfig(combo) : {}), [combo]);
 
   if (loading && !combo) {
-    return (
-      <div className="space-y-4">
-        <CardSkeleton />
-        <CardSkeleton />
-        <CardSkeleton />
-      </div>
-    );
+    return <ShimmerPageLoader variant="combos" />;
   }
 
   if (error && !combo) {

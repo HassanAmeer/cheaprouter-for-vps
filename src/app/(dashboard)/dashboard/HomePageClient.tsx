@@ -5,7 +5,7 @@ import { useTranslations } from "next-intl";
 import { useState, useEffect, useMemo, useCallback, useRef, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Card, CardSkeleton, Button, Modal } from "@/shared/components";
+import { Card, CardSkeleton, ShimmerPageLoader, Button, Modal } from "@/shared/components";
 import { AI_PROVIDERS, NOAUTH_PROVIDERS, OAUTH_PROVIDERS } from "@/shared/constants/providers";
 import {
   isProviderConnectionConnected,
@@ -791,12 +791,7 @@ export default function HomePageClient({ machineId: _machineId }: HomePageClient
   const showUpdateOverlay = updatePhase !== "idle";
 
   if (loading) {
-    return (
-      <div className="flex flex-col gap-8">
-        <CardSkeleton />
-        <CardSkeleton />
-      </div>
-    );
+    return <ShimmerPageLoader variant="dashboard" />;
   }
 
   const currentEndpoint = baseUrl;

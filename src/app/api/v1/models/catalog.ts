@@ -368,8 +368,11 @@ async function buildUnifiedModelsResponseCore(
     let connections = [];
     try {
       connections = (await getCachedRawProviderConnections()).map(createLazyConnectionView);
-      // Filter to only active connections
-      connections = connections.filter((c) => c.isActive !== false);
+      // Filter to only active, genuinely connected connections
+      const { isProviderConnectionConnected } = await import(
+        "@/shared/utils/providerConnectionStatus"
+      );
+      connections = connections.filter((c) => isProviderConnectionConnected(c));
     } catch (e) {
       // If database not available, show no provider models (safe default)
       console.log("[catalog] Could not fetch providers:", e);
@@ -481,11 +484,16 @@ async function buildUnifiedModelsResponseCore(
       registerConnectionKey(conn.provider, conn);
     }
 
-    // noAuth providers have no DB rows; settings.blockedProviders disables them.
+    // noAuth providers have no DB rows; only consider them if explicitly configured
     for (const p of Object.values(NOAUTH_PROVIDERS)) {
       if (isNoAuthProviderBlocked(blockedProviders, p.id, "alias" in p ? p.alias : null)) continue;
-      activeAliases.add(p.id);
-      if ("alias" in p && typeof p.alias === "string") activeAliases.add(p.alias);
+      if (
+        connectionsByProvider.has(p.id) ||
+        ("alias" in p && typeof p.alias === "string" && connectionsByProvider.has(p.alias))
+      ) {
+        activeAliases.add(p.id);
+        if ("alias" in p && typeof p.alias === "string") activeAliases.add(p.alias);
+      }
     }
 
     // #9147 follow-up: this is called ~1-3x per model at catalog scale (providerSupportsModel,
@@ -2087,6 +2095,26 @@ async function buildUnifiedModelsResponseCore(
       // dominant synchronous stage. Let already-queued health checks run before the
       // remaining in-memory enrichment and JSON serialization.
       await yieldCatalogBuildTurn();
+    }
+
+    try {
+      const { getAllCustomizations } = await import("@/lib/db/providerModelCustomizations");
+      const customizations = getAllCustomizations();
+      const inactiveKeys = new Set(
+        customizations
+          .filter((c) => c.isActive === false)
+          .map((c) => `${c.providerId}::${c.originalModelId}`)
+      );
+      if (inactiveKeys.size > 0) {
+        finalModels = finalModels.filter((m: any) => {
+          const pid = typeof m.owned_by === "string" ? m.owned_by : "";
+          const mid = typeof m.id === "string" ? m.id : "";
+          const bareId = mid.includes("/") ? mid.slice(mid.indexOf("/") + 1) : mid;
+          return !inactiveKeys.has(`${pid}::${mid}`) && !inactiveKeys.has(`${pid}::${bareId}`);
+        });
+      }
+    } catch {
+      // ignore
     }
 
     return finalizeCatalogResponse(

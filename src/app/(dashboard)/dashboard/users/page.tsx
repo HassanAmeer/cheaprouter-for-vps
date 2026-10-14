@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useTransition } from "react";
-import { Card, Button, Badge, Collapsible, Loading, Toggle } from "@/shared/components";
+import { Card, Button, Badge, Collapsible, Loading, ShimmerPageLoader, Toggle } from "@/shared/components";
 import { useTranslations } from "next-intl";
 
 type ByokKey = {
@@ -74,11 +74,7 @@ export default function UsersPage() {
   }, []);
 
   if (isLoading) {
-    return (
-      <div className="p-6">
-        <Loading />
-      </div>
-    );
+    return <ShimmerPageLoader variant="users" />;
   }
 
   if (loadError) {

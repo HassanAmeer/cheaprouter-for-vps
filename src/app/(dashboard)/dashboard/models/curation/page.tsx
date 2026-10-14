@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { Card, Checkbox, Input, Badge, Loading } from "@/shared/components";
+import { Card, Checkbox, Input, Badge, Loading, ShimmerPageLoader } from "@/shared/components";
 import ProviderIcon from "@/shared/components/ProviderIcon";
 import { useTranslations } from "next-intl";
 import { getProviderById } from "@/shared/constants/providers";
@@ -66,11 +66,7 @@ export default function ManageModelsPage() {
   }, [load]);
 
   if (loading) {
-    return (
-      <div className="p-6">
-        <Loading />
-      </div>
-    );
+    return <ShimmerPageLoader variant="curation" />;
   }
 
   if (error) {

@@ -297,10 +297,14 @@ export function setModelActive(providerId: string, originalModelId: string, acti
     .get(providerId, originalModelId) as { custom_alias: string | null } | undefined;
 
   backupDbFile("pre-write");
+  const now = new Date().toISOString();
   db.prepare(
-    `UPDATE provider_model_customizations SET is_active = ?, updated_at = ?
-     WHERE provider_id = ? AND original_model_id = ?`
-  ).run(active ? 1 : 0, new Date().toISOString(), providerId, originalModelId);
+    `INSERT INTO provider_model_customizations
+       (provider_id, original_model_id, is_active, is_tested, created_at, updated_at)
+     VALUES (?, ?, ?, 0, ?, ?)
+     ON CONFLICT(provider_id, original_model_id)
+     DO UPDATE SET is_active = excluded.is_active, updated_at = excluded.updated_at`
+  ).run(providerId, originalModelId, active ? 1 : 0, now, now);
 
   // Activate / deactivate the alias in the routing namespace.
   if (row?.custom_alias) {
@@ -311,6 +315,29 @@ export function setModelActive(providerId: string, originalModelId: string, acti
       active,
     });
   }
+}
+
+/**
+ * Bulk toggle the active flag for a list of models belonging to a provider.
+ */
+export function setAllModelsActive(providerId: string, modelIds: string[], active: boolean): void {
+  if (modelIds.length === 0) return;
+  const db = getDbInstance();
+  backupDbFile("pre-write");
+  const now = new Date().toISOString();
+  const stmt = db.prepare(
+    `INSERT INTO provider_model_customizations
+       (provider_id, original_model_id, is_active, is_tested, created_at, updated_at)
+     VALUES (?, ?, ?, 0, ?, ?)
+     ON CONFLICT(provider_id, original_model_id)
+     DO UPDATE SET is_active = excluded.is_active, updated_at = excluded.updated_at`
+  );
+
+  db.transaction(() => {
+    for (const modelId of modelIds) {
+      stmt.run(providerId, modelId, active ? 1 : 0, now, now);
+    }
+  })();
 }
 
 type RowShape = {

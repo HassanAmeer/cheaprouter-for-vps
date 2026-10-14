@@ -17,7 +17,7 @@ import Button from "@/shared/components/Button";
 import GlobalModelSearchPanel from "./GlobalModelSearchPanel";
 import QuickComboCreator from "./QuickComboCreator";
 import Card from "@/shared/components/Card";
-import { CardSkeleton } from "@/shared/components/Loading";
+import { CardSkeleton, ShimmerPageLoader } from "@/shared/components";
 import EmptyState from "@/shared/components/EmptyState";
 import Input from "@/shared/components/Input";
 import Modal from "@/shared/components/Modal";
@@ -1210,12 +1210,7 @@ function CombosPageContent() {
   };
 
   if (loading) {
-    return (
-      <div className="flex flex-col gap-6">
-        <CardSkeleton />
-        <CardSkeleton />
-      </div>
-    );
+    return <ShimmerPageLoader variant="combos" />;
   }
 
   return (

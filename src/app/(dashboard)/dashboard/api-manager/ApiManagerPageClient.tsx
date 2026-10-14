@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo, useCallback, useRef, useId } from "react";
 import Link from "next/link";
-import { Card, Button, Input, Modal, CardSkeleton } from "@/shared/components";
+import { Card, Button, Input, Modal, CardSkeleton, ShimmerPageLoader } from "@/shared/components";
 import { useCopyToClipboard } from "@/shared/hooks/useCopyToClipboard";
 import { useLocale, useTranslations } from "next-intl";
 import { matchesSearch } from "@/shared/utils/turkishText";
@@ -590,15 +590,7 @@ export default function ApiManagerPageClient() {
   };
 
   if (loading) {
-    // The skeleton cards are aria-hidden, so without this status wrapper the page
-    // has no accessible content at all until /api/keys settles (#12066).
-    return (
-      <div className="flex flex-col gap-8" role="status" aria-live="polite" aria-busy="true">
-        <span className="sr-only">{tc("loading")}</span>
-        <CardSkeleton />
-        <CardSkeleton />
-      </div>
-    );
+    return <ShimmerPageLoader variant="api-keys" />;
   }
 
   return (

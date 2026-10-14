@@ -31,69 +31,79 @@ interface GetModelsDependencies {
 export async function handleGetModels(request: Request, dependencies: GetModelsDependencies = {}) {
   try {
     const { searchParams } = new URL(request.url);
-    const showAll = searchParams.get("all") === "true";
+    const _showAll = searchParams.get("all") === "true";
 
     const modelAliases = await getModelAliases();
 
     // Get active provider connections to filter available models
     let activeProviders: Set<string> | null = null;
-    if (!showAll) {
-      try {
-        const connections = await getProviderConnections();
-        const active = connections.filter((c: any) => c.isActive !== false);
-        // Include both provider IDs and their aliases in the active set.
-        // PROVIDER_MODELS keys are aliases (e.g. 'cc' for 'claude', 'gh' for 'github').
-        // DB connections are stored under provider IDs ('claude', 'github').
-        // Without this, models for aliased providers always appear unconfigured.
-        activeProviders = new Set<string>();
-        for (const c of active) {
-          const pId = String((c as Record<string, unknown>).provider);
-          activeProviders.add(pId);
-          const alias = PROVIDER_ID_TO_ALIAS[pId];
-          if (alias) activeProviders.add(alias);
-        }
-        const connectionsByProvider = new Map<string, typeof active>();
-        const registerConnectionKey = (
-          key: string | null | undefined,
-          connection: (typeof active)[number]
-        ) => {
-          if (!key) return;
-          const existing = connectionsByProvider.get(key) || [];
-          existing.push(connection);
-          connectionsByProvider.set(key, existing);
-        };
-        for (const connection of active) {
-          registerConnectionKey(connection.provider, connection);
-          registerConnectionKey(PROVIDER_ID_TO_ALIAS[connection.provider], connection);
-        }
-        const getConnectionsForProvider = (...keys: Array<string | null | undefined>) => {
-          const seen = new Set<string>();
-          const collected: typeof active = [];
-          for (const key of keys) {
-            if (!key) continue;
-            for (const connection of connectionsByProvider.get(key) || []) {
-              if (!connection?.id || seen.has(connection.id)) continue;
-              seen.add(connection.id);
-              collected.push(connection);
-            }
-          }
-          return collected;
-        };
-
-        activeProviders = new Set(
-          AI_MODELS.flatMap((model: any) => {
-            const providerKeys = [model.provider, PROVIDER_ID_TO_ALIAS[model.provider]];
-            return hasEligibleConnectionForModel(
-              getConnectionsForProvider(...providerKeys),
-              model.model
-            )
-              ? providerKeys.filter(Boolean)
-              : [];
-          })
-        );
-      } catch {
-        // If DB unavailable, show all models
+    let inactiveCustomizationKeys = new Set<string>();
+    try {
+      const connections = await getProviderConnections();
+      const { isProviderConnectionConnected } = await import(
+        "@/shared/utils/providerConnectionStatus"
+      );
+      const active = connections.filter((c: any) => isProviderConnectionConnected(c));
+      activeProviders = new Set<string>();
+      for (const c of active) {
+        const pId = String((c as Record<string, unknown>).provider);
+        activeProviders.add(pId);
+        const alias = PROVIDER_ID_TO_ALIAS[pId];
+        if (alias) activeProviders.add(alias);
       }
+      const connectionsByProvider = new Map<string, typeof active>();
+      const registerConnectionKey = (
+        key: string | null | undefined,
+        connection: (typeof active)[number]
+      ) => {
+        if (!key) return;
+        const existing = connectionsByProvider.get(key) || [];
+        existing.push(connection);
+        connectionsByProvider.set(key, existing);
+      };
+      for (const connection of active) {
+        const prov = typeof connection.provider === "string" ? connection.provider : undefined;
+        if (prov) {
+          registerConnectionKey(prov, connection);
+          registerConnectionKey(PROVIDER_ID_TO_ALIAS[prov], connection);
+        }
+      }
+      const getConnectionsForProvider = (...keys: Array<string | null | undefined>) => {
+        const seen = new Set<string>();
+        const collected: typeof active = [];
+        for (const key of keys) {
+          if (!key) continue;
+          for (const connection of connectionsByProvider.get(key) || []) {
+            const connId = typeof connection?.id === "string" ? connection.id : undefined;
+            if (!connId || seen.has(connId)) continue;
+            seen.add(connId);
+            collected.push(connection);
+          }
+        }
+        return collected;
+      };
+
+      activeProviders = new Set(
+        AI_MODELS.flatMap((model: any) => {
+          const providerKeys = [model.provider, PROVIDER_ID_TO_ALIAS[model.provider]];
+          return hasEligibleConnectionForModel(
+            getConnectionsForProvider(...providerKeys),
+            model.model
+          )
+            ? providerKeys.filter(Boolean)
+            : [];
+        })
+      );
+
+      const { getAllCustomizations } = await import("@/lib/db/providerModelCustomizations");
+      const customizations = getAllCustomizations();
+      inactiveCustomizationKeys = new Set(
+        customizations
+          .filter((c) => c.isActive === false)
+          .map((c) => `${c.providerId}::${c.originalModelId}`)
+      );
+    } catch {
+      // If DB unavailable, show all models
     }
 
     // #6328 (follow-up to #6495): REMOVE — not just hide — paid models from the
@@ -110,7 +120,9 @@ export async function handleGetModels(request: Request, dependencies: GetModelsD
     // needless capability work. One request-local snapshot supplies all persisted
     // capability and custom-vision rows to the remaining resolutions.
     const candidates = AI_MODELS.filter((model: any) => {
-      if (!showAll && activeProviders && !activeProviders.has(model.provider)) return false;
+      if (activeProviders && !activeProviders.has(model.provider)) return false;
+      const canonicalKey = `${model.provider}::${model.model}`;
+      if (inactiveCustomizationKeys.has(canonicalKey)) return false;
       return (
         !hidePaid ||
         (providerHasFreeModels(model.provider) && isFreeModel(model.provider, { id: model.model }))

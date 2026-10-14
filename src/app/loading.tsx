@@ -1,7 +1,7 @@
 "use client";
 
-import { PageLoading } from "@/shared/components/Loading";
+import { ShimmerPageLoader } from "@/shared/components";
 
 export default function AppLoading() {
-  return <PageLoading message="Loading CheapRouter..." />;
+  return <ShimmerPageLoader variant="dashboard" />;
 }

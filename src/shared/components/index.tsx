@@ -11,13 +11,21 @@ export { default as Loading, Spinner, PageLoading, Skeleton, CardSkeleton } from
 export {
   Shimmer,
   ShimmerHeader,
+  ShimmerDetailHeader,
+  ShimmerTabs,
   ShimmerToolbar,
+  ShimmerStatCard,
+  ShimmerStats,
   ShimmerCard,
   ShimmerCards,
+  ShimmerHero,
+  ShimmerChart,
   ShimmerTable,
   ShimmerList,
   ShimmerForm,
   ShimmerPage,
+  ShimmerPageLoader,
+  type ShimmerPageVariant,
 } from "./Shimmer";
 export { default as Avatar } from "./Avatar";
 export { default as Badge } from "./Badge";

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useMemo, Suspense } from "react";
-import { CardSkeleton, Button } from "@/shared/components";
+import { CardSkeleton, ShimmerPageLoader, Button } from "@/shared/components";
 import {
   AGGREGATOR_PROVIDER_IDS,
   EMBEDDING_RERANK_PROVIDER_IDS,
@@ -865,12 +865,7 @@ function ProvidersPageContent() {
     webfetch: countConfigured(webFetchEntriesAll),
   };
   if (loading) {
-    return (
-      <div className="flex flex-col gap-8">
-        <CardSkeleton />
-        <CardSkeleton />
-      </div>
-    );
+    return <ShimmerPageLoader variant="providers" />;
   }
 
   const totalVisibleEntriesCount =
