@@ -10,7 +10,6 @@ import {
 } from "./nodeSqliteShared";
 import type { SqliteAdapter } from "./types";
 
-
 type DriverLoader = (moduleName: string) => unknown;
 
 type SpawnSyncLike = (
@@ -41,14 +40,16 @@ export type DriverProbe = () => boolean;
  * the existing cascade already handles, and we don't want to pay a subprocess
  * spawn on every Linux/CI boot.
  */
-export function createBetterSqliteProbe(options: {
-  platform?: string;
-  execPath?: string;
-  spawn?: SpawnSyncLike;
-  timeoutMs?: number;
-}): DriverProbe {
+export function createBetterSqliteProbe(
+  options: {
+    platform?: string;
+    execPath?: string;
+    spawn?: SpawnSyncLike;
+    timeoutMs?: number;
+  } = {}
+): DriverProbe {
   const {
-    platform = process.platform,
+    platform: _platform = process.platform,
     execPath = process.execPath,
     spawn = spawnSync as unknown as SpawnSyncLike,
     timeoutMs = 5_000,
@@ -57,10 +58,6 @@ export function createBetterSqliteProbe(options: {
   let verdict: boolean | null = null;
   return () => {
     if (verdict !== null) return verdict;
-    if (platform !== "win32") {
-      verdict = true;
-      return verdict;
-    }
     try {
       const result = spawn(execPath, ["-e", "require('better-sqlite3')(':memory:')"], {
         timeout: timeoutMs,

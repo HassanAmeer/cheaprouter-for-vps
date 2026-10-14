@@ -14,7 +14,10 @@ import {
   isOpenAICompatibleProvider,
 } from "@/shared/constants/providers";
 import { isProviderConnectionConnected } from "@/shared/utils/providerConnectionStatus";
-import { getAllCustomizations } from "@/lib/db/providerModelCustomizations";
+import {
+  getAllCustomizations,
+  ensureProviderInitialActiveModels,
+} from "@/lib/db/providerModelCustomizations";
 import type { RegistryModel } from "@cheaproute/open-sse/config/providerRegistry.ts";
 import { appendSyncedEffortVariants } from "@cheaproute/open-sse/utils/syncedEffortVariants";
 
@@ -735,10 +738,25 @@ export async function getComboBuilderOptions(): Promise<ComboBuilderOptionsPaylo
       isAnthropicCompatibleProvider(providerId) ||
       isClaudeCodeCompatibleProvider(providerId);
 
-    const activeCustomizations =
+    let activeCustomizations =
       activeCustomizationsByProvider.get(providerId) ||
       (providerVisual.alias ? activeCustomizationsByProvider.get(providerVisual.alias) : undefined) ||
       (providerNode?.prefix ? activeCustomizationsByProvider.get(providerNode.prefix) : undefined);
+
+    if (!activeCustomizations || activeCustomizations.size === 0) {
+      const allCandidateIds = [
+        ...syncedModels.map((m) => toStringOrNull(m.id)),
+        ...(builtInModels as RegistryModel[]).map((m) => toStringOrNull(m.id)),
+        ...customModels.map((m) => toStringOrNull(m.id)),
+      ].filter((id): id is string => Boolean(id));
+
+      if (allCandidateIds.length > 0 && ensureProviderInitialActiveModels(providerId, allCandidateIds, 3)) {
+        activeCustomizations = new Map();
+        for (const mid of allCandidateIds.slice(0, 3)) {
+          activeCustomizations.set(mid, {});
+        }
+      }
+    }
 
     const modelMap = buildModelOptions(
       providerId,

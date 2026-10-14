@@ -396,6 +396,33 @@ export default function ManageModelsPanel() {
     [modelsByProvider, refresh]
   );
 
+  const handleActivateWorking = useCallback(
+    async (providerId: string) => {
+      const models = modelsByProvider[providerId] ?? [];
+      if (models.length === 0) return;
+      const workingModelIds = models
+        .filter((m) => {
+          const key = `${providerId}::${m.id}`;
+          const t = testResults[key];
+          if (t && t.ok) return true;
+          const cust = customizationByModel.get(key);
+          return cust?.testStatus === "verified";
+        })
+        .map((m) => m.id);
+
+      if (workingModelIds.length === 0) return;
+
+      await postCuration({
+        action: "setAllActive",
+        providerId,
+        modelIds: workingModelIds,
+        active: true,
+      });
+      void refresh();
+    },
+    [modelsByProvider, testResults, customizationByModel, refresh]
+  );
+
   const handleCopy = useCallback((modelId: string) => {
     const done = () => {
       setCopiedId(modelId);
@@ -426,15 +453,27 @@ export default function ManageModelsPanel() {
           }),
         });
         const data = await res.json().catch(() => null);
+        const isOk = data?.status === "ok";
         setTestResults((prev) => ({
           ...prev,
           [key]: {
-            ok: data?.status === "ok",
+            ok: isOk,
             httpStatus: data?.httpStatus,
             latencyMs: data?.latencyMs,
             preview: (data?.responsePreview ?? data?.error ?? "").slice(0, 500),
           },
         }));
+
+        // 💡 Idea 2: Auto-activate model on successful test
+        if (isOk) {
+          await postCuration({
+            action: "setActive",
+            providerId,
+            originalModelId: modelId,
+            active: true,
+          });
+        }
+
         // The API persists the result onto the curation row — refresh badges.
         void refresh();
       } catch {
@@ -751,6 +790,18 @@ export default function ManageModelsPanel() {
                   >
                     <span className="material-symbols-outlined text-[12px] text-zinc-400">remove_done</span>
                     <span>Deselect All</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      void handleActivateWorking(providerId);
+                    }}
+                    className="inline-flex items-center gap-1 px-2 py-1 rounded-lg border border-emerald-500/25 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300 text-[10px] font-medium transition-all cursor-pointer active:scale-95"
+                    title={`Activate all models that passed tests for ${providerId}`}
+                  >
+                    <span className="material-symbols-outlined text-[12px] text-emerald-400">check_circle</span>
+                    <span>Activate Working</span>
                   </button>
                   <button
                     type="button"

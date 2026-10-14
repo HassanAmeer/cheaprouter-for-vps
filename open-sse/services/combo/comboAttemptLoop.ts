@@ -279,6 +279,21 @@ export async function dispatchWithCooldownRetry(opts: {
         deps.strategy === "priority" &&
         state.orderedTargets.some((target) => target.fallbackOnlyOnQuotaExhaustion === true);
 
+      // Fast-Failover Window (Aggressive Speculative Probing):
+      // If a target hasn't responded within fastFailoverWindowMs (default 3000ms),
+      // we speculatively launch the next target in parallel so the client doesn't endure 15-30s timeouts.
+      const fastFailoverConfig =
+        deps.config.fastFailoverWindowMs ?? process.env.CHEAPROUTE_FAST_FAILOVER_MS;
+      const fastFailoverEnabled =
+        deps.config.fastFailover !== false &&
+        process.env.CHEAPROUTE_FAST_FAILOVER_ENABLED !== "false";
+      const fastFailoverWindowMs =
+        fastFailoverEnabled && fastFailoverConfig != null && Number(fastFailoverConfig) > 0
+          ? Math.max(500, Number(fastFailoverConfig))
+          : fastFailoverEnabled
+            ? 3000
+            : 0;
+
       const executeTarget = async (i: number): Promise<ExecuteTargetResult> => {
         const gate = await extra.evaluateGates({ index: i, state, deps });
         if (gate.kind === "skip") return gate.result;
@@ -345,18 +360,39 @@ export async function dispatchWithCooldownRetry(opts: {
         runningTasks.add(task);
         task.finally(() => runningTasks.delete(task));
 
-        if (
+        const isHedgeActive =
           zeroLatencyOptimizationsEnabled &&
           deps.config.hedging &&
           bodySmallEnoughToHedge &&
           !hasProtectedPriorityTarget &&
-          i + 1 < state.orderedTargets.length
-        ) {
+          i + 1 < state.orderedTargets.length;
+
+        const isFastFailoverActive =
+          !isHedgeActive &&
+          fastFailoverWindowMs > 0 &&
+          bodySmallEnoughToHedge &&
+          !hasProtectedPriorityTarget &&
+          i + 1 < state.orderedTargets.length;
+
+        if (isHedgeActive) {
           const hedgeDelay = resolveDelayMs(deps.config.hedgeDelayMs, 500);
           const timeoutPromise = new Promise<void>((r) => {
             setTimeout(r, hedgeDelay);
           });
           await Promise.race([task, globalPromise, timeoutPromise, loopSafetyPromise]);
+        } else if (isFastFailoverActive) {
+          let timerId: ReturnType<typeof setTimeout> | undefined;
+          const timeoutPromise = new Promise<void>((r) => {
+            timerId = setTimeout(() => {
+              deps.log.info?.(
+                "COMBO",
+                `Target ${i} (${state.orderedTargets[i].modelStr}) hit ${fastFailoverWindowMs}ms fast-failover window — speculatively probing next candidate (${state.orderedTargets[i + 1].modelStr})`
+              );
+              r();
+            }, fastFailoverWindowMs);
+          });
+          await Promise.race([task, globalPromise, timeoutPromise, loopSafetyPromise]);
+          clearTimeout(timerId);
         } else {
           await Promise.race([task, globalPromise, loopSafetyPromise]);
         }

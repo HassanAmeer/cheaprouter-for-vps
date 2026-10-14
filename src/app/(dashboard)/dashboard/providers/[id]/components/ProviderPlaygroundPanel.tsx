@@ -7,16 +7,16 @@
 
 import { useState } from "react";
 import { useTranslations } from "next-intl";
-import { LlmChatCard } from "@/app/(dashboard)/dashboard/media-providers/components/LlmChatCard";
-import { ServiceKindTabs } from "@/app/(dashboard)/dashboard/media-providers/components/ServiceKindTabs";
-import { EmbeddingExampleCard } from "@/app/(dashboard)/dashboard/media-providers/components/EmbeddingExampleCard";
-import { ImageExampleCard } from "@/app/(dashboard)/dashboard/media-providers/components/ImageExampleCard";
-import { TtsExampleCard } from "@/app/(dashboard)/dashboard/media-providers/components/TtsExampleCard";
-import { SttExampleCard } from "@/app/(dashboard)/dashboard/media-providers/components/SttExampleCard";
-import { WebSearchExampleCard } from "@/app/(dashboard)/dashboard/media-providers/components/WebSearchExampleCard";
-import { WebFetchExampleCard } from "@/app/(dashboard)/dashboard/media-providers/components/WebFetchExampleCard";
-import { VideoExampleCard } from "@/app/(dashboard)/dashboard/media-providers/components/VideoExampleCard";
-import { MusicExampleCard } from "@/app/(dashboard)/dashboard/media-providers/components/MusicExampleCard";
+import { LlmChatCard } from "@/shared/components/media-playground/LlmChatCard";
+import { ServiceKindTabs } from "@/shared/components/media-playground/ServiceKindTabs";
+import { EmbeddingExampleCard } from "@/shared/components/media-playground/EmbeddingExampleCard";
+import { ImageExampleCard } from "@/shared/components/media-playground/ImageExampleCard";
+import { TtsExampleCard } from "@/shared/components/media-playground/TtsExampleCard";
+import { SttExampleCard } from "@/shared/components/media-playground/SttExampleCard";
+import { WebSearchExampleCard } from "@/shared/components/media-playground/WebSearchExampleCard";
+import { WebFetchExampleCard } from "@/shared/components/media-playground/WebFetchExampleCard";
+import { VideoExampleCard } from "@/shared/components/media-playground/VideoExampleCard";
+import { MusicExampleCard } from "@/shared/components/media-playground/MusicExampleCard";
 import type { ServiceKind } from "@/shared/constants/providers";
 import { AI_PROVIDERS } from "@/shared/constants/providers";
 import { providerText } from "../providerPageHelpers";

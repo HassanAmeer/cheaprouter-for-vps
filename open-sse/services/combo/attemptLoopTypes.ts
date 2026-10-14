@@ -70,6 +70,8 @@ export type AttemptLoopDeps = {
     maxGlobalAttempts?: unknown;
     hedging?: boolean;
     hedgeDelayMs?: unknown;
+    fastFailover?: boolean;
+    fastFailoverWindowMs?: unknown;
   };
   log: ComboLogger;
   settings: Record<string, unknown> | null;

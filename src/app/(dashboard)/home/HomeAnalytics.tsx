@@ -263,7 +263,7 @@ export default function HomeAnalytics({ providerStats, customProviders }: HomeAn
       value: compactNumber(summary?.uniqueModels ?? totals.models),
       hint: t("analyticsModelsHint"),
       tone: "text-primary",
-      href: "/dashboard/models",
+      href: "/dashboard/manage-models",
     },
   ];
 

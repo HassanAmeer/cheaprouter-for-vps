@@ -340,6 +340,34 @@ export function setAllModelsActive(providerId: string, modelIds: string[], activ
   })();
 }
 
+/**
+ * If a provider has never had any customization rows in the database (brand new connection),
+ * automatically activate its top initial models (up to count, default 3) so it is ready
+ * out-of-the-box in Combos and Manage Models.
+ */
+export function ensureProviderInitialActiveModels(
+  providerId: string,
+  modelIds: string[],
+  count = 3
+): boolean {
+  if (!providerId || modelIds.length === 0) return false;
+  const db = getDbInstance();
+  const existingCount =
+    (
+      db
+        .prepare(
+          "SELECT COUNT(*) as count FROM provider_model_customizations WHERE provider_id = ?"
+        )
+        .get(providerId) as { count: number } | undefined
+    )?.count ?? 0;
+
+  if (existingCount > 0) return false;
+
+  const initialIds = modelIds.slice(0, count);
+  setAllModelsActive(providerId, initialIds, true);
+  return true;
+}
+
 type RowShape = {
   id: number;
   provider_id: string;

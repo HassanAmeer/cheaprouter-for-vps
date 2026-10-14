@@ -156,12 +156,44 @@ export async function GET(request: Request) {
       }
     }
 
+    // 💡 Idea 1: Smart Initial Activation on First Connect
+    // If a connected provider has NO customization rows in DB at all (never configured),
+    // automatically activate its top 3 flagship models so it is ready out of the box in Combos.
+    const { ensureProviderInitialActiveModels } = await import(
+      "@/lib/db/providerModelCustomizations"
+    );
+    let refreshedNeeded = false;
+    for (const pid of connectedProviderIds) {
+      const models = modelsByProvider[pid] || [];
+      if (models.length > 0) {
+        const modelIds = models.map((m: any) => String(m.id || ""));
+        const seeded = ensureProviderInitialActiveModels(pid, modelIds, 3);
+        if (seeded) refreshedNeeded = true;
+      }
+    }
+
+    if (refreshedNeeded) {
+      customizations = providerId
+        ? getCustomizationsForProvider(providerId)
+        : getAllCustomizations();
+    }
+
+    // 💡 Idea 5: Identify cooling / rate-limited providers for live health dot
+    const coolingProviderIds = activeConnections
+      .filter((c: any) => {
+        if (!c.rateLimitedUntil) return false;
+        return new Date(c.rateLimitedUntil).getTime() > Date.now();
+      })
+      .map((c: any) => (typeof c.provider === "string" ? c.provider : ""))
+      .filter(Boolean);
+
     return NextResponse.json({
       success: true,
       customizations,
       connections,
       modelsByProvider,
       connectedProviderIds,
+      coolingProviderIds,
     });
   } catch (error) {
     return NextResponse.json(

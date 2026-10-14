@@ -141,6 +141,15 @@ const DEVTOOLS_ITEMS: readonly SidebarItemDefinition[] = [
     subtitleKey: "consoleLogsSubtitle",
     icon: "terminal",
   },
+  {
+    id: "playground",
+    href: "/dashboard/playground",
+    i18nKey: "playground",
+    labelFallback: "Playground",
+    subtitleKey: "playgroundSubtitle",
+    subtitleFallback: "Live multimodal testbench",
+    icon: "science",
+  },
 ];
 
 // Bottom standalone: Theme — no section header

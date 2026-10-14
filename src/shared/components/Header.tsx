@@ -13,6 +13,7 @@ const getPlatformIsMacServer = () => false;
 import ThemeToggle from "./ThemeToggle";
 import TokenHealthBadge from "./TokenHealthBadge";
 import DegradationBadge from "./DegradationBadge";
+import OperatorHealthBadge from "./OperatorHealthBadge";
 import LanguageSelector from "./LanguageSelector";
 import ProviderIcon from "./ProviderIcon";
 import { useTranslations } from "next-intl";
@@ -275,6 +276,7 @@ export default function Header({
         )}
         <LanguageSelector />
         <ThemeToggle />
+        <OperatorHealthBadge />
         {!isE2EMode && <DegradationBadge />}
         {!isE2EMode && <TokenHealthBadge />}
         <button

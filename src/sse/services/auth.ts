@@ -3514,7 +3514,14 @@ export async function markAccountUnavailable(
       await updateProviderConnection(connectionId, {
         ...baseUpdate,
         rateLimitedUntil: null,
-        ...(terminalStatus ? { testStatus: terminalStatus } : {}),
+        ...(terminalStatus
+          ? {
+              testStatus: terminalStatus,
+              ...(terminalStatus === "banned" || terminalStatus === "expired"
+                ? { isActive: false }
+                : {}),
+            }
+          : {}),
       });
     }
 

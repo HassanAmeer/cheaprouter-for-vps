@@ -10,7 +10,11 @@
  */
 import * as nodeModule from "node:module";
 
-const esmRequire = nodeModule.createRequire(process.argv[1] || process.cwd());
+const esmRequire = nodeModule.createRequire(
+  process.argv[1] && process.argv[1] !== "[eval]"
+    ? process.argv[1]
+    : `${process.cwd()}/package.json`
+);
 
 function esmRuntimeRequire(specifier: string): unknown {
   // Reflect keeps the optional request dynamic. A direct call is rewritten by

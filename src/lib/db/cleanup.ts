@@ -97,6 +97,100 @@ export async function cleanupCallLogs(): Promise<CleanupResult> {
 }
 
 /**
+ * Clean up old request_detail_logs based on callLogs retention settings.
+ */
+export async function cleanupRequestDetailLogs(
+  retentionDays = getRetentionSettings().callLogs
+): Promise<CleanupResult> {
+  const db = getDbInstance();
+  const cutoffDate = new Date();
+  cutoffDate.setDate(cutoffDate.getDate() - retentionDays);
+  const cutoffISO = cutoffDate.toISOString();
+
+  const result: CleanupResult = { deleted: 0, errors: 0 };
+
+  try {
+    if (!tableExists("request_detail_logs")) return result;
+    const stmt = db.prepare("DELETE FROM request_detail_logs WHERE timestamp < ?");
+    const runResult = stmt.run(cutoffISO);
+    result.deleted = runResult.changes;
+
+    if (result.deleted > 0) {
+      console.log(
+        `[Cleanup] Deleted ${result.deleted} request_detail_logs older than ${retentionDays} days`
+      );
+    }
+  } catch (err: unknown) {
+    console.error("[Cleanup] Error cleaning request_detail_logs:", err);
+    result.errors++;
+  }
+
+  return result;
+}
+
+/**
+ * Clean up old relay_logs based on callLogs retention settings.
+ */
+export async function cleanupRelayLogs(
+  retentionDays = getRetentionSettings().callLogs
+): Promise<CleanupResult> {
+  const db = getDbInstance();
+  const cutoffSeconds = Math.floor(Date.now() / 1000) - retentionDays * 86400;
+
+  const result: CleanupResult = { deleted: 0, errors: 0 };
+
+  try {
+    if (!tableExists("relay_logs")) return result;
+    const stmt = db.prepare("DELETE FROM relay_logs WHERE created_at < ?");
+    const runResult = stmt.run(cutoffSeconds);
+    result.deleted = runResult.changes;
+
+    if (result.deleted > 0) {
+      console.log(
+        `[Cleanup] Deleted ${result.deleted} relay_logs older than ${retentionDays} days`
+      );
+    }
+  } catch (err: unknown) {
+    console.error("[Cleanup] Error cleaning relay_logs:", err);
+    result.errors++;
+  }
+
+  return result;
+}
+
+/**
+ * Clean up old middleware_logs based on callLogs retention settings.
+ */
+export async function cleanupMiddlewareLogs(
+  retentionDays = getRetentionSettings().callLogs
+): Promise<CleanupResult> {
+  const db = getDbInstance();
+  const cutoffDate = new Date();
+  cutoffDate.setDate(cutoffDate.getDate() - retentionDays);
+  const cutoffISO = cutoffDate.toISOString();
+
+  const result: CleanupResult = { deleted: 0, errors: 0 };
+
+  try {
+    if (!tableExists("middleware_logs")) return result;
+    const stmt = db.prepare("DELETE FROM middleware_logs WHERE timestamp < ?");
+    const runResult = stmt.run(cutoffISO);
+    result.deleted = runResult.changes;
+
+    if (result.deleted > 0) {
+      console.log(
+        `[Cleanup] Deleted ${result.deleted} middleware_logs older than ${retentionDays} days`
+      );
+    }
+  } catch (err: unknown) {
+    console.error("[Cleanup] Error cleaning middleware_logs:", err);
+    result.errors++;
+  }
+
+  return result;
+}
+
+/**
  * Clean up old usage_history based on retention settings.
  */
 export async function cleanupUsageHistory(): Promise<CleanupResult> {
@@ -697,6 +791,9 @@ export async function runAutoCleanup(): Promise<{
     xpAuditLog: await cleanupXpAuditLog(),
     compressionRunTelemetry: await cleanupCompressionRunTelemetry(),
     proxyLogs: await cleanupProxyLogs(),
+    requestDetailLogs: await cleanupRequestDetailLogs(),
+    relayLogs: await cleanupRelayLogs(),
+    middlewareLogs: await cleanupMiddlewareLogs(),
     ccrBlocks: await cleanupCcrBlocks(),
     conversationTurnNodes: await cleanupConversationTurnNodes(),
     agenticConversations: await cleanupAgenticConversations(),

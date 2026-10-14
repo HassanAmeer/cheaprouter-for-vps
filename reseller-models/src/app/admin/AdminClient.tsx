@@ -22,11 +22,20 @@ interface AdminUser {
   expiresAt: string | null;
 }
 
+interface CatalogProvider {
+  id: string;
+  name: string;
+  hasConnection?: boolean;
+  models?: string[];
+}
+
 const emptyPlan = { name: "", tokenBudget: "", rpmLimit: "", validityDays: "", models: "" };
 
 export default function AdminClient() {
   const [plans, setPlans] = useState<Plan[]>([]);
   const [users, setUsers] = useState<AdminUser[]>([]);
+  const [catalogProviders, setCatalogProviders] = useState<CatalogProvider[]>([]);
+  const [modelFilter, setModelFilter] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [planForm, setPlanForm] = useState(emptyPlan);
@@ -41,14 +50,16 @@ export default function AdminClient() {
     setLoading(true);
     setError(null);
     try {
-      const [p, u] = await Promise.all([
+      const [p, u, cat] = await Promise.all([
         fetch("/api/admin/plans").then((r) => r.json()),
         fetch("/api/admin/users").then((r) => r.json()),
+        fetch("/api/catalog").then((r) => r.json()).catch(() => ({ providers: [] })),
       ]);
       if (p.error) throw new Error(p.error);
       if (u.error) throw new Error(u.error);
       setPlans(p.plans ?? []);
       setUsers(u.users ?? []);
+      setCatalogProviders(cat.providers ?? []);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load admin data");
     } finally {
@@ -59,6 +70,37 @@ export default function AdminClient() {
   useEffect(() => {
     void refresh();
   }, [refresh]);
+
+  const activeProviders = catalogProviders.filter(
+    (p) => p.hasConnection !== false && Array.isArray(p.models) && p.models.length > 0
+  );
+  const allActiveModels = Array.from(
+    new Set(activeProviders.flatMap((p) => p.models || []))
+  );
+
+  const selectedModelsArray = planForm.models
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+  const selectedModelsSet = new Set(selectedModelsArray);
+
+  function toggleModel(modelId: string) {
+    if (selectedModelsSet.has(modelId)) {
+      const next = selectedModelsArray.filter((m) => m !== modelId);
+      setPlanForm({ ...planForm, models: next.join(", ") });
+    } else {
+      const next = [...selectedModelsArray, modelId];
+      setPlanForm({ ...planForm, models: next.join(", ") });
+    }
+  }
+
+  function selectAllActive() {
+    setPlanForm({ ...planForm, models: allActiveModels.join(", ") });
+  }
+
+  function clearAllModels() {
+    setPlanForm({ ...planForm, models: "" });
+  }
 
   async function savePlan(e: React.FormEvent) {
     e.preventDefault();
@@ -156,10 +198,139 @@ export default function AdminClient() {
             <label className="field">RPM limit<input className="input" inputMode="numeric" value={planForm.rpmLimit} onChange={(e) => setPlanForm({ ...planForm, rpmLimit: e.target.value })} placeholder="30" /></label>
             <label className="field">Validity days (blank = unlimited)<input className="input" inputMode="numeric" value={planForm.validityDays} onChange={(e) => setPlanForm({ ...planForm, validityDays: e.target.value })} placeholder="30" /></label>
           </div>
-          <label className="field">
-            Allowed models (comma-separated, blank = all active)
-            <input className="input mono" value={planForm.models} onChange={(e) => setPlanForm({ ...planForm, models: e.target.value })} placeholder="glm-5.3_flash, deepseek-r1" />
-          </label>
+          <div className="field">
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+              <span>Allowed models (comma-separated, blank = all active)</span>
+              <div style={{ display: "flex", gap: 6 }}>
+                {allActiveModels.length > 0 && (
+                  <>
+                    <button
+                      type="button"
+                      className="btn ghost small"
+                      style={{ fontSize: 11, padding: "2px 8px" }}
+                      onClick={selectAllActive}
+                    >
+                      Select All ({allActiveModels.length})
+                    </button>
+                    <button
+                      type="button"
+                      className="btn ghost small"
+                      style={{ fontSize: 11, padding: "2px 8px" }}
+                      onClick={clearAllModels}
+                    >
+                      Clear
+                    </button>
+                  </>
+                )}
+              </div>
+            </div>
+            <input
+              className="input mono"
+              value={planForm.models}
+              onChange={(e) => setPlanForm({ ...planForm, models: e.target.value })}
+              placeholder="e.g. glm-5.3_flash, deepseek-r1"
+            />
+
+            {/* Dynamic Handshake Catalog Selector */}
+            <div
+              style={{
+                marginTop: 10,
+                padding: "10px 12px",
+                borderRadius: 8,
+                background: "var(--surface-2, rgba(255,255,255,0.03))",
+                border: "1px solid var(--border-subtle, rgba(255,255,255,0.08))",
+              }}
+            >
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  fontSize: 12,
+                  marginBottom: 8,
+                }}
+              >
+                <span style={{ display: "inline-flex", alignItems: "center", gap: 6, fontWeight: 500 }}>
+                  <span
+                    style={{
+                      width: 8,
+                      height: 8,
+                      borderRadius: "50%",
+                      backgroundColor: allActiveModels.length > 0 ? "#10b981" : "#f59e0b",
+                    }}
+                  />
+                  CheapRouter Dynamic Handshake:{" "}
+                  {allActiveModels.length > 0
+                    ? `${allActiveModels.length} active models from ${activeProviders.length} connected providers`
+                    : "No connected models detected"}
+                </span>
+                {allActiveModels.length > 6 && (
+                  <input
+                    type="text"
+                    value={modelFilter}
+                    onChange={(e) => setModelFilter(e.target.value)}
+                    placeholder="Search active models…"
+                    style={{
+                      fontSize: 11,
+                      padding: "3px 8px",
+                      borderRadius: 4,
+                      background: "rgba(0,0,0,0.2)",
+                      border: "1px solid rgba(255,255,255,0.1)",
+                      color: "inherit",
+                    }}
+                  />
+                )}
+              </div>
+
+              {allActiveModels.length > 0 ? (
+                <div
+                  style={{
+                    display: "flex",
+                    flexWrap: "wrap",
+                    gap: 6,
+                    maxHeight: 180,
+                    overflowY: "auto",
+                    paddingTop: 4,
+                  }}
+                >
+                  {allActiveModels
+                    .filter((m) => !modelFilter || m.toLowerCase().includes(modelFilter.toLowerCase()))
+                    .map((m) => {
+                      const isSelected = selectedModelsSet.has(m);
+                      return (
+                        <button
+                          key={m}
+                          type="button"
+                          onClick={() => toggleModel(m)}
+                          style={{
+                            fontSize: 11,
+                            fontFamily: "monospace",
+                            padding: "3px 8px",
+                            borderRadius: 6,
+                            cursor: "pointer",
+                            transition: "all 0.15s ease",
+                            border: isSelected
+                              ? "1px solid var(--primary, #3b82f6)"
+                              : "1px solid var(--border-subtle, rgba(255,255,255,0.12))",
+                            backgroundColor: isSelected
+                              ? "var(--primary-subtle, rgba(59, 130, 246, 0.2))"
+                              : "transparent",
+                            color: isSelected ? "var(--primary, #60a5fa)" : "var(--text-muted, #94a3b8)",
+                            fontWeight: isSelected ? 600 : 400,
+                          }}
+                        >
+                          {isSelected ? `✓ ${m}` : `+ ${m}`}
+                        </button>
+                      );
+                    })}
+                </div>
+              ) : (
+                <div style={{ fontSize: 11, color: "var(--text-muted, #94a3b8)" }}>
+                  Connect providers in CheapRouter to enable live model selection.
+                </div>
+              )}
+            </div>
+          </div>
           {planMsg && <div className="alert ok">{planMsg}</div>}
           <div><button className="btn small" disabled={savingPlan}>{savingPlan ? "Saving…" : "Save plan"}</button></div>
         </form>

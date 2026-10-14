@@ -46,6 +46,20 @@ export async function GET(request: Request) {
 
     const connections = await getProviderConnections();
 
+    const { isProviderConnectionConnected } = await import(
+      "@/shared/utils/providerConnectionStatus"
+    );
+    const { getAllCustomizations } = await import(
+      "@/lib/db/providerModelCustomizations"
+    );
+
+    const customizations = getAllCustomizations();
+    const inactiveModelKeys = new Set(
+      customizations
+        .filter((c) => c.isActive === false)
+        .map((c) => `${c.providerId}::${c.originalModelId}`)
+    );
+
     // Map unique providers
     const providerMap = new Map<
       string,
@@ -65,17 +79,16 @@ export async function GET(request: Request) {
       const pid = typeof conn.provider === "string" ? conn.provider : "";
       if (!pid) continue;
 
+      const isConnected = isProviderConnectionConnected(conn);
+
       if (!providerMap.has(pid)) {
         const name = formatProviderName(pid, typeof conn.name === "string" ? conn.name : undefined);
         providerMap.set(pid, {
           id: pid,
           name,
           icon: `/providers/${pid}.svg`,
-          status:
-            conn.testStatus === "active" || !conn.testStatus
-              ? "connected"
-              : String(conn.testStatus),
-          hasConnection: true,
+          status: isConnected ? "connected" : String(conn.testStatus || "unavailable"),
+          hasConnection: isConnected,
           connectionCount: 0,
           models: new Set<string>(),
         });
@@ -83,28 +96,38 @@ export async function GET(request: Request) {
 
       const entry = providerMap.get(pid)!;
       entry.connectionCount += 1;
-      entry.hasConnection = true;
-
-      // Add static models
-      const staticModels = PROVIDER_MODELS[pid as keyof typeof PROVIDER_MODELS];
-      if (Array.isArray(staticModels)) {
-        for (const m of staticModels) {
-          if (typeof m === "string") entry.models.add(m);
-        }
+      if (isConnected) {
+        entry.hasConnection = true;
+        entry.status = "connected";
       }
 
-      // Add synced models if available
-      try {
-        if (typeof conn.id === "string") {
-          const synced = await getSyncedAvailableModelsByConnection(conn.id);
-          if (Array.isArray(synced)) {
-            for (const sm of synced) {
-              if (sm?.modelId) entry.models.add(sm.modelId);
+      // Only expose models for connected connections
+      if (isConnected) {
+        // Add static models that are not marked inactive
+        const staticModels = PROVIDER_MODELS[pid as keyof typeof PROVIDER_MODELS];
+        if (Array.isArray(staticModels)) {
+          for (const m of staticModels) {
+            if (typeof m === "string" && !inactiveModelKeys.has(`${pid}::${m}`)) {
+              entry.models.add(m);
             }
           }
         }
-      } catch {
-        // ignore individual sync lookup failures
+
+        // Add synced models if available and not marked inactive
+        try {
+          if (typeof conn.id === "string") {
+            const synced = await getSyncedAvailableModelsByConnection(conn.id);
+            if (Array.isArray(synced)) {
+              for (const sm of synced) {
+                if (sm?.modelId && !inactiveModelKeys.has(`${pid}::${sm.modelId}`)) {
+                  entry.models.add(sm.modelId);
+                }
+              }
+            }
+          }
+        } catch {
+          // ignore individual sync lookup failures
+        }
       }
     }
 
@@ -159,7 +182,7 @@ export async function GET(request: Request) {
         hasConnection: p.hasConnection,
         connectionCount: p.connectionCount,
         modelsCount: p.models.size,
-        models: Array.from(p.models).slice(0, 30),
+        models: Array.from(p.models).slice(0, 150),
         isPublished: publishedList.includes(p.id),
       };
     });
