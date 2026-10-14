@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useTransition } from "react";
 import { ProviderTab, PROVIDER_TABS_CONFIG } from "../hooks/useProviderTabs";
 
 export function ProviderTabs({
@@ -11,13 +11,20 @@ export function ProviderTabs({
   onTabChange?: (tab: ProviderTab) => void;
 }) {
   const [activeTab, setActiveTab] = useState<ProviderTab>(initialTab as ProviderTab);
+  const [pendingTab, setPendingTab] = useState<ProviderTab | null>(null);
+  const [, startTransition] = useTransition();
 
   const handleTabChange = useCallback(
     (tab: ProviderTab) => {
-      setActiveTab(tab);
-      onTabChange?.(tab);
+      if (tab === activeTab) return;
+      setPendingTab(tab);
+      startTransition(() => {
+        setActiveTab(tab);
+        onTabChange?.(tab);
+        setTimeout(() => setPendingTab(null), 250);
+      });
     },
-    [onTabChange],
+    [activeTab, onTabChange]
   );
 
   return (
@@ -25,6 +32,7 @@ export function ProviderTabs({
       <nav className="flex gap-0 overflow-x-auto" aria-label="Provider tabs">
         {PROVIDER_TABS_CONFIG.map((tabConfig) => {
           const isActive = tabConfig.id === activeTab;
+          const isLoading = pendingTab === tabConfig.id;
           return (
             <button
               key={tabConfig.id}
@@ -40,7 +48,9 @@ export function ProviderTabs({
                   : "border-transparent text-text-muted hover:text-text-main hover:border-border",
               ].join(" ")}
             >
-              <span className="material-symbols-outlined text-[16px]">{tabConfig.icon}</span>
+              <span className={`material-symbols-outlined text-[16px] ${isLoading ? "animate-spin" : ""}`}>
+                {isLoading ? "progress_activity" : tabConfig.icon}
+              </span>
               {tabConfig.fallback}
             </button>
           );

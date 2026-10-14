@@ -249,6 +249,7 @@ function ProvidersPageContent() {
   const [modelSearchQuery, setModelSearchQuery] = useState("");
   const liveModelsByProviderId = useSyncedModelsByProvider();
   const [showFreeOnly, setShowFreeOnly] = useState(false);
+  const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const [openRouterProviderStats, setOpenRouterProviderStats] = useState<
     OpenRouterProviderStatsEntry[]
   >([]);
@@ -262,9 +263,32 @@ function ProvidersPageContent() {
   
   // Tab-based section visibility
   const tabCategories = tabToCategories(activeTab);
+
+  const isCategoryMatch = (sectionCat: string) => {
+    if (showFreeOnly) return sectionCat === "free";
+    if (!activeCategory) return true;
+    if (activeCategory === "oauth") return sectionCat === "oauth";
+    if (activeCategory === "ide") return sectionCat === "ide";
+    if (activeCategory === "free") return sectionCat === "free";
+    if (activeCategory === "compatible") return sectionCat === "compatible";
+    if (activeCategory === "apikey") return sectionCat === "apikey";
+    if (activeCategory === "no-auth" || activeCategory === "noauth")
+      return sectionCat === "noauth" || sectionCat === "no-auth";
+    if (activeCategory === "upstream-proxy" || activeCategory === "proxy")
+      return sectionCat === "proxy" || sectionCat === "upstream-proxy";
+    if (activeCategory === "webcookie" || activeCategory === "web")
+      return sectionCat === "web" || sectionCat === "webcookie";
+    if (activeCategory === "search") return sectionCat === "search";
+    if (activeCategory === "webfetch") return sectionCat === "webfetch";
+    if (activeCategory === "audio") return sectionCat === "audio";
+    if (activeCategory === "local") return sectionCat === "local";
+    if (activeCategory === "cloudagent" || activeCategory === "cloud")
+      return sectionCat === "cloud" || sectionCat === "cloudagent";
+    return sectionCat === activeCategory;
+  };
+
   const showSectionFromTab = (category: string) => {
-    // For tab-based system, we check if the category is in our tab's categories
-    return tabCategories.includes(category);
+    return tabCategories.includes(category) && isCategoryMatch(category);
   };
   const _webCookieProvidersDesc = providerText(
     t,
@@ -283,8 +307,8 @@ function ProvidersPageContent() {
     setSearchQuery,
     modelSearchQuery,
     setModelSearchQuery,
-    activeCategory: null,
-    setActiveCategory: () => {},
+    activeCategory,
+    setActiveCategory,
     showFreeOnly,
     setShowFreeOnly,
     activeServiceKind,
@@ -800,10 +824,10 @@ function ProvidersPageContent() {
     }) as DashboardProviderEntry[]
   );
   const webFetchEntries = filterEntries(webFetchEntriesAll);
-  const visibleWebFetchEntries = resolveVisibleWebFetchEntries(webFetchEntries, null);
+  const visibleWebFetchEntries = resolveVisibleWebFetchEntries(webFetchEntries, activeCategory);
 
   const compactProviderEntries = buildCompactProviderEntriesForPage({
-    activeCategory: null,
+    activeCategory,
     showFreeOnly,
     freeSectionEntries,
     compatibleProviderEntries,
@@ -851,22 +875,28 @@ function ProvidersPageContent() {
   }
 
   const totalVisibleEntriesCount =
-    oauthProviderEntries.filter((e) => !IDE_PROVIDER_IDS.has(e.providerId)).length +
-    noAuthEntries.length +
-    llmProviderEntries.length +
-    aggregatorProviderEntries.length +
-    imageProviderEntries.length +
-    enterpriseProviderEntries.length +
-    videoProviderEntries.length +
-    embeddingRerankProviderEntries.length +
-    webCookieProviderEntries.length +
-    localProviderEntries.length +
-    searchProviderEntries.length +
-    audioProviderEntries.length +
-    cloudAgentProviderEntries.length +
-    upstreamProxyEntries.length +
-    compatibleProviderEntries.length +
-    ideProviderEntries.length;
+    (showSectionFromTab("oauth")
+      ? oauthProviderEntries.filter((e) => !IDE_PROVIDER_IDS.has(e.providerId)).length
+      : 0) +
+    (showSectionFromTab("noauth") ? noAuthEntries.length : 0) +
+    (showSectionFromTab("apikey")
+      ? llmProviderEntries.length +
+        aggregatorProviderEntries.length +
+        imageProviderEntries.length +
+        enterpriseProviderEntries.length +
+        videoProviderEntries.length +
+        embeddingRerankProviderEntries.length
+      : 0) +
+    (showSectionFromTab("web") ? webCookieProviderEntries.length : 0) +
+    (showSectionFromTab("local") ? localProviderEntries.length : 0) +
+    (showSectionFromTab("search") ? searchProviderEntries.length : 0) +
+    (showSectionFromTab("audio") ? audioProviderEntries.length : 0) +
+    (showSectionFromTab("cloud") ? cloudAgentProviderEntries.length : 0) +
+    (showSectionFromTab("proxy") ? upstreamProxyEntries.length : 0) +
+    (showSectionFromTab("compatible") ? compatibleProviderEntries.length : 0) +
+    (showSectionFromTab("ide") ? ideProviderEntries.length : 0) +
+    (showSectionFromTab("free") ? freeSectionEntries.length : 0) +
+    (showSectionFromTab("webfetch") ? visibleWebFetchEntries.length : 0);
 
   return (
     <OpenRouterProviderStatsProvider entries={openRouterProviderStats}>
@@ -887,14 +917,14 @@ function ProvidersPageContent() {
         {activeTab !== "manage-models" && activeTab !== "reseller-api" && (
         <>
         <ProviderSummaryCard
-          activeCategory={null}
+          activeCategory={activeCategory}
           activeServiceKind={activeServiceKind}
           onServiceKindChange={setActiveServiceKind}
           modelSearchQuery={modelSearchQuery}
           onBatchTest={handleBatchTest}
-          onCategoryChange={(_category, _freeOnly) => {
-            // Category selection is now handled by tabs; keep showFreeOnly state
-            setShowFreeOnly(_freeOnly);
+          onCategoryChange={(catKey, isFree) => {
+            setActiveCategory(catKey);
+            setShowFreeOnly(isFree);
           }}
           searchQuery={searchQuery}
           setModelSearchQuery={setModelSearchQuery}
@@ -1021,6 +1051,14 @@ function ProvidersPageContent() {
               <span className="material-symbols-outlined text-[18px]">apps</span>
               <span>Go to All Providers</span>
             </button>
+          </div>
+        ) : totalVisibleEntriesCount === 0 ? (
+          <div
+            className="flex items-center justify-center gap-2 py-12 border border-dashed border-border rounded-xl text-text-muted text-sm"
+            data-testid="provider-empty"
+          >
+            <span className="material-symbols-outlined text-[18px]">search_off</span>
+            <span>{providerText(t, "noProvidersMatch", "No providers match your search or filter.")}</span>
           </div>
         ) : (
           <>

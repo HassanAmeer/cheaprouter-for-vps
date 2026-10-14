@@ -1,6 +1,8 @@
 "use client";
 
+import { useState, useTransition } from "react";
 import { Card, Input } from "@/shared/components";
+import { useNotificationStore } from "@/store/notificationStore";
 import type { ProviderDisplayMode } from "../providerPageStorage";
 import { CategoryDot } from "./CategoryDot";
 
@@ -175,6 +177,44 @@ export default function ProviderSummaryCard({
     },
   ].filter((category) => category.key !== "no-auth" || category.stat.total > 0);
 
+  const [pendingCategoryKey, setPendingCategoryKey] = useState<string | null>(null);
+  const [pendingServiceKindKey, setPendingServiceKindKey] = useState<string | null>(null);
+  const [, startTransition] = useTransition();
+
+  const handleCategoryClick = (cat: (typeof categories)[number]) => {
+    const key = cat.key ?? "all";
+    setPendingCategoryKey(key);
+
+    if (cat.stat.total === 0) {
+      useNotificationStore.getState().info(
+        providerText(
+          t,
+          "noProvidersForCategory",
+          `${cat.label}: 0 providers available`
+        )
+      );
+    }
+
+    startTransition(() => {
+      onCategoryChange(cat.key, cat.key === "free");
+      setTimeout(() => {
+        setPendingCategoryKey(null);
+      }, 250);
+    });
+  };
+
+  const handleServiceKindClick = (key: string) => {
+    const nextKey = activeServiceKind === key ? null : key;
+    setPendingServiceKindKey(key);
+
+    startTransition(() => {
+      onServiceKindChange(nextKey);
+      setTimeout(() => {
+        setPendingServiceKindKey(null);
+      }, 250);
+    });
+  };
+
   return (
     <Card padding="sm">
       <div className="flex flex-col gap-3">
@@ -243,10 +283,11 @@ export default function ProviderSummaryCard({
                 cat.key !== null &&
                 !showFreeOnly &&
                 activeCategory === cat.key);
+            const isLoading = pendingCategoryKey === (cat.key ?? "all");
             return (
               <button
                 key={cat.key ?? "all"}
-                onClick={() => onCategoryChange(cat.key, cat.key === "free")}
+                onClick={() => handleCategoryClick(cat)}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs font-medium transition-colors ${
                   isActive
                     ? "bg-primary text-white border-primary"
@@ -254,7 +295,13 @@ export default function ProviderSummaryCard({
                 }`}
                 title={cat.title || cat.label}
               >
-                {cat.color && <CategoryDot color={cat.color} label={cat.label} />}
+                {isLoading ? (
+                  <span className="material-symbols-outlined text-[13px] animate-spin">
+                    progress_activity
+                  </span>
+                ) : (
+                  cat.color && <CategoryDot color={cat.color} label={cat.label} />
+                )}
                 <span>{cat.label}</span>
                 <span className={`text-[11px] ${isActive ? "text-white/80" : "text-text-muted"}`}>
                   {cat.stat.configured}
@@ -271,10 +318,11 @@ export default function ProviderSummaryCard({
           </span>
           {SERVICE_KIND_CHIPS.map((chip) => {
             const isActive = activeServiceKind === chip.key;
+            const isLoading = pendingServiceKindKey === chip.key;
             return (
               <button
                 key={chip.key}
-                onClick={() => onServiceKindChange(isActive ? null : chip.key)}
+                onClick={() => handleServiceKindClick(chip.key)}
                 aria-pressed={isActive}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs font-medium transition-colors ${
                   isActive
@@ -282,7 +330,9 @@ export default function ProviderSummaryCard({
                     : "bg-bg-subtle border-border text-text-muted hover:text-text-primary hover:border-primary/30"
                 }`}
               >
-                <span className="material-symbols-outlined text-[14px]">{chip.icon}</span>
+                <span className={`material-symbols-outlined text-[14px] ${isLoading ? "animate-spin" : ""}`}>
+                  {isLoading ? "progress_activity" : chip.icon}
+                </span>
                 <span>{providerText(t, chip.labelKey, chip.fallback)}</span>
               </button>
             );

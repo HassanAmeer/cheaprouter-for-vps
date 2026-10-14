@@ -5,7 +5,7 @@ import type {
 
 // ─── Item arrays ────────────────────────────────────────────────────────────
 
-// Top standalone items: Home, Users, Usage — no section header
+// Top standalone items: Home, Users — no section header
 const TOP_STANDALONE_ITEMS: readonly SidebarItemDefinition[] = [
   {
     id: "home",
@@ -24,18 +24,9 @@ const TOP_STANDALONE_ITEMS: readonly SidebarItemDefinition[] = [
     subtitleFallback: "Reseller users, plans & BYOK keys",
     icon: "groups",
   },
-  {
-    id: "usage",
-    href: "/dashboard/usage",
-    i18nKey: "usage",
-    labelFallback: "Usage",
-    subtitleKey: "usageSubtitle",
-    subtitleFallback: "Token & provider consumption",
-    icon: "data_usage",
-  },
 ];
 
-// CheapProxy section: Providers, Combos, API Keys (model-catalog removed)
+// CheapProxy section: Providers, Combos, API Keys, Usage
 const CHEAP_PROXY_ITEMS: readonly SidebarItemDefinition[] = [
   {
     id: "providers",
@@ -57,6 +48,15 @@ const CHEAP_PROXY_ITEMS: readonly SidebarItemDefinition[] = [
     i18nKey: "apiManager",
     subtitleKey: "apiManagerSubtitle",
     icon: "vpn_key",
+  },
+  {
+    id: "usage",
+    href: "/dashboard/usage",
+    i18nKey: "usage",
+    labelFallback: "Usage",
+    subtitleKey: "usageSubtitle",
+    subtitleFallback: "Token & provider consumption",
+    icon: "data_usage",
   },
 ];
 
