@@ -75,6 +75,23 @@ export async function POST(request: Request) {
       streamChat: true,
     });
 
+    // Persist test result into SQLite provider_model_customizations table
+    try {
+      const { upsertCustomization } = await import("@/lib/db/providerModelCustomizations");
+      const isOk = result.status === "ok" && (result.responseText || "").trim().length > 0;
+      upsertCustomization({
+        providerId,
+        originalModelId: modelId,
+        isTested: true,
+        testStatus: isOk ? "verified" : "failed",
+        testHttpStatus: result.httpStatus ?? (isOk ? 200 : (result.statusCode ?? 500)),
+        testLatencyMs: result.latencyMs,
+        testResponse: (result.responseText ?? result.error ?? "Model test failed").slice(0, 500),
+      });
+    } catch {
+      // Non-fatal if DB persistence fails
+    }
+
     if (result.status === "ok") {
       return NextResponse.json({
         status: "ok",

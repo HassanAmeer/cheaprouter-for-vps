@@ -8,6 +8,7 @@ export const HIDEABLE_SIDEBAR_ITEM_IDS = [
   "api-manager",
   "providers",
   "combos",
+  "limits",
   // Multi-tenant / reseller
   "users",
   // Info

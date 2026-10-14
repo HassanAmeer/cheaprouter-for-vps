@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useNotificationStore } from "@/store/notificationStore";
 import { matchesSearch } from "@/shared/utils/turkishText";
 import { getPromptForCapability } from "@/app/(dashboard)/dashboard/providers/components/DefaultCapabilitiesPromptModal";
@@ -137,6 +137,8 @@ function matchesCapabilityFilter(model: ModelEntry, filter: string): boolean {
   return true;
 }
 
+const SELECTED_CAPS_STORAGE_KEY = "cheaproute.modelSelectedCapabilities.v1";
+
 export default function AvailableModelsTable({
   providerId,
   providerDisplayAlias: _providerDisplayAlias,
@@ -166,6 +168,72 @@ export default function AvailableModelsTable({
       }
     >
   >({});
+
+  // ── 1. Hydrate selected capability per model from localStorage ───────────
+  useEffect(() => {
+    try {
+      const raw = window.localStorage?.getItem(SELECTED_CAPS_STORAGE_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (parsed && typeof parsed === "object") {
+          // eslint-disable-next-line react-hooks/set-state-in-effect -- localStorage hydration, runs once
+          setSelectedCapabilities(parsed);
+        }
+      }
+    } catch {
+      // Storage unavailable or invalid JSON
+    }
+  }, []);
+
+  const handleSelectCapability = useCallback((modelId: string, capKey: string) => {
+    setSelectedCapabilities((prev) => {
+      const next = { ...prev, [modelId]: capKey };
+      try {
+        window.localStorage?.setItem(SELECTED_CAPS_STORAGE_KEY, JSON.stringify(next));
+      } catch {
+        // Storage quota / private mode
+      }
+      return next;
+    });
+  }, []);
+
+  // ── 2. Hydrate persisted test results from SQLite curation table ──────────
+  useEffect(() => {
+    let cancelled = false;
+    const run = async () => {
+      try {
+        const res = await fetch(
+          `/api/v1/models/curation?providerId=${encodeURIComponent(providerId)}`
+        );
+        if (!res.ok) return;
+        const data = await res.json().catch(() => null);
+        if (cancelled) return;
+        const custs = Array.isArray(data?.customizations) ? data.customizations : [];
+        if (custs.length > 0) {
+          setTestResults((prev) => {
+            const next = { ...prev };
+            for (const c of custs) {
+              if (c.originalModelId && c.isTested) {
+                next[c.originalModelId] = {
+                  status: c.testStatus === "verified" ? "ok" : "error",
+                  latencyMs: typeof c.testLatencyMs === "number" ? c.testLatencyMs : undefined,
+                  snippet: c.testStatus === "verified" ? (c.testResponse ?? "OK (200)") : undefined,
+                  error: c.testStatus === "failed" ? (c.testResponse ?? "Model test failed") : undefined,
+                };
+              }
+            }
+            return next;
+          });
+        }
+      } catch {
+        // Best-effort
+      }
+    };
+    void run();
+    return () => {
+      cancelled = true;
+    };
+  }, [providerId]);
 
   const handleToggleActive = async (modelId: string, currentHidden: boolean) => {
     try {
@@ -514,9 +582,7 @@ export default function AvailableModelsTable({
                         {caps.hasChat && (
                           <button
                             type="button"
-                            onClick={() =>
-                              setSelectedCapabilities((prev) => ({ ...prev, [model.id]: "text" }))
-                            }
+                            onClick={() => handleSelectCapability(model.id, "text")}
                             title={`Text: Dialogue & instruction prompt (${
                               selectedCap === "text" ? "Active for test" : "Click to select for test"
                             })`}
@@ -537,9 +603,7 @@ export default function AvailableModelsTable({
                         {caps.hasCode && (
                           <button
                             type="button"
-                            onClick={() =>
-                              setSelectedCapabilities((prev) => ({ ...prev, [model.id]: "code" }))
-                            }
+                            onClick={() => handleSelectCapability(model.id, "code")}
                             title={`Code: Programming & syntax prompt (${
                               selectedCap === "code" ? "Active for test" : "Click to select for test"
                             })`}
@@ -560,9 +624,7 @@ export default function AvailableModelsTable({
                         {caps.hasVision && (
                           <button
                             type="button"
-                            onClick={() =>
-                              setSelectedCapabilities((prev) => ({ ...prev, [model.id]: "vision" }))
-                            }
+                            onClick={() => handleSelectCapability(model.id, "vision")}
                             title={`Vision: Multimodal image prompt (${
                               selectedCap === "vision"
                                 ? "Active for test"
@@ -585,12 +647,7 @@ export default function AvailableModelsTable({
                         {caps.hasReasoning && (
                           <button
                             type="button"
-                            onClick={() =>
-                              setSelectedCapabilities((prev) => ({
-                                ...prev,
-                                [model.id]: "reasoning",
-                              }))
-                            }
+                            onClick={() => handleSelectCapability(model.id, "reasoning")}
                             title={`Reasoning: Chain-of-thought prompt (${
                               selectedCap === "reasoning"
                                 ? "Active for test"
@@ -613,12 +670,7 @@ export default function AvailableModelsTable({
                         {caps.hasSearch && (
                           <button
                             type="button"
-                            onClick={() =>
-                              setSelectedCapabilities((prev) => ({
-                                ...prev,
-                                [model.id]: "search",
-                              }))
-                            }
+                            onClick={() => handleSelectCapability(model.id, "search")}
                             title={`Search: Grounded web search prompt (${
                               selectedCap === "search"
                                 ? "Active for test"
@@ -641,12 +693,7 @@ export default function AvailableModelsTable({
                         {caps.hasAudio && (
                           <button
                             type="button"
-                            onClick={() =>
-                              setSelectedCapabilities((prev) => ({
-                                ...prev,
-                                [model.id]: "audio",
-                              }))
-                            }
+                            onClick={() => handleSelectCapability(model.id, "audio")}
                             title={`Audio: Speech transcription prompt (${
                               selectedCap === "audio"
                                 ? "Active for test"

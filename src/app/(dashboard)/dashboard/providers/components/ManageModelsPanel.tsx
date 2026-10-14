@@ -212,6 +212,8 @@ async function postCuration(payload: Record<string, unknown>): Promise<Customiza
   return (data?.customization as Customization) ?? null;
 }
 
+const SELECTED_CAPS_STORAGE_KEY = "cheaproute.modelSelectedCapabilities.v1";
+
 export default function ManageModelsPanel() {
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -235,6 +237,34 @@ export default function ManageModelsPanel() {
   const [testPrompt, setTestPrompt] = useState("Hi");
   const [fetchingProviderId, setFetchingProviderId] = useState<string | null>(null);
   const [fetchErrorByProvider, setFetchErrorByProvider] = useState<Record<string, string>>({});
+
+  // ── Hydrate selected capability per model from localStorage ──────────────
+  useEffect(() => {
+    try {
+      const raw = window.localStorage?.getItem(SELECTED_CAPS_STORAGE_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (parsed && typeof parsed === "object") {
+          // eslint-disable-next-line react-hooks/set-state-in-effect -- localStorage hydration, runs once
+          setSelectedCapabilities(parsed);
+        }
+      }
+    } catch {
+      // Storage unavailable or invalid JSON
+    }
+  }, []);
+
+  const handleSelectCapability = useCallback((key: string, capKey: string) => {
+    setSelectedCapabilities((prev) => {
+      const next = { ...prev, [key]: capKey };
+      try {
+        window.localStorage?.setItem(SELECTED_CAPS_STORAGE_KEY, JSON.stringify(next));
+      } catch {
+        // Storage quota / private mode
+      }
+      return next;
+    });
+  }, []);
 
   const applyPayload = useCallback(
     (payload: {
@@ -435,6 +465,10 @@ export default function ManageModelsPanel() {
                 supportedEndpoints: Array.isArray(m.supportedEndpoints)
                   ? m.supportedEndpoints
                   : ["chat"],
+                ...(Array.isArray(m.capabilities) ? { capabilities: m.capabilities } : {}),
+                ...(typeof m.supportsVision === "boolean" ? { supportsVision: m.supportsVision } : {}),
+                ...(typeof m.inputTokenLimit === "number" ? { inputTokenLimit: m.inputTokenLimit } : {}),
+                ...(typeof m.outputTokenLimit === "number" ? { outputTokenLimit: m.outputTokenLimit } : {}),
               })),
             }),
           });
@@ -771,9 +805,7 @@ export default function ManageModelsPanel() {
                           {capsMeta.hasChat && (
                             <button
                               type="button"
-                              onClick={() =>
-                                setSelectedCapabilities((prev) => ({ ...prev, [key]: "text" }))
-                              }
+                              onClick={() => handleSelectCapability(key, "text")}
                               title={`Text: Dialogue & instruction prompt (${
                                 selectedCap === "text"
                                   ? "Active for test"
@@ -796,9 +828,7 @@ export default function ManageModelsPanel() {
                           {capsMeta.hasCode && (
                             <button
                               type="button"
-                              onClick={() =>
-                                setSelectedCapabilities((prev) => ({ ...prev, [key]: "code" }))
-                              }
+                              onClick={() => handleSelectCapability(key, "code")}
                               title={`Code: Programming & syntax prompt (${
                                 selectedCap === "code"
                                   ? "Active for test"
@@ -821,9 +851,7 @@ export default function ManageModelsPanel() {
                           {capsMeta.hasVision && (
                             <button
                               type="button"
-                              onClick={() =>
-                                setSelectedCapabilities((prev) => ({ ...prev, [key]: "vision" }))
-                              }
+                              onClick={() => handleSelectCapability(key, "vision")}
                               title={`Vision: Multimodal image analysis prompt (${
                                 selectedCap === "vision"
                                   ? "Active for test"
@@ -846,12 +874,7 @@ export default function ManageModelsPanel() {
                           {capsMeta.hasReasoning && (
                             <button
                               type="button"
-                              onClick={() =>
-                                setSelectedCapabilities((prev) => ({
-                                  ...prev,
-                                  [key]: "reasoning",
-                                }))
-                              }
+                              onClick={() => handleSelectCapability(key, "reasoning")}
                               title={`Reasoning: Chain-of-thought prompt (${
                                 selectedCap === "reasoning"
                                   ? "Active for test"
@@ -874,12 +897,7 @@ export default function ManageModelsPanel() {
                           {capsMeta.hasSearch && (
                             <button
                               type="button"
-                              onClick={() =>
-                                setSelectedCapabilities((prev) => ({
-                                  ...prev,
-                                  [key]: "search",
-                                }))
-                              }
+                              onClick={() => handleSelectCapability(key, "search")}
                               title={`Search: Grounded web search prompt (${
                                 selectedCap === "search"
                                   ? "Active for test"
@@ -902,9 +920,7 @@ export default function ManageModelsPanel() {
                           {capsMeta.hasAudio && (
                             <button
                               type="button"
-                              onClick={() =>
-                                setSelectedCapabilities((prev) => ({ ...prev, [key]: "audio" }))
-                              }
+                              onClick={() => handleSelectCapability(key, "audio")}
                               title={`Audio: Speech transcription prompt (${
                                 selectedCap === "audio"
                                   ? "Active for test"

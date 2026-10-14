@@ -26,7 +26,7 @@ const TOP_STANDALONE_ITEMS: readonly SidebarItemDefinition[] = [
   },
 ];
 
-// CheapProxy section: Providers, Combos, API Keys, Usage
+// CheapProxy section: Providers, Combos, Limits, API Keys, Usage
 const CHEAP_PROXY_ITEMS: readonly SidebarItemDefinition[] = [
   {
     id: "providers",
@@ -41,6 +41,15 @@ const CHEAP_PROXY_ITEMS: readonly SidebarItemDefinition[] = [
     i18nKey: "combos",
     subtitleKey: "combosSubtitle",
     icon: "layers",
+  },
+  {
+    id: "limits",
+    href: "/dashboard/limits",
+    i18nKey: "limits",
+    labelFallback: "Limits",
+    subtitleKey: "limitsSubtitle",
+    subtitleFallback: "Rate limits & quotas",
+    icon: "speed",
   },
   {
     id: "api-manager",
