@@ -55,6 +55,10 @@ const AddCompatibleProviderModal = dynamic(
   () => import("./components/AddCompatibleProviderModal"),
   { ssr: false }
 );
+const EditCustomProviderSheet = dynamic(
+  () => import("./[id]/components/EditCustomProviderSheet"),
+  { ssr: false }
+);
 import CustomProviderInlineForm from "./components/CustomProviderInlineForm";
 import { CategoryDot } from "./components/CategoryDot";
 const ImportProvidersFromFileModal = dynamic(
@@ -369,7 +373,7 @@ function ProvidersPageContent() {
 
   const getProviderStats = (providerId, authType) => {
     const providerConnections = connections.filter((c) =>
-      connectionMatchesProviderCard(c, providerId, authType)
+      connectionMatchesProviderCard(c, providerId, authType, providerNodes)
     );
 
     const connected = providerConnections.filter((connection) =>
@@ -463,10 +467,28 @@ function ProvidersPageContent() {
     };
   };
 
-  // Toggle all connections for a provider on/off
+  // Toggle all connections for a provider on/off (or pause/resume a custom provider node)
   const handleToggleProvider = async (providerId: string, authType: string, newActive: boolean) => {
+    // If it's a custom provider node
+    const customNode = providerNodes.find((n) => n.id === providerId || n.prefix === providerId);
+    if (customNode) {
+      setProviderNodes((prev) =>
+        prev.map((n) => (n.id === customNode.id ? { ...n, isActive: newActive } : n))
+      );
+      void fetch(`/api/provider-nodes/${encodeURIComponent(customNode.id)}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ isActive: newActive }),
+      });
+      notify.info(
+        newActive
+          ? `Provider "${customNode.name || customNode.prefix || providerId}" resumed`
+          : `Provider "${customNode.name || customNode.prefix || providerId}" paused`
+      );
+    }
+
     const matchesToggle = (c: { provider: string; authType?: string }) =>
-      connectionMatchesProviderCard(c, providerId, authType as "oauth" | "free" | "apikey");
+      connectionMatchesProviderCard(c, providerId, authType as "oauth" | "free" | "apikey", providerNodes);
     const providerConns = connections.filter(matchesToggle);
     // Optimistically update UI
     setConnections((prev) =>
@@ -482,6 +504,93 @@ function ProvidersPageContent() {
         })
       )
     );
+  };
+
+  const [editingNode, setEditingNode] = useState<any | null>(null);
+  const [isSyncingNodeModels, setIsSyncingNodeModels] = useState(false);
+
+  const handleEditCustomProvider = (providerId: string) => {
+    const node = providerNodes.find((n) => n.id === providerId || n.prefix === providerId);
+    if (node) {
+      setEditingNode(node);
+    }
+  };
+
+  const handleDeleteCustomProvider = async (providerId: string) => {
+    const node = providerNodes.find((n) => n.id === providerId || n.prefix === providerId);
+    if (!node) return;
+    const confirmed = window.confirm(
+      `Are you sure you want to delete custom provider "${node.name || node.prefix || providerId}"? This will delete all its connections and models.`
+    );
+    if (!confirmed) return;
+    try {
+      const res = await fetch(`/api/provider-nodes/${encodeURIComponent(node.id)}`, {
+        method: "DELETE",
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || `HTTP ${res.status}`);
+      }
+      setProviderNodes((prev) => prev.filter((n) => n.id !== node.id));
+      setConnections((prev) =>
+        prev.filter(
+          (c) =>
+            !connectionMatchesProviderCard(c, node.id, "apikey", providerNodes) &&
+            !connectionMatchesProviderCard(c, node.prefix, "apikey", providerNodes)
+        )
+      );
+      notify.success(`Provider "${node.name || node.prefix || providerId}" deleted`);
+    } catch (err: unknown) {
+      notify.error(err instanceof Error ? err.message : "Failed to delete provider");
+    }
+  };
+
+  const handleSyncModelsForEditingNode = async () => {
+    if (!editingNode) return;
+    setIsSyncingNodeModels(true);
+    try {
+      const targetId = editingNode.prefix || editingNode.id;
+      const res = await fetch(`/api/providers/${encodeURIComponent(targetId)}/models?refresh=true`);
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => null);
+        throw new Error(errorData?.error || `HTTP ${res.status}: Failed to fetch models`);
+      }
+      const data = await res.json().catch(() => ({}));
+      const fetchedModels = Array.isArray(data?.models) ? data.models : [];
+      if (fetchedModels.length === 0) {
+        notify.info("No models returned by upstream provider.");
+        return;
+      }
+      await fetch("/api/provider-models", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          provider: editingNode.id,
+          models: fetchedModels.map((m: any) => {
+            const rawId = m.id || m.name || m.model;
+            const modelId = typeof rawId === "string" ? rawId : String(rawId ?? "");
+            return {
+              id: modelId,
+              name: m.name || modelId,
+              source: "imported",
+              apiFormat: m.apiFormat || "chat-completions",
+              supportedEndpoints: Array.isArray(m.supportedEndpoints)
+                ? m.supportedEndpoints
+                : ["chat"],
+            };
+          }),
+        }),
+      });
+      notify.success(
+        `Successfully fetched and synchronized ${fetchedModels.length} ${
+          fetchedModels.length === 1 ? "model" : "models"
+        }.`
+      );
+    } catch (err: unknown) {
+      notify.error(err instanceof Error ? err.message : "Failed to sync models");
+    } finally {
+      setIsSyncingNodeModels(false);
+    }
   };
 
   const handleBatchTest = async (mode, providerId = null) => {
@@ -621,28 +730,35 @@ function ProvidersPageContent() {
   const upstreamProxyEntriesAll = buildStaticProviderEntries("upstream-proxy", getProviderStats);
   const upstreamProxyEntries = filterEntries(upstreamProxyEntriesAll);
 
+  const mapCompatibleEntry = (provider: (typeof compatibleProviders)[number]) => {
+    const rawStats = getProviderStats(provider.id, "apikey");
+    const hasBaseUrl = Boolean(provider.baseUrl && provider.baseUrl.trim().length > 0);
+    const hasModels =
+      (liveModelsByProviderId[provider.id]?.length || 0) > 0 ||
+      (provider.prefix ? (liveModelsByProviderId[provider.prefix]?.length || 0) > 0 : false);
+    const isConfigured = (rawStats.total || 0) > 0 || hasBaseUrl || hasModels;
+    const isPaused = provider.isActive === false || (rawStats.total > 0 && rawStats.allDisabled);
+
+    const stats = {
+      ...rawStats,
+      total: isConfigured ? Math.max(1, rawStats.total || 1) : 0,
+      connected: isConfigured && !isPaused ? Math.max(1, rawStats.connected || 1) : 0,
+      allDisabled: isConfigured ? isPaused : false,
+    };
+
+    return {
+      providerId: provider.id,
+      provider,
+      stats,
+      displayAuthType: "compatible" as const,
+      toggleAuthType: "apikey" as const,
+    };
+  };
+
   const compatibleProviderEntriesAll = [
-    ...compatibleProviders.map((provider) => ({
-      providerId: provider.id,
-      provider,
-      stats: getProviderStats(provider.id, "apikey"),
-      displayAuthType: "compatible" as const,
-      toggleAuthType: "apikey" as const,
-    })),
-    ...anthropicCompatibleProviders.map((provider) => ({
-      providerId: provider.id,
-      provider,
-      stats: getProviderStats(provider.id, "apikey"),
-      displayAuthType: "compatible" as const,
-      toggleAuthType: "apikey" as const,
-    })),
-    ...ccCompatibleProviders.map((provider) => ({
-      providerId: provider.id,
-      provider,
-      stats: getProviderStats(provider.id, "apikey"),
-      displayAuthType: "compatible" as const,
-      toggleAuthType: "apikey" as const,
-    })),
+    ...compatibleProviders.map(mapCompatibleEntry),
+    ...anthropicCompatibleProviders.map(mapCompatibleEntry),
+    ...ccCompatibleProviders.map(mapCompatibleEntry),
   ];
   const compatibleProviderEntries = filterEntries(compatibleProviderEntriesAll);
 
@@ -847,6 +963,8 @@ function ProvidersPageContent() {
                   onToggle={(active) =>
                     handleToggleProvider(entry.providerId, entry.toggleAuthType, active)
                   }
+                  onEdit={handleEditCustomProvider}
+                  onDelete={handleDeleteCustomProvider}
                 />
               ))}
             </div>
@@ -1007,6 +1125,8 @@ function ProvidersPageContent() {
                               onToggle={(active) =>
                                 handleToggleProvider(providerId, toggleAuthType, active)
                               }
+                              onEdit={handleEditCustomProvider}
+                              onDelete={handleDeleteCustomProvider}
                             />
                           )
                         )}
@@ -1787,6 +1907,22 @@ function ProvidersPageContent() {
           onClose={() => setShowImportFromFileModal(false)}
           onImported={async () => setConnections((await loadProviderPageData()).connections)}
         />
+        {editingNode && (
+          <EditCustomProviderSheet
+            isOpen={Boolean(editingNode)}
+            providerNode={editingNode}
+            onClose={() => setEditingNode(null)}
+            onUpdated={async () => {
+              setEditingNode(null);
+              const data = await loadProviderPageData();
+              setConnections(data.connections);
+              setProviderNodes(data.providerNodes);
+            }}
+            onSyncModels={handleSyncModelsForEditingNode}
+            isSyncingModels={isSyncingNodeModels}
+            notify={notify}
+          />
+        )}
         {/* Test Results Modal */}
         {testResults && (
           <div

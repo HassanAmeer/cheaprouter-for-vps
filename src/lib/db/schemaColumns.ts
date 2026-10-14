@@ -91,6 +91,22 @@ export function ensureProviderConnectionsColumns(db: SqliteDatabase) {
   }
 }
 
+export function ensureProviderNodesColumns(db: SqliteDatabase) {
+  try {
+    const columns = db.prepare("PRAGMA table_info(provider_nodes)").all() as Array<{
+      name?: string;
+    }>;
+    const columnNames = new Set(columns.map((column) => String(column.name ?? "")));
+    if (!columnNames.has("is_active")) {
+      db.exec("ALTER TABLE provider_nodes ADD COLUMN is_active INTEGER NOT NULL DEFAULT 1");
+      console.log("[DB] Added provider_nodes.is_active column");
+    }
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : String(error);
+    console.warn("[DB] Failed to verify provider_nodes schema:", message);
+  }
+}
+
 export function ensureUsageHistoryAccountIndex(db: SqliteDatabase) {
   try {
     db.exec("CREATE INDEX IF NOT EXISTS idx_uh_account_key ON usage_history(account_key)");

@@ -82,11 +82,17 @@ interface ProviderCardProps {
     iconUrl?: string;
     /** Short text-badge fallback (e.g. "OC"/"AC"/"CC") shown if `iconUrl` fails to load. */
     textIcon?: string;
+    isCustomNode?: boolean;
+    baseUrl?: string | null;
+    prefix?: string | null;
+    isActive?: boolean;
   };
   stats: ProviderStats;
   authType?: string;
   onToggle: (active: boolean) => void;
   onCardClick?: (id: string) => void;
+  onEdit?: (id: string) => void;
+  onDelete?: (id: string) => void;
 }
 
 const DOT_COLORS: Record<string, string> = {
@@ -247,7 +253,7 @@ export type ProviderCardHandle = {
 };
 
 const ProviderCard = forwardRef<ProviderCardHandle, ProviderCardProps>(function ProviderCard(
-  { providerId, provider, stats, authType = "apikey", onToggle, onCardClick },
+  { providerId, provider, stats, authType = "apikey", onToggle, onCardClick, onEdit, onDelete },
   ref
 ) {
   const t = useTranslations("providers");
@@ -321,9 +327,14 @@ const ProviderCard = forwardRef<ProviderCardHandle, ProviderCardProps>(function 
   const connected = Number(stats.connected || 0);
   const error = Number(stats.error || 0);
   const allDisabled = Boolean(stats.allDisabled);
-  const isCompatible = isOpenAICompatibleProvider(providerId);
+  const isCompatible = isOpenAICompatibleProvider(providerId) || Boolean(provider.isCustomNode);
   const isCcCompatible = isClaudeCodeCompatibleProvider(providerId);
-  const isAnthropicCompatible = isAnthropicCompatibleProvider(providerId) && !isCcCompatible;
+  const isAnthropicCompatible =
+    (isAnthropicCompatibleProvider(providerId) ||
+      Boolean(provider.isCustomNode && provider.apiType === "messages")) &&
+    !isCcCompatible;
+  const isCustomProvider =
+    isCompatible || isCcCompatible || isAnthropicCompatible || Boolean(provider.isCustomNode);
   // Open Source Friend highlights (Kimi 2026-07, Cheaper Inference 2026-07): UI-only
   // accents, see featuredProviders.ts — never affect routing/fallback order.
   const isKimiPartner = isKimiPartnerProviderId(provider.id || providerId);
@@ -443,7 +454,9 @@ const ProviderCard = forwardRef<ProviderCardHandle, ProviderCardProps>(function 
     return null;
   })();
 
-  const handleToggle = (event: MouseEvent<HTMLDivElement>) => {
+  const handleToggle = (
+    event: MouseEvent<HTMLDivElement | HTMLButtonElement>
+  ) => {
     event.preventDefault();
     event.stopPropagation();
     onToggle(allDisabled);
@@ -635,9 +648,21 @@ const ProviderCard = forwardRef<ProviderCardHandle, ProviderCardProps>(function 
                   </>
                 )}
               </div>
-              <div className="flex items-center gap-2 shrink-0">
+              <div className="flex items-center gap-1.5 shrink-0">
                 {Number(stats.total || 0) > 0 ? (
                   <>
+                    {isCustomProvider && (
+                      <button
+                        type="button"
+                        onClick={handleToggle}
+                        title={allDisabled ? "Resume provider" : "Pause provider"}
+                        className="inline-flex items-center justify-center p-1 rounded hover:bg-bg-subtle text-text-muted hover:text-text-primary transition-colors"
+                      >
+                        <span className="material-symbols-outlined text-[16px] leading-none">
+                          {allDisabled ? "play_arrow" : "pause"}
+                        </span>
+                      </button>
+                    )}
                     <div onClick={handleToggle}>
                       <Toggle
                         size="xs"
@@ -646,7 +671,39 @@ const ProviderCard = forwardRef<ProviderCardHandle, ProviderCardProps>(function 
                         title={allDisabled ? t("enableProvider") : t("disableProvider")}
                       />
                     </div>
-                    {isLlmProvider && (
+                    {isCustomProvider && onEdit && (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          onEdit(providerId);
+                        }}
+                        title="Edit custom provider"
+                        className="inline-flex items-center justify-center p-1 rounded hover:bg-bg-subtle text-text-muted hover:text-text-primary transition-colors"
+                      >
+                        <span className="material-symbols-outlined text-[15px] leading-none">
+                          edit
+                        </span>
+                      </button>
+                    )}
+                    {isCustomProvider && onDelete && (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          onDelete(providerId);
+                        }}
+                        title="Delete custom provider"
+                        className="inline-flex items-center justify-center p-1 rounded hover:bg-red-500/10 text-text-muted hover:text-red-500 transition-colors"
+                      >
+                        <span className="material-symbols-outlined text-[15px] leading-none">
+                          delete
+                        </span>
+                      </button>
+                    )}
+                    {isLlmProvider && !isCustomProvider && (
                       <button
                         type="button"
                         onClick={handleTestClick}
@@ -659,22 +716,56 @@ const ProviderCard = forwardRef<ProviderCardHandle, ProviderCardProps>(function 
                         {tp("testLabel")}
                       </button>
                     )}
-                    {!isLlmProvider && (
+                    {!isLlmProvider && !isCustomProvider && (
                       <span className="material-symbols-outlined text-text-muted opacity-0 group-hover:opacity-100 transition-opacity">
                         chevron_right
                       </span>
                     )}
                   </>
                 ) : (
-                  <span
-                    className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold rounded-md bg-primary text-white hover:bg-primary-hover shadow-xs transition-colors cursor-pointer"
-                    title={providerText(t, "connectProvider", "Connect {name}", {
-                      name: provider.name,
-                    })}
-                  >
-                    <span className="material-symbols-outlined text-[14px] leading-none">add</span>
-                    Connect
-                  </span>
+                  <>
+                    {isCustomProvider && onEdit && (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          onEdit(providerId);
+                        }}
+                        title="Edit custom provider"
+                        className="inline-flex items-center justify-center p-1 rounded hover:bg-bg-subtle text-text-muted hover:text-text-primary transition-colors mr-0.5"
+                      >
+                        <span className="material-symbols-outlined text-[15px] leading-none">
+                          edit
+                        </span>
+                      </button>
+                    )}
+                    {isCustomProvider && onDelete && (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          onDelete(providerId);
+                        }}
+                        title="Delete custom provider"
+                        className="inline-flex items-center justify-center p-1 rounded hover:bg-red-500/10 text-text-muted hover:text-red-500 transition-colors mr-0.5"
+                      >
+                        <span className="material-symbols-outlined text-[15px] leading-none">
+                          delete
+                        </span>
+                      </button>
+                    )}
+                    <span
+                      className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold rounded-md bg-primary text-white hover:bg-primary-hover shadow-xs transition-colors cursor-pointer"
+                      title={providerText(t, "connectProvider", "Connect {name}", {
+                        name: provider.name,
+                      })}
+                    >
+                      <span className="material-symbols-outlined text-[14px] leading-none">add</span>
+                      Connect
+                    </span>
+                  </>
                 )}
               </div>
             </div>

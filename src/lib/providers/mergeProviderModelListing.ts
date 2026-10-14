@@ -83,7 +83,7 @@ export function mergeProviderModelListing(
       cursor && liveModels.length > 0 ? ensureCursorAutoCatalogEntry(liveModels) : liveModels;
     const liveIds = new Set(withAuto.map((model) => model.id));
     const normalizedCustom = custom
-      .filter((model) => model.source !== "imported" || liveIds.has(model.id))
+      .filter((model) => model.source !== "imported" || liveIds.has(model.id) || liveIds.size === 0)
       .map((model) => ({
         ...model,
         id: model.id,

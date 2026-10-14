@@ -60,7 +60,24 @@ export async function GET(request) {
     const { searchParams } = new URL(request.url);
     const provider = searchParams.get("provider");
 
-    const models = provider ? await getCustomModels(provider) : await getAllCustomModels();
+    let models = provider ? await getCustomModels(provider) : await getAllCustomModels();
+    if (provider && (!models || models.length === 0)) {
+      try {
+        const { getProviderNodes, getProviderNodeById } = await import("@/lib/db/providers");
+        const node = (await getProviderNodeById(provider)) || (await getProviderNodes()).find((n: any) => n.id === provider || n.prefix === provider);
+        if (node) {
+          const alternateId = node.id === provider ? (node.prefix ? String(node.prefix) : null) : (node.id ? String(node.id) : null);
+          if (alternateId) {
+            const altModels = await getCustomModels(alternateId);
+            if (altModels && altModels.length > 0) {
+              models = altModels;
+            }
+          }
+        }
+      } catch {
+        // ignore
+      }
+    }
     const modelCompatOverrides = provider ? getModelCompatOverrides(provider) : [];
     // #4125: surface the manual/auto context-window override (Feature 5004 table) on
     // each custom-model row so the UI can show/edit it without a second round trip.
@@ -137,6 +154,58 @@ export async function POST(request) {
   }
 
   try {
+    if (rawBody && Array.isArray(rawBody.models)) {
+      const provider = typeof rawBody.provider === "string" ? rawBody.provider.trim() : "";
+      if (!provider) {
+        return Response.json(
+          { error: { message: "Provider is required for batch model import", type: "validation_error" } },
+          { status: 400 }
+        );
+      }
+      const modelsToSave = rawBody.models
+        .map((m: any) => {
+          const rawId = m.id || m.modelId;
+          const modelId = typeof rawId === "string" ? rawId.trim() : String(rawId ?? "").trim();
+          if (!modelId) return null;
+          return {
+            id: modelId,
+            name: m.name || m.modelName || modelId,
+            source: m.source || "imported",
+            apiFormat: m.apiFormat || "chat-completions",
+            supportedEndpoints: Array.isArray(m.supportedEndpoints) ? m.supportedEndpoints : ["chat"],
+            ...(m.targetFormat ? { targetFormat: m.targetFormat } : {}),
+            ...(typeof m.inputTokenLimit === "number" ? { inputTokenLimit: m.inputTokenLimit } : {}),
+            ...(typeof m.max_input_tokens === "number" ? { inputTokenLimit: m.max_input_tokens } : {}),
+            ...(typeof m.outputTokenLimit === "number" ? { outputTokenLimit: m.outputTokenLimit } : {}),
+            ...(typeof m.supportsVision === "boolean" ? { supportsVision: m.supportsVision } : {}),
+            ...(typeof m.reasoning === "boolean" ? { reasoning: m.reasoning } : {}),
+            ...(typeof m.isFree === "boolean" ? { isFree: m.isFree } : {}),
+            ...(Array.isArray(m.capabilities) ? { capabilities: m.capabilities } : {}),
+          };
+        })
+        .filter((item): item is NonNullable<typeof item> => Boolean(item));
+
+      const saved = await replaceCustomModels(provider, modelsToSave);
+
+      try {
+        const { getProviderNodes } = await import("@/lib/db/providers");
+        const nodes = await getProviderNodes();
+        const matched = (nodes || []).find((n: any) => n.id === provider || n.prefix === provider);
+        if (matched) {
+          if (matched.id && matched.id !== provider) {
+            await replaceCustomModels(String(matched.id), modelsToSave);
+          }
+          if (matched.prefix && matched.prefix !== provider) {
+            await replaceCustomModels(String(matched.prefix), modelsToSave);
+          }
+        }
+      } catch {
+        // ignore
+      }
+
+      return Response.json({ success: true, count: saved.length, models: saved });
+    }
+
     const validation = validateBody(providerModelMutationSchema, rawBody);
     if (isValidationFailure(validation)) {
       return Response.json({ error: validation.error }, { status: 400 });

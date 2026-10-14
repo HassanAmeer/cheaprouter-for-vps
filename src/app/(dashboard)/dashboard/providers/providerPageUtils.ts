@@ -50,6 +50,10 @@ export type CompatibleProviderInfo = {
   apiType?: string;
   /** Optional operator-supplied remote icon URL (#2166). */
   iconUrl?: string;
+  baseUrl?: string | null;
+  prefix?: string | null;
+  isActive?: boolean;
+  isCustomNode?: boolean;
 };
 
 export type CompatibleProviderGroups = {
@@ -257,10 +261,21 @@ export function getProviderConnectionsRequestUrl(providerId: string): string {
 
 export function connectionBelongsToProviderPage(
   connectionProvider: string | null | undefined,
-  providerId: string
+  providerId: string,
+  providerNodes?: Array<{ id: string; prefix?: string | null }>
 ): boolean {
   if (!connectionProvider) return false;
-  return getProviderConnectionFamilyIds(providerId).includes(connectionProvider);
+  if (connectionProvider === providerId) return true;
+  if (getProviderConnectionFamilyIds(providerId).includes(connectionProvider)) return true;
+  if (providerNodes && providerNodes.length > 0) {
+    const node = providerNodes.find((n) => n.id === providerId || n.prefix === providerId);
+    if (node) {
+      if (node.id === connectionProvider || (node.prefix && node.prefix === connectionProvider)) {
+        return true;
+      }
+    }
+  }
+  return false;
 }
 
 export function resolveProviderOAuthBackendId(
@@ -282,9 +297,10 @@ export function resolveProviderOAuthBackendId(
 export function connectionMatchesProviderCard(
   conn: { provider?: string; authType?: string } | null | undefined,
   providerId: string,
-  cardAuthType: "oauth" | "free" | "apikey"
+  cardAuthType: "oauth" | "free" | "apikey",
+  providerNodes?: Array<{ id: string; prefix?: string | null }>
 ): boolean {
-  if (!conn || !connectionBelongsToProviderPage(conn.provider, providerId)) return false;
+  if (!conn || !connectionBelongsToProviderPage(conn.provider, providerId, providerNodes)) return false;
   if (cardAuthType === "free") return true;
   if (
     supportsApiKeyOnFreeProvider(providerId) ||
@@ -394,6 +410,9 @@ export function buildCompatibleProviderGroups(
     type?: string;
     apiType?: string;
     iconUrl?: string | null;
+    baseUrl?: string | null;
+    prefix?: string | null;
+    isActive?: boolean;
   }>,
   labels: {
     openaiCompatibleName: string;
@@ -414,6 +433,10 @@ export function buildCompatibleProviderGroups(
         textIcon: "OC",
         apiType: node.apiType,
         iconUrl: node.iconUrl || undefined,
+        baseUrl: node.baseUrl,
+        prefix: node.prefix,
+        isActive: node.isActive !== false,
+        isCustomNode: true,
       });
       continue;
     }
@@ -427,6 +450,10 @@ export function buildCompatibleProviderGroups(
         color: "#B45309",
         textIcon: "CC",
         iconUrl: node.iconUrl || undefined,
+        baseUrl: node.baseUrl,
+        prefix: node.prefix,
+        isActive: node.isActive !== false,
+        isCustomNode: true,
       });
       continue;
     }
@@ -437,6 +464,10 @@ export function buildCompatibleProviderGroups(
       color: "#D97757",
       textIcon: "AC",
       iconUrl: node.iconUrl || undefined,
+      baseUrl: node.baseUrl,
+      prefix: node.prefix,
+      isActive: node.isActive !== false,
+      isCustomNode: true,
     });
   }
 

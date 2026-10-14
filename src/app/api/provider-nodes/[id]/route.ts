@@ -163,21 +163,64 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
   }
 }
 
+// PATCH /api/provider-nodes/[id] - Toggle active status or partial update
+export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
+  try {
+    const { id } = await params;
+    const body = await request.json().catch(() => ({}));
+    const node = await getProviderNodeById(id);
+    if (!node) {
+      return NextResponse.json({ error: "Provider node not found" }, { status: 404 });
+    }
+
+    const updates: Record<string, unknown> = {};
+    if (typeof body.isActive === "boolean") {
+      updates.isActive = body.isActive;
+    }
+
+    const updated = await updateProviderNode(id, updates);
+    return NextResponse.json({ node: updated });
+  } catch (error) {
+    console.log("Error patching provider node:", error);
+    return NextResponse.json({ error: "Failed to update provider node" }, { status: 500 });
+  }
+}
+
 // DELETE /api/provider-nodes/[id] - Delete provider node and its connections
 export async function DELETE(_request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
-    const node = await getProviderNodeById(id);
+    const node: any = await getProviderNodeById(id);
 
     if (!node) {
       return NextResponse.json({ error: "Provider node not found" }, { status: 404 });
     }
 
     await deleteProviderConnectionsByProvider(id);
+    if (node.prefix) {
+      await deleteProviderConnectionsByProvider(node.prefix).catch(() => {});
+    }
     await deleteProviderNode(id);
     // #1409: drop orphaned model-alias rows (key=<alias>, value="<providerId>/<model>")
     // so re-importing the same provider isn't blocked by stale "already exists" aliases.
     await deleteModelAliasesForProvider(id);
+    if (node.prefix) {
+      await deleteModelAliasesForProvider(node.prefix).catch(() => {});
+    }
+
+    try {
+      const { deleteSyncedAvailableModelsForProvider, replaceCustomModels } = await import(
+        "@/lib/db/models"
+      );
+      await deleteSyncedAvailableModelsForProvider(id).catch(() => {});
+      await replaceCustomModels(id, [], { allowEmpty: true }).catch(() => {});
+      if (node.prefix) {
+        await deleteSyncedAvailableModelsForProvider(node.prefix).catch(() => {});
+        await replaceCustomModels(node.prefix, [], { allowEmpty: true }).catch(() => {});
+      }
+    } catch {
+      // Best-effort cleanup
+    }
 
     return NextResponse.json({ success: true });
   } catch (error) {

@@ -58,6 +58,7 @@ export { toSnakeCase, toCamelCase, objToSnake, rowToCamel, cleanNulls } from "./
 export { isNativeSqliteLoadError, isSqliteDriverUnavailableError };
 import {
   ensureProviderConnectionsColumns,
+  ensureProviderNodesColumns,
   ensureUsageHistoryAccountIndex,
   ensureUsageHistoryColumns,
   ensureCallLogsColumns,
@@ -1022,6 +1023,7 @@ export function getDbInstance(): SqliteDatabase {
     ensureUsageHistoryAccountIndex(memoryDb);
     ensureCallLogsColumns(memoryDb);
     ensureProviderConnectionsColumns(memoryDb);
+    ensureProviderNodesColumns(memoryDb);
     setDb(memoryDb);
     return memoryDb;
   }
@@ -1276,6 +1278,7 @@ export function getDbInstance(): SqliteDatabase {
     // the healers below are the ones adding.
     db.exec(SCHEMA_TABLES_SQL);
     ensureProviderConnectionsColumns(db);
+    ensureProviderNodesColumns(db);
     ensureUsageHistoryColumns(db);
     ensureCallLogsColumns(db);
     db.exec(SCHEMA_INDEXES_SQL);

@@ -30,6 +30,9 @@ interface ProviderPageHeaderProps {
   isAnthropicProtocolCompatible: boolean;
   onOpenTutorial: () => void;
   onEditProvider?: () => void;
+  onTogglePause?: () => void;
+  onDeleteProvider?: () => void;
+  isPaused?: boolean;
   t: ProviderMessageTranslator;
   /**
    * True when `providerInfo.website` was overridden with a Radar default
@@ -49,6 +52,9 @@ export default function ProviderPageHeader({
   isAnthropicProtocolCompatible,
   onOpenTutorial,
   onEditProvider,
+  onTogglePause,
+  onDeleteProvider,
+  isPaused = false,
   t,
   isReferralLink = false,
 }: ProviderPageHeaderProps) {
@@ -151,6 +157,34 @@ export default function ProviderPageHeader({
               >
                 <span className="material-symbols-outlined text-[15px]">edit</span>
                 Edit Provider
+              </button>
+            )}
+            {onTogglePause && (
+              <button
+                type="button"
+                onClick={onTogglePause}
+                className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md border text-xs font-medium transition-colors ${
+                  isPaused
+                    ? "border-amber-500/40 bg-amber-500/10 text-amber-400 hover:bg-amber-500/20"
+                    : "border-white/20 bg-white/5 hover:bg-white/10 text-white"
+                }`}
+                title={isPaused ? "Resume this provider" : "Pause this provider"}
+              >
+                <span className="material-symbols-outlined text-[15px]">
+                  {isPaused ? "play_arrow" : "pause"}
+                </span>
+                {isPaused ? "Resume Provider" : "Pause Provider"}
+              </button>
+            )}
+            {onDeleteProvider && (
+              <button
+                type="button"
+                onClick={onDeleteProvider}
+                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md border border-red-500/30 bg-red-500/10 hover:bg-red-500/20 text-red-400 text-xs font-medium transition-colors"
+                title="Delete this custom provider"
+              >
+                <span className="material-symbols-outlined text-[15px]">delete</span>
+                Delete Provider
               </button>
             )}
             {providerId === "adapta-web" && (

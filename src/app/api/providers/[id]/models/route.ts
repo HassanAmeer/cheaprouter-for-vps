@@ -91,7 +91,7 @@ import {
 } from "@/lib/providerModels/modelDiscovery";
 import { buildProviderModelsUrl, getDiscoveryClientVersionOptions } from "./discoveryClientVersion";
 import { getAdobeModels } from "./adobeFireflyDiscovery";
-import { getSyncedAvailableModels, getCustomModels, getModelIsHidden } from "@/lib/db/models";
+import { getSyncedAvailableModels, getCustomModels, replaceCustomModels, getModelIsHidden } from "@/lib/db/models";
 import { isConnectionUnavailableToAuxiliaryActivity } from "@/lib/exclusiveLeaseIsolation";
 import { AUTHZ_HEADER_PEER_LOCALITY } from "@/server/authz/headers";
 import { fetchCursorAgentModels } from "@/lib/providerModels/cursorAgent";
@@ -474,6 +474,51 @@ export async function GET(
       extraPayload: Record<string, unknown> = {}
     ) => {
       const discoveredModels = await persistDiscoveredModels(provider, connectionId, models);
+      if (matchedNode) {
+        if (matchedNode.id && matchedNode.id !== provider) {
+          await persistDiscoveredModels(matchedNode.id, connectionId, models).catch(() => []);
+        }
+        if (matchedNode.prefix && matchedNode.prefix !== provider) {
+          await persistDiscoveredModels(matchedNode.prefix, connectionId, models).catch(() => []);
+        }
+      }
+      if (id && id !== provider && (!matchedNode || (id !== matchedNode.id && id !== matchedNode.prefix))) {
+        await persistDiscoveredModels(id, connectionId, models).catch(() => []);
+      }
+
+      // Automatically persist to customModels table in DB so the models remain immediately available
+      if (Array.isArray(models) && models.length > 0) {
+        const modelsToSave = models.map((m: any) => {
+          const rawId = m.id || m.modelId || m.name;
+          const modelId = typeof rawId === "string" ? rawId.trim() : String(rawId ?? "").trim();
+          return {
+            id: modelId,
+            name: m.name || m.modelName || modelId,
+            source: "imported",
+            apiFormat: m.apiFormat || "chat-completions",
+            supportedEndpoints: Array.isArray(m.supportedEndpoints) ? m.supportedEndpoints : ["chat"],
+            ...(m.targetFormat ? { targetFormat: m.targetFormat } : {}),
+            ...(typeof m.inputTokenLimit === "number" ? { inputTokenLimit: m.inputTokenLimit } : {}),
+            ...(typeof m.max_input_tokens === "number" ? { inputTokenLimit: m.max_input_tokens } : {}),
+            ...(typeof m.outputTokenLimit === "number" ? { outputTokenLimit: m.outputTokenLimit } : {}),
+            ...(typeof m.supportsVision === "boolean" ? { supportsVision: m.supportsVision } : {}),
+            ...(typeof m.reasoning === "boolean" ? { reasoning: m.reasoning } : {}),
+            ...(typeof m.isFree === "boolean" ? { isFree: m.isFree } : {}),
+            ...(Array.isArray(m.capabilities) ? { capabilities: m.capabilities } : {}),
+          };
+        }).filter((item) => Boolean(item.id));
+
+        const saveTargets = new Set<string>([provider]);
+        if (matchedNode) {
+          if (matchedNode.id) saveTargets.add(matchedNode.id);
+          if (matchedNode.prefix) saveTargets.add(matchedNode.prefix);
+        }
+        if (id) saveTargets.add(id);
+
+        for (const target of saveTargets) {
+          await replaceCustomModels(target, modelsToSave).catch(() => []);
+        }
+      }
       if (discoveredModels.length > 0) {
         // #6976 — merge curated embedding/rerank specialty entries (e.g.
         // OpenRouter's embeddingRegistry catalog) into the live-discovery

@@ -21,7 +21,24 @@ export async function GET(request: Request) {
     if (provider) {
       // The dashboard merges operator-owned custom rows separately. Do not let
       // legacy imports act as evidence that a model still exists upstream.
-      const catalog = await getActiveSyncedCatalog(provider, false);
+      let catalog = await getActiveSyncedCatalog(provider, false);
+      if (!catalog.models || catalog.models.length === 0) {
+        try {
+          const { getProviderNodes, getProviderNodeById } = await import("@/lib/db/providers");
+          const node = (await getProviderNodeById(provider)) || (await getProviderNodes()).find((n: any) => n.id === provider || n.prefix === provider);
+          if (node) {
+            const alternateId = node.id === provider ? (node.prefix ? String(node.prefix) : null) : (node.id ? String(node.id) : null);
+            if (alternateId) {
+              const altCatalog = await getActiveSyncedCatalog(alternateId, false);
+              if (altCatalog.models && altCatalog.models.length > 0) {
+                catalog = altCatalog;
+              }
+            }
+          }
+        } catch {
+          // ignore
+        }
+      }
       return Response.json({
         ...catalog,
         models: enrichCursorCatalog(provider, catalog.models),

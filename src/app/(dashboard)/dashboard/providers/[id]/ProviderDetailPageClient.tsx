@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { CardSkeleton } from "@/shared/components";
@@ -21,18 +21,18 @@ import { resolveDashboardProviderInfo, resolveProviderHeaderLink } from "../prov
 import { findDefaultReferral } from "@/lib/radar/referrals";
 import { useProviderConnections } from "./hooks/useProviderConnections";
 import { useProviderModels } from "./hooks/useProviderModels";
-import { useModelImportHandlers } from "./hooks/useModelImportHandlers";
 import ProviderPageHeader from "./components/ProviderPageHeader";
 import AddCustomModelCard from "./components/AddCustomModelCard";
 import AvailableModelsTable from "./components/AvailableModelsTable";
 import DefaultCapabilitiesPromptModal from "../components/DefaultCapabilitiesPromptModal";
-import AddCompatibleProviderModal from "../components/AddCompatibleProviderModal";
+import EditCustomProviderSheet from "./components/EditCustomProviderSheet";
 
 export default function ProviderDetailPageClient() {
+  const router = useRouter();
   const params = useParams();
   const providerId = params.id as string;
 
-  // ── Edit Provider Modal State ───────────────────────────────────────────
+  // ── Edit Provider Sheet State ───────────────────────────────────────────
   const [editingProviderNode, setEditingProviderNode] = useState(false);
 
   // ── Global Test Prompt State (Modal in Header) ───────────────────────────
@@ -68,7 +68,6 @@ export default function ProviderDetailPageClient() {
     modelMeta,
     syncedAvailableModels,
     syncedCatalogAuthoritative,
-    modelAliases,
     fetchProviderModelMeta,
     fetchAliases,
     handleSetAlias,
@@ -142,22 +141,6 @@ export default function ProviderDetailPageClient() {
     usesCuratedModelsOnly,
   ]);
 
-  const { importingModels, handleImportModels } = useModelImportHandlers({
-    providerId,
-    models,
-    modelMeta,
-    modelAliases,
-    connections,
-    isFreeNoAuth: false,
-    handleSetAlias,
-    fetchAliases,
-    fetchProviderModelMeta,
-    fetchConnections,
-    notify,
-    t,
-    providerStorageAlias,
-  });
-
   const handleFetchAllModels = async () => {
     setFetchingAllModels(true);
     setFetchError(null);
@@ -176,12 +159,74 @@ export default function ProviderDetailPageClient() {
         throw new Error(errDetail);
       }
       const data = await res.json().catch(() => ({}));
-      await handleImportModels();
+      const fetchedModels = Array.isArray(data?.models) ? data.models : [];
+      if (fetchedModels.length === 0) {
+        notify.info("No models returned by upstream provider.");
+        return;
+      }
+
+      // Batch save all models into database in one atomic request
+      await fetch("/api/provider-models", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          provider: providerId,
+          models: fetchedModels.map((m: any) => {
+            const rawId = m.id || m.name || m.model;
+            const modelId = typeof rawId === "string" ? rawId : String(rawId ?? "");
+            return {
+              id: modelId,
+              name: m.name || modelId,
+              source: "imported",
+              apiFormat: m.apiFormat || "chat-completions",
+              supportedEndpoints: Array.isArray(m.supportedEndpoints)
+                ? m.supportedEndpoints
+                : ["chat"],
+              ...(m.targetFormat ? { targetFormat: m.targetFormat } : {}),
+              ...(typeof m.dimensions === "number" && m.dimensions > 0
+                ? { dimensions: m.dimensions }
+                : {}),
+              ...(Array.isArray(m.supportedInputTypes)
+                ? { supportedInputTypes: m.supportedInputTypes }
+                : {}),
+              ...(typeof m.modelType === "string" ? { modelType: m.modelType } : {}),
+              ...(typeof m.inputTokenLimit === "number" && m.inputTokenLimit > 0
+                ? { inputTokenLimit: m.inputTokenLimit }
+                : {}),
+              ...(typeof m.max_input_tokens === "number" && m.max_input_tokens > 0
+                ? { inputTokenLimit: m.max_input_tokens }
+                : {}),
+              ...(Array.isArray(m.capabilities) ? { capabilities: m.capabilities } : {}),
+            };
+          }),
+        }),
+      });
+
+      // Register aliases silently in parallel chunks
+      const CHUNK_SIZE = 15;
+      for (let i = 0; i < fetchedModels.length; i += CHUNK_SIZE) {
+        const chunk = fetchedModels.slice(i, i + CHUNK_SIZE);
+        await Promise.allSettled(
+          chunk.map(async (m: any) => {
+            const rawId = m.id || m.name || m.model;
+            const modelId = typeof rawId === "string" ? rawId : String(rawId ?? "");
+            if (!modelId) return;
+            const parts = modelId.split("/");
+            const baseAlias = parts[parts.length - 1];
+            await handleSetAlias(modelId, baseAlias, providerStorageAlias, true);
+          })
+        );
+      }
+
+      // Immediately synchronize React state so models render in the table instantly
       await fetchProviderModelMeta();
+      await fetchAliases();
+
+      // Exactly ONE success toast notification
       notify.success(
-        Array.isArray(data?.models) && data.models.length > 0
-          ? `Discovered and updated ${data.models.length} models successfully.`
-          : "All models fetched and updated successfully."
+        `Successfully fetched and synchronized ${fetchedModels.length} ${
+          fetchedModels.length === 1 ? "model" : "models"
+        }.`
       );
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Failed to fetch models from API";
@@ -212,6 +257,42 @@ export default function ProviderDetailPageClient() {
     );
   }
 
+  const isNodePaused = providerNode?.isActive === false;
+  const handleTogglePause = async () => {
+    if (!providerNode?.id) return;
+    const nextActive = isNodePaused;
+    try {
+      const res = await fetch(`/api/provider-nodes/${encodeURIComponent(providerNode.id)}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ isActive: nextActive }),
+      });
+      if (!res.ok) throw new Error("Failed to update provider status");
+      await fetchConnections();
+      notify.info(nextActive ? "Provider resumed" : "Provider paused");
+    } catch (err) {
+      notify.error(err instanceof Error ? err.message : "Failed to toggle pause status");
+    }
+  };
+
+  const handleDeleteProvider = async () => {
+    if (!providerNode?.id) return;
+    const confirmed = window.confirm(
+      `Are you sure you want to delete custom provider "${providerNode.name || providerId}"?\nAll associated connections, models, and aliases will be permanently removed.`
+    );
+    if (!confirmed) return;
+    try {
+      const res = await fetch(`/api/provider-nodes/${encodeURIComponent(providerNode.id)}`, {
+        method: "DELETE",
+      });
+      if (!res.ok) throw new Error("Failed to delete provider");
+      notify.success("Provider deleted successfully");
+      router.push("/dashboard/providers");
+    } catch (err) {
+      notify.error(err instanceof Error ? err.message : "Failed to delete provider");
+    }
+  };
+
   return (
     <div className="flex flex-col gap-6 max-w-7xl mx-auto pb-16 text-white">
       {/* ── PROVIDER HEADER (Title, Provider ID, Status, Back to List) + TOP-RIGHT CAPABILITIES BUTTON ── */}
@@ -224,6 +305,9 @@ export default function ProviderDetailPageClient() {
           isAnthropicProtocolCompatible={isAnthropicProtocolCompatible}
           onOpenTutorial={() => {}}
           onEditProvider={providerNode ? () => setEditingProviderNode(true) : undefined}
+          onTogglePause={providerNode ? handleTogglePause : undefined}
+          onDeleteProvider={providerNode ? handleDeleteProvider : undefined}
+          isPaused={isNodePaused}
           t={t}
           isReferralLink={isReferralLink}
         />
@@ -251,24 +335,23 @@ export default function ProviderDetailPageClient() {
         copied={copied}
         onCopy={copy}
         onFetchModels={handleFetchAllModels}
-        isFetchingModels={fetchingAllModels || importingModels}
+        isFetchingModels={fetchingAllModels}
         fetchError={fetchError}
       />
 
       {providerNode && (
-        <AddCompatibleProviderModal
+        <EditCustomProviderSheet
           isOpen={editingProviderNode}
-          mode={providerNode.type === "anthropic-compatible" ? "anthropic" : "openai"}
-          title={`Edit Provider: ${providerNode.name || providerNode.prefix}`}
-          initialNode={providerNode}
+          providerNode={providerNode}
           onClose={() => setEditingProviderNode(false)}
-          onCreated={() => {}}
           onUpdated={async () => {
             setEditingProviderNode(false);
             await fetchConnections();
             await fetchProviderModelMeta();
-            notify.success("Provider updated successfully");
           }}
+          onSyncModels={handleFetchAllModels}
+          isSyncingModels={fetchingAllModels}
+          notify={notify}
         />
       )}
     </div>

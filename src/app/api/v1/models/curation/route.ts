@@ -13,7 +13,6 @@ import {
 } from "@/lib/db/providerModelCustomizations";
 import { getProviderConnections } from "@/lib/db/providers";
 import { getSyncedAvailableModels } from "@/lib/db/models";
-import type { SyncedAvailableModel } from "@/lib/db/models/synced";
 
 export const dynamic = "force-dynamic";
 
@@ -65,20 +64,70 @@ export async function GET(request: Request) {
     // Attach connection info so the UI can confirm a key is wired before testing.
     const connections = await getProviderConnections();
 
-    // Gather synced available models per connected provider so the "Manage
-    // Models" UI can render the full model list (with capability badges) for
-    // each provider that actually has credentials configured.
-    const connectedProviderIds = Array.from(
-      new Set(
-        connections.map((c) => (typeof c.provider === "string" ? c.provider : "")).filter(Boolean)
-      )
-    );
-    const modelsByProvider: Record<string, SyncedAvailableModel[]> = {};
+    // Include custom provider nodes as well
+    let providerNodes: Array<{ id: string; prefix?: string; name?: string }> = [];
+    try {
+      const { getProviderNodes } = await import("@/lib/db/providers");
+      providerNodes = (await getProviderNodes()) || [];
+    } catch {
+      // ignore
+    }
+
+    const rawConnectedIds = connections
+      .map((c) => (typeof c.provider === "string" ? c.provider : ""))
+      .filter(Boolean);
+    const nodeIds = providerNodes
+      .map((n) => (n.prefix ? String(n.prefix) : String(n.id || "")))
+      .filter(Boolean);
+
+    const connectedProviderIds = Array.from(new Set([...rawConnectedIds, ...nodeIds]));
+
+    const { getCustomModels } = await import("@/lib/db/models");
+    const { getModelsByProviderId } = await import("@/shared/constants/models");
+
+    const modelsByProvider: Record<string, any[]> = {};
     for (const pid of connectedProviderIds) {
       try {
-        const synced = await getSyncedAvailableModels(pid);
-        if (synced.length > 0) {
-          modelsByProvider[pid] = synced;
+        let synced = await getSyncedAvailableModels(pid);
+        if (synced.length === 0) {
+          const matched = providerNodes.find((n) => n.id === pid || n.prefix === pid);
+          if (matched) {
+            const altId = matched.id === pid ? matched.prefix : matched.id;
+            if (altId) {
+              synced = await getSyncedAvailableModels(altId);
+            }
+          }
+        }
+        let custom: any[] = [];
+        try {
+          custom = (await getCustomModels(pid)) || [];
+        } catch {
+          // ignore
+        }
+        if (custom.length === 0) {
+          const matched = providerNodes.find((n) => n.id === pid || n.prefix === pid);
+          if (matched) {
+            const altId = matched.id === pid ? matched.prefix : matched.id;
+            if (altId) {
+              custom = (await getCustomModels(altId).catch(() => [])) || [];
+            }
+          }
+        }
+        const registry = getModelsByProviderId(pid) || [];
+
+        const mergedMap = new Map<string, any>();
+        for (const m of registry) {
+          if (m?.id) mergedMap.set(m.id, { ...m, source: "system" });
+        }
+        for (const m of synced) {
+          if (m?.id) mergedMap.set(m.id, { ...m, source: "imported" });
+        }
+        for (const m of custom) {
+          if (m?.id) mergedMap.set(m.id, { ...m, source: m.source || "custom" });
+        }
+
+        if (mergedMap.size > 0) {
+          modelsByProvider[pid] = Array.from(mergedMap.values());
         }
       } catch {
         // A provider with no synced snapshot just contributes an empty list.

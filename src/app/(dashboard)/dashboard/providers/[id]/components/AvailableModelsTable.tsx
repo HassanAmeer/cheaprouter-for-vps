@@ -233,6 +233,17 @@ export default function AvailableModelsTable({
         </div>
       )}
 
+      {/* Live Fetching Progress Banner */}
+      {isFetchingModels && (
+        <div className="w-full bg-[#181818] border-b border-[#2A2A2A] px-5 py-2.5 flex items-center justify-between text-xs text-[#E5E5E5]">
+          <div className="flex items-center gap-2.5">
+            <span className="inline-block w-3.5 h-3.5 border-2 border-white/20 border-t-white rounded-full animate-spin flex-shrink-0" />
+            <span className="font-medium">Fetching & synchronizing AI models from upstream...</span>
+          </div>
+          <span className="text-[11px] font-mono text-[#A3A3A3]">Connecting to provider</span>
+        </div>
+      )}
+
       {/* Models Table */}
       <div className="overflow-x-auto">
         <table className="w-full text-left border-collapse">
@@ -247,7 +258,17 @@ export default function AvailableModelsTable({
             </tr>
           </thead>
           <tbody className="divide-y divide-[#262626]/60 text-xs">
-            {filteredModels.length === 0 ? (
+            {isFetchingModels && filteredModels.length === 0 ? (
+              <tr>
+                <td colSpan={6} className="py-16 text-center text-[#A3A3A3]">
+                  <span className="material-symbols-outlined text-[32px] animate-spin block mb-3 text-white">
+                    progress_activity
+                  </span>
+                  <p className="text-sm font-medium text-white">Fetching AI models from upstream provider...</p>
+                  <p className="text-xs text-[#737373] mt-1">This will take just a few seconds.</p>
+                </td>
+              </tr>
+            ) : filteredModels.length === 0 ? (
               <tr>
                 <td colSpan={6} className="py-12 text-center text-[#737373]">
                   <span className="material-symbols-outlined text-[28px] opacity-40 block mb-1">

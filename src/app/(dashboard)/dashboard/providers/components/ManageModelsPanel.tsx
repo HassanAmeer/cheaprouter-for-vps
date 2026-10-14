@@ -291,6 +291,26 @@ export default function ManageModelsPanel() {
             errorData?.error || `HTTP ${res.status}: Failed to fetch models from API`
           );
         }
+        const data = await res.json().catch(() => ({}));
+        const fetchedModels = Array.isArray(data?.models) ? data.models : [];
+        if (fetchedModels.length > 0) {
+          await fetch("/api/provider-models", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              provider: pId,
+              models: fetchedModels.map((m: any) => ({
+                id: m.id || m.model || m.name,
+                name: m.name || m.id,
+                source: "imported",
+                apiFormat: m.apiFormat || "chat-completions",
+                supportedEndpoints: Array.isArray(m.supportedEndpoints)
+                  ? m.supportedEndpoints
+                  : ["chat"],
+              })),
+            }),
+          });
+        }
         await refresh();
       } catch (err: unknown) {
         const msg = err instanceof Error ? err.message : "Failed to fetch models from API";

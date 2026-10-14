@@ -342,6 +342,16 @@ async function loadConnectionCatalog(storedProviderId: string): Promise<Connecti
     .map(readConnectionRef)
     .filter((connection): connection is ProviderConnectionRef => connection !== null);
 
+  if (activeConnections.length === 0) {
+    const allFallbackModels = Object.values(modelsByConnection).flat();
+    if (allFallbackModels.length > 0) {
+      return {
+        models: unionModels([allFallbackModels]),
+        hasFreshConnection: true,
+      };
+    }
+  }
+
   return {
     models: collectModelsForConnections(
       modelsByConnection,

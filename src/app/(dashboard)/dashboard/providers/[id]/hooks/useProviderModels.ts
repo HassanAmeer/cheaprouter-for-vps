@@ -32,7 +32,12 @@ export interface UseProviderModelsReturn {
   modelAliases: Record<string, string>;
   fetchProviderModelMeta: () => Promise<void>;
   fetchAliases: () => Promise<void>;
-  handleSetAlias: (modelId: string, alias: string, providerAlias?: string) => Promise<void>;
+  handleSetAlias: (
+    modelId: string,
+    alias: string,
+    providerAlias?: string,
+    silent?: boolean
+  ) => Promise<void>;
   handleDeleteAlias: (alias: string) => Promise<void>;
 }
 
@@ -70,7 +75,7 @@ export function useProviderModels(
   }, []);
 
   const handleSetAlias = useCallback(
-    async (modelId: string, alias: string, providerAlias?: string) => {
+    async (modelId: string, alias: string, providerAlias?: string, silent: boolean = false) => {
       const qualifiedModel = providerAlias
         ? modelId.includes("/")
           ? `${providerAlias}/${modelId.split("/").slice(1).join("/")}`
@@ -83,17 +88,21 @@ export function useProviderModels(
           body: JSON.stringify({ model: qualifiedModel, alias }),
         });
         if (res.ok) {
-          await fetchAliases();
-          notify.success(t("setAliasSuccess", { alias }));
-        } else {
+          if (!silent) {
+            await fetchAliases();
+            notify.success(t("setAliasSuccess", { alias }));
+          }
+        } else if (!silent) {
           const data = await res.json().catch(() => ({}));
           notify.error(
             data?.error?.message || providerText(t, "failedSetAlias", "Failed to set alias")
           );
         }
       } catch (error) {
-        console.log("Error setting alias:", error);
-        notify.error(providerText(t, "networkErrorSettingAlias", "Network error setting alias"));
+        if (!silent) {
+          console.log("Error setting alias:", error);
+          notify.error(providerText(t, "networkErrorSettingAlias", "Network error setting alias"));
+        }
       }
     },
     [fetchAliases, t, notify]

@@ -134,14 +134,15 @@ export async function createProviderNode(data: JsonRecord) {
     customHeadersJson,
     dailyQuotaResetTimezone: data.dailyQuotaResetTimezone || null,
     dailyQuotaResetHour: normalizeDailyQuotaResetHour(data.dailyQuotaResetHour),
+    isActive: data.isActive !== false ? 1 : 0,
     createdAt: now,
     updatedAt: now,
   };
 
   db.prepare(
     `
-    INSERT INTO provider_nodes (id, type, name, prefix, api_type, base_url, chat_path, models_path, icon_url, custom_headers_json, daily_quota_reset_timezone, daily_quota_reset_hour, created_at, updated_at)
-    VALUES (@id, @type, @name, @prefix, @apiType, @baseUrl, @chatPath, @modelsPath, @iconUrl, @customHeadersJson, @dailyQuotaResetTimezone, @dailyQuotaResetHour, @createdAt, @updatedAt)
+    INSERT INTO provider_nodes (id, type, name, prefix, api_type, base_url, chat_path, models_path, icon_url, custom_headers_json, daily_quota_reset_timezone, daily_quota_reset_hour, is_active, created_at, updated_at)
+    VALUES (@id, @type, @name, @prefix, @apiType, @baseUrl, @chatPath, @modelsPath, @iconUrl, @customHeadersJson, @dailyQuotaResetTimezone, @dailyQuotaResetHour, @isActive, @createdAt, @updatedAt)
   `
   ).run(node);
 
@@ -174,6 +175,8 @@ export async function updateProviderNode(id: string, data: JsonRecord) {
     merged["customHeadersJson"] = typeof existingJson === "string" ? existingJson : null;
   }
 
+  const activeValue = merged["isActive"] !== false ? 1 : 0;
+
   db.prepare(
     `
     UPDATE provider_nodes SET type = @type, name = @name, prefix = @prefix,
@@ -182,6 +185,7 @@ export async function updateProviderNode(id: string, data: JsonRecord) {
     custom_headers_json = @customHeadersJson,
     daily_quota_reset_timezone = @dailyQuotaResetTimezone,
     daily_quota_reset_hour = @dailyQuotaResetHour,
+    is_active = @isActive,
     updated_at = @updatedAt
     WHERE id = @id
   `
@@ -200,8 +204,20 @@ export async function updateProviderNode(id: string, data: JsonRecord) {
     customHeadersJson: merged["customHeadersJson"] || null,
     dailyQuotaResetTimezone: merged["dailyQuotaResetTimezone"] || null,
     dailyQuotaResetHour: normalizeDailyQuotaResetHour(merged["dailyQuotaResetHour"]),
+    isActive: activeValue,
     updatedAt: merged["updatedAt"],
   });
+
+  if (data.isActive !== undefined) {
+    try {
+      db.prepare(
+        "UPDATE provider_connections SET is_active = ? WHERE provider = ? OR provider = ?"
+      ).run(activeValue, id, (merged["prefix"] as string) || id);
+      invalidateDbCache("connections");
+    } catch {
+      // ignore
+    }
+  }
 
   backupDbFile("pre-write");
   invalidateDbCache("nodes");

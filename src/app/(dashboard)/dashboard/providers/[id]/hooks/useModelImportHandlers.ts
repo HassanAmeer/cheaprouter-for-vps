@@ -48,7 +48,12 @@ export interface UseModelImportHandlersParams {
     providerSpecificData?: Record<string, unknown>;
   }>;
   isFreeNoAuth: boolean;
-  handleSetAlias: (modelId: string, alias: string, providerAlias: string) => Promise<void>;
+  handleSetAlias: (
+    modelId: string,
+    alias: string,
+    providerAlias: string,
+    silent?: boolean
+  ) => Promise<void>;
   fetchAliases: () => Promise<void>;
   fetchProviderModelMeta: () => Promise<void>;
   fetchConnections: () => Promise<void>;
@@ -288,7 +293,7 @@ export function useModelImportHandlers({
           continue;
         }
         if (!modelAliases[baseAlias]) {
-          await handleSetAlias(modelId, baseAlias, providerStorageAlias);
+          await handleSetAlias(modelId, baseAlias, providerStorageAlias, true);
         }
         importedCount += 1;
       }
