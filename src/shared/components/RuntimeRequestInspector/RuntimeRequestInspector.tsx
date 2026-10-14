@@ -121,24 +121,33 @@ export default function RuntimeRequestInspector() {
         <div className="fixed inset-0 z-50 overflow-hidden">
           {/* Backdrop */}
           <div
-            className="fixed inset-0 bg-black/60 backdrop-blur-sm transition-opacity animate-in fade-in duration-200"
+            className="fixed inset-0 bg-black/60 backdrop-blur-md transition-opacity animate-in fade-in duration-200"
             onClick={() => setIsOpen(false)}
           />
 
-          <aside className="fixed inset-y-0 right-0 z-50 flex w-full flex-col border-l border-white/15 bg-[#0C0C0C] text-white shadow-2xl sm:max-w-2xl md:max-w-3xl lg:max-w-4xl xl:max-w-5xl animate-in slide-in-from-right duration-300">
+          <aside className="fixed inset-y-0 right-0 z-50 flex w-[90%] max-w-[90%] sm:w-full flex-col border-l border-white/[0.12] bg-[#1C1C1E]/95 backdrop-blur-3xl text-white shadow-2xl sm:max-w-3xl md:max-w-4xl lg:max-w-5xl xl:max-w-6xl 2xl:max-w-7xl animate-in slide-in-from-right duration-300 rounded-l-[28px] sm:rounded-l-[36px] overflow-hidden">
+            {/* iOS Pull Grabber Bar (Mobile only) */}
+            <div className="sm:hidden pt-2.5 pb-1 flex justify-center bg-[#1C1C1E]/90 shrink-0">
+              <div className="w-12 h-1.5 rounded-full bg-white/25" />
+            </div>
+
             {/* Header */}
-            <div className="flex items-center justify-between border-b border-white/10 px-5 py-3.5 bg-[#141414]">
-              <div className="flex items-center gap-3">
-                <span className="material-symbols-outlined text-2xl text-primary">receipt_long</span>
-                <div>
-                  <div className="flex items-center gap-2">
-                    <h2 className="text-base font-bold text-white tracking-tight">Live Request & AI Model Inspector</h2>
-                    <span className="rounded-full bg-primary/15 border border-primary/30 px-2 py-0.5 text-[10px] uppercase font-mono text-primary font-semibold">
-                      Real-time Telemetry
+            <div className="flex items-center justify-between border-b border-white/[0.08] px-4 sm:px-6 py-3.5 bg-[#1C1C1E]/80 backdrop-blur-xl gap-2 shrink-0">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="size-9 rounded-2xl bg-primary/15 border border-primary/25 flex items-center justify-center shrink-0 text-primary shadow-sm">
+                  <span className="material-symbols-outlined text-lg sm:text-xl">receipt_long</span>
+                </div>
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <h2 className="text-sm sm:text-base font-bold text-white tracking-tight truncate">
+                      Live Request Inspector
+                    </h2>
+                    <span className="hidden sm:inline-flex rounded-full bg-primary/15 border border-primary/30 px-2.5 py-0.5 text-[9px] uppercase font-mono text-primary font-semibold">
+                      Cupertino Live
                     </span>
                   </div>
-                  <p className="text-xs text-white/50">
-                    Live telemetry for AI models, prompt messages, upstream headers, responses & status codes
+                  <p className="hidden sm:block text-[11px] text-white/50 truncate">
+                    Real-time telemetry for models, user prompt, upstream headers & responses
                   </p>
                 </div>
               </div>
@@ -148,56 +157,58 @@ export default function RuntimeRequestInspector() {
                   type="button"
                   onClick={() => runtimeLogger.clearLogs()}
                   disabled={logs.length === 0}
-                  className="inline-flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/5 px-2.5 py-1.5 text-xs font-medium text-white/80 transition-colors hover:bg-red-500/20 hover:border-red-500/30 hover:text-red-400 disabled:opacity-40 disabled:pointer-events-none cursor-pointer"
+                  className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-[#2C2C2E]/80 px-3 py-1.5 text-xs font-medium text-white/80 transition-all hover:bg-red-500/20 hover:border-red-500/30 hover:text-red-400 active:scale-95 disabled:opacity-40 disabled:pointer-events-none cursor-pointer"
                   title="Clear in-memory request logs"
                 >
-                  <span className="material-symbols-outlined text-[16px]">delete_sweep</span>
-                  Clear Logs
+                  <span className="material-symbols-outlined text-[15px]">delete_sweep</span>
+                  <span className="hidden sm:inline">Clear</span>
                 </button>
                 <button
                   type="button"
                   onClick={() => setIsOpen(false)}
-                  className="rounded-lg p-1.5 text-white/60 transition-colors hover:bg-white/10 hover:text-white cursor-pointer"
+                  className="size-8 rounded-full bg-[#2C2C2E] border border-white/10 flex items-center justify-center text-white/70 transition-all hover:bg-[#3A3A3C] hover:text-white active:scale-90 cursor-pointer shadow-xs"
                   aria-label="Close"
                 >
-                  <span className="material-symbols-outlined text-xl">close</span>
+                  <span className="material-symbols-outlined text-lg">close</span>
                 </button>
               </div>
             </div>
 
-            {/* ── TOP PRIMARY TABS ── */}
-            <div className="flex border-b border-white/10 bg-[#121212] px-4 pt-1.5 gap-2">
-              <button
-                type="button"
-                onClick={() => setMainTab("ai-models")}
-                className={`flex items-center gap-2 border-b-2 px-4 py-2.5 text-xs font-semibold transition-all cursor-pointer ${
-                  mainTab === "ai-models"
-                    ? "border-primary text-white bg-white/5 rounded-t-lg"
-                    : "border-transparent text-white/60 hover:text-white"
-                }`}
-              >
-                <span className="material-symbols-outlined text-[17px] text-primary">psychology</span>
-                Track AI Models Logs
-                <span className="rounded-full bg-primary/20 text-primary border border-primary/30 px-1.5 py-0.2 text-[10px] font-mono">
-                  Active
-                </span>
-              </button>
+            {/* ── TOP PRIMARY TABS: Cupertino Segmented Control ── */}
+            <div className="px-3 sm:px-6 py-2.5 border-b border-white/[0.08] bg-[#1C1C1E]/60 backdrop-blur-xl shrink-0">
+              <div className="flex p-1 bg-[#2C2C2E]/80 backdrop-blur-md rounded-2xl border border-white/[0.06] gap-1 shadow-inner">
+                <button
+                  type="button"
+                  onClick={() => setMainTab("ai-models")}
+                  className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 text-xs font-semibold rounded-xl transition-all duration-200 cursor-pointer active:scale-[0.98] ${
+                    mainTab === "ai-models"
+                      ? "bg-[#3A3A3C] text-white shadow-md border border-white/10"
+                      : "text-white/60 hover:text-white"
+                  }`}
+                >
+                  <span className="material-symbols-outlined text-[16px] text-primary">psychology</span>
+                  <span className="truncate">Track AI Models Logs</span>
+                  <span className="rounded-full bg-primary/20 text-primary px-1.5 py-0.5 text-[10px] font-mono shrink-0">
+                    Live
+                  </span>
+                </button>
 
-              <button
-                type="button"
-                onClick={() => setMainTab("all-requests")}
-                className={`flex items-center gap-2 border-b-2 px-4 py-2.5 text-xs font-semibold transition-all cursor-pointer ${
-                  mainTab === "all-requests"
-                    ? "border-white text-white bg-white/5 rounded-t-lg"
-                    : "border-transparent text-white/60 hover:text-white"
-                }`}
-              >
-                <span className="material-symbols-outlined text-[17px]">network_check</span>
-                All Network Requests
-                <span className="rounded-full bg-white/10 px-1.5 py-0.2 text-[10px] font-mono text-white/70">
-                  {logs.length}
-                </span>
-              </button>
+                <button
+                  type="button"
+                  onClick={() => setMainTab("all-requests")}
+                  className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 text-xs font-semibold rounded-xl transition-all duration-200 cursor-pointer active:scale-[0.98] ${
+                    mainTab === "all-requests"
+                      ? "bg-[#3A3A3C] text-white shadow-md border border-white/10"
+                      : "text-white/60 hover:text-white"
+                  }`}
+                >
+                  <span className="material-symbols-outlined text-[16px]">network_check</span>
+                  <span className="truncate">All Network Requests</span>
+                  <span className="rounded-full bg-white/10 px-1.5 py-0.5 text-[10px] font-mono text-white/70 shrink-0">
+                    {logs.length}
+                  </span>
+                </button>
+              </div>
             </div>
 
             {/* ── TAB 1: AI MODEL LOGS TRACKER ── */}
