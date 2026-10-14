@@ -476,13 +476,20 @@ export default function RequestLoggerDetail({
   };
 
   const pipelinePayloads = detail?.pipelinePayloads || null;
+  const detailResponseBody = detail?.responseBody;
+  const logResponseBody = log.responseBody;
+  const detailErrorDetails = detail?.errorDetails;
+  const logErrorDetails = log.errorDetails;
+  const providerResponsePayload = pipelinePayloads?.providerResponse;
+  const logStatus = log.status;
+
   const effectivePipelinePayloads = useMemo(() => {
     const payloads: Record<string, unknown> = { ...(pipelinePayloads || {}) };
-    if (!payloads.providerResponse && (detail?.responseBody || log?.responseBody)) {
-      payloads.providerResponse = detail?.responseBody || log?.responseBody;
+    if (!payloads.providerResponse && (detailResponseBody || logResponseBody)) {
+      payloads.providerResponse = detailResponseBody || logResponseBody;
     }
     return Object.keys(payloads).length > 0 ? payloads : null;
-  }, [pipelinePayloads, detail?.responseBody, log?.responseBody]);
+  }, [pipelinePayloads, detailResponseBody, logResponseBody]);
 
   const payloadSections = effectivePipelinePayloads
     ? buildPipelinePayloadSections(
@@ -500,20 +507,19 @@ export default function RequestLoggerDetail({
     : [];
 
   const rawUpstreamError = useMemo(() => {
-    if (detail?.errorDetails) return detail.errorDetails;
-    if (log?.errorDetails) return log.errorDetails;
-    const provResp = detail?.pipelinePayloads?.providerResponse;
-    if (provResp && typeof provResp === "object") {
-      if ("body" in provResp && (provResp as Record<string, unknown>).body) {
-        return (provResp as Record<string, unknown>).body;
+    if (detailErrorDetails) return detailErrorDetails;
+    if (logErrorDetails) return logErrorDetails;
+    if (providerResponsePayload && typeof providerResponsePayload === "object") {
+      if ("body" in providerResponsePayload && (providerResponsePayload as Record<string, unknown>).body) {
+        return (providerResponsePayload as Record<string, unknown>).body;
       }
-      return provResp;
+      return providerResponsePayload;
     }
-    if (detail?.responseBody && (log.status >= 400 || log.status === 0)) {
-      return detail.responseBody;
+    if (detailResponseBody && (logStatus >= 400 || logStatus === 0)) {
+      return detailResponseBody;
     }
     return null;
-  }, [detail, log]);
+  }, [detailErrorDetails, logErrorDetails, providerResponsePayload, detailResponseBody, logStatus]);
   const requestBodyOmitted = isBodySizeLimitOmission(detail?.requestBody);
   const responseBodyOmitted = isBodySizeLimitOmission(detail?.responseBody);
   const requestJson = detail?.requestBody ? toPrettyJson(detail.requestBody) : null;
