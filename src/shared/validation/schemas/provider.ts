@@ -491,9 +491,9 @@ export const updateProviderNodeSchema = z
   });
 
 export const providerNodeValidateSchema = z.object({
-  baseUrl: z.string().trim().min(1, "Base URL and API key required"),
+  baseUrl: z.string().trim().min(1, "Base URL is required"),
   apiKey: z.string().trim().optional(),
-  type: z.enum(["openai-compatible", "anthropic-compatible"]).optional(),
+  type: z.string().trim().optional(),
   compatMode: z.enum(["cc"]).optional(),
   apiType: z
     .enum([
@@ -509,6 +509,7 @@ export const providerNodeValidateSchema = z.object({
   chatPath: z.string().trim().startsWith("/").max(500).optional().or(z.literal("")),
   modelsPath: z.string().trim().startsWith("/").max(500).optional().or(z.literal("")),
   modelId: z.string().trim().max(200).optional().or(z.literal("")),
+  customHeaders: customHeadersSchema,
 });
 
 // rate-limit override numeric fields must reject operator intent loss.

@@ -3,11 +3,11 @@
 import { useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
 
-import { Button, Input, Select } from "@/shared/components";
+import { Button, Input, Select, Badge, Textarea } from "@/shared/components";
 import { readFetchErrorMessage } from "@/shared/utils/fetchError";
 
-/** One repeatable model row — Kilo Code's "ID / Name / Reasoning / Image". */
-type ModelRow = {
+/** One repeatable model row — "ID / Name / Reasoning / Image". */
+export type ModelRow = {
   key: string;
   id: string;
   name: string;
@@ -15,14 +15,89 @@ type ModelRow = {
   image: boolean;
 };
 
-/** One repeatable header row — Kilo Code's "Header / Value". */
-type HeaderRow = {
+/** One repeatable header row — "Header / Value". */
+export type HeaderRow = {
   key: string;
   name: string;
   value: string;
 };
 
-type ProviderApi = "openai" | "anthropic";
+/** The 5 provider categories supported for custom providers. */
+export type CustomProviderCategory =
+  | "openai-compatible"
+  | "anthropic-compatible"
+  | "gemini-native"
+  | "local-self-hosted"
+  | "aggregator-router";
+
+interface ProviderCategoryConfig {
+  value: CustomProviderCategory;
+  label: string;
+  badge: string;
+  description: string;
+  placeholderBaseUrl: string;
+  defaultApi: "openai" | "anthropic";
+  apiTypeDefault: string;
+  keyHint: string;
+  defaultHeaders?: Array<{ name: string; value: string }>;
+}
+
+export const PROVIDER_CATEGORIES: ProviderCategoryConfig[] = [
+  {
+    value: "openai-compatible",
+    label: "OpenAI Compatible",
+    badge: "vLLM / FastChat / OpenAI",
+    description: "Standard OpenAI endpoint (/v1/chat/completions)",
+    placeholderBaseUrl: "https://api.openai.com/v1",
+    defaultApi: "openai",
+    apiTypeDefault: "chat",
+    keyHint: "Optional. Leave blank if your proxy has no auth.",
+  },
+  {
+    value: "anthropic-compatible",
+    label: "Anthropic Compatible",
+    badge: "Claude Messages API",
+    description: "Claude Messages protocol (/v1/messages)",
+    placeholderBaseUrl: "https://api.anthropic.com/v1",
+    defaultApi: "anthropic",
+    apiTypeDefault: "chat",
+    keyHint: "Anthropic API key or custom proxy key.",
+  },
+  {
+    value: "gemini-native",
+    label: "Google Gemini Native",
+    badge: "Google AI Studio",
+    description: "Google Gemini API (/v1beta/openai or /v1beta/models)",
+    placeholderBaseUrl: "https://generativelanguage.googleapis.com/v1beta/openai",
+    defaultApi: "openai",
+    apiTypeDefault: "chat",
+    keyHint: "Google AI Studio API key.",
+  },
+  {
+    value: "local-self-hosted",
+    label: "Local / Self-Hosted",
+    badge: "Ollama / LM Studio / vLLM",
+    description: "Local models running without an API key (HTTP & HTTPS)",
+    placeholderBaseUrl: "http://localhost:11434/v1",
+    defaultApi: "openai",
+    apiTypeDefault: "chat",
+    keyHint: "No API key required. Leave blank for Ollama / LM Studio.",
+  },
+  {
+    value: "aggregator-router",
+    label: "Multi-Model Router / Aggregator",
+    badge: "OpenRouter / LiteLLM",
+    description: "OpenAI format with routing headers (HTTP-Referer, X-Title)",
+    placeholderBaseUrl: "https://openrouter.ai/api/v1",
+    defaultHeaders: [
+      { name: "HTTP-Referer", value: "https://cheaproute.ai" },
+      { name: "X-Title", value: "CheapRoute" },
+    ],
+    defaultApi: "openai",
+    apiTypeDefault: "chat",
+    keyHint: "Aggregator API key (e.g. OpenRouter, LiteLLM).",
+  },
+];
 
 interface CustomProviderInlineFormProps {
   /** Upsert the freshly created node into the page's local node list. */
@@ -34,24 +109,19 @@ interface CustomProviderInlineFormProps {
 let rowSeq = 0;
 const nextKey = (prefix: string) => `${prefix}-${Date.now().toString(36)}-${rowSeq++}`;
 
-const emptyModelRow = (): ModelRow => ({
+const emptyModelRow = (id = "", name = ""): ModelRow => ({
   key: nextKey("model"),
-  id: "",
-  name: "",
-  reasoning: false,
-  image: false,
+  id,
+  name: name || id,
+  reasoning: /r1|reasoning|thinking|o1|o3/i.test(id),
+  image: /vision|vl|image|omni/i.test(id),
 });
 
-const emptyHeaderRow = (): HeaderRow => ({
+const emptyHeaderRow = (name = "", value = ""): HeaderRow => ({
   key: nextKey("header"),
-  name: "",
-  value: "",
+  name,
+  value,
 });
-
-const API_OPTIONS: Array<{ value: ProviderApi; labelKey: string }> = [
-  { value: "openai", labelKey: "customProviderApiOpenai" },
-  { value: "anthropic", labelKey: "customProviderApiAnthropic" },
-];
 
 const API_TYPE_LABEL_KEYS: Record<string, string> = {
   chat: "apiTypeChat",
@@ -62,20 +132,14 @@ const API_TYPE_LABEL_KEYS: Record<string, string> = {
   "images-generations": "apiTypeImagesGenerations",
 };
 
-/**
- * Kilo-Code-style custom provider form, inline on the providers page.
- *
- * Deliberately NOT a modal and NOT a wizard: the box expands in place, one
- * screenful of fields, and saving keeps you here (no router.push) so several
- * providers can be added back to back. Only Provider ID, Display name and
- * Base URL are required — everything else matches the optional fields the
- * upstream API already accepts.
- *
- * Save is three sequential calls sharing the new node id:
- *   1. POST /api/provider-nodes            -> node (id is server-generated)
- *   2. POST /api/providers                 -> connection, only when a key is given
- *   3. POST /api/provider-models           -> one call per model row
- */
+export function cleanCustomBaseUrl(raw: string): string {
+  let val = raw.trim();
+  val = val.replace(/\/chat\/completions$/i, "");
+  val = val.replace(/\/completions$/i, "");
+  val = val.replace(/\/models$/i, "");
+  return val.replace(/\/+$/, "");
+}
+
 export default function CustomProviderInlineForm({
   onCreated,
   onConnectionCreated,
@@ -85,16 +149,44 @@ export default function CustomProviderInlineForm({
   const [expanded, setExpanded] = useState(false);
   const [providerId, setProviderId] = useState("");
   const [displayName, setDisplayName] = useState("");
-  const [providerApi, setProviderApi] = useState<ProviderApi>("openai");
+  const [providerCategory, setProviderCategory] =
+    useState<CustomProviderCategory>("openai-compatible");
   const [apiType, setApiType] = useState("chat");
   const [baseUrl, setBaseUrl] = useState("");
   const [apiKey, setApiKey] = useState("");
   const [models, setModels] = useState<ModelRow[]>([]);
   const [headers, setHeaders] = useState<HeaderRow[]>([]);
 
+  // Models view mode: "rows" or "bulk"
+  const [modelsViewMode, setModelsViewMode] = useState<"rows" | "bulk">("rows");
+  const [bulkText, setBulkText] = useState("");
+
+  // Testing & Model Fetching state
+  const [testing, setTesting] = useState(false);
+  const [testResult, setTestResult] = useState<{
+    valid: boolean;
+    latencyMs?: number;
+    statusCode?: number;
+    message?: string;
+    rawResponse?: string | null;
+  } | null>(null);
+
+  const [fetchingModels, setFetchingModels] = useState(false);
+  const [fetchResult, setFetchResult] = useState<{
+    count: number;
+    probeUrl?: string | null;
+    error?: string | null;
+  } | null>(null);
+
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+
+  const currentCategoryConfig = useMemo(
+    () =>
+      PROVIDER_CATEGORIES.find((cat) => cat.value === providerCategory) ?? PROVIDER_CATEGORIES[0],
+    [providerCategory]
+  );
 
   const providerIdError = useMemo(() => {
     const value = providerId.trim();
@@ -115,15 +207,50 @@ export default function CustomProviderInlineForm({
   const requiredMissing = !providerId.trim() || !displayName.trim() || !baseUrl.trim();
   const canSubmit = !requiredMissing && !providerIdError && !submitting;
 
+  const handleCategoryChange = (newCat: CustomProviderCategory) => {
+    setProviderCategory(newCat);
+    const cfg = PROVIDER_CATEGORIES.find((c) => c.value === newCat);
+    if (!cfg) return;
+
+    // If Base URL was empty or previously a category placeholder, suggest the new default
+    const currentBaseUrlTrimmed = baseUrl.trim();
+    const wasDefault = PROVIDER_CATEGORIES.some(
+      (c) => c.placeholderBaseUrl === currentBaseUrlTrimmed
+    );
+    if (!currentBaseUrlTrimmed || wasDefault) {
+      setBaseUrl(cfg.placeholderBaseUrl);
+    }
+
+    // For aggregator-router, inject router headers if not already present
+    if (newCat === "aggregator-router" && cfg.defaultHeaders) {
+      setHeaders((prev) => {
+        const next = [...prev];
+        for (const dh of cfg.defaultHeaders || []) {
+          if (!next.some((h) => h.name.toLowerCase() === dh.name.toLowerCase())) {
+            next.push(emptyHeaderRow(dh.name, dh.value));
+          }
+        }
+        return next;
+      });
+    }
+
+    // Clear test results on category switch
+    setTestResult(null);
+    setFetchResult(null);
+  };
+
   const resetForm = () => {
     setProviderId("");
     setDisplayName("");
-    setProviderApi("openai");
+    setProviderCategory("openai-compatible");
     setApiType("chat");
     setBaseUrl("");
     setApiKey("");
     setModels([]);
     setHeaders([]);
+    setBulkText("");
+    setTestResult(null);
+    setFetchResult(null);
   };
 
   const patchModel = (key: string, patch: Partial<ModelRow>) =>
@@ -132,14 +259,138 @@ export default function CustomProviderInlineForm({
   const patchHeader = (key: string, patch: Partial<HeaderRow>) =>
     setHeaders((rows) => rows.map((row) => (row.key === key ? { ...row, ...patch } : row)));
 
-function cleanCustomBaseUrl(raw: string): string {
-  let val = raw.trim();
-  val = val.replace(/\/chat\/completions$/i, "");
-  val = val.replace(/\/completions$/i, "");
-  val = val.replace(/\/models$/i, "");
-  return val.replace(/\/+$/, "");
-}
+  // Sync bulk text -> models
+  const applyBulkText = (text: string) => {
+    const lines = text
+      .split("\n")
+      .map((l) => l.trim())
+      .filter((l) => l.length > 0 && !l.startsWith("#"));
+    const unique = [...new Set(lines)];
+    const existingMap = new Map(models.map((m) => [m.id, m]));
+    const nextModels: ModelRow[] = unique.map((id) => {
+      const existing = existingMap.get(id);
+      return existing || emptyModelRow(id);
+    });
+    setModels(nextModels);
+    setBulkText(text);
+  };
 
+  // ── Test Provider Connectivity ───────────────────────────────────────────
+  const handleTestProvider = async () => {
+    const sanitizedUrl = cleanCustomBaseUrl(baseUrl);
+    if (!sanitizedUrl) return;
+
+    setTesting(true);
+    setTestResult(null);
+
+    const headersObj: Record<string, string> = {};
+    for (const h of trimmedHeaders) {
+      headersObj[h.name.trim()] = h.value;
+    }
+
+    try {
+      const res = await fetch("/api/provider-nodes/validate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          baseUrl: sanitizedUrl,
+          apiKey: apiKey.trim() || undefined,
+          type: providerCategory,
+          customHeaders: Object.keys(headersObj).length > 0 ? headersObj : undefined,
+          modelId: models[0]?.id?.trim() || undefined,
+        }),
+      });
+
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && data.valid) {
+        setTestResult({
+          valid: true,
+          latencyMs: data.latencyMs,
+          message:
+            `✓ Connected successfully (${data.latencyMs ?? 0}ms)` +
+            (data.totalModels ? ` — ${data.totalModels} models available` : ""),
+        });
+
+        // If models were discovered and current list is empty, auto-populate
+        if (Array.isArray(data.models) && data.models.length > 0 && models.length === 0) {
+          const autoRows = data.models.map((m: { id: string; name?: string }) =>
+            emptyModelRow(m.id, m.name)
+          );
+          setModels(autoRows);
+          setBulkText(autoRows.map((r: ModelRow) => r.id).join("\n"));
+        }
+      } else {
+        setTestResult({
+          valid: false,
+          statusCode: data.statusCode || res.status,
+          latencyMs: data.latencyMs,
+          message: data.error || `HTTP ${data.statusCode || res.status} upstream error`,
+          rawResponse: data.rawResponse || null,
+        });
+      }
+    } catch {
+      setTestResult({
+        valid: false,
+        message: "Network error connecting to endpoint",
+      });
+    } finally {
+      setTesting(false);
+    }
+  };
+
+  // ── Fetch Models ─────────────────────────────────────────────────────────
+  const handleFetchModels = async () => {
+    const sanitizedUrl = cleanCustomBaseUrl(baseUrl);
+    if (!sanitizedUrl) return;
+
+    setFetchingModels(true);
+    setFetchResult(null);
+
+    const headersObj: Record<string, string> = {};
+    for (const h of trimmedHeaders) {
+      headersObj[h.name.trim()] = h.value;
+    }
+
+    try {
+      const res = await fetch("/api/provider-nodes/validate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          baseUrl: sanitizedUrl,
+          apiKey: apiKey.trim() || undefined,
+          type: providerCategory,
+          customHeaders: Object.keys(headersObj).length > 0 ? headersObj : undefined,
+        }),
+      });
+
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && data.valid && Array.isArray(data.models) && data.models.length > 0) {
+        const discoveredRows: ModelRow[] = data.models.map((m: { id: string; name?: string }) =>
+          emptyModelRow(m.id, m.name)
+        );
+        setModels(discoveredRows);
+        setBulkText(discoveredRows.map((r) => r.id).join("\n"));
+        setFetchResult({
+          count: discoveredRows.length,
+          probeUrl: data.probeUrl,
+        });
+      } else {
+        setFetchResult({
+          count: 0,
+          error: data.error || "No models returned by upstream endpoint",
+        });
+      }
+    } catch {
+      setFetchResult({
+        count: 0,
+        error: "Failed to fetch models: network error",
+      });
+    } finally {
+      setFetchingModels(false);
+    }
+  };
+
+  // ── Submit Provider ──────────────────────────────────────────────────────
   const handleSubmit = async () => {
     if (!canSubmit) return;
     setSubmitting(true);
@@ -147,24 +398,46 @@ function cleanCustomBaseUrl(raw: string): string {
     setSuccess(null);
 
     const sanitizedBaseUrl = cleanCustomBaseUrl(baseUrl);
+    const nodeType =
+      providerCategory === "anthropic-compatible" ? "anthropic-compatible" : "openai-compatible";
+
     const nodeBody: Record<string, unknown> = {
       name: displayName.trim(),
       prefix: providerId.trim(),
       baseUrl: sanitizedBaseUrl,
-      type: providerApi === "anthropic" ? "anthropic-compatible" : "openai-compatible",
+      type: nodeType,
     };
-    if (providerApi === "openai") nodeBody.apiType = apiType;
+    if (nodeType === "openai-compatible") {
+      nodeBody.apiType = apiType;
+    }
 
-    // Headers go on the node itself (`customHeaders`) — that is the field the
-    // provider executor merges into every upstream request.
-    if (trimmedHeaders.length > 0) {
+    // Merge headers (auto-adding router headers if aggregator-router)
+    const effectiveHeaders = [...trimmedHeaders];
+    if (providerCategory === "aggregator-router") {
+      if (!effectiveHeaders.some((h) => h.name.toLowerCase() === "http-referer")) {
+        effectiveHeaders.push({
+          key: nextKey("header"),
+          name: "HTTP-Referer",
+          value: "https://cheaproute.ai",
+        });
+      }
+      if (!effectiveHeaders.some((h) => h.name.toLowerCase() === "x-title")) {
+        effectiveHeaders.push({
+          key: nextKey("header"),
+          name: "X-Title",
+          value: "CheapRoute",
+        });
+      }
+    }
+
+    if (effectiveHeaders.length > 0) {
       nodeBody.customHeaders = Object.fromEntries(
-        trimmedHeaders.map((row) => [row.name.trim(), row.value])
+        effectiveHeaders.map((row) => [row.name.trim(), row.value])
       );
     }
 
     try {
-      // ── 1. node ────────────────────────────────────────────────────────
+      // ── 1. Create provider node ──────────────────────────────────────────
       const nodeRes = await fetch("/api/provider-nodes", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -181,18 +454,22 @@ function cleanCustomBaseUrl(raw: string): string {
         return;
       }
 
-      // ── 2. connection (always create connection so routing and testing can target it) ──
+      // ── 2. Create connection (works with or without API key) ───────────────
       const connectionPayload: Record<string, unknown> = {
         provider: node.id,
         name: displayName.trim() || node.name || node.id,
         priority: 1,
         testStatus: "unknown",
+        providerSpecificData: {
+          customCategory: providerCategory,
+        },
       };
       if (apiKey.trim()) {
         connectionPayload.apiKey = apiKey.trim();
       } else {
         connectionPayload.allowNoCredential = true;
       }
+
       const connectionRes = await fetch("/api/providers", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -206,7 +483,7 @@ function cleanCustomBaseUrl(raw: string): string {
       }
       await onConnectionCreated?.();
 
-      // ── 3. models (one request per row) ─────────────────────────────────
+      // ── 3. Create models (one per row) ───────────────────────────────────
       const failedModels: string[] = [];
       for (const row of trimmedModels) {
         const modelRes = await fetch("/api/provider-models", {
@@ -227,7 +504,6 @@ function cleanCustomBaseUrl(raw: string): string {
       resetForm();
 
       if (failedModels.length > 0) {
-        // Node + any other models landed; only report the partial failure.
         setError(
           t("customProviderModelsPartial", {
             count: failedModels.length,
@@ -246,7 +522,7 @@ function cleanCustomBaseUrl(raw: string): string {
   };
 
   return (
-    <div className="border border-border rounded-xl bg-surface overflow-hidden">
+    <div className="border border-border rounded-xl bg-surface overflow-hidden shadow-sm">
       {/* ── Collapsed trigger ─────────────────────────────────────────────── */}
       <button
         type="button"
@@ -259,7 +535,7 @@ function cleanCustomBaseUrl(raw: string): string {
         className="w-full flex items-center justify-between gap-3 px-4 py-3 text-left hover:bg-bg-subtle transition-colors"
       >
         <span className="flex items-center gap-2 min-w-0">
-          <span className="material-symbols-outlined text-[18px] text-primary shrink-0">
+          <span className="material-symbols-outlined text-[20px] text-primary shrink-0">
             {expanded ? "expand_less" : "add_circle"}
           </span>
           <span className="min-w-0">
@@ -267,17 +543,48 @@ function cleanCustomBaseUrl(raw: string): string {
               {t("customProviderTitle")}
             </span>
             <span className="block text-xs text-text-muted truncate">
-              {t("customProviderSubtitle")}
+              Add OpenAI, Anthropic, Gemini, Local (Ollama/LM Studio), or Multi-Model Routers
             </span>
           </span>
         </span>
         {!expanded && (
-          <span className="text-xs text-primary shrink-0">{t("customProviderExpand")}</span>
+          <span className="text-xs text-primary font-medium shrink-0">
+            {t("customProviderExpand")}
+          </span>
         )}
       </button>
 
       {expanded && (
-        <div className="flex flex-col gap-5 px-4 pb-4 pt-1 border-t border-border">
+        <div className="flex flex-col gap-4 px-4 pb-4 pt-2 border-t border-border">
+          {/* ── Provider Type Dropdown (The 5 User-Requested Categories) ──── */}
+          <div className="rounded-xl border border-white/10 bg-black/10 dark:bg-white/[0.03] p-3 flex flex-col gap-2">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+              <label
+                htmlFor="cp-provider-category"
+                className="text-xs font-semibold text-text-main flex items-center gap-1.5"
+              >
+                <span className="material-symbols-outlined text-[16px] text-primary">category</span>
+                Provider Type / Architecture <span className="text-red-500">*</span>
+              </label>
+              <Badge variant="info" size="sm" className="w-fit">
+                {currentCategoryConfig.badge}
+              </Badge>
+            </div>
+            <Select
+              id="cp-provider-category"
+              value={providerCategory}
+              onChange={(e) => handleCategoryChange(e.target.value as CustomProviderCategory)}
+              className="font-medium"
+            >
+              {PROVIDER_CATEGORIES.map((cat) => (
+                <option key={cat.value} value={cat.value}>
+                  {cat.label} ({cat.badge})
+                </option>
+              ))}
+            </Select>
+            <p className="text-[11px] text-text-muted">{currentCategoryConfig.description}</p>
+          </div>
+
           {/* ── Identity ─────────────────────────────────────────────────── */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div>
@@ -319,48 +626,91 @@ function cleanCustomBaseUrl(raw: string): string {
             </div>
           </div>
 
-          {/* ── API + base URL ───────────────────────────────────────────── */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            <div>
-              <label
-                htmlFor="cp-provider-api"
-                className="block text-xs font-medium text-text-muted mb-1"
-              >
-                {t("customProviderApiLabel")} <span className="text-red-500">*</span>
-              </label>
-              <Select
-                id="cp-provider-api"
-                value={providerApi}
-                onChange={(event) => setProviderApi(event.target.value as ProviderApi)}
-              >
-                {API_OPTIONS.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {t(option.labelKey)}
-                  </option>
-                ))}
-              </Select>
-            </div>
-            <div>
+          {/* ── Base URL & Test Connection ───────────────────────────────── */}
+          <div className="flex flex-col gap-1.5">
+            <div className="flex items-center justify-between gap-2">
               <label
                 htmlFor="cp-base-url"
-                className="block text-xs font-medium text-text-muted mb-1"
+                className="block text-xs font-medium text-text-muted"
               >
                 {t("customProviderBaseUrlLabel")} <span className="text-red-500">*</span>
               </label>
-              <Input
-                id="cp-base-url"
-                value={baseUrl}
-                onChange={(event) => setBaseUrl(event.target.value)}
-                placeholder={t("customProviderBaseUrlPlaceholder")}
-                autoComplete="off"
-                spellCheck={false}
-              />
+              <button
+                type="button"
+                onClick={handleTestProvider}
+                disabled={testing || !baseUrl.trim()}
+                title="Test connection to Base URL"
+                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-medium bg-primary/10 hover:bg-primary/20 text-primary active:scale-95 transition-all disabled:opacity-40 disabled:pointer-events-none"
+              >
+                <span className="material-symbols-outlined text-[14px]">
+                  {testing ? "sync" : "sensors"}
+                </span>
+                <span>{testing ? "Testing..." : "Test Provider"}</span>
+              </button>
             </div>
+            <div className="flex items-center gap-2">
+              <div className="flex-1">
+                <Input
+                  id="cp-base-url"
+                  value={baseUrl}
+                  onChange={(event) => setBaseUrl(event.target.value)}
+                  placeholder={currentCategoryConfig.placeholderBaseUrl}
+                  autoComplete="off"
+                  spellCheck={false}
+                />
+              </div>
+            </div>
+            <p className="text-[10px] text-text-muted">
+              Supports both HTTP & HTTPS. Trailing paths like /chat/completions or /models are
+              auto-cleaned.
+            </p>
+
+            {/* Test result feedback banner */}
+            {testResult && (
+              <div
+                className={`mt-1 p-2 rounded-lg border text-xs flex flex-col gap-1 ${
+                  testResult.valid
+                    ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400"
+                    : "bg-red-500/10 border-red-500/20 text-red-400"
+                }`}
+              >
+                <div className="flex items-center gap-1.5 font-medium">
+                  <span className="material-symbols-outlined text-[15px]">
+                    {testResult.valid ? "check_circle" : "error"}
+                  </span>
+                  <span>{testResult.message}</span>
+                </div>
+                {testResult.rawResponse && (
+                  <pre className="mt-1 p-1.5 text-[10px] font-mono bg-black/40 rounded border border-white/5 overflow-x-auto max-h-24 whitespace-pre-wrap">
+                    {testResult.rawResponse}
+                  </pre>
+                )}
+              </div>
+            )}
           </div>
 
-          {/* OpenAI-compatible only: the API surface of the base URL. */}
-          {providerApi === "openai" && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          {/* ── API Key & API Type ────────────────────────────────────────── */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div>
+              <label
+                htmlFor="cp-api-key"
+                className="block text-xs font-medium text-text-muted mb-1"
+              >
+                {t("customProviderApiKeyLabel")}{" "}
+                <span className="text-[10px] font-normal text-text-muted/70">(Optional)</span>
+              </label>
+              <Input
+                id="cp-api-key"
+                type="password"
+                value={apiKey}
+                onChange={(event) => setApiKey(event.target.value)}
+                placeholder={currentCategoryConfig.keyHint}
+                autoComplete="off"
+              />
+              <p className="text-[10px] text-text-muted mt-1">{currentCategoryConfig.keyHint}</p>
+            </div>
+
+            {providerCategory !== "anthropic-compatible" && (
               <div>
                 <label
                   htmlFor="cp-api-type"
@@ -379,128 +729,200 @@ function cleanCustomBaseUrl(raw: string): string {
                     </option>
                   ))}
                 </Select>
-              </div>
-              <div>
-                <label
-                  htmlFor="cp-api-key"
-                  className="block text-xs font-medium text-text-muted mb-1"
-                >
-                  {t("customProviderApiKeyLabel")}
-                </label>
-                <Input
-                  id="cp-api-key"
-                  type="password"
-                  value={apiKey}
-                  onChange={(event) => setApiKey(event.target.value)}
-                  placeholder={t("customProviderApiKeyPlaceholder")}
-                  autoComplete="off"
-                />
                 <p className="text-[10px] text-text-muted mt-1">
-                  {t("customProviderApiKeyHint")}
+                  API surface type for routing requests.
                 </p>
-              </div>
-            </div>
-          )}
-
-          {/* ── Models ───────────────────────────────────────────────────── */}
-          <div className="flex flex-col gap-2">
-            <div className="flex items-center justify-between gap-2">
-              <span className="text-xs font-semibold text-text-main">
-                {t("customProviderModelsLabel")}
-              </span>
-              <Button
-                size="sm"
-                variant="ghost"
-                icon="add"
-                onClick={() => setModels((rows) => [...rows, emptyModelRow()])}
-              >
-                {t("customProviderAddModel")}
-              </Button>
-            </div>
-
-            {models.length === 0 ? (
-              <p className="text-xs text-text-muted">{t("customProviderModelsEmpty")}</p>
-            ) : (
-              <div className="flex flex-col gap-2">
-                {models.map((row, index) => (
-                  <div
-                    key={row.key}
-                    className="grid grid-cols-1 md:grid-cols-[1fr_1fr_auto_auto_auto] items-end gap-2 p-2 rounded-lg bg-bg-subtle border border-border"
-                  >
-                    <div>
-                      {index === 0 && (
-                        <label className="block text-[10px] text-text-muted mb-1">
-                          {t("customProviderModelIdLabel")}
-                        </label>
-                      )}
-                      <Input
-                        aria-label={t("customProviderModelIdLabel")}
-                        value={row.id}
-                        onChange={(event) => patchModel(row.key, { id: event.target.value })}
-                        placeholder={t("customProviderModelIdPlaceholder")}
-                        autoComplete="off"
-                        spellCheck={false}
-                      />
-                    </div>
-                    <div>
-                      {index === 0 && (
-                        <label className="block text-[10px] text-text-muted mb-1">
-                          {t("customProviderModelNameLabel")}
-                        </label>
-                      )}
-                      <Input
-                        aria-label={t("customProviderModelNameLabel")}
-                        value={row.name}
-                        onChange={(event) =>
-                          patchModel(row.key, { name: event.target.value })
-                        }
-                        placeholder={t("customProviderModelNamePlaceholder")}
-                        autoComplete="off"
-                      />
-                    </div>
-                    <label className="flex items-center gap-1.5 text-xs text-text-muted whitespace-nowrap cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={row.reasoning}
-                        onChange={(event) =>
-                          patchModel(row.key, { reasoning: event.target.checked })
-                        }
-                        className="rounded border-border"
-                      />
-                      {t("customProviderModelReasoning")}
-                    </label>
-                    <label className="flex items-center gap-1.5 text-xs text-text-muted whitespace-nowrap cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={row.image}
-                        onChange={(event) =>
-                          patchModel(row.key, { image: event.target.checked })
-                        }
-                        className="rounded border-border"
-                      />
-                      {t("customProviderModelImage")}
-                    </label>
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setModels((rows) => rows.filter((item) => item.key !== row.key))
-                      }
-                      aria-label={t("remove")}
-                      className="p-1.5 rounded-lg text-text-muted hover:text-red-500 hover:bg-bg-alt transition-colors"
-                    >
-                      <span className="material-symbols-outlined text-[16px]">close</span>
-                    </button>
-                  </div>
-                ))}
               </div>
             )}
           </div>
 
-          {/* ── Headers ──────────────────────────────────────────────────── */}
-          <div className="flex flex-col gap-2">
+          {/* ── Models Section (Fetch Models + Rows / Bulk Mode) ─────────── */}
+          <div className="flex flex-col gap-2 pt-1 border-t border-border">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-semibold text-text-main flex items-center gap-1.5">
+                  <span className="material-symbols-outlined text-[16px] text-primary">token</span>
+                  Models ({models.length})
+                </span>
+                {/* View Mode Toggle: Rows vs Bulk Textarea */}
+                <div className="flex items-center rounded-lg bg-bg-subtle p-0.5 border border-border">
+                  <button
+                    type="button"
+                    onClick={() => setModelsViewMode("rows")}
+                    className={`px-2 py-0.5 text-[11px] rounded font-medium transition-colors ${
+                      modelsViewMode === "rows"
+                        ? "bg-surface text-text-main shadow-xs"
+                        : "text-text-muted hover:text-text-main"
+                    }`}
+                  >
+                    Table View
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setBulkText(models.map((m) => m.id).join("\n"));
+                      setModelsViewMode("bulk");
+                    }}
+                    className={`px-2 py-0.5 text-[11px] rounded font-medium transition-colors ${
+                      modelsViewMode === "bulk"
+                        ? "bg-surface text-text-main shadow-xs"
+                        : "text-text-muted hover:text-text-main"
+                    }`}
+                  >
+                    Bulk Textarea
+                  </button>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-1.5">
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  icon={fetchingModels ? "sync" : "cloud_download"}
+                  onClick={handleFetchModels}
+                  disabled={fetchingModels || !baseUrl.trim()}
+                  title="Query endpoint for available models"
+                >
+                  {fetchingModels ? "Fetching..." : "Fetch Models"}
+                </Button>
+                {modelsViewMode === "rows" && (
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    icon="add"
+                    onClick={() => setModels((rows) => [...rows, emptyModelRow()])}
+                  >
+                    {t("customProviderAddModel")}
+                  </Button>
+                )}
+              </div>
+            </div>
+
+            {/* Fetch feedback */}
+            {fetchResult && (
+              <div
+                className={`p-2 rounded-lg border text-xs flex items-center gap-1.5 ${
+                  fetchResult.count > 0
+                    ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400"
+                    : "bg-red-500/10 border-red-500/20 text-red-400"
+                }`}
+              >
+                <span className="material-symbols-outlined text-[15px]">
+                  {fetchResult.count > 0 ? "check_circle" : "error"}
+                </span>
+                <span>
+                  {fetchResult.count > 0
+                    ? `✓ Discovered ${fetchResult.count} models from ${
+                        fetchResult.probeUrl || "upstream"
+                      }`
+                    : fetchResult.error}
+                </span>
+              </div>
+            )}
+
+            {/* Bulk Textarea Mode */}
+            {modelsViewMode === "bulk" ? (
+              <div className="flex flex-col gap-1.5">
+                <p className="text-[11px] text-text-muted">
+                  Paste model IDs one per line. They will automatically be parsed into model rows.
+                </p>
+                <Textarea
+                  rows={5}
+                  value={bulkText}
+                  onChange={(e) => applyBulkText(e.target.value)}
+                  placeholder={`llama3.2:latest\ndeepseek-r1:7b\ngpt-4o\nclaude-3-5-sonnet-20241022`}
+                  className="font-mono text-xs bg-bg-subtle"
+                />
+              </div>
+            ) : (
+              /* Rows Mode */
+              <>
+                {models.length === 0 ? (
+                  <p className="text-xs text-text-muted py-2">{t("customProviderModelsEmpty")}</p>
+                ) : (
+                  <div className="flex flex-col gap-2 max-h-60 overflow-y-auto pr-1">
+                    {models.map((row, index) => (
+                      <div
+                        key={row.key}
+                        className="grid grid-cols-1 md:grid-cols-[1fr_1fr_auto_auto_auto] items-end gap-2 p-2 rounded-lg bg-bg-subtle border border-border"
+                      >
+                        <div>
+                          {index === 0 && (
+                            <label className="block text-[10px] text-text-muted mb-1">
+                              {t("customProviderModelIdLabel")}
+                            </label>
+                          )}
+                          <Input
+                            aria-label={t("customProviderModelIdLabel")}
+                            value={row.id}
+                            onChange={(event) => patchModel(row.key, { id: event.target.value })}
+                            placeholder={t("customProviderModelIdPlaceholder")}
+                            autoComplete="off"
+                            spellCheck={false}
+                          />
+                        </div>
+                        <div>
+                          {index === 0 && (
+                            <label className="block text-[10px] text-text-muted mb-1">
+                              {t("customProviderModelNameLabel")}
+                            </label>
+                          )}
+                          <Input
+                            aria-label={t("customProviderModelNameLabel")}
+                            value={row.name}
+                            onChange={(event) =>
+                              patchModel(row.key, { name: event.target.value })
+                            }
+                            placeholder={t("customProviderModelNamePlaceholder")}
+                            autoComplete="off"
+                          />
+                        </div>
+                        <label className="flex items-center gap-1.5 text-xs text-text-muted whitespace-nowrap cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={row.reasoning}
+                            onChange={(event) =>
+                              patchModel(row.key, { reasoning: event.target.checked })
+                            }
+                            className="rounded border-border"
+                          />
+                          {t("customProviderModelReasoning")}
+                        </label>
+                        <label className="flex items-center gap-1.5 text-xs text-text-muted whitespace-nowrap cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={row.image}
+                            onChange={(event) =>
+                              patchModel(row.key, { image: event.target.checked })
+                            }
+                            className="rounded border-border"
+                          />
+                          {t("customProviderModelImage")}
+                        </label>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setModels((rows) => rows.filter((item) => item.key !== row.key))
+                          }
+                          aria-label={t("remove")}
+                          className="p-1.5 rounded-lg text-text-muted hover:text-red-500 hover:bg-bg-alt transition-colors"
+                        >
+                          <span className="material-symbols-outlined text-[16px]">close</span>
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+
+          {/* ── Headers Section ──────────────────────────────────────────── */}
+          <div className="flex flex-col gap-2 pt-1 border-t border-border">
             <div className="flex items-center justify-between gap-2">
-              <span className="text-xs font-semibold text-text-main">
-                {t("customProviderHeadersLabel")}
+              <span className="text-xs font-semibold text-text-main flex items-center gap-1.5">
+                <span className="material-symbols-outlined text-[16px] text-primary">tune</span>
+                {t("customProviderHeadersLabel")} ({headers.length})
               </span>
               <Button
                 size="sm"
@@ -530,9 +952,7 @@ function cleanCustomBaseUrl(raw: string): string {
                       <Input
                         aria-label={t("customProviderHeaderNameLabel")}
                         value={row.name}
-                        onChange={(event) =>
-                          patchHeader(row.key, { name: event.target.value })
-                        }
+                        onChange={(event) => patchHeader(row.key, { name: event.target.value })}
                         placeholder={t("customProviderHeaderNamePlaceholder")}
                         autoComplete="off"
                         spellCheck={false}
@@ -547,9 +967,7 @@ function cleanCustomBaseUrl(raw: string): string {
                       <Input
                         aria-label={t("customProviderHeaderValueLabel")}
                         value={row.value}
-                        onChange={(event) =>
-                          patchHeader(row.key, { value: event.target.value })
-                        }
+                        onChange={(event) => patchHeader(row.key, { value: event.target.value })}
                         placeholder={t("customProviderHeaderValuePlaceholder")}
                         autoComplete="off"
                         spellCheck={false}
@@ -571,12 +989,10 @@ function cleanCustomBaseUrl(raw: string): string {
             )}
           </div>
 
-          {/* ── Feedback + actions ───────────────────────────────────────── */}
+          {/* ── Feedback + Actions ───────────────────────────────────────── */}
           {error && (
             <p className="text-xs text-red-500 flex items-start gap-1.5">
-              <span className="material-symbols-outlined text-[14px] shrink-0 mt-px">
-                error
-              </span>
+              <span className="material-symbols-outlined text-[14px] shrink-0 mt-px">error</span>
               {error}
             </p>
           )}
@@ -589,7 +1005,7 @@ function cleanCustomBaseUrl(raw: string): string {
             </p>
           )}
 
-          <div className="flex items-center justify-end gap-2 pt-1">
+          <div className="flex items-center justify-end gap-2 pt-2 border-t border-border">
             <Button
               size="sm"
               variant="ghost"
@@ -609,7 +1025,7 @@ function cleanCustomBaseUrl(raw: string): string {
           </div>
 
           {requiredMissing && (
-            <p className="text-[10px] text-text-muted text-right -mt-2">
+            <p className="text-[10px] text-text-muted text-right -mt-1">
               {t("customProviderRequiredHint")}
             </p>
           )}
