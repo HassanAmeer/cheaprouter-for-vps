@@ -468,6 +468,73 @@ export async function GET(
       });
     };
 
+    const extractModelCapabilities = (m: any) => {
+      const caps = new Set<string>();
+      let supportsVision = m.supportsVision === true;
+      let reasoning = m.reasoning === true;
+      let isFree = m.isFree === true;
+
+      if (Array.isArray(m.capabilities)) {
+        for (const c of m.capabilities) {
+          if (typeof c === "string") caps.add(c.toLowerCase());
+        }
+      } else if (m.capabilities && typeof m.capabilities === "object") {
+        for (const [key, val] of Object.entries(m.capabilities)) {
+          if (val === true) caps.add(key.toLowerCase());
+        }
+      }
+
+      if (Array.isArray(m.categories)) {
+        for (const cat of m.categories) {
+          if (typeof cat === "string") caps.add(cat.toLowerCase());
+        }
+      }
+
+      if (Array.isArray(m.peers)) {
+        for (const peer of m.peers) {
+          if (Array.isArray(peer?.categories)) {
+            for (const cat of peer.categories) {
+              if (typeof cat === "string") caps.add(cat.toLowerCase());
+            }
+          }
+        }
+      }
+
+      if (caps.has("vision") || caps.has("image") || caps.has("images")) {
+        supportsVision = true;
+        caps.add("vision");
+      }
+      if (caps.has("reasoning") || caps.has("thinking") || caps.has("thought")) {
+        reasoning = true;
+        caps.add("reasoning");
+      }
+      if (caps.has("coding") || caps.has("code")) {
+        caps.add("coding");
+      }
+      if (caps.has("search") || caps.has("web_search") || caps.has("browsing")) {
+        caps.add("search");
+      }
+      if (caps.has("tool_use") || caps.has("tools") || caps.has("function_calling")) {
+        caps.add("tool_use");
+      }
+      if (caps.has("chat")) {
+        caps.add("chat");
+      }
+
+      const modelIdLower = String(m.id || m.modelId || "").toLowerCase();
+      if (modelIdLower.includes("free") || m.cost === 0 || m.pricing?.prompt === 0 || m.pricing?.input === 0) {
+        isFree = true;
+        caps.add("free");
+      }
+
+      return {
+        capabilities: Array.from(caps),
+        supportsVision,
+        reasoning,
+        isFree,
+      };
+    };
+
     const buildApiDiscoveryResponse = async (
       models: any[],
       warning?: string,
@@ -491,6 +558,7 @@ export async function GET(
         const modelsToSave = models.map((m: any) => {
           const rawId = m.id || m.modelId || m.name;
           const modelId = typeof rawId === "string" ? rawId.trim() : String(rawId ?? "").trim();
+          const capInfo = extractModelCapabilities(m);
           return {
             id: modelId,
             name: m.name || m.modelName || modelId,
@@ -501,10 +569,10 @@ export async function GET(
             ...(typeof m.inputTokenLimit === "number" ? { inputTokenLimit: m.inputTokenLimit } : {}),
             ...(typeof m.max_input_tokens === "number" ? { inputTokenLimit: m.max_input_tokens } : {}),
             ...(typeof m.outputTokenLimit === "number" ? { outputTokenLimit: m.outputTokenLimit } : {}),
-            ...(typeof m.supportsVision === "boolean" ? { supportsVision: m.supportsVision } : {}),
-            ...(typeof m.reasoning === "boolean" ? { reasoning: m.reasoning } : {}),
-            ...(typeof m.isFree === "boolean" ? { isFree: m.isFree } : {}),
-            ...(Array.isArray(m.capabilities) ? { capabilities: m.capabilities } : {}),
+            supportsVision: capInfo.supportsVision,
+            reasoning: capInfo.reasoning,
+            isFree: capInfo.isFree,
+            capabilities: capInfo.capabilities,
           };
         }).filter((item) => Boolean(item.id));
 
@@ -524,7 +592,17 @@ export async function GET(
         // OpenRouter's embeddingRegistry catalog) into the live-discovery
         // response; the live /v1/models endpoint only lists chat models, and
         // the specialty catalog otherwise only reached local_catalog fallback.
-        const mergedModels = mergeSpecialtyCatalogIntoLiveModels(models, provider);
+        const rawMerged = mergeSpecialtyCatalogIntoLiveModels(models, provider);
+        const mergedModels = rawMerged.map((m: any) => {
+          const capInfo = extractModelCapabilities(m);
+          return {
+            ...m,
+            supportsVision: capInfo.supportsVision,
+            reasoning: capInfo.reasoning,
+            isFree: capInfo.isFree,
+            capabilities: capInfo.capabilities,
+          };
+        });
         return buildResponse({
           provider,
           connectionId,

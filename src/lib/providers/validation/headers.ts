@@ -81,6 +81,12 @@ export function buildBearerHeaders(apiKey: string, providerSpecificData: any = {
   if (apiKey) {
     headers.Authorization = `Bearer ${apiKey}`;
   }
+  if (
+    providerSpecificData?.customHeaders &&
+    typeof providerSpecificData.customHeaders === "object"
+  ) {
+    Object.assign(headers, providerSpecificData.customHeaders);
+  }
   return applyCustomUserAgent(headers, providerSpecificData);
 }
 

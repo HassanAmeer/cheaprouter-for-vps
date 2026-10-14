@@ -324,24 +324,46 @@ export default function ModelRow({
 
   // Detect capabilities
   const mid = model.id.toLowerCase();
-  const caps = model.capabilities ?? [];
-  const endpoints = model.supportedEndpoints ?? [];
+  const capsLower = (model.capabilities ?? []).map((c) => String(c).toLowerCase());
+  const endpoints = (model.supportedEndpoints ?? []).map((e) => String(e).toLowerCase());
   const hasReasoning =
-    caps.includes("Reasoning") ||
+    capsLower.includes("reasoning") ||
+    capsLower.includes("thinking") ||
+    mid.includes("think") ||
     mid.includes("reason") ||
     mid.includes("r1") ||
     mid.includes("o1") ||
-    mid.includes("o3");
+    mid.includes("o3") ||
+    model.reasoning === true;
   const hasVision =
-    caps.includes("Vision") ||
+    capsLower.includes("vision") ||
+    capsLower.includes("image") ||
     model.supportsVision === true ||
     endpoints.includes("images") ||
     mid.includes("vision") ||
     mid.includes("vl");
-  const hasTools = caps.includes("Tools") || endpoints.includes("chat") || endpoints.length === 0;
-  const hasCode = caps.includes("Code") || mid.includes("code") || mid.includes("coder");
+  const hasCode =
+    capsLower.includes("code") ||
+    capsLower.includes("coding") ||
+    mid.includes("code") ||
+    mid.includes("coder");
+  const hasSearch =
+    capsLower.includes("search") ||
+    capsLower.includes("web_search") ||
+    capsLower.includes("browsing") ||
+    endpoints.includes("search") ||
+    mid.includes("search");
+  const hasChat =
+    capsLower.includes("chat") ||
+    endpoints.includes("chat") ||
+    (!mid.includes("embed") && !mid.includes("rerank") && !mid.includes("whisper"));
+  const hasTools =
+    capsLower.includes("tools") ||
+    capsLower.includes("tool_use") ||
+    endpoints.includes("tools") ||
+    (!mid.includes("embed") && !mid.includes("rerank"));
   const hasAudio =
-    caps.includes("Audio") ||
+    capsLower.includes("audio") ||
     endpoints.includes("audio") ||
     endpoints.includes("audio-speech") ||
     endpoints.includes("audio-transcriptions") ||
@@ -453,30 +475,75 @@ export default function ModelRow({
         )}
 
         {/* Capability icons */}
-        <div className="flex items-center gap-0.5 text-[11px]">
-          {hasReasoning && (
-            <span title="Reasoning" className="material-symbols-outlined text-[13px] text-purple-400">
-              psychology
-            </span>
-          )}
-          {hasVision && (
-            <span title="Vision" className="material-symbols-outlined text-[13px] text-pink-400">
-              visibility
-            </span>
-          )}
-          {hasTools && (
-            <span title="Tools" className="material-symbols-outlined text-[13px] text-amber-400">
-              build
+        <div className="flex items-center gap-1 text-[11px]">
+          {hasChat && (
+            <span
+              title="Chat: Conversational dialogue & instructions"
+              className="p-1 rounded-md bg-[#222224] hover:bg-[#2c2c2e] text-[#8e8e93] hover:text-white border border-white/5 hover:border-white/20 transition-all duration-150 inline-flex items-center justify-center cursor-default shadow-xs"
+            >
+              <span className="material-symbols-outlined text-[12px] leading-none">
+                chat
+              </span>
             </span>
           )}
           {hasCode && (
-            <span title="Code" className="material-symbols-outlined text-[13px] text-blue-400">
-              code
+            <span
+              title="Code: Programming, debugging & syntax generation"
+              className="p-1 rounded-md bg-[#222224] hover:bg-[#2c2c2e] text-[#8e8e93] hover:text-white border border-white/5 hover:border-white/20 transition-all duration-150 inline-flex items-center justify-center cursor-default shadow-xs"
+            >
+              <span className="material-symbols-outlined text-[12px] leading-none">
+                code
+              </span>
+            </span>
+          )}
+          {hasVision && (
+            <span
+              title="Vision: Image analysis & visual inputs"
+              className="p-1 rounded-md bg-[#222224] hover:bg-[#2c2c2e] text-[#8e8e93] hover:text-white border border-white/5 hover:border-white/20 transition-all duration-150 inline-flex items-center justify-center cursor-default shadow-xs"
+            >
+              <span className="material-symbols-outlined text-[12px] leading-none">
+                visibility
+              </span>
+            </span>
+          )}
+          {hasReasoning && (
+            <span
+              title="Reasoning: Multi-step logic & deep thinking"
+              className="p-1 rounded-md bg-[#222224] hover:bg-[#2c2c2e] text-[#8e8e93] hover:text-white border border-white/5 hover:border-white/20 transition-all duration-150 inline-flex items-center justify-center cursor-default shadow-xs"
+            >
+              <span className="material-symbols-outlined text-[12px] leading-none">
+                psychology
+              </span>
+            </span>
+          )}
+          {hasSearch && (
+            <span
+              title="Search: Live web search & real-time grounding"
+              className="p-1 rounded-md bg-[#222224] hover:bg-[#2c2c2e] text-[#8e8e93] hover:text-white border border-white/5 hover:border-white/20 transition-all duration-150 inline-flex items-center justify-center cursor-default shadow-xs"
+            >
+              <span className="material-symbols-outlined text-[12px] leading-none">
+                travel_explore
+              </span>
+            </span>
+          )}
+          {hasTools && (
+            <span
+              title="Tools: Function calling & external tool use"
+              className="p-1 rounded-md bg-[#222224] hover:bg-[#2c2c2e] text-[#8e8e93] hover:text-white border border-white/5 hover:border-white/20 transition-all duration-150 inline-flex items-center justify-center cursor-default shadow-xs"
+            >
+              <span className="material-symbols-outlined text-[12px] leading-none">
+                build
+              </span>
             </span>
           )}
           {hasAudio && (
-            <span title="Audio" className="material-symbols-outlined text-[13px] text-green-400">
-              volume_up
+            <span
+              title="Audio: Speech transcription & audio understanding"
+              className="p-1 rounded-md bg-[#222224] hover:bg-[#2c2c2e] text-[#8e8e93] hover:text-white border border-white/5 hover:border-white/20 transition-all duration-150 inline-flex items-center justify-center cursor-default shadow-xs"
+            >
+              <span className="material-symbols-outlined text-[12px] leading-none">
+                volume_up
+              </span>
             </span>
           )}
         </div>

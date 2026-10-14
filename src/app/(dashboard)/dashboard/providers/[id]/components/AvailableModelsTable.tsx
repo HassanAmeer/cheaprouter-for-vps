@@ -293,31 +293,53 @@ export default function AvailableModelsTable({
 
                 // Detect capabilities
                 const mid = model.id.toLowerCase();
-                const caps = model.capabilities ?? [];
-                const endpoints = model.supportedEndpoints ?? [];
+                const capsLower = (model.capabilities ?? []).map((c) => String(c).toLowerCase());
+                const endpoints = (model.supportedEndpoints ?? []).map((e) => String(e).toLowerCase());
                 const hasReasoning =
-                  caps.includes("Reasoning") ||
+                  capsLower.includes("reasoning") ||
+                  capsLower.includes("thinking") ||
+                  mid.includes("think") ||
                   mid.includes("reason") ||
                   mid.includes("r1") ||
                   mid.includes("o1") ||
                   mid.includes("o3") ||
                   model.reasoning === true;
                 const hasVision =
-                  caps.includes("Vision") ||
+                  capsLower.includes("vision") ||
+                  capsLower.includes("image") ||
                   model.supportsVision === true ||
                   endpoints.includes("images") ||
                   mid.includes("vision") ||
                   mid.includes("vl");
                 const hasCode =
-                  caps.includes("Code") || mid.includes("code") || mid.includes("coder");
+                  capsLower.includes("code") ||
+                  capsLower.includes("coding") ||
+                  mid.includes("code") ||
+                  mid.includes("coder");
+                const hasSearch =
+                  capsLower.includes("search") ||
+                  capsLower.includes("web_search") ||
+                  capsLower.includes("browsing") ||
+                  endpoints.includes("search") ||
+                  mid.includes("search");
+                const hasChat =
+                  capsLower.includes("chat") ||
+                  endpoints.includes("chat") ||
+                  (!mid.includes("embed") && !mid.includes("rerank") && !mid.includes("whisper"));
                 const hasTools =
-                  caps.includes("Tools") || endpoints.includes("tools") || !mid.includes("embed");
+                  capsLower.includes("tools") ||
+                  capsLower.includes("tool_use") ||
+                  endpoints.includes("tools") ||
+                  (!mid.includes("embed") && !mid.includes("rerank"));
                 const hasAudio =
-                  caps.includes("Audio") ||
+                  capsLower.includes("audio") ||
                   endpoints.includes("audio-speech") ||
                   endpoints.includes("audio-transcriptions") ||
                   mid.includes("audio") ||
                   mid.includes("whisper");
+
+                const capBtnClass =
+                  "p-1 rounded-md bg-[#222224] hover:bg-[#2c2c2e] text-[#8e8e93] hover:text-white border border-white/5 hover:border-white/20 transition-all duration-150 inline-flex items-center justify-center cursor-default shadow-xs";
 
                 return (
                   <tr key={model.id} className="hover:bg-[#181818]/60 transition-colors group">
@@ -375,51 +397,50 @@ export default function AvailableModelsTable({
                     {/* Capabilities with Tooltips */}
                     <td className="py-3 px-4 text-center align-middle">
                       <div className="inline-flex items-center justify-center gap-1">
-                        {hasReasoning && (
-                          <span
-                            title="Reasoning: Multi-step logic & thinking"
-                            className="p-1 rounded bg-[#1e1e1e] text-purple-400 border border-purple-500/30 flex items-center justify-center"
-                          >
+                        {hasChat && (
+                          <span title="Chat: Conversational dialogue & instructions" className={capBtnClass}>
                             <span className="material-symbols-outlined text-[13px] leading-none">
-                              psychology
-                            </span>
-                          </span>
-                        )}
-                        {hasVision && (
-                          <span
-                            title="Vision: Image analysis & visual inputs"
-                            className="p-1 rounded bg-[#1e1e1e] text-sky-400 border border-sky-500/30 flex items-center justify-center"
-                          >
-                            <span className="material-symbols-outlined text-[13px] leading-none">
-                              visibility
+                              chat
                             </span>
                           </span>
                         )}
                         {hasCode && (
-                          <span
-                            title="Code: Programming & syntax generation"
-                            className="p-1 rounded bg-[#1e1e1e] text-emerald-400 border border-emerald-500/30 flex items-center justify-center"
-                          >
+                          <span title="Code: Programming, debugging & syntax generation" className={capBtnClass}>
                             <span className="material-symbols-outlined text-[13px] leading-none">
                               code
                             </span>
                           </span>
                         )}
+                        {hasVision && (
+                          <span title="Vision: Image analysis & visual inputs" className={capBtnClass}>
+                            <span className="material-symbols-outlined text-[13px] leading-none">
+                              visibility
+                            </span>
+                          </span>
+                        )}
+                        {hasReasoning && (
+                          <span title="Reasoning: Multi-step logic & deep thinking" className={capBtnClass}>
+                            <span className="material-symbols-outlined text-[13px] leading-none">
+                              psychology
+                            </span>
+                          </span>
+                        )}
+                        {hasSearch && (
+                          <span title="Search: Live web search & real-time grounding" className={capBtnClass}>
+                            <span className="material-symbols-outlined text-[13px] leading-none">
+                              travel_explore
+                            </span>
+                          </span>
+                        )}
                         {hasTools && (
-                          <span
-                            title="Tools: Function calling & external tool use"
-                            className="p-1 rounded bg-[#1e1e1e] text-amber-400 border border-amber-500/30 flex items-center justify-center"
-                          >
+                          <span title="Tools: Function calling & external tool use" className={capBtnClass}>
                             <span className="material-symbols-outlined text-[13px] leading-none">
                               build
                             </span>
                           </span>
                         )}
                         {hasAudio && (
-                          <span
-                            title="Audio: Speech and audio understanding"
-                            className="p-1 rounded bg-[#1e1e1e] text-pink-400 border border-pink-500/30 flex items-center justify-center"
-                          >
+                          <span title="Audio: Speech transcription & audio understanding" className={capBtnClass}>
                             <span className="material-symbols-outlined text-[13px] leading-none">
                               volume_up
                             </span>

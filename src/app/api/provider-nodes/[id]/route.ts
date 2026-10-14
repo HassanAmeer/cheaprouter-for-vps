@@ -19,6 +19,16 @@ function asRecord(value: unknown): JsonRecord {
   return value && typeof value === "object" && !Array.isArray(value) ? (value as JsonRecord) : {};
 }
 
+function sanitizeOpenAIBaseUrl(baseUrl: string) {
+  return (baseUrl || "")
+    .trim()
+    .replace(/\/+$/, "")
+    .replace(/\/chat\/completions$/i, "")
+    .replace(/\/completions$/i, "")
+    .replace(/\/models$/i, "")
+    .replace(/\/+$/, "");
+}
+
 function sanitizeAnthropicBaseUrl(baseUrl: string) {
   return (baseUrl || "")
     .trim()
@@ -79,11 +89,13 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
 
     let sanitizedBaseUrl = baseUrl.trim();
 
-    // Sanitize Base URL for Anthropic Compatible
+    // Sanitize Base URL for Anthropic or OpenAI Compatible
     if (node.type === "anthropic-compatible") {
       sanitizedBaseUrl = isClaudeCodeCompatibleProvider(id)
         ? sanitizeClaudeCodeCompatibleBaseUrl(sanitizedBaseUrl)
         : sanitizeAnthropicBaseUrl(sanitizedBaseUrl);
+    } else if (node.type === "openai-compatible") {
+      sanitizedBaseUrl = sanitizeOpenAIBaseUrl(sanitizedBaseUrl);
     }
     const baseUrlError = validateProviderNodeBaseUrl(sanitizedBaseUrl);
     if (baseUrlError) return baseUrlError;

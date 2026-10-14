@@ -243,7 +243,7 @@ export function normalizeDataRobotCatalogResponse(
 export function normalizeOpenAiLikeModelsResponse(
   data: unknown,
   fallbackOwner: string
-): Array<{ id: string; name: string; owned_by: string }> {
+): Array<{ id: string; name: string; owned_by: string; [key: string]: unknown }> {
   const payload = asRecord(data);
   const items = Array.isArray(data)
     ? data
@@ -266,9 +266,17 @@ export function normalizeOpenAiLikeModelsResponse(
         id;
       const ownedBy =
         toNonEmptyString(item.owned_by) || toNonEmptyString(item.provider) || fallbackOwner;
-      return { id, name, owned_by: ownedBy };
+      return {
+        ...item,
+        id,
+        name,
+        owned_by: ownedBy,
+      };
     })
-    .filter((value): value is { id: string; name: string; owned_by: string } => Boolean(value));
+    .filter(
+      (value): value is { id: string; name: string; owned_by: string; [key: string]: unknown } =>
+        Boolean(value)
+    );
 }
 
 /**

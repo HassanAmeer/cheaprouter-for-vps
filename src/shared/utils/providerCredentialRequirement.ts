@@ -39,6 +39,15 @@ export function worksWithoutCredential(req: CredentialRequirement): boolean {
 }
 
 export function getCredentialRequirement(providerId: string): CredentialRequirement {
+  const idStr = String(providerId || "");
+  if (
+    idStr.startsWith("openai-compatible-") ||
+    idStr.startsWith("anthropic-compatible-") ||
+    idStr.startsWith("cc-compatible-")
+  ) {
+    return "optional";
+  }
+
   const entry = REGISTRY[providerId];
 
   // Checked before `noAuth`: a literal anonymous token means the executor can

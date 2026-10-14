@@ -132,16 +132,25 @@ export default function CustomProviderInlineForm({
   const patchHeader = (key: string, patch: Partial<HeaderRow>) =>
     setHeaders((rows) => rows.map((row) => (row.key === key ? { ...row, ...patch } : row)));
 
+function cleanCustomBaseUrl(raw: string): string {
+  let val = raw.trim();
+  val = val.replace(/\/chat\/completions$/i, "");
+  val = val.replace(/\/completions$/i, "");
+  val = val.replace(/\/models$/i, "");
+  return val.replace(/\/+$/, "");
+}
+
   const handleSubmit = async () => {
     if (!canSubmit) return;
     setSubmitting(true);
     setError(null);
     setSuccess(null);
 
+    const sanitizedBaseUrl = cleanCustomBaseUrl(baseUrl);
     const nodeBody: Record<string, unknown> = {
       name: displayName.trim(),
       prefix: providerId.trim(),
-      baseUrl: baseUrl.trim(),
+      baseUrl: sanitizedBaseUrl,
       type: providerApi === "anthropic" ? "anthropic-compatible" : "openai-compatible",
     };
     if (providerApi === "openai") nodeBody.apiType = apiType;
@@ -172,29 +181,30 @@ export default function CustomProviderInlineForm({
         return;
       }
 
-      // ── 2. connection (only when a key was supplied) ────────────────────
+      // ── 2. connection (always create connection so routing and testing can target it) ──
+      const connectionPayload: Record<string, unknown> = {
+        provider: node.id,
+        name: displayName.trim() || node.name || node.id,
+        priority: 1,
+        testStatus: "unknown",
+      };
       if (apiKey.trim()) {
-        const connectionRes = await fetch("/api/providers", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            provider: node.id,
-            name: displayName.trim(),
-            apiKey: apiKey.trim(),
-            priority: 1,
-            testStatus: "unknown",
-          }),
-        });
-        // A failed credential write must not lose the node we just created —
-        // report it and keep going so the user can retry from the detail page.
-        if (!connectionRes.ok) {
-          setError(await readFetchErrorMessage(connectionRes, t("failedCreateConnection")));
-          onCreated(node);
-          resetForm();
-          return;
-        }
-        await onConnectionCreated?.();
+        connectionPayload.apiKey = apiKey.trim();
+      } else {
+        connectionPayload.allowNoCredential = true;
       }
+      const connectionRes = await fetch("/api/providers", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(connectionPayload),
+      });
+      if (!connectionRes.ok) {
+        setError(await readFetchErrorMessage(connectionRes, t("failedCreateConnection")));
+        onCreated(node);
+        resetForm();
+        return;
+      }
+      await onConnectionCreated?.();
 
       // ── 3. models (one request per row) ─────────────────────────────────
       const failedModels: string[] = [];

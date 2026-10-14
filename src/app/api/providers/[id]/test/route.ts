@@ -24,7 +24,11 @@ import {
   resolveGitLabOAuthBaseUrl,
   shouldFallbackToPublicCodeSuggestions,
 } from "@/lib/oauth/gitlab";
-import { providerAllowsOptionalApiKey } from "@/shared/constants/providers";
+import {
+  providerAllowsOptionalApiKey,
+  isOpenAICompatibleProvider,
+  isAnthropicCompatibleProvider,
+} from "@/shared/constants/providers";
 import { shouldUseApiKeyConnectionTest } from "./webSessionTestDispatch";
 import { testCodexAppServerConnection, makeDiagnosis } from "./codexAppServerHealth";
 import { recoverKeyHealth } from "@cheaproute/open-sse/services/apiKeyRotator.ts";
@@ -915,11 +919,28 @@ async function testApiKeyConnection(connection: any, allowLocalSpawn = true) {
     };
   }
 
+  let psd = connection.providerSpecificData || {};
+  if (
+    !psd.validationModelId &&
+    (isOpenAICompatibleProvider(connection.provider) ||
+      isAnthropicCompatibleProvider(connection.provider))
+  ) {
+    try {
+      const { getCustomModels } = await import("@/lib/db/models");
+      const models = await getCustomModels(connection.provider);
+      if (models && models.length > 0 && models[0].id) {
+        psd = { ...psd, validationModelId: models[0].id };
+      }
+    } catch {
+      // ignore
+    }
+  }
+
   const result = projectProviderValidationResultForPublicResponse(
     await validateProviderApiKey({
       provider: connection.provider,
       apiKey: connection.apiKey,
-      providerSpecificData: connection.providerSpecificData,
+      providerSpecificData: psd,
       allowLocalSpawn,
     })
   );

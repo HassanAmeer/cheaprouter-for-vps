@@ -90,13 +90,34 @@ function isGenericHttpProviderError(message: string): boolean {
 }
 
 export function extractProviderErrorMessage(body: unknown, fallback: string) {
+  if (typeof body === "string" && body.trim()) return body.trim();
   const record = asRecord(body);
   const error = record.error;
-  if (typeof error === "string" && error.trim()) return error;
+  if (typeof error === "string" && error.trim()) return error.trim();
 
   const errorRecord = asRecord(error);
-  const message = errorRecord.message;
-  const baseMessage = typeof message === "string" && message.trim() ? message.trim() : fallback;
+  let message =
+    typeof errorRecord.message === "string" && errorRecord.message.trim()
+      ? errorRecord.message.trim()
+      : undefined;
+
+  if (!message) {
+    if (typeof record.message === "string" && record.message.trim()) {
+      message = record.message.trim();
+    } else if (typeof record.detail === "string" && record.detail.trim()) {
+      message = record.detail.trim();
+    } else if (typeof record.msg === "string" && record.msg.trim()) {
+      message = record.msg.trim();
+    } else if (Array.isArray(record.detail) && record.detail.length > 0) {
+      const first = record.detail[0];
+      if (typeof first === "string") message = first;
+      else if (first && typeof first === "object" && "msg" in first) {
+        message = String((first as Record<string, unknown>).msg);
+      }
+    }
+  }
+
+  const baseMessage = message || fallback;
   const upstreamMessage = extractUpstreamDetailMessage(record.upstream_details);
   if (
     upstreamMessage &&
@@ -475,14 +496,16 @@ export async function runSingleModelTest(
   } = options;
 
   let cleanModelId = modelId;
-  if (cleanModelId.startsWith(`${providerId}/`)) {
+  while (cleanModelId.startsWith(`${providerId}/`)) {
     cleanModelId = cleanModelId.slice(providerId.length + 1);
   }
   try {
     const node = (await getProviderNodeById(providerId)) as { prefix?: unknown } | null;
     const prefix = typeof node?.prefix === "string" ? node.prefix : undefined;
-    if (prefix && cleanModelId.startsWith(`${prefix}/`)) {
-      cleanModelId = cleanModelId.slice(prefix.length + 1);
+    if (prefix) {
+      while (cleanModelId.startsWith(`${prefix}/`)) {
+        cleanModelId = cleanModelId.slice(prefix.length + 1);
+      }
     }
   } catch {
     // ignore
@@ -692,8 +715,13 @@ export async function runSingleModelTest(
 
     let errorMsg = "Rate limited";
     try {
-      const errBody = await res.json();
-      errorMsg = extractProviderErrorMessage(errBody, res.statusText || errorMsg);
+      const rawText = await res.text();
+      try {
+        const errBody = JSON.parse(rawText);
+        errorMsg = extractProviderErrorMessage(errBody, rawText || res.statusText || errorMsg);
+      } catch {
+        errorMsg = rawText.trim() || res.statusText || errorMsg;
+      }
     } catch {
       errorMsg = res.statusText || errorMsg;
     }
@@ -798,12 +826,20 @@ export async function runSingleModelTest(
 
   let errorMsg = "";
   try {
-    const errBody = await res.json();
-    errorMsg = extractProviderErrorMessage(errBody, res.statusText);
+    const rawText = await res.text();
+    try {
+      const errBody = JSON.parse(rawText);
+      errorMsg = extractProviderErrorMessage(errBody, rawText || res.statusText);
+    } catch {
+      errorMsg = rawText.trim() || res.statusText;
+    }
   } catch {
     errorMsg = res.statusText;
   } finally {
     clearTimeout(timeoutHandle);
+  }
+  if (!errorMsg || !errorMsg.trim()) {
+    errorMsg = res.statusText ? `HTTP ${res.status}: ${res.statusText}` : `Provider returned HTTP ${res.status}`;
   }
   // #9511: classify quota signals on the generic error branch so that
   // 401/402/403 "insufficient balance" / "quota exhausted" errors are

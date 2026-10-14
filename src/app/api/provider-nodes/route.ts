@@ -69,6 +69,16 @@ async function registerMoonshotFetchersForCreatedNode(node: {
   }
 }
 
+function sanitizeOpenAIBaseUrl(baseUrl: string) {
+  return (baseUrl || "")
+    .trim()
+    .replace(/\/+$/, "")
+    .replace(/\/chat\/completions$/i, "")
+    .replace(/\/completions$/i, "")
+    .replace(/\/models$/i, "")
+    .replace(/\/+$/, "");
+}
+
 function sanitizeAnthropicBaseUrl(baseUrl: string) {
   return (baseUrl || "")
     .trim()
@@ -182,10 +192,7 @@ export async function POST(request) {
     if (nodeType === "openai-compatible") {
       const resolvedName = (name || "").trim();
       const resolvedPrefix = (prefix || "").trim();
-      let resolvedBaseUrl = (baseUrl || OPENAI_COMPATIBLE_DEFAULTS.baseUrl).trim().replace(/\/$/, "");
-      if (resolvedBaseUrl.endsWith("/models")) {
-        resolvedBaseUrl = resolvedBaseUrl.slice(0, -7).replace(/\/$/, "");
-      }
+      const resolvedBaseUrl = sanitizeOpenAIBaseUrl(baseUrl || OPENAI_COMPATIBLE_DEFAULTS.baseUrl);
       const baseUrlError = validateProviderNodeBaseUrl(resolvedBaseUrl);
       if (baseUrlError) return baseUrlError;
 

@@ -737,6 +737,28 @@ async function loadNoAuthProviderSpecificData(providerId: string): Promise<JsonR
   try {
     const providerIdsToQuery = getNoAuthHydrationProviderIds(providerId);
     const hydrated: JsonRecord = {};
+    if (
+      typeof providerId === "string" &&
+      (providerId.startsWith("openai-compatible-") ||
+        providerId.startsWith("anthropic-compatible-") ||
+        providerId.startsWith("cc-compatible-"))
+    ) {
+      try {
+        const { resolveProviderNodeForConnection } = await import("@/models");
+        const node: any = await resolveProviderNodeForConnection(providerId);
+        if (node) {
+          hydrated.prefix = node.prefix;
+          hydrated.baseUrl = node.baseUrl;
+          hydrated.nodeName = node.name;
+          if (node.apiType) hydrated.apiType = node.apiType;
+          if (node.chatPath) hydrated.chatPath = node.chatPath;
+          if (node.modelsPath) hydrated.modelsPath = node.modelsPath;
+          if (node.customHeaders) hydrated.customHeaders = node.customHeaders;
+        }
+      } catch {
+        // ignore node hydration failure
+      }
+    }
     for (const pid of providerIdsToQuery) {
       const connectionsRaw = await getProviderConnections({ provider: pid });
       const connections = (Array.isArray(connectionsRaw) ? connectionsRaw : []).map(
@@ -753,6 +775,14 @@ async function loadNoAuthProviderSpecificData(providerId: string): Promise<JsonR
   }
 }
 function providerCanUseSyntheticNoAuthFallback(providerId: string): boolean {
+  if (
+    typeof providerId === "string" &&
+    (providerId.startsWith("openai-compatible-") ||
+      providerId.startsWith("anthropic-compatible-") ||
+      providerId.startsWith("cc-compatible-"))
+  ) {
+    return true;
+  }
   const providerDef = getProviderById(providerId) as
     AnonymousFallbackProviderDefinition | undefined;
   const noAuthProviderDef = (
