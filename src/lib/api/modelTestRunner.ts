@@ -610,7 +610,27 @@ export async function runSingleModelTest(
           });
 
   if (options.prompt !== undefined && "messages" in testBody) {
-    testBody.messages = [{ role: "user", content: options.prompt }];
+    const rawPrompt = options.prompt.trim();
+    // Detect image URL in prompt (e.g. vision capability test presets or user pasted image URL)
+    const imgUrlMatch =
+      rawPrompt.match(/https?:\/\/[^\s]+?\.(?:png|jpg|jpeg|webp|gif)(?:\?[^\s]*)?/i) ||
+      rawPrompt.match(/https?:\/\/images\.unsplash\.com\/[^\s]+/i);
+
+    if (imgUrlMatch) {
+      const imgUrl = imgUrlMatch[0];
+      const textOnly = rawPrompt.replace(imgUrl, "").trim();
+      (testBody as Record<string, unknown>).messages = [
+        {
+          role: "user",
+          content: [
+            { type: "text", text: textOnly || "Describe this image in vivid detail." },
+            { type: "image_url", image_url: { url: imgUrl } },
+          ],
+        },
+      ];
+    } else {
+      (testBody as Record<string, unknown>).messages = [{ role: "user", content: options.prompt }];
+    }
   }
 
   // Per-model AbortController. We track whether the timeout fired so we can

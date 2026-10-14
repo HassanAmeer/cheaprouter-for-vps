@@ -14,11 +14,14 @@
 import { useCallback, useEffect, useState } from "react";
 import { Card } from "@/shared/components";
 import { matchesSearch } from "@/shared/utils/turkishText";
+import ProviderIcon from "@/shared/components/ProviderIcon";
 import ByokMasterToggleCard from "../../endpoint/components/ByokMasterToggleCard";
 
 interface PublicProvider {
   id: string;
   name: string;
+  icon?: string;
+  iconUrl?: string;
   hasConnection: boolean;
   connectionCount: number;
   modelsCount: number;
@@ -173,7 +176,7 @@ export default function ResellerApiPanel() {
             {visible.map((p) => (
               <label
                 key={p.id}
-                className="flex items-center gap-2.5 px-3 py-2 rounded-lg border border-border/70 hover:border-primary/40 transition-colors cursor-pointer"
+                className="flex items-center gap-3 px-3 py-2.5 rounded-lg border border-border/70 hover:border-primary/40 bg-bg-subtle/30 hover:bg-bg-subtle/70 transition-colors cursor-pointer group"
               >
                 <input
                   type="checkbox"
@@ -181,8 +184,19 @@ export default function ResellerApiPanel() {
                   onChange={(e) => toggle(p.id, e.target.checked)}
                   className="size-4 accent-current shrink-0"
                 />
+                <div className="size-8 rounded-lg flex items-center justify-center shrink-0 bg-bg border border-border/60 p-1 overflow-hidden shadow-xs group-hover:border-primary/40 transition-colors">
+                  <ProviderIcon
+                    providerId={p.id}
+                    src={p.iconUrl || p.icon}
+                    alt={p.name}
+                    size={22}
+                    type="color"
+                  />
+                </div>
                 <span className="min-w-0 flex-1">
-                  <span className="block text-sm text-text-main truncate">{p.name}</span>
+                  <span className="block text-sm font-medium text-text-main truncate group-hover:text-primary transition-colors">
+                    {p.name}
+                  </span>
                   <span className="block text-[11px] text-text-muted font-mono truncate">
                     {p.id} · {p.modelsCount} models
                     {p.hasConnection ? ` · ${p.connectionCount} conn` : " · no key"}

@@ -286,3 +286,49 @@ export default function DefaultCapabilitiesPromptModal({
     </div>
   );
 }
+
+export function getPromptForCapability(capabilityKey: string, customPrompt?: string): string {
+  const cap = capabilityKey.toLowerCase();
+  if (cap === "vision" || cap === "image") {
+    return (
+      CAPABILITY_PRESETS.find((p) => p.id === "vision-cat")?.prompt ||
+      "https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?w=600 Describe the subject, colors, fur texture, and expression in this image in vivid detail."
+    );
+  }
+  if (cap === "code" || cap === "coding") {
+    return (
+      CAPABILITY_PRESETS.find((p) => p.id === "code-html")?.prompt ||
+      "Generate a modern, responsive CSS button component with HTML, hover animations, and SVG icon."
+    );
+  }
+  if (cap === "reasoning" || cap === "thinking") {
+    return (
+      CAPABILITY_PRESETS.find((p) => p.id === "reasoning-math")?.prompt ||
+      "A farmer has 17 sheep and all but 9 die. How many are left? Provide your detailed step-by-step reasoning."
+    );
+  }
+  if (cap === "search") {
+    return (
+      CAPABILITY_PRESETS.find((p) => p.id === "search-web")?.prompt ||
+      "What are the latest major AI breakthroughs and news announced this week?"
+    );
+  }
+  if (cap === "audio" || cap === "stt" || cap === "tts") {
+    return (
+      CAPABILITY_PRESETS.find((p) => p.id === "audio-stt")?.prompt ||
+      "https://actions.google.com/sounds/v1/ambiences/outdoor_market.ogg Transcribe all spoken phrases and identify the background acoustic ambient sounds in this recording."
+    );
+  }
+  if (cap === "ocr") {
+    return (
+      CAPABILITY_PRESETS.find((p) => p.id === "ocr-receipt")?.prompt ||
+      "https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?w=600 Extract all legible text, numerical values, headers, and dates from this document."
+    );
+  }
+  // Default: text / chat
+  return (
+    customPrompt ||
+    CAPABILITY_PRESETS.find((p) => p.id === "text-hi")?.prompt ||
+    "Hi! Explain your core architecture and reasoning capabilities in two concise sentences."
+  );
+}

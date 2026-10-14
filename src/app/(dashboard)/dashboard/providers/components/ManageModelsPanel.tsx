@@ -20,7 +20,9 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { Card } from "@/shared/components";
 import { isCatalogFreeModel } from "@/shared/utils/freeModels";
 import { matchesSearch } from "@/shared/utils/turkishText";
-import DefaultCapabilitiesPromptModal from "./DefaultCapabilitiesPromptModal";
+import DefaultCapabilitiesPromptModal, {
+  getPromptForCapability,
+} from "./DefaultCapabilitiesPromptModal";
 
 interface SyncedModel {
   id: string;
@@ -89,6 +91,101 @@ function deriveCapabilities(model: SyncedModel): string[] {
   return caps;
 }
 
+export interface SyncedModelCapabilities {
+  hasReasoning: boolean;
+  hasVision: boolean;
+  hasCode: boolean;
+  hasSearch: boolean;
+  hasAudio: boolean;
+  hasChat: boolean;
+}
+
+export function getSyncedModelCapabilities(
+  model: SyncedModel,
+  cust?: Customization
+): SyncedModelCapabilities {
+  const mid = (model.id || "").toLowerCase();
+  const caps = (cust?.capabilities ?? deriveCapabilities(model)).map((c) => c.toLowerCase());
+  const endpoints = new Set((model.supportedEndpoints ?? []).map((e) => e.toLowerCase()));
+
+  const hasReasoning =
+    Boolean(model.supportsThinking) ||
+    Boolean(model.alwaysThinking) ||
+    caps.includes("reasoning") ||
+    caps.includes("thinking") ||
+    caps.includes("logic") ||
+    mid.includes("think") ||
+    mid.includes("reason") ||
+    mid.includes("r1") ||
+    mid.includes("o1") ||
+    mid.includes("o3");
+
+  const hasVision =
+    Boolean(model.supportsVision) ||
+    caps.includes("vision") ||
+    caps.includes("image") ||
+    caps.includes("multimodal") ||
+    endpoints.has("images") ||
+    mid.includes("vision") ||
+    mid.includes("vl");
+
+  const hasCode =
+    caps.includes("code") ||
+    caps.includes("coding") ||
+    /code|coder|codex|devstral/i.test(model.id);
+
+  const hasSearch =
+    caps.includes("search") ||
+    caps.includes("web_search") ||
+    caps.includes("browsing") ||
+    endpoints.has("search") ||
+    mid.includes("search");
+
+  const hasAudio =
+    caps.includes("audio") ||
+    caps.includes("stt") ||
+    caps.includes("tts") ||
+    endpoints.has("audio-transcriptions") ||
+    endpoints.has("audio-speech") ||
+    [...endpoints].some((e) => e.startsWith("audio")) ||
+    mid.includes("audio") ||
+    mid.includes("whisper");
+
+  const hasChat =
+    caps.includes("chat") ||
+    caps.includes("text") ||
+    endpoints.has("chat") ||
+    (!mid.includes("embed") && !mid.includes("rerank") && !mid.includes("whisper"));
+
+  return { hasReasoning, hasVision, hasCode, hasSearch, hasAudio, hasChat };
+}
+
+export const CAPABILITY_FILTER_BUTTONS = [
+  { key: "all", label: "All", icon: "select_all" },
+  { key: "text", label: "Text", icon: "chat" },
+  { key: "code", label: "Code", icon: "code" },
+  { key: "vision", label: "Vision", icon: "visibility" },
+  { key: "reasoning", label: "Reasoning", icon: "psychology" },
+  { key: "search", label: "Search", icon: "travel_explore" },
+  { key: "audio", label: "Audio", icon: "volume_up" },
+] as const;
+
+function matchesSyncedModelFilter(
+  model: SyncedModel,
+  filter: string,
+  cust?: Customization
+): boolean {
+  if (filter === "all") return true;
+  const caps = getSyncedModelCapabilities(model, cust);
+  if (filter === "text") return caps.hasChat;
+  if (filter === "code") return caps.hasCode;
+  if (filter === "vision") return caps.hasVision;
+  if (filter === "reasoning") return caps.hasReasoning;
+  if (filter === "search") return caps.hasSearch;
+  if (filter === "audio") return caps.hasAudio;
+  return true;
+}
+
 async function fetchCurationPayload(): Promise<{
   providerIds: string[];
   modelsByProvider: Record<string, SyncedModel[]>;
@@ -123,6 +220,8 @@ export default function ManageModelsPanel() {
   const [customizations, setCustomizations] = useState<Customization[]>([]);
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const [filter, setFilter] = useState("");
+  const [capabilityFilter, setCapabilityFilter] = useState("all");
+  const [selectedCapabilities, setSelectedCapabilities] = useState<Record<string, string>>({});
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [testingId, setTestingId] = useState<string | null>(null);
   const [testResults, setTestResults] = useState<Record<string, LiveTestResult>>({});
@@ -199,10 +298,37 @@ export default function ManageModelsPanel() {
     return map;
   }, [customizations]);
 
+  const filterCounts = useMemo(() => {
+    const counts: Record<string, number> = {
+      all: 0,
+      text: 0,
+      code: 0,
+      vision: 0,
+      reasoning: 0,
+      search: 0,
+      audio: 0,
+    };
+    for (const pId of providerIds) {
+      const pModels = modelsByProvider[pId] ?? [];
+      for (const m of pModels) {
+        counts.all++;
+        const cust = customizationByModel.get(`${pId}::${m.id}`);
+        const c = getSyncedModelCapabilities(m, cust);
+        if (c.hasChat) counts.text++;
+        if (c.hasCode) counts.code++;
+        if (c.hasVision) counts.vision++;
+        if (c.hasReasoning) counts.reasoning++;
+        if (c.hasSearch) counts.search++;
+        if (c.hasAudio) counts.audio++;
+      }
+    }
+    return counts;
+  }, [providerIds, modelsByProvider, customizationByModel]);
+
   const patchCustomization = useCallback((row: Customization) => {
     setCustomizations((prev) => {
       const key = `${row.providerId}::${row.originalModelId}`;
-      const idx = prev.findIndex((c) => `${c.providerId}::${c.originalModelId}` === key);
+      const idx = prev.findIndex((c) => `${c.providerId}::${row.originalModelId}` === key);
       if (idx === -1) return [...prev, row];
       const next = [...prev];
       next[idx] = row;
@@ -239,6 +365,8 @@ export default function ManageModelsPanel() {
   const handleTest = useCallback(
     async (providerId: string, modelId: string) => {
       const key = `${providerId}::${modelId}`;
+      const selectedCap = selectedCapabilities[key] || "text";
+      const promptToRun = getPromptForCapability(selectedCap, testPrompt);
       setTestingId(key);
       try {
         const res = await fetch("/api/v1/models/curation", {
@@ -248,7 +376,7 @@ export default function ManageModelsPanel() {
             action: "liveTest",
             providerId,
             modelId,
-            prompt: testPrompt,
+            prompt: promptToRun,
           }),
         });
         const data = await res.json().catch(() => null);
@@ -272,7 +400,7 @@ export default function ManageModelsPanel() {
         setTestingId(null);
       }
     },
-    [refresh, testPrompt]
+    [refresh, testPrompt, selectedCapabilities]
   );
 
   const handleFetchModelsForProvider = useCallback(
@@ -441,11 +569,59 @@ export default function ManageModelsPanel() {
         </p>
       </div>
 
+      {/* Capability Filter Buttons Bar */}
+      <div className="flex items-center gap-1.5 overflow-x-auto text-xs py-1 scrollbar-none">
+        <span className="text-[11px] font-semibold text-text-muted uppercase tracking-wider mr-1 shrink-0">
+          Filter:
+        </span>
+        {CAPABILITY_FILTER_BUTTONS.map((opt) => {
+          const isActive = capabilityFilter === opt.key;
+          const count = filterCounts[opt.key] ?? 0;
+          return (
+            <button
+              key={opt.key}
+              type="button"
+              onClick={() => setCapabilityFilter(opt.key)}
+              className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium transition-all cursor-pointer shrink-0 ${
+                isActive
+                  ? "bg-text-main text-bg font-semibold shadow-xs"
+                  : "bg-bg-subtle text-text-muted hover:text-text-main hover:bg-bg border border-border"
+              }`}
+            >
+              {opt.icon && (
+                <span className="material-symbols-outlined text-[14px] leading-none">
+                  {opt.icon}
+                </span>
+              )}
+              <span>{opt.label}</span>
+              <span
+                className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono ${
+                  isActive
+                    ? "bg-bg/20 text-bg font-bold"
+                    : "bg-bg border border-border text-text-muted"
+                }`}
+              >
+                {count}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+
       {providerIds.map((providerId) => {
         const all = modelsByProvider[providerId] ?? [];
-        const models = all.filter(
-          (m) => matchesSearch(m.id, filter) || matchesSearch(m.name, filter)
-        );
+        const models = all.filter((m) => {
+          const cust = customizationByModel.get(`${providerId}::${m.id}`);
+          if (
+            capabilityFilter !== "all" &&
+            !matchesSyncedModelFilter(m, capabilityFilter, cust)
+          ) {
+            return false;
+          }
+          return (
+            matchesSearch(m.id, filter) || (Boolean(m.name) && matchesSearch(m.name!, filter))
+          );
+        });
         const activeCount = all.filter(
           (m) => customizationByModel.get(`${providerId}::${m.id}`)?.isActive !== false
         ).length;
@@ -524,7 +700,8 @@ export default function ManageModelsPanel() {
                   };
                   const ctxTokens = cust?.contextWindow ?? m.contextWindow ?? m.inputTokenLimit;
                   const ctxLabel = formatContextWindow(ctxTokens ?? null);
-                  const caps = cust?.capabilities ?? deriveCapabilities(m);
+                  const capsMeta = getSyncedModelCapabilities(m, cust);
+                  const selectedCap = selectedCapabilities[key] || "text";
                   const autoFree = m.isFree === true || isCatalogFreeModel(providerId, m.id);
                   const isFree =
                     cust?.isFreeOverride === true
@@ -588,14 +765,166 @@ export default function ManageModelsPanel() {
                             {ctxLabel} ctx
                           </span>
                         )}
-                        {caps.map((c) => (
-                          <span
-                            key={c}
-                            className="text-[10px] px-1.5 py-0.5 rounded bg-bg-subtle border border-border text-text-muted"
-                          >
-                            {c}
-                          </span>
-                        ))}
+
+                        {/* Interactive Capability Selection for Testing */}
+                        <div className="flex items-center gap-1 flex-wrap">
+                          {capsMeta.hasChat && (
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setSelectedCapabilities((prev) => ({ ...prev, [key]: "text" }))
+                              }
+                              title={`Text: Dialogue & instruction prompt (${
+                                selectedCap === "text"
+                                  ? "Active for test"
+                                  : "Click to select for test"
+                              })`}
+                              className={`px-1.5 py-0.5 rounded text-[10px] font-medium transition-all inline-flex items-center gap-1 cursor-pointer ${
+                                selectedCap === "text"
+                                  ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/50 ring-1 ring-emerald-500/30 font-semibold scale-105"
+                                  : "bg-bg-subtle border border-border text-text-muted hover:text-text-main"
+                              }`}
+                            >
+                              <span className="material-symbols-outlined text-[12px] leading-none">
+                                chat
+                              </span>
+                              {selectedCap === "text" && (
+                                <span className="uppercase text-[9px] font-semibold">text</span>
+                              )}
+                            </button>
+                          )}
+                          {capsMeta.hasCode && (
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setSelectedCapabilities((prev) => ({ ...prev, [key]: "code" }))
+                              }
+                              title={`Code: Programming & syntax prompt (${
+                                selectedCap === "code"
+                                  ? "Active for test"
+                                  : "Click to select for test"
+                              })`}
+                              className={`px-1.5 py-0.5 rounded text-[10px] font-medium transition-all inline-flex items-center gap-1 cursor-pointer ${
+                                selectedCap === "code"
+                                  ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/50 ring-1 ring-emerald-500/30 font-semibold scale-105"
+                                  : "bg-bg-subtle border border-border text-text-muted hover:text-text-main"
+                              }`}
+                            >
+                              <span className="material-symbols-outlined text-[12px] leading-none">
+                                code
+                              </span>
+                              {selectedCap === "code" && (
+                                <span className="uppercase text-[9px] font-semibold">code</span>
+                              )}
+                            </button>
+                          )}
+                          {capsMeta.hasVision && (
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setSelectedCapabilities((prev) => ({ ...prev, [key]: "vision" }))
+                              }
+                              title={`Vision: Multimodal image analysis prompt (${
+                                selectedCap === "vision"
+                                  ? "Active for test"
+                                  : "Click to select for test"
+                              })`}
+                              className={`px-1.5 py-0.5 rounded text-[10px] font-medium transition-all inline-flex items-center gap-1 cursor-pointer ${
+                                selectedCap === "vision"
+                                  ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/50 ring-1 ring-emerald-500/30 font-semibold scale-105"
+                                  : "bg-bg-subtle border border-border text-text-muted hover:text-text-main"
+                              }`}
+                            >
+                              <span className="material-symbols-outlined text-[12px] leading-none">
+                                visibility
+                              </span>
+                              {selectedCap === "vision" && (
+                                <span className="uppercase text-[9px] font-semibold">vision</span>
+                              )}
+                            </button>
+                          )}
+                          {capsMeta.hasReasoning && (
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setSelectedCapabilities((prev) => ({
+                                  ...prev,
+                                  [key]: "reasoning",
+                                }))
+                              }
+                              title={`Reasoning: Chain-of-thought prompt (${
+                                selectedCap === "reasoning"
+                                  ? "Active for test"
+                                  : "Click to select for test"
+                              })`}
+                              className={`px-1.5 py-0.5 rounded text-[10px] font-medium transition-all inline-flex items-center gap-1 cursor-pointer ${
+                                selectedCap === "reasoning"
+                                  ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/50 ring-1 ring-emerald-500/30 font-semibold scale-105"
+                                  : "bg-bg-subtle border border-border text-text-muted hover:text-text-main"
+                              }`}
+                            >
+                              <span className="material-symbols-outlined text-[12px] leading-none">
+                                psychology
+                              </span>
+                              {selectedCap === "reasoning" && (
+                                <span className="uppercase text-[9px] font-semibold">reason</span>
+                              )}
+                            </button>
+                          )}
+                          {capsMeta.hasSearch && (
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setSelectedCapabilities((prev) => ({
+                                  ...prev,
+                                  [key]: "search",
+                                }))
+                              }
+                              title={`Search: Grounded web search prompt (${
+                                selectedCap === "search"
+                                  ? "Active for test"
+                                  : "Click to select for test"
+                              })`}
+                              className={`px-1.5 py-0.5 rounded text-[10px] font-medium transition-all inline-flex items-center gap-1 cursor-pointer ${
+                                selectedCap === "search"
+                                  ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/50 ring-1 ring-emerald-500/30 font-semibold scale-105"
+                                  : "bg-bg-subtle border border-border text-text-muted hover:text-text-main"
+                              }`}
+                            >
+                              <span className="material-symbols-outlined text-[12px] leading-none">
+                                travel_explore
+                              </span>
+                              {selectedCap === "search" && (
+                                <span className="uppercase text-[9px] font-semibold">search</span>
+                              )}
+                            </button>
+                          )}
+                          {capsMeta.hasAudio && (
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setSelectedCapabilities((prev) => ({ ...prev, [key]: "audio" }))
+                              }
+                              title={`Audio: Speech transcription prompt (${
+                                selectedCap === "audio"
+                                  ? "Active for test"
+                                  : "Click to select for test"
+                              })`}
+                              className={`px-1.5 py-0.5 rounded text-[10px] font-medium transition-all inline-flex items-center gap-1 cursor-pointer ${
+                                selectedCap === "audio"
+                                  ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/50 ring-1 ring-emerald-500/30 font-semibold scale-105"
+                                  : "bg-bg-subtle border border-border text-text-muted hover:text-text-main"
+                              }`}
+                            >
+                              <span className="material-symbols-outlined text-[12px] leading-none">
+                                volume_up
+                              </span>
+                              {selectedCap === "audio" && (
+                                <span className="uppercase text-[9px] font-semibold">audio</span>
+                              )}
+                            </button>
+                          )}
+                        </div>
                         <span className="flex-1" />
                         {(test || cachedBadge) && (
                           <span
@@ -616,14 +945,17 @@ export default function ManageModelsPanel() {
                           type="button"
                           onClick={() => void handleTest(providerId, m.id)}
                           disabled={testingId === key}
-                          className="flex items-center gap-1 px-2.5 py-1 rounded-lg border border-border text-xs font-medium text-text-muted hover:text-text-main hover:border-primary/40 transition-colors disabled:opacity-50"
+                          className="flex items-center gap-1 px-2.5 py-1 rounded-lg border border-border text-xs font-medium text-text-muted hover:text-text-main hover:border-primary/40 transition-colors disabled:opacity-50 cursor-pointer"
+                          title={`Test model with ${selectedCap.toUpperCase()} capability prompt`}
                         >
                           <span
-                            className={`material-symbols-outlined text-[14px]${testingId === key ? " animate-spin" : ""}`}
+                            className={`material-symbols-outlined text-[14px]${
+                              testingId === key ? " animate-spin" : ""
+                            }`}
                           >
-                            play_arrow
+                            {testingId === key ? "progress_activity" : "play_arrow"}
                           </span>
-                          {testingId === key ? "Testing…" : "Test"}
+                          {testingId === key ? `Testing (${selectedCap})…` : `Test (${selectedCap})`}
                         </button>
                       </div>
 

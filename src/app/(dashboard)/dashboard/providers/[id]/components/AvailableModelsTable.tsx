@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useNotificationStore } from "@/store/notificationStore";
 import { matchesSearch } from "@/shared/utils/turkishText";
+import { getPromptForCapability } from "@/app/(dashboard)/dashboard/providers/components/DefaultCapabilitiesPromptModal";
 
 export interface ModelEntry {
   id: string;
@@ -16,6 +17,8 @@ export interface ModelEntry {
   capabilities?: string[];
   supportedEndpoints?: string[];
   supportsVision?: boolean;
+  supportsThinking?: boolean;
+  alwaysThinking?: boolean;
   reasoning?: boolean;
   [key: string]: unknown;
 }
@@ -47,6 +50,93 @@ export function formatContextWindow(tokens?: number): string {
   return String(tokens);
 }
 
+export function getModelCapabilities(model: ModelEntry) {
+  const mid = (model.id || "").toLowerCase();
+  const capsLower = (model.capabilities ?? []).map((c) => String(c).toLowerCase());
+  const endpoints = (model.supportedEndpoints ?? []).map((e) => String(e).toLowerCase());
+
+  const hasReasoning =
+    capsLower.includes("reasoning") ||
+    capsLower.includes("thinking") ||
+    mid.includes("think") ||
+    mid.includes("reason") ||
+    mid.includes("r1") ||
+    mid.includes("o1") ||
+    mid.includes("o3") ||
+    model.reasoning === true ||
+    Boolean(model.supportsThinking) ||
+    Boolean(model.alwaysThinking);
+
+  const hasVision =
+    capsLower.includes("vision") ||
+    capsLower.includes("image") ||
+    model.supportsVision === true ||
+    endpoints.includes("images") ||
+    mid.includes("vision") ||
+    mid.includes("vl");
+
+  const hasCode =
+    capsLower.includes("code") ||
+    capsLower.includes("coding") ||
+    mid.includes("code") ||
+    mid.includes("coder") ||
+    mid.includes("codex") ||
+    mid.includes("devstral");
+
+  const hasSearch =
+    capsLower.includes("search") ||
+    capsLower.includes("web_search") ||
+    capsLower.includes("browsing") ||
+    endpoints.includes("search") ||
+    mid.includes("search");
+
+  const hasAudio =
+    capsLower.includes("audio") ||
+    capsLower.includes("stt") ||
+    capsLower.includes("tts") ||
+    endpoints.includes("audio-speech") ||
+    endpoints.includes("audio-transcriptions") ||
+    endpoints.some((e) => e.startsWith("audio")) ||
+    mid.includes("audio") ||
+    mid.includes("whisper");
+
+  const hasTools =
+    capsLower.includes("tools") ||
+    capsLower.includes("tool_use") ||
+    endpoints.includes("tools") ||
+    (!mid.includes("embed") && !mid.includes("rerank"));
+
+  const hasChat =
+    capsLower.includes("chat") ||
+    capsLower.includes("text") ||
+    endpoints.includes("chat") ||
+    (!mid.includes("embed") && !mid.includes("rerank") && !mid.includes("whisper"));
+
+  return { hasReasoning, hasVision, hasCode, hasSearch, hasAudio, hasTools, hasChat };
+}
+
+export const CAPABILITY_FILTER_BUTTONS = [
+  { key: "all", label: "All", icon: "select_all" },
+  { key: "text", label: "Text", icon: "chat" },
+  { key: "code", label: "Code", icon: "code" },
+  { key: "vision", label: "Vision", icon: "visibility" },
+  { key: "reasoning", label: "Reasoning", icon: "psychology" },
+  { key: "search", label: "Search", icon: "travel_explore" },
+  { key: "audio", label: "Audio", icon: "volume_up" },
+] as const;
+
+function matchesCapabilityFilter(model: ModelEntry, filter: string): boolean {
+  if (filter === "all") return true;
+  const caps = getModelCapabilities(model);
+  if (filter === "text") return caps.hasChat;
+  if (filter === "code") return caps.hasCode;
+  if (filter === "vision") return caps.hasVision;
+  if (filter === "reasoning") return caps.hasReasoning;
+  if (filter === "search") return caps.hasSearch;
+  if (filter === "audio") return caps.hasAudio;
+  return true;
+}
+
 export default function AvailableModelsTable({
   providerId,
   providerDisplayAlias: _providerDisplayAlias,
@@ -62,6 +152,8 @@ export default function AvailableModelsTable({
 }: AvailableModelsTableProps) {
   const notify = useNotificationStore();
   const [search, setSearch] = useState("");
+  const [capabilityFilter, setCapabilityFilter] = useState<string>("all");
+  const [selectedCapabilities, setSelectedCapabilities] = useState<Record<string, string>>({});
   const [testingModelId, setTestingModelId] = useState<string | null>(null);
   const [testResults, setTestResults] = useState<
     Record<
@@ -116,6 +208,8 @@ export default function AvailableModelsTable({
   };
 
   const handleRunTest = async (modelId: string) => {
+    const selectedCap = selectedCapabilities[modelId] || "text";
+    const promptToRun = getPromptForCapability(selectedCap, testPrompt);
     setTestingModelId(modelId);
     try {
       const res = await fetch("/api/models/test", {
@@ -125,7 +219,7 @@ export default function AvailableModelsTable({
           providerId,
           modelId,
           ...(connectionId ? { connectionId } : {}),
-          prompt: testPrompt || "Hi",
+          prompt: promptToRun,
         }),
       });
       const data = await res.json();
@@ -138,7 +232,9 @@ export default function AvailableModelsTable({
             snippet: data.responseText || "OK (200)",
           },
         }));
-        notify.success(`Model "${modelId}" test succeeded (${data.latencyMs}ms)`);
+        notify.success(
+          `Model "${modelId}" (${selectedCap.toUpperCase()}) test succeeded (${data.latencyMs}ms)`
+        );
       } else {
         const errorMsg =
           typeof data?.error === "string"
@@ -168,10 +264,37 @@ export default function AvailableModelsTable({
     }
   };
 
-  const filteredModels = models.filter((m) => {
-    if (!search.trim()) return true;
-    return matchesSearch(m.id, search) || (Boolean(m.name) && matchesSearch(m.name!, search));
-  });
+  const filterCounts = useMemo(() => {
+    const counts: Record<string, number> = {
+      all: models.length,
+      text: 0,
+      code: 0,
+      vision: 0,
+      reasoning: 0,
+      search: 0,
+      audio: 0,
+    };
+    for (const m of models) {
+      const c = getModelCapabilities(m);
+      if (c.hasChat) counts.text++;
+      if (c.hasCode) counts.code++;
+      if (c.hasVision) counts.vision++;
+      if (c.hasReasoning) counts.reasoning++;
+      if (c.hasSearch) counts.search++;
+      if (c.hasAudio) counts.audio++;
+    }
+    return counts;
+  }, [models]);
+
+  const filteredModels = useMemo(() => {
+    return models.filter((m) => {
+      if (capabilityFilter !== "all" && !matchesCapabilityFilter(m, capabilityFilter)) {
+        return false;
+      }
+      if (!search.trim()) return true;
+      return matchesSearch(m.id, search) || (Boolean(m.name) && matchesSearch(m.name!, search));
+    });
+  }, [models, capabilityFilter, search]);
 
   return (
     <div className="rounded-xl border border-[#262626] bg-[#121212] overflow-hidden flex flex-col">
@@ -220,6 +343,43 @@ export default function AvailableModelsTable({
             </button>
           )}
         </div>
+      </div>
+
+      {/* Capability Filter Bar */}
+      <div className="flex items-center gap-1 px-5 py-2.5 bg-[#141414] border-b border-[#262626] overflow-x-auto text-xs scrollbar-none">
+        <span className="text-[11px] font-semibold text-[#8e8e93] uppercase tracking-wider mr-1.5 shrink-0">
+          Filter:
+        </span>
+        {CAPABILITY_FILTER_BUTTONS.map((opt) => {
+          const isActive = capabilityFilter === opt.key;
+          const count = filterCounts[opt.key] ?? 0;
+          return (
+            <button
+              key={opt.key}
+              type="button"
+              onClick={() => setCapabilityFilter(opt.key)}
+              className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium transition-all cursor-pointer shrink-0 ${
+                isActive
+                  ? "bg-white text-black font-semibold shadow-xs"
+                  : "bg-[#1c1c1e] text-[#8e8e93] hover:text-white hover:bg-[#28282b] border border-white/5"
+              }`}
+            >
+              {opt.icon && (
+                <span className="material-symbols-outlined text-[14px] leading-none">
+                  {opt.icon}
+                </span>
+              )}
+              <span>{opt.label}</span>
+              <span
+                className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono ${
+                  isActive ? "bg-black/15 text-black font-bold" : "bg-white/5 text-[#737373]"
+                }`}
+              >
+                {count}
+              </span>
+            </button>
+          );
+        })}
       </div>
 
       {/* Upstream Fetch Error Alert */}
@@ -291,55 +451,9 @@ export default function AvailableModelsTable({
                   model.contextWindowOverride || model.max_input_tokens || model.inputTokenLimit;
                 const contextStr = formatContextWindow(rawTokens);
 
-                // Detect capabilities
-                const mid = model.id.toLowerCase();
-                const capsLower = (model.capabilities ?? []).map((c) => String(c).toLowerCase());
-                const endpoints = (model.supportedEndpoints ?? []).map((e) => String(e).toLowerCase());
-                const hasReasoning =
-                  capsLower.includes("reasoning") ||
-                  capsLower.includes("thinking") ||
-                  mid.includes("think") ||
-                  mid.includes("reason") ||
-                  mid.includes("r1") ||
-                  mid.includes("o1") ||
-                  mid.includes("o3") ||
-                  model.reasoning === true;
-                const hasVision =
-                  capsLower.includes("vision") ||
-                  capsLower.includes("image") ||
-                  model.supportsVision === true ||
-                  endpoints.includes("images") ||
-                  mid.includes("vision") ||
-                  mid.includes("vl");
-                const hasCode =
-                  capsLower.includes("code") ||
-                  capsLower.includes("coding") ||
-                  mid.includes("code") ||
-                  mid.includes("coder");
-                const hasSearch =
-                  capsLower.includes("search") ||
-                  capsLower.includes("web_search") ||
-                  capsLower.includes("browsing") ||
-                  endpoints.includes("search") ||
-                  mid.includes("search");
-                const hasChat =
-                  capsLower.includes("chat") ||
-                  endpoints.includes("chat") ||
-                  (!mid.includes("embed") && !mid.includes("rerank") && !mid.includes("whisper"));
-                const hasTools =
-                  capsLower.includes("tools") ||
-                  capsLower.includes("tool_use") ||
-                  endpoints.includes("tools") ||
-                  (!mid.includes("embed") && !mid.includes("rerank"));
-                const hasAudio =
-                  capsLower.includes("audio") ||
-                  endpoints.includes("audio-speech") ||
-                  endpoints.includes("audio-transcriptions") ||
-                  mid.includes("audio") ||
-                  mid.includes("whisper");
-
-                const capBtnClass =
-                  "p-1 rounded-md bg-[#222224] hover:bg-[#2c2c2e] text-[#8e8e93] hover:text-white border border-white/5 hover:border-white/20 transition-all duration-150 inline-flex items-center justify-center cursor-default shadow-xs";
+                // Detect capabilities using unified helper
+                const caps = getModelCapabilities(model);
+                const selectedCap = selectedCapabilities[model.id] || "text";
 
                 return (
                   <tr key={model.id} className="hover:bg-[#181818]/60 transition-colors group">
@@ -394,57 +508,163 @@ export default function AvailableModelsTable({
                       </span>
                     </td>
 
-                    {/* Capabilities with Tooltips */}
+                    {/* Interactive Capabilities for Testing */}
                     <td className="py-3 px-4 text-center align-middle">
-                      <div className="inline-flex items-center justify-center gap-1">
-                        {hasChat && (
-                          <span title="Chat: Conversational dialogue & instructions" className={capBtnClass}>
+                      <div className="inline-flex items-center justify-center gap-1 flex-wrap">
+                        {caps.hasChat && (
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setSelectedCapabilities((prev) => ({ ...prev, [model.id]: "text" }))
+                            }
+                            title={`Text: Dialogue & instruction prompt (${
+                              selectedCap === "text" ? "Active for test" : "Click to select for test"
+                            })`}
+                            className={`px-1.5 py-1 rounded-md text-[11px] font-medium transition-all duration-150 inline-flex items-center gap-1 cursor-pointer ${
+                              selectedCap === "text"
+                                ? "bg-emerald-500/25 text-emerald-300 border border-emerald-500/60 ring-1 ring-emerald-500/40 shadow-xs scale-105"
+                                : "bg-[#222224] text-[#8e8e93] hover:text-white hover:bg-[#2c2c2e] border border-white/5 hover:border-white/20"
+                            }`}
+                          >
                             <span className="material-symbols-outlined text-[13px] leading-none">
                               chat
                             </span>
-                          </span>
+                            {selectedCap === "text" && (
+                              <span className="text-[10px] uppercase font-semibold">text</span>
+                            )}
+                          </button>
                         )}
-                        {hasCode && (
-                          <span title="Code: Programming, debugging & syntax generation" className={capBtnClass}>
+                        {caps.hasCode && (
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setSelectedCapabilities((prev) => ({ ...prev, [model.id]: "code" }))
+                            }
+                            title={`Code: Programming & syntax prompt (${
+                              selectedCap === "code" ? "Active for test" : "Click to select for test"
+                            })`}
+                            className={`px-1.5 py-1 rounded-md text-[11px] font-medium transition-all duration-150 inline-flex items-center gap-1 cursor-pointer ${
+                              selectedCap === "code"
+                                ? "bg-emerald-500/25 text-emerald-300 border border-emerald-500/60 ring-1 ring-emerald-500/40 shadow-xs scale-105"
+                                : "bg-[#222224] text-[#8e8e93] hover:text-white hover:bg-[#2c2c2e] border border-white/5 hover:border-white/20"
+                            }`}
+                          >
                             <span className="material-symbols-outlined text-[13px] leading-none">
                               code
                             </span>
-                          </span>
+                            {selectedCap === "code" && (
+                              <span className="text-[10px] uppercase font-semibold">code</span>
+                            )}
+                          </button>
                         )}
-                        {hasVision && (
-                          <span title="Vision: Image analysis & visual inputs" className={capBtnClass}>
+                        {caps.hasVision && (
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setSelectedCapabilities((prev) => ({ ...prev, [model.id]: "vision" }))
+                            }
+                            title={`Vision: Multimodal image prompt (${
+                              selectedCap === "vision"
+                                ? "Active for test"
+                                : "Click to select for test"
+                            })`}
+                            className={`px-1.5 py-1 rounded-md text-[11px] font-medium transition-all duration-150 inline-flex items-center gap-1 cursor-pointer ${
+                              selectedCap === "vision"
+                                ? "bg-emerald-500/25 text-emerald-300 border border-emerald-500/60 ring-1 ring-emerald-500/40 shadow-xs scale-105"
+                                : "bg-[#222224] text-[#8e8e93] hover:text-white hover:bg-[#2c2c2e] border border-white/5 hover:border-white/20"
+                            }`}
+                          >
                             <span className="material-symbols-outlined text-[13px] leading-none">
                               visibility
                             </span>
-                          </span>
+                            {selectedCap === "vision" && (
+                              <span className="text-[10px] uppercase font-semibold">vision</span>
+                            )}
+                          </button>
                         )}
-                        {hasReasoning && (
-                          <span title="Reasoning: Multi-step logic & deep thinking" className={capBtnClass}>
+                        {caps.hasReasoning && (
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setSelectedCapabilities((prev) => ({
+                                ...prev,
+                                [model.id]: "reasoning",
+                              }))
+                            }
+                            title={`Reasoning: Chain-of-thought prompt (${
+                              selectedCap === "reasoning"
+                                ? "Active for test"
+                                : "Click to select for test"
+                            })`}
+                            className={`px-1.5 py-1 rounded-md text-[11px] font-medium transition-all duration-150 inline-flex items-center gap-1 cursor-pointer ${
+                              selectedCap === "reasoning"
+                                ? "bg-emerald-500/25 text-emerald-300 border border-emerald-500/60 ring-1 ring-emerald-500/40 shadow-xs scale-105"
+                                : "bg-[#222224] text-[#8e8e93] hover:text-white hover:bg-[#2c2c2e] border border-white/5 hover:border-white/20"
+                            }`}
+                          >
                             <span className="material-symbols-outlined text-[13px] leading-none">
                               psychology
                             </span>
-                          </span>
+                            {selectedCap === "reasoning" && (
+                              <span className="text-[10px] uppercase font-semibold">reason</span>
+                            )}
+                          </button>
                         )}
-                        {hasSearch && (
-                          <span title="Search: Live web search & real-time grounding" className={capBtnClass}>
+                        {caps.hasSearch && (
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setSelectedCapabilities((prev) => ({
+                                ...prev,
+                                [model.id]: "search",
+                              }))
+                            }
+                            title={`Search: Grounded web search prompt (${
+                              selectedCap === "search"
+                                ? "Active for test"
+                                : "Click to select for test"
+                            })`}
+                            className={`px-1.5 py-1 rounded-md text-[11px] font-medium transition-all duration-150 inline-flex items-center gap-1 cursor-pointer ${
+                              selectedCap === "search"
+                                ? "bg-emerald-500/25 text-emerald-300 border border-emerald-500/60 ring-1 ring-emerald-500/40 shadow-xs scale-105"
+                                : "bg-[#222224] text-[#8e8e93] hover:text-white hover:bg-[#2c2c2e] border border-white/5 hover:border-white/20"
+                            }`}
+                          >
                             <span className="material-symbols-outlined text-[13px] leading-none">
                               travel_explore
                             </span>
-                          </span>
+                            {selectedCap === "search" && (
+                              <span className="text-[10px] uppercase font-semibold">search</span>
+                            )}
+                          </button>
                         )}
-                        {hasTools && (
-                          <span title="Tools: Function calling & external tool use" className={capBtnClass}>
-                            <span className="material-symbols-outlined text-[13px] leading-none">
-                              build
-                            </span>
-                          </span>
-                        )}
-                        {hasAudio && (
-                          <span title="Audio: Speech transcription & audio understanding" className={capBtnClass}>
+                        {caps.hasAudio && (
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setSelectedCapabilities((prev) => ({
+                                ...prev,
+                                [model.id]: "audio",
+                              }))
+                            }
+                            title={`Audio: Speech transcription prompt (${
+                              selectedCap === "audio"
+                                ? "Active for test"
+                                : "Click to select for test"
+                            })`}
+                            className={`px-1.5 py-1 rounded-md text-[11px] font-medium transition-all duration-150 inline-flex items-center gap-1 cursor-pointer ${
+                              selectedCap === "audio"
+                                ? "bg-emerald-500/25 text-emerald-300 border border-emerald-500/60 ring-1 ring-emerald-500/40 shadow-xs scale-105"
+                                : "bg-[#222224] text-[#8e8e93] hover:text-white hover:bg-[#2c2c2e] border border-white/5 hover:border-white/20"
+                            }`}
+                          >
                             <span className="material-symbols-outlined text-[13px] leading-none">
                               volume_up
                             </span>
-                          </span>
+                            {selectedCap === "audio" && (
+                              <span className="text-[10px] uppercase font-semibold">audio</span>
+                            )}
+                          </button>
                         )}
                       </div>
                     </td>
@@ -494,21 +714,21 @@ export default function AvailableModelsTable({
                             disabled={isTesting}
                             onClick={() => handleRunTest(model.id)}
                             className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium bg-[#1e1e1e] text-[#C0C0C0] hover:text-white hover:bg-[#282828] border border-[#333] hover:border-white/30 transition-colors disabled:opacity-50 cursor-pointer"
-                            title={`Test with prompt: "${testPrompt}"`}
+                            title={`Test model with ${selectedCap.toUpperCase()} capability prompt`}
                           >
                             {isTesting ? (
                               <>
                                 <span className="material-symbols-outlined text-[13px] animate-spin">
                                   progress_activity
                                 </span>
-                                <span>Testing...</span>
+                                <span>Testing ({selectedCap})...</span>
                               </>
                             ) : (
                               <>
                                 <span className="material-symbols-outlined text-[13px]">
                                   play_arrow
                                 </span>
-                                <span>Test</span>
+                                <span>Test ({selectedCap})</span>
                               </>
                             )}
                           </button>
