@@ -2,9 +2,11 @@
 
 import React, { useState, useEffect, useMemo } from "react";
 import { runtimeLogger, type CapturedRequestLog } from "@/shared/utils/runtimeRequestLogger";
+import AiModelLogsTracker from "./AiModelLogsTracker";
 
 export default function RuntimeRequestInspector() {
   const [isOpen, setIsOpen] = useState(false);
+  const [mainTab, setMainTab] = useState<"ai-models" | "all-requests">("ai-models");
   const [logs, setLogs] = useState<CapturedRequestLog[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [search, setSearch] = useState("");
@@ -98,10 +100,10 @@ export default function RuntimeRequestInspector() {
         type="button"
         onClick={() => setIsOpen(true)}
         className="fixed bottom-6 right-6 z-40 flex items-center gap-2.5 rounded-full border border-white/20 bg-[#121212]/95 px-3.5 py-2.5 shadow-2xl backdrop-blur-xl transition-all duration-200 hover:border-white/40 hover:bg-[#1C1C1C] hover:scale-105 active:scale-95 group text-white cursor-pointer"
-        title="Open Live Request Inspector (Runtime Logs)"
+        title="Open Live Request Inspector & Track AI Models"
       >
-        <span className="material-symbols-outlined text-[19px] text-[#C0C0C0] group-hover:text-white transition-colors">
-          terminal
+        <span className="material-symbols-outlined text-[19px] text-primary group-hover:scale-110 transition-transform">
+          psychology
         </span>
         <span className="text-xs font-semibold tracking-wide text-white">Live Logs</span>
         <span className="rounded-full bg-white/10 px-1.5 py-0.5 text-[11px] font-mono text-white/80">
@@ -123,20 +125,20 @@ export default function RuntimeRequestInspector() {
             onClick={() => setIsOpen(false)}
           />
 
-          <aside className="fixed inset-y-0 right-0 z-50 flex w-full flex-col border-l border-white/15 bg-[#0C0C0C] text-white shadow-2xl sm:max-w-xl md:max-w-2xl lg:max-w-3xl animate-in slide-in-from-right duration-300">
+          <aside className="fixed inset-y-0 right-0 z-50 flex w-full flex-col border-l border-white/15 bg-[#0C0C0C] text-white shadow-2xl sm:max-w-2xl md:max-w-3xl lg:max-w-4xl xl:max-w-5xl animate-in slide-in-from-right duration-300">
             {/* Header */}
-            <div className="flex items-center justify-between border-b border-white/10 px-5 py-4 bg-[#141414]">
+            <div className="flex items-center justify-between border-b border-white/10 px-5 py-3.5 bg-[#141414]">
               <div className="flex items-center gap-3">
-                <span className="material-symbols-outlined text-2xl text-white">receipt_long</span>
+                <span className="material-symbols-outlined text-2xl text-primary">receipt_long</span>
                 <div>
                   <div className="flex items-center gap-2">
-                    <h2 className="text-base font-bold text-white tracking-tight">Live Request Inspector</h2>
-                    <span className="rounded-full bg-white/10 border border-white/10 px-2 py-0.5 text-[10px] uppercase font-mono text-white/70">
-                      Runtime In-Memory
+                    <h2 className="text-base font-bold text-white tracking-tight">Live Request & AI Model Inspector</h2>
+                    <span className="rounded-full bg-primary/15 border border-primary/30 px-2 py-0.5 text-[10px] uppercase font-mono text-primary font-semibold">
+                      Real-time Telemetry
                     </span>
                   </div>
                   <p className="text-xs text-white/50">
-                    Live captured HTTP requests • Zero persistence to DB
+                    Live telemetry for AI models, prompt messages, upstream headers, responses & status codes
                   </p>
                 </div>
               </div>
@@ -147,7 +149,7 @@ export default function RuntimeRequestInspector() {
                   onClick={() => runtimeLogger.clearLogs()}
                   disabled={logs.length === 0}
                   className="inline-flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/5 px-2.5 py-1.5 text-xs font-medium text-white/80 transition-colors hover:bg-red-500/20 hover:border-red-500/30 hover:text-red-400 disabled:opacity-40 disabled:pointer-events-none cursor-pointer"
-                  title="Clear all in-memory logs"
+                  title="Clear in-memory request logs"
                 >
                   <span className="material-symbols-outlined text-[16px]">delete_sweep</span>
                   Clear Logs
@@ -163,52 +165,93 @@ export default function RuntimeRequestInspector() {
               </div>
             </div>
 
-            {/* Filter & Search Bar */}
-            <div className="flex flex-col gap-2.5 border-b border-white/10 bg-[#111111] p-3.5">
-              <div className="relative">
-                <span className="material-symbols-outlined absolute left-3 top-2.5 text-base text-white/40">
-                  search
+            {/* ── TOP PRIMARY TABS ── */}
+            <div className="flex border-b border-white/10 bg-[#121212] px-4 pt-1.5 gap-2">
+              <button
+                type="button"
+                onClick={() => setMainTab("ai-models")}
+                className={`flex items-center gap-2 border-b-2 px-4 py-2.5 text-xs font-semibold transition-all cursor-pointer ${
+                  mainTab === "ai-models"
+                    ? "border-primary text-white bg-white/5 rounded-t-lg"
+                    : "border-transparent text-white/60 hover:text-white"
+                }`}
+              >
+                <span className="material-symbols-outlined text-[17px] text-primary">psychology</span>
+                Track AI Models Logs
+                <span className="rounded-full bg-primary/20 text-primary border border-primary/30 px-1.5 py-0.2 text-[10px] font-mono">
+                  Active
                 </span>
-                <input
-                  type="text"
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  placeholder="Filter by URL, method, status, response..."
-                  className="w-full rounded-lg border border-white/10 bg-black/40 pl-9 pr-3 py-1.5 text-xs text-white placeholder-white/40 focus:border-white/30 focus:outline-none"
-                />
-                {search && (
-                  <button
-                    type="button"
-                    onClick={() => setSearch("")}
-                    className="absolute right-2.5 top-2 text-xs text-white/40 hover:text-white"
-                  >
-                    ×
-                  </button>
-                )}
-              </div>
+              </button>
 
-              <div className="flex items-center gap-1.5 overflow-x-auto text-xs pb-0.5">
-                {[
-                  { id: "all", label: `All (${logs.length})` },
-                  { id: "errors", label: `Errors (${errorCount})` },
-                  { id: "api", label: "API Routes" },
-                  { id: "models", label: "Models Discovery" },
-                ].map((tab) => (
-                  <button
-                    key={tab.id}
-                    type="button"
-                    onClick={() => setActiveFilter(tab.id as any)}
-                    className={`rounded-md px-2.5 py-1 font-medium transition-colors cursor-pointer ${
-                      activeFilter === tab.id
-                        ? "bg-white text-black font-semibold shadow-sm"
-                        : "bg-white/5 text-white/70 hover:bg-white/10 hover:text-white"
-                    }`}
-                  >
-                    {tab.label}
-                  </button>
-                ))}
-              </div>
+              <button
+                type="button"
+                onClick={() => setMainTab("all-requests")}
+                className={`flex items-center gap-2 border-b-2 px-4 py-2.5 text-xs font-semibold transition-all cursor-pointer ${
+                  mainTab === "all-requests"
+                    ? "border-white text-white bg-white/5 rounded-t-lg"
+                    : "border-transparent text-white/60 hover:text-white"
+                }`}
+              >
+                <span className="material-symbols-outlined text-[17px]">network_check</span>
+                All Network Requests
+                <span className="rounded-full bg-white/10 px-1.5 py-0.2 text-[10px] font-mono text-white/70">
+                  {logs.length}
+                </span>
+              </button>
             </div>
+
+            {/* ── TAB 1: AI MODEL LOGS TRACKER ── */}
+            {mainTab === "ai-models" && <AiModelLogsTracker clientLogs={logs} />}
+
+            {/* ── TAB 2: GENERAL HTTP NETWORK REQUESTS ── */}
+            {mainTab === "all-requests" && (
+              <>
+                {/* Filter & Search Bar */}
+                <div className="flex flex-col gap-2.5 border-b border-white/10 bg-[#111111] p-3.5">
+                  <div className="relative">
+                    <span className="material-symbols-outlined absolute left-3 top-2.5 text-base text-white/40">
+                      search
+                    </span>
+                    <input
+                      type="text"
+                      value={search}
+                      onChange={(e) => setSearch(e.target.value)}
+                      placeholder="Filter by URL, method, status, response..."
+                      className="w-full rounded-lg border border-white/10 bg-black/40 pl-9 pr-3 py-1.5 text-xs text-white placeholder-white/40 focus:border-white/30 focus:outline-none"
+                    />
+                    {search && (
+                      <button
+                        type="button"
+                        onClick={() => setSearch("")}
+                        className="absolute right-2.5 top-2 text-xs text-white/40 hover:text-white"
+                      >
+                        ×
+                      </button>
+                    )}
+                  </div>
+
+                  <div className="flex items-center gap-1.5 overflow-x-auto text-xs pb-0.5">
+                    {[
+                      { id: "all", label: `All (${logs.length})` },
+                      { id: "errors", label: `Errors (${errorCount})` },
+                      { id: "api", label: "API Routes" },
+                      { id: "models", label: "Models Discovery" },
+                    ].map((tab) => (
+                      <button
+                        key={tab.id}
+                        type="button"
+                        onClick={() => setActiveFilter(tab.id as any)}
+                        className={`rounded-md px-2.5 py-1 font-medium transition-colors cursor-pointer ${
+                          activeFilter === tab.id
+                            ? "bg-white text-black font-semibold shadow-sm"
+                            : "bg-white/5 text-white/70 hover:bg-white/10 hover:text-white"
+                        }`}
+                      >
+                        {tab.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
 
             {/* Content: Split Layout (List on Top or Left, Inspector Details Below) */}
             <div className="flex flex-1 min-h-0 flex-col md:flex-row overflow-hidden">
@@ -441,9 +484,11 @@ export default function RuntimeRequestInspector() {
                 )}
               </div>
             </div>
-          </aside>
-        </div>
-      )}
+          </>
+        )}
+      </aside>
+    </div>
+  )}
     </>
   );
 }
