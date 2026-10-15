@@ -563,6 +563,17 @@ export function updateUserQuota(params: {
      WHERE user_id = ?`
   ).run(planTier, tokenBudget, rpmLimit, now, params.userId);
 
+  if (rpmLimit !== undefined) {
+    try {
+      db.prepare(`
+        UPDATE api_keys
+        SET max_requests_per_minute = ?, updated_at = datetime('now')
+        WHERE id IN (SELECT api_key_id FROM reseller_user_keys WHERE user_id = ? AND api_key_id IS NOT NULL)
+      `).run(rpmLimit, params.userId);
+      invalidateApiKeyCaches();
+    } catch {}
+  }
+
   if (params.resetUsage) {
     db.prepare("DELETE FROM user_model_usage WHERE user_id = ?").run(params.userId);
   }

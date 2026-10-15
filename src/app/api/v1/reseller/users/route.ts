@@ -16,6 +16,7 @@ import {
   createResellerUserKey,
   deleteResellerUserKey,
   deleteResellerUser,
+  getResellerUser,
   updateUserQuota,
   setUserBanStatus,
   getAvailableModelsAndCombos,
@@ -215,14 +216,26 @@ export async function POST(request: Request) {
       );
     }
 
+    const existingUser = getResellerUser(userId);
+    if (existingUser?.isBanned) {
+      return NextResponse.json(
+        { success: false, error: "Cannot generate API key: user account is currently banned." },
+        { status: 403, headers: CORS_HEADERS }
+      );
+    }
+
+    const planTier = data.plan || data.planTier || existingUser?.planTier || "free";
+    const tokenBudget = data.tokenBudget !== undefined ? data.tokenBudget : (existingUser?.tokenBudget ?? null);
+    const rpmLimit = data.rpmLimit !== undefined ? data.rpmLimit : (existingUser?.rpmLimit ?? null);
+
     const userKey = await createResellerUserKey({
       userId,
       userName,
       userEmail,
-      planTier: data.plan || data.planTier || "free",
+      planTier,
       allowedModels: data.allowedModels || [],
-      tokenBudget: data.tokenBudget ?? null,
-      rpmLimit: data.rpmLimit ?? null,
+      tokenBudget,
+      rpmLimit,
       expiresAt: data.expiresAt ?? null,
     });
 
