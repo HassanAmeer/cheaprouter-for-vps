@@ -11,6 +11,13 @@ import { backupDbFile } from "./backup";
 import { createApiKey, updateApiKeyPermissions } from "./apiKeys";
 import { getConsistentMachineId } from "@/shared/utils/machineId";
 
+export interface UserModelUsage {
+  model: string;
+  tokensUsed: number;
+  requests: number;
+  lastUsedAt: string | null;
+}
+
 export interface ResellerUser {
   id: string;
   email: string;
@@ -19,6 +26,10 @@ export interface ResellerUser {
   tokenBudget: number | null;
   tokensUsed: number;
   rpmLimit: number | null;
+  isBanned: boolean;
+  modelQuotas?: Record<string, number>;
+  keysCount: number;
+  modelUsage?: UserModelUsage[];
   createdAt: string;
   updatedAt: string;
 }
@@ -76,6 +87,22 @@ export function ensureResellerUserKeysTable(): void {
   const db = getDbInstance();
   try {
     db.exec(`
+      CREATE TABLE IF NOT EXISTS reseller_users (
+        id           TEXT PRIMARY KEY,
+        email        TEXT NOT NULL,
+        name         TEXT,
+        plan_tier    TEXT NOT NULL DEFAULT 'free',
+        token_budget INTEGER,
+        tokens_used  INTEGER NOT NULL DEFAULT 0,
+        rpm_limit    INTEGER,
+        is_banned    INTEGER NOT NULL DEFAULT 0,
+        model_quotas TEXT DEFAULT '{}',
+        created_at   TEXT NOT NULL DEFAULT (datetime('now')),
+        updated_at   TEXT NOT NULL DEFAULT (datetime('now'))
+      );
+      CREATE INDEX IF NOT EXISTS idx_reseller_users_email ON reseller_users(email);
+      CREATE INDEX IF NOT EXISTS idx_reseller_users_plan ON reseller_users(plan_tier);
+
       CREATE TABLE IF NOT EXISTS reseller_user_keys (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         user_id TEXT NOT NULL,
@@ -95,7 +122,27 @@ export function ensureResellerUserKeysTable(): void {
       );
       CREATE INDEX IF NOT EXISTS idx_reseller_user_keys_user_id ON reseller_user_keys(user_id);
       CREATE INDEX IF NOT EXISTS idx_reseller_user_keys_api_key ON reseller_user_keys(api_key);
+
+      CREATE TABLE IF NOT EXISTS user_model_usage (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id TEXT NOT NULL,
+        model TEXT NOT NULL,
+        tokens_used INTEGER NOT NULL DEFAULT 0,
+        requests INTEGER NOT NULL DEFAULT 0,
+        last_used_at TEXT,
+        created_at TEXT DEFAULT (datetime('now')),
+        updated_at TEXT DEFAULT (datetime('now')),
+        UNIQUE(user_id, model)
+      );
+      CREATE INDEX IF NOT EXISTS idx_user_model_usage_uid ON user_model_usage(user_id);
     `);
+
+    try {
+      db.exec("ALTER TABLE reseller_users ADD COLUMN is_banned INTEGER DEFAULT 0;");
+    } catch {}
+    try {
+      db.exec("ALTER TABLE reseller_users ADD COLUMN model_quotas TEXT DEFAULT '{}';");
+    } catch {}
   } catch (err) {
     console.warn("[resellerUsers] ensureResellerUserKeysTable failed:", err);
   }
@@ -340,15 +387,87 @@ export async function getAvailableModelsAndCombos() {
  * Get all reseller users (the Users tab roster).
  */
 export function getResellerUsers(): ResellerUser[] {
+  ensureResellerUserKeysTable();
   const db = getDbInstance();
-  const rows = db.prepare("SELECT * FROM reseller_users ORDER BY created_at DESC").all() as UserRowShape[];
-  return rows.map(fromUserRow);
+  const rows = db
+    .prepare(
+      `SELECT 
+        u.*,
+        COALESCE(k.keys_count, 0) as keys_count
+      FROM reseller_users u
+      LEFT JOIN (
+        SELECT user_id, COUNT(*) as keys_count
+        FROM reseller_user_keys
+        GROUP BY user_id
+      ) k ON u.id = k.user_id
+      ORDER BY u.created_at DESC`
+    )
+    .all() as Array<UserRowShape & { keys_count?: number }>;
+
+  const usageRows = db.prepare(`SELECT * FROM user_model_usage`).all() as Array<{
+    user_id: string;
+    model: string;
+    tokens_used: number;
+    requests: number;
+    last_used_at: string | null;
+  }>;
+
+  const usageMap = new Map<string, UserModelUsage[]>();
+  for (const u of usageRows) {
+    if (!usageMap.has(u.user_id)) {
+      usageMap.set(u.user_id, []);
+    }
+    usageMap.get(u.user_id)!.push({
+      model: u.model,
+      tokensUsed: u.tokens_used,
+      requests: u.requests,
+      lastUsedAt: u.last_used_at,
+    });
+  }
+
+  return rows.map((r) => {
+    const user = fromUserRow(r);
+    user.modelUsage = usageMap.get(r.id) || [];
+    return user;
+  });
 }
 
 export function getResellerUser(id: string): ResellerUser | undefined {
+  ensureResellerUserKeysTable();
   const db = getDbInstance();
-  const row = db.prepare("SELECT * FROM reseller_users WHERE id = ?").get(id) as UserRowShape | undefined;
-  return row ? fromUserRow(row) : undefined;
+  const row = db
+    .prepare(
+      `SELECT 
+        u.*,
+        COALESCE(k.keys_count, 0) as keys_count
+      FROM reseller_users u
+      LEFT JOIN (
+        SELECT user_id, COUNT(*) as keys_count
+        FROM reseller_user_keys
+        GROUP BY user_id
+      ) k ON u.id = k.user_id
+      WHERE u.id = ?`
+    )
+    .get(id) as (UserRowShape & { keys_count?: number }) | undefined;
+
+  if (!row) return undefined;
+
+  const usageRows = db.prepare(`SELECT * FROM user_model_usage WHERE user_id = ?`).all(id) as Array<{
+    user_id: string;
+    model: string;
+    tokens_used: number;
+    requests: number;
+    last_used_at: string | null;
+  }>;
+
+  const user = fromUserRow(row);
+  user.modelUsage = usageRows.map((u) => ({
+    model: u.model,
+    tokensUsed: u.tokens_used,
+    requests: u.requests,
+    lastUsedAt: u.last_used_at,
+  }));
+  return user;
 }
 
 /**
@@ -362,7 +481,10 @@ export function upsertResellerUser(params: {
   tokenBudget?: number | null;
   tokensUsed?: number;
   rpmLimit?: number | null;
+  isBanned?: boolean;
+  modelQuotas?: Record<string, number>;
 }): ResellerUser {
+  ensureResellerUserKeysTable();
   const db = getDbInstance();
   const now = new Date().toISOString();
 
@@ -370,25 +492,119 @@ export function upsertResellerUser(params: {
 
   const existing = getResellerUser(params.id);
   const planTier = params.planTier ?? existing?.planTier ?? "free";
-  const tokenBudget = params.tokenBudget ?? existing?.tokenBudget ?? null;
+  const tokenBudget = params.tokenBudget !== undefined ? params.tokenBudget : (existing?.tokenBudget ?? null);
   const tokensUsed = params.tokensUsed ?? existing?.tokensUsed ?? 0;
-  const rpmLimit = params.rpmLimit ?? existing?.rpmLimit ?? null;
+  const rpmLimit = params.rpmLimit !== undefined ? params.rpmLimit : (existing?.rpmLimit ?? null);
+  const isBanned = params.isBanned !== undefined ? (params.isBanned ? 1 : 0) : (existing?.isBanned ? 1 : 0);
   const name = params.name ?? existing?.name ?? null;
+  const modelQuotas = params.modelQuotas
+    ? JSON.stringify(params.modelQuotas)
+    : existing?.modelQuotas
+    ? JSON.stringify(existing.modelQuotas)
+    : "{}";
 
   if (existing) {
     db.prepare(
       `UPDATE reseller_users SET email = ?, name = ?, plan_tier = ?, token_budget = ?,
-         tokens_used = ?, rpm_limit = ?, updated_at = ?
+         tokens_used = ?, rpm_limit = ?, is_banned = ?, model_quotas = ?, updated_at = ?
        WHERE id = ?`
-    ).run(params.email, name, planTier, tokenBudget, tokensUsed, rpmLimit, now, params.id);
+    ).run(params.email, name, planTier, tokenBudget, tokensUsed, rpmLimit, isBanned, modelQuotas, now, params.id);
   } else {
     db.prepare(
-      `INSERT INTO reseller_users (id, email, name, plan_tier, token_budget, tokens_used, rpm_limit, created_at, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
-    ).run(params.id, params.email, name, planTier, tokenBudget, tokensUsed, rpmLimit, now, now);
+      `INSERT INTO reseller_users (id, email, name, plan_tier, token_budget, tokens_used, rpm_limit, is_banned, model_quotas, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+    ).run(params.id, params.email, name, planTier, tokenBudget, tokensUsed, rpmLimit, isBanned, modelQuotas, now, now);
   }
 
   return getResellerUser(params.id)!;
+}
+
+/**
+ * Update user quota & plan (e.g. user buys an upgrade or admin edits in GUI).
+ */
+export function updateUserQuota(params: {
+  userId: string;
+  plan?: string;
+  tokenBudget?: number | null;
+  rpmLimit?: number | null;
+  modelQuotas?: Record<string, number>;
+  resetUsage?: boolean;
+}): ResellerUser {
+  ensureResellerUserKeysTable();
+  const db = getDbInstance();
+  backupDbFile("pre-write");
+  const now = new Date().toISOString();
+
+  const user = getResellerUser(params.userId);
+  if (!user) {
+    throw new Error(`User not found: ${params.userId}`);
+  }
+
+  const planTier = params.plan ?? user.planTier;
+  const tokenBudget = params.tokenBudget !== undefined ? params.tokenBudget : user.tokenBudget;
+  const rpmLimit = params.rpmLimit !== undefined ? params.rpmLimit : user.rpmLimit;
+  const tokensUsed = params.resetUsage ? 0 : user.tokensUsed;
+  const modelQuotas = params.modelQuotas
+    ? JSON.stringify(params.modelQuotas)
+    : user.modelQuotas
+    ? JSON.stringify(user.modelQuotas)
+    : "{}";
+
+  db.prepare(
+    `UPDATE reseller_users 
+     SET plan_tier = ?, token_budget = ?, rpm_limit = ?, tokens_used = ?, model_quotas = ?, updated_at = ?
+     WHERE id = ?`
+  ).run(planTier, tokenBudget, rpmLimit, tokensUsed, modelQuotas, now, params.userId);
+
+  // Sync to keys
+  db.prepare(
+    `UPDATE reseller_user_keys
+     SET plan_tier = ?, token_budget = ?, rpm_limit = ?, updated_at = ?
+     WHERE user_id = ?`
+  ).run(planTier, tokenBudget, rpmLimit, now, params.userId);
+
+  if (params.resetUsage) {
+    db.prepare("DELETE FROM user_model_usage WHERE user_id = ?").run(params.userId);
+  }
+
+  return getResellerUser(params.userId)!;
+}
+
+/**
+ * Toggle user Ban status (0 = Active, 1 = Banned).
+ */
+export function setUserBanStatus(userId: string, isBanned: boolean): void {
+  ensureResellerUserKeysTable();
+  const db = getDbInstance();
+  backupDbFile("pre-write");
+  const val = isBanned ? 1 : 0;
+  db.prepare("UPDATE reseller_users SET is_banned = ?, updated_at = datetime('now') WHERE id = ?").run(val, userId);
+  db.prepare("UPDATE reseller_user_keys SET is_active = ?, updated_at = datetime('now') WHERE user_id = ?").run(isBanned ? 0 : 1, userId);
+}
+
+/**
+ * Record model-specific and user-level token usage.
+ */
+export function recordUserModelUsage(userId: string, model: string, tokens: number): void {
+  ensureResellerUserKeysTable();
+  const db = getDbInstance();
+  const now = new Date().toISOString();
+
+  db.prepare(
+    `UPDATE reseller_users
+     SET tokens_used = tokens_used + ?, updated_at = ?
+     WHERE id = ?`
+  ).run(tokens, now, userId);
+
+  db.prepare(
+    `INSERT INTO user_model_usage (user_id, model, tokens_used, requests, last_used_at, created_at, updated_at)
+     VALUES (?, ?, ?, 1, ?, ?, ?)
+     ON CONFLICT(user_id, model) DO UPDATE SET
+       tokens_used = tokens_used + excluded.tokens_used,
+       requests = requests + 1,
+       last_used_at = excluded.last_used_at,
+       updated_at = excluded.updated_at`
+  ).run(userId, model, tokens, now, now, now);
 }
 
 /**
@@ -584,6 +800,9 @@ type UserRowShape = {
   token_budget: number | null;
   tokens_used: number;
   rpm_limit: number | null;
+  is_banned?: number;
+  model_quotas?: string;
+  keys_count?: number;
   created_at: string;
   updated_at: string;
 };
@@ -602,6 +821,11 @@ type ByokRowShape = {
 };
 
 function fromUserRow(row: UserRowShape): ResellerUser {
+  let modelQuotas: Record<string, number> = {};
+  try {
+    modelQuotas = JSON.parse(row.model_quotas || "{}");
+  } catch {}
+
   return {
     id: row.id,
     email: row.email,
@@ -610,6 +834,10 @@ function fromUserRow(row: UserRowShape): ResellerUser {
     tokenBudget: row.token_budget,
     tokensUsed: row.tokens_used,
     rpmLimit: row.rpm_limit,
+    isBanned: row.is_banned === 1,
+    modelQuotas,
+    keysCount: Number(row.keys_count || 0),
+    modelUsage: [],
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };

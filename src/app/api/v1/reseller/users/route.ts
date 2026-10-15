@@ -16,6 +16,8 @@ import {
   createResellerUserKey,
   deleteResellerUserKey,
   deleteResellerUser,
+  updateUserQuota,
+  setUserBanStatus,
   getAvailableModelsAndCombos,
 } from "@/lib/db/resellerUsers";
 
@@ -134,6 +136,65 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: true, key }, { status: 201, headers: CORS_HEADERS });
     }
 
+    // Update Quota / Plan (when user purchases plan or admin updates in GUI)
+    if (body?.action === "updateQuota") {
+      const uid = (body.userId || body.id)?.trim();
+      if (!uid) {
+        return NextResponse.json(
+          { success: false, error: "userId is required to update quota." },
+          { status: 400, headers: CORS_HEADERS }
+        );
+      }
+      const updated = updateUserQuota({
+        userId: uid,
+        plan: body.plan || body.planTier,
+        tokenBudget: typeof body.tokenBudget === "number" ? body.tokenBudget : undefined,
+        rpmLimit: typeof body.rpmLimit === "number" ? body.rpmLimit : undefined,
+        modelQuotas: body.modelQuotas,
+        resetUsage: body.resetUsage === true,
+      });
+      return NextResponse.json({ success: true, user: updated }, { status: 200, headers: CORS_HEADERS });
+    }
+
+    // Toggle Ban Status
+    if (body?.action === "setBanStatus") {
+      const uid = (body.userId || body.id)?.trim();
+      if (!uid) {
+        return NextResponse.json(
+          { success: false, error: "userId is required to set ban status." },
+          { status: 400, headers: CORS_HEADERS }
+        );
+      }
+      setUserBanStatus(uid, body.isBanned === true);
+      return NextResponse.json(
+        { success: true, userId: uid, isBanned: body.isBanned === true },
+        { status: 200, headers: CORS_HEADERS }
+      );
+    }
+
+    // Register User with Plan & Quota without generating an API key
+    if (body?.action === "upsertUser") {
+      const uid = (body.userId || body.id)?.trim();
+      const email = (body.userEmail || body.email)?.trim();
+      if (!uid || !email) {
+        return NextResponse.json(
+          { success: false, error: "userId and email/phone are required." },
+          { status: 400, headers: CORS_HEADERS }
+        );
+      }
+      const user = upsertResellerUser({
+        id: uid,
+        email,
+        name: (body.userName || body.name)?.trim() || uid,
+        planTier: body.plan || body.planTier || "free",
+        tokenBudget: typeof body.tokenBudget === "number" ? body.tokenBudget : null,
+        rpmLimit: typeof body.rpmLimit === "number" ? body.rpmLimit : null,
+        modelQuotas: body.modelQuotas,
+        isBanned: body.isBanned === true,
+      });
+      return NextResponse.json({ success: true, user }, { status: 200, headers: CORS_HEADERS });
+    }
+
     const parsed = createKeyUserSchema.safeParse(body);
     if (!parsed.success) {
       return NextResponse.json(
@@ -201,6 +262,40 @@ export async function PATCH(request: Request) {
       );
     }
 
+    if (action === "updateQuota") {
+      const uid = (body.userId || body.id)?.trim();
+      if (!uid) {
+        return NextResponse.json(
+          { success: false, error: "userId is required to update quota." },
+          { status: 400, headers: CORS_HEADERS }
+        );
+      }
+      const updated = updateUserQuota({
+        userId: uid,
+        plan: body.plan || body.planTier,
+        tokenBudget: typeof body.tokenBudget === "number" ? body.tokenBudget : undefined,
+        rpmLimit: typeof body.rpmLimit === "number" ? body.rpmLimit : undefined,
+        modelQuotas: body.modelQuotas,
+        resetUsage: body.resetUsage === true,
+      });
+      return NextResponse.json({ success: true, user: updated }, { status: 200, headers: CORS_HEADERS });
+    }
+
+    if (action === "setBanStatus") {
+      const uid = (body.userId || body.id)?.trim();
+      if (!uid) {
+        return NextResponse.json(
+          { success: false, error: "userId is required to set ban status." },
+          { status: 400, headers: CORS_HEADERS }
+        );
+      }
+      setUserBanStatus(uid, body.isBanned === true);
+      return NextResponse.json(
+        { success: true, userId: uid, isBanned: body.isBanned === true },
+        { status: 200, headers: CORS_HEADERS }
+      );
+    }
+
     if (action === "addByok") {
       const parsed = byokSchema.safeParse(body);
       if (!parsed.success) {
@@ -208,8 +303,19 @@ export async function PATCH(request: Request) {
           { success: false, error: "Invalid payload", issues: parsed.error.issues },
           { status: 400, headers: CORS_HEADERS }
         );
-      }
-      const key = upsertUserByokKey(parsed.data);
+      const raw = parsed.data.maskedKey || parsed.data.apiKey || parsed.data.key || "";
+      const maskedKey = raw.includes("...")
+        ? raw
+        : raw.length > 10
+        ? `${raw.slice(0, 6)}...${raw.slice(-4)}`
+        : raw;
+      const key = upsertUserByokKey({
+        userId: parsed.data.userId,
+        providerId: parsed.data.providerId,
+        maskedKey,
+        userName: parsed.data.userName,
+        userEmail: parsed.data.userEmail,
+      });
       return NextResponse.json({ success: true, key }, { status: 201, headers: CORS_HEADERS });
     }
 

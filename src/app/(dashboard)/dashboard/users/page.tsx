@@ -13,20 +13,25 @@ import {
 import ProviderIcon from "@/shared/components/ProviderIcon";
 import { useCopyToClipboard } from "@/shared/hooks/useCopyToClipboard";
 
-interface ResellerUserKey {
-  id: number;
-  userId: string;
-  userName: string | null;
-  userEmail: string;
+interface UserModelUsage {
+  model: string;
+  tokensUsed: number;
+  requests: number;
+  lastUsedAt: string | null;
+}
+
+interface ResellerUserEntry {
+  id: string; // userId (UID)
+  email: string;
+  name: string | null;
   planTier: string;
-  apiKey: string;
-  apiKeyId?: string | null;
-  allowedModels: string[];
   tokenBudget: number | null;
   tokensUsed: number;
   rpmLimit: number | null;
-  expiresAt: string | null;
-  isActive: boolean;
+  isBanned: boolean;
+  keysCount: number;
+  modelQuotas?: Record<string, number>;
+  modelUsage?: UserModelUsage[];
   createdAt: string;
   updatedAt: string;
 }
@@ -46,20 +51,16 @@ interface UserByokKeyEntry {
   updatedAt: string;
 }
 
-interface AvailableModelsData {
-  combos: Array<{ id: string; name: string; strategy?: string; description?: string }>;
-  models: Array<{ id: string; name: string; providerId: string }>;
-}
-
 const PLAN_STYLES: Record<string, string> = {
   free: "bg-slate-500/15 text-slate-300 border-slate-500/30",
   pro: "bg-blue-500/15 text-blue-400 border-blue-500/30",
   business: "bg-amber-500/15 text-amber-400 border-amber-500/30",
   enterprise: "bg-purple-500/15 text-purple-400 border-purple-500/30",
+  vip: "bg-emerald-500/15 text-emerald-400 border-emerald-500/30",
 };
 
 function getPlanBadgeClass(plan: string): string {
-  const key = plan.toLowerCase();
+  const key = plan?.toLowerCase() || "free";
   return PLAN_STYLES[key] || "bg-emerald-500/15 text-emerald-400 border-emerald-500/30";
 }
 
@@ -75,63 +76,49 @@ function formatTokens(tokenBudget: number | null): string {
   return `${tokenBudget} Tokens`;
 }
 
-function formatExpiry(expiresAt: string | null): string {
-  if (!expiresAt) return "Unlimited";
-  try {
-    const d = new Date(expiresAt);
-    if (isNaN(d.getTime())) return expiresAt;
-    return d.toLocaleDateString(undefined, {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-    });
-  } catch {
-    return expiresAt;
-  }
-}
-
-function maskApiKey(key: string): string {
-  if (!key || key.length <= 12) return "••••••••••••";
-  return `${key.slice(0, 7)}••••••••${key.slice(-4)}`;
-}
-
 export default function UsersPage() {
-  const [activeTab, setActiveTab] = useState<"apiKeys" | "byok">("apiKeys");
-  const [userKeys, setUserKeys] = useState<ResellerUserKey[]>([]);
+  const [activeTab, setActiveTab] = useState<"users" | "byok">("users");
+  const [users, setUsers] = useState<ResellerUserEntry[]>([]);
   const [byokKeys, setByokKeys] = useState<UserByokKeyEntry[]>([]);
   const [publishedProviders, setPublishedProviders] = useState<string[]>([]);
-  const [availableData, setAvailableData] = useState<AvailableModelsData>({
-    combos: [],
-    models: [],
-  });
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
 
-  // Search & Filter (Tab 1: API Keys)
+  // Tab 1: Search & Filter
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedPlanFilter, setSelectedPlanFilter] = useState("all");
+  const [statusFilter, setStatusFilter] = useState<"all" | "active" | "banned">("all");
+  const [planFilter, setPlanFilter] = useState("all");
 
-  // Search & Filter (Tab 2: BYOK)
+  // Tab 2: Search & Filter (BYOK)
   const [byokSearchQuery, setByokSearchQuery] = useState("");
   const [byokProviderFilter, setByokProviderFilter] = useState("all");
   const [byokStatusFilter, setByokStatusFilter] = useState("all");
 
-  // Tab 1: Create Key Modal State
-  const [showCreateModal, setShowCreateModal] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [createError, setCreateError] = useState<string | null>(null);
+  // Modals State
+  const [showAddUserModal, setShowAddUserModal] = useState(false);
+  const [showEditQuotaModal, setShowEditQuotaModal] = useState(false);
+  const [selectedUserForEdit, setSelectedUserForEdit] = useState<ResellerUserEntry | null>(null);
+  const [showUsageModal, setShowUsageModal] = useState(false);
+  const [selectedUserForUsage, setSelectedUserForUsage] = useState<ResellerUserEntry | null>(null);
+  const [showKeyResultModal, setShowKeyResultModal] = useState(false);
+  const [generatedKeyResult, setGeneratedKeyResult] = useState<{ key: string; userId: string } | null>(null);
 
-  // Form Fields
+  // Form Fields: Add User
   const [formUserId, setFormUserId] = useState("");
   const [formUserName, setFormUserName] = useState("");
   const [formUserEmail, setFormUserEmail] = useState("");
   const [formPlanTier, setFormPlanTier] = useState("Free");
-  const [allowAllModels, setAllowAllModels] = useState(true);
-  const [selectedModels, setSelectedModels] = useState<string[]>([]);
-  const [formTokenLimitMillions, setFormTokenLimitMillions] = useState("");
-  const [formRpmLimit, setFormRpmLimit] = useState("");
-  const [formExpiryPreset, setFormExpiryPreset] = useState("unlimited");
-  const [formCustomExpiry, setFormCustomExpiry] = useState("");
+  const [formTokenLimitMillions, setFormTokenLimitMillions] = useState("10");
+  const [formRpmLimit, setFormRpmLimit] = useState("60");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
+
+  // Form Fields: Edit Quota
+  const [editPlanTier, setEditPlanTier] = useState("");
+  const [editTokenLimitMillions, setEditTokenLimitMillions] = useState("");
+  const [editRpmLimit, setEditRpmLimit] = useState("");
+  const [editResetUsage, setEditResetUsage] = useState(false);
+  const [isUpdatingQuota, setIsUpdatingQuota] = useState(false);
 
   // Tab 2: Attach BYOK Modal State
   const [showByokModal, setShowByokModal] = useState(false);
@@ -143,10 +130,6 @@ export default function UsersPage() {
   const [byokFormProviderId, setByokFormProviderId] = useState("");
   const [byokFormKey, setByokFormKey] = useState("");
 
-  // Key Generated Success Modal
-  const [createdKeyResult, setCreatedKeyResult] = useState<ResellerUserKey | null>(null);
-  const [revealedKeys, setRevealedKeys] = useState<Record<number, boolean>>({});
-
   const { copied, copy } = useCopyToClipboard();
 
   const loadData = () => {
@@ -154,13 +137,10 @@ export default function UsersPage() {
       .then((r) => r.json())
       .then((data) => {
         if (data.success) {
-          setUserKeys(data.userKeys || []);
+          setUsers(data.users || []);
           setByokKeys(data.byokKeys || []);
           if (data.publishedProviders) {
             setPublishedProviders(data.publishedProviders);
-          }
-          if (data.availableModels) {
-            setAvailableData(data.availableModels);
           }
           setLoadError(null);
         } else {
@@ -173,143 +153,286 @@ export default function UsersPage() {
 
   useEffect(() => {
     loadData();
-    const interval = setInterval(loadData, 20000);
-    return () => clearInterval(interval);
   }, []);
 
-  const handleOpenCreateModal = () => {
-    setFormUserId(`usr_${Date.now().toString(36)}`);
-    setFormUserName("");
-    setFormUserEmail("");
-    setFormPlanTier("Free");
-    setAllowAllModels(true);
-    setSelectedModels([]);
-    setFormTokenLimitMillions("");
-    setFormRpmLimit("");
-    setFormExpiryPreset("unlimited");
-    setFormCustomExpiry("");
-    setCreateError(null);
-    setShowCreateModal(true);
+  // Filtered Users (Tab 1)
+  const filteredUsers = useMemo(() => {
+    return users.filter((u) => {
+      const q = searchQuery.toLowerCase().trim();
+      const matchesSearch =
+        !q ||
+        u.id.toLowerCase().includes(q) ||
+        (u.name && u.name.toLowerCase().includes(q)) ||
+        (u.email && u.email.toLowerCase().includes(q)) ||
+        u.planTier.toLowerCase().includes(q);
+
+      const matchesStatus =
+        statusFilter === "all" ||
+        (statusFilter === "active" && !u.isBanned) ||
+        (statusFilter === "banned" && u.isBanned);
+
+      const matchesPlan =
+        planFilter === "all" || u.planTier.toLowerCase() === planFilter.toLowerCase();
+
+      return matchesSearch && matchesStatus && matchesPlan;
+    });
+  }, [users, searchQuery, statusFilter, planFilter]);
+
+  // Distinct Plans
+  const distinctPlans = useMemo(() => {
+    const plans = new Set<string>();
+    users.forEach((u) => {
+      if (u.planTier) plans.add(u.planTier);
+    });
+    return Array.from(plans);
+  }, [users]);
+
+  // Filtered BYOK Keys (Tab 2)
+  const filteredByokKeys = useMemo(() => {
+    return byokKeys.filter((b) => {
+      const q = byokSearchQuery.toLowerCase().trim();
+      const matchesSearch =
+        !q ||
+        b.userId.toLowerCase().includes(q) ||
+        (b.userName && b.userName.toLowerCase().includes(q)) ||
+        (b.userEmail && b.userEmail.toLowerCase().includes(q)) ||
+        b.providerId.toLowerCase().includes(q) ||
+        b.maskedKey.toLowerCase().includes(q);
+
+      const matchesProvider =
+        byokProviderFilter === "all" || b.providerId === byokProviderFilter;
+
+      const matchesStatus =
+        byokStatusFilter === "all" ||
+        (byokStatusFilter === "active" && !b.isPaused) ||
+        (byokStatusFilter === "paused" && b.isPaused);
+
+      return matchesSearch && matchesProvider && matchesStatus;
+    });
+  }, [byokKeys, byokSearchQuery, byokProviderFilter, byokStatusFilter]);
+
+  // Distinct BYOK Providers
+  const distinctByokProviders = useMemo(() => {
+    const s = new Set<string>();
+    byokKeys.forEach((b) => s.add(b.providerId));
+    return Array.from(s);
+  }, [byokKeys]);
+
+  // Handler: Toggle Ban Status
+  const handleToggleBan = async (user: ResellerUserEntry) => {
+    const newBannedState = !user.isBanned;
+    try {
+      const res = await fetch("/api/v1/reseller/users", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "setBanStatus",
+          userId: user.id,
+          isBanned: newBannedState,
+        }),
+      });
+      if (res.ok) {
+        setUsers((prev) =>
+          prev.map((u) => (u.id === user.id ? { ...u, isBanned: newBannedState } : u))
+        );
+      }
+    } catch (e) {
+      console.error("Failed to toggle ban status", e);
+    }
   };
 
-  const handleOpenByokModal = () => {
-    setByokFormUserId("");
-    setByokFormUserName("");
-    setByokFormUserEmail("");
-    setByokFormProviderId(publishedProviders[0] || "anthropic");
-    setByokFormKey("");
-    setByokError(null);
-    setShowByokModal(true);
+  // Handler: Delete User
+  const handleDeleteUser = async (userId: string) => {
+    if (
+      !confirm(
+        `Are you sure you want to delete user ${userId}? This will remove the user, all their API keys, and BYOK credentials.`
+      )
+    ) {
+      return;
+    }
+    try {
+      const res = await fetch(`/api/v1/reseller/users?userId=${encodeURIComponent(userId)}`, {
+        method: "DELETE",
+      });
+      if (res.ok) {
+        setUsers((prev) => prev.filter((u) => u.id !== userId));
+        setByokKeys((prev) => prev.filter((b) => b.userId !== userId));
+      }
+    } catch (e) {
+      console.error("Failed to delete user", e);
+    }
   };
 
-  const handleToggleModelSelection = (modelId: string) => {
-    setSelectedModels((prev) =>
-      prev.includes(modelId) ? prev.filter((m) => m !== modelId) : [...prev, modelId]
+  // Handler: Open Edit Quota Modal
+  const handleOpenEditQuota = (user: ResellerUserEntry) => {
+    setSelectedUserForEdit(user);
+    setEditPlanTier(user.planTier || "Free");
+    setEditTokenLimitMillions(
+      user.tokenBudget ? String(user.tokenBudget / 1_000_000) : ""
     );
+    setEditRpmLimit(user.rpmLimit ? String(user.rpmLimit) : "");
+    setEditResetUsage(false);
+    setShowEditQuotaModal(true);
   };
 
-  const handleCreateKey = async (e: React.FormEvent) => {
+  // Handler: Submit Edit Quota
+  const handleSaveEditQuota = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formUserId.trim()) {
-      setCreateError("User ID (UID) is required.");
-      return;
-    }
-    if (!formUserName.trim()) {
-      setCreateError("User Name is required.");
-      return;
-    }
-    if (!formUserEmail.trim()) {
-      setCreateError("Email or Phone Number is required.");
-      return;
-    }
+    if (!selectedUserForEdit) return;
 
-    setIsSubmitting(true);
-    setCreateError(null);
+    setIsUpdatingQuota(true);
+    try {
+      const tokenBudget =
+        editTokenLimitMillions.trim() !== ""
+          ? Number(editTokenLimitMillions) * 1_000_000
+          : null;
+      const rpmLimit =
+        editRpmLimit.trim() !== "" ? Number(editRpmLimit) : null;
 
-    // Calculate expiry
-    let expiresAt: string | null = null;
-    if (formExpiryPreset === "7d") {
-      const d = new Date();
-      d.setDate(d.getDate() + 7);
-      expiresAt = d.toISOString();
-    } else if (formExpiryPreset === "30d") {
-      const d = new Date();
-      d.setDate(d.getDate() + 30);
-      expiresAt = d.toISOString();
-    } else if (formExpiryPreset === "90d") {
-      const d = new Date();
-      d.setDate(d.getDate() + 90);
-      expiresAt = d.toISOString();
-    } else if (formExpiryPreset === "1y") {
-      const d = new Date();
-      d.setFullYear(d.getFullYear() + 1);
-      expiresAt = d.toISOString();
-    } else if (formExpiryPreset === "custom" && formCustomExpiry) {
-      expiresAt = new Date(formCustomExpiry).toISOString();
-    }
+      const res = await fetch("/api/v1/reseller/users", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "updateQuota",
+          userId: selectedUserForEdit.id,
+          plan: editPlanTier.trim() || "Free",
+          tokenBudget,
+          rpmLimit,
+          resetUsage: editResetUsage,
+        }),
+      });
 
-    // Calculate tokens
-    let tokenBudget: number | null = null;
-    if (formTokenLimitMillions.trim()) {
-      const num = parseFloat(formTokenLimitMillions.trim());
-      if (!isNaN(num) && num > 0) {
-        tokenBudget = Math.round(num * 1_000_000);
+      if (res.ok) {
+        setShowEditQuotaModal(false);
+        loadData();
       }
+    } catch (err) {
+      console.error("Failed to update quota", err);
+    } finally {
+      setIsUpdatingQuota(false);
     }
+  };
 
-    // Calculate RPM
-    let rpmLimit: number | null = null;
-    if (formRpmLimit.trim()) {
-      const num = parseInt(formRpmLimit.trim(), 10);
-      if (!isNaN(num) && num > 0) {
-        rpmLimit = num;
-      }
-    }
-
+  // Handler: Issue API Key for User
+  const handleIssueKeyForUser = async (user: ResellerUserEntry) => {
     try {
       const res = await fetch("/api/v1/reseller/users", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          userId: user.id,
+          userName: user.name,
+          userEmail: user.email,
+          plan: user.planTier,
+          tokenBudget: user.tokenBudget,
+          rpmLimit: user.rpmLimit,
+        }),
+      });
+      const data = await res.json();
+      if (res.ok && data.success && data.apiKey) {
+        setGeneratedKeyResult({ key: data.apiKey, userId: user.id });
+        setShowKeyResultModal(true);
+        loadData();
+      }
+    } catch (e) {
+      console.error("Failed to issue key", e);
+    }
+  };
+
+  // Handler: Add User Form Submit
+  const handleAddUserSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!formUserId.trim() || !formUserEmail.trim()) {
+      setFormError("User ID and Email / Phone are mandatory.");
+      return;
+    }
+
+    setIsSubmitting(true);
+    setFormError(null);
+
+    try {
+      const tokenBudget =
+        formTokenLimitMillions.trim() !== ""
+          ? Number(formTokenLimitMillions) * 1_000_000
+          : null;
+      const rpmLimit =
+        formRpmLimit.trim() !== "" ? Number(formRpmLimit) : null;
+
+      const res = await fetch("/api/v1/reseller/users", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "upsertUser",
           userId: formUserId.trim(),
-          userName: formUserName.trim(),
+          userName: formUserName.trim() || formUserId.trim(),
           userEmail: formUserEmail.trim(),
-          planTier: formPlanTier.trim() || "Free",
-          allowedModels: allowAllModels ? [] : selectedModels,
+          plan: formPlanTier.trim() || "Free",
           tokenBudget,
           rpmLimit,
-          expiresAt,
         }),
       });
 
       const data = await res.json();
       if (!res.ok || !data.success) {
-        throw new Error(data.error?.message || data.error || "Failed to create user API key");
+        throw new Error(data.error?.message || data.error || "Failed to add user");
       }
 
-      setShowCreateModal(false);
-      setCreatedKeyResult(data.userKey);
+      setShowAddUserModal(false);
+      setFormUserId("");
+      setFormUserName("");
+      setFormUserEmail("");
       loadData();
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : String(err);
-      setCreateError(message);
+      setFormError(err instanceof Error ? err.message : String(err));
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const handleSaveByokKey = async (e: React.FormEvent) => {
+  // Handler: Toggle BYOK Pause
+  const handleToggleByokPause = async (item: UserByokKeyEntry) => {
+    const newPaused = !item.isPaused;
+    try {
+      const res = await fetch("/api/v1/reseller/users", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "pauseByok",
+          userId: item.userId,
+          providerId: item.providerId,
+          paused: newPaused,
+        }),
+      });
+      if (res.ok) {
+        setByokKeys((prev) =>
+          prev.map((k) => (k.id === item.id ? { ...k, isPaused: newPaused } : k))
+        );
+      }
+    } catch (e) {
+      console.error("Failed to toggle BYOK status", e);
+    }
+  };
+
+  // Handler: Delete BYOK Key
+  const handleDeleteByokKey = async (id: number) => {
+    if (!confirm("Are you sure you want to remove this attached BYOK key?")) return;
+    try {
+      const res = await fetch(`/api/v1/reseller/users?byokId=${id}`, {
+        method: "DELETE",
+      });
+      if (res.ok) {
+        setByokKeys((prev) => prev.filter((k) => k.id !== id));
+      }
+    } catch (e) {
+      console.error("Failed to delete BYOK key", e);
+    }
+  };
+
+  // Handler: Add BYOK Key Submit
+  const handleByokFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!byokFormUserId.trim()) {
-      setByokError("User ID (UID) is required.");
-      return;
-    }
-    if (!byokFormProviderId.trim()) {
-      setByokError("Provider is required.");
-      return;
-    }
-    if (!byokFormKey.trim()) {
-      setByokError("API Key is required.");
+    if (!byokFormUserId.trim() || !byokFormProviderId.trim() || !byokFormKey.trim()) {
+      setByokError("User ID, Provider, and Key are required.");
       return;
     }
 
@@ -326,7 +449,7 @@ export default function UsersPage() {
           userName: byokFormUserName.trim() || undefined,
           userEmail: byokFormUserEmail.trim() || undefined,
           providerId: byokFormProviderId.trim(),
-          maskedKey: byokFormKey.trim(),
+          apiKey: byokFormKey.trim(),
         }),
       });
 
@@ -336,232 +459,166 @@ export default function UsersPage() {
       }
 
       setShowByokModal(false);
+      setByokFormUserId("");
+      setByokFormUserName("");
+      setByokFormUserEmail("");
+      setByokFormKey("");
       loadData();
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : String(err);
-      setByokError(message);
+      setByokError(err instanceof Error ? err.message : String(err));
     } finally {
       setByokSubmitting(false);
     }
   };
 
-  const handleTogglePauseByok = async (item: UserByokKeyEntry) => {
-    const nextPaused = !item.isPaused;
-    try {
-      const res = await fetch("/api/v1/reseller/users", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          action: "pauseByok",
-          userId: item.userId,
-          providerId: item.providerId,
-          paused: nextPaused,
-        }),
-      });
-      const data = await res.json();
-      if (data.success) {
-        setByokKeys((prev) =>
-          prev.map((k) => (k.id === item.id ? { ...k, isPaused: nextPaused } : k))
-        );
-      } else {
-        alert(data.error?.message || "Failed to toggle BYOK key status");
-      }
-    } catch (err) {
-      alert("Error: " + String(err));
-    }
-  };
-
-  const handleDeleteByokKey = async (item: UserByokKeyEntry) => {
-    if (
-      !confirm(
-        `Revoke & delete BYOK key for ${item.providerId} belonging to ${
-          item.userName || item.userId
-        }?`
-      )
-    ) {
-      return;
-    }
-
-    try {
-      const res = await fetch(
-        `/api/v1/reseller/users?userId=${encodeURIComponent(
-          item.userId
-        )}&providerId=${encodeURIComponent(item.providerId)}`,
-        { method: "DELETE" }
-      );
-      const data = await res.json();
-      if (data.success) {
-        loadData();
-      } else {
-        alert(data.error?.message || "Failed to delete BYOK key");
-      }
-    } catch (err) {
-      alert("Error: " + String(err));
-    }
-  };
-
-  const handleDeleteKey = async (id: number, userName: string | null) => {
-    if (!confirm(`Are you sure you want to revoke and delete API key for ${userName || `row #${id}`}?`)) {
-      return;
-    }
-
-    try {
-      const res = await fetch(`/api/v1/reseller/users?id=${id}`, {
-        method: "DELETE",
-      });
-      const data = await res.json();
-      if (data.success) {
-        loadData();
-      } else {
-        alert(data.error?.message || "Failed to delete key");
-      }
-    } catch (err) {
-      alert("Error deleting key: " + String(err));
-    }
-  };
-
-  const toggleRevealKey = (id: number) => {
-    setRevealedKeys((prev) => ({ ...prev, [id]: !prev[id] }));
-  };
-
-  // Filter keys (Tab 1)
-  const filteredKeys = useMemo(() => {
-    return userKeys.filter((k) => {
-      if (selectedPlanFilter !== "all") {
-        if (k.planTier.toLowerCase() !== selectedPlanFilter.toLowerCase()) return false;
-      }
-      if (!searchQuery.trim()) return true;
-      const q = searchQuery.toLowerCase();
-      return (
-        k.userId.toLowerCase().includes(q) ||
-        (k.userName && k.userName.toLowerCase().includes(q)) ||
-        k.userEmail.toLowerCase().includes(q) ||
-        k.apiKey.toLowerCase().includes(q)
-      );
-    });
-  }, [userKeys, searchQuery, selectedPlanFilter]);
-
-  // Filter BYOK keys (Tab 2)
-  const filteredByokKeys = useMemo(() => {
-    return byokKeys.filter((b) => {
-      if (byokProviderFilter !== "all") {
-        if (b.providerId.toLowerCase() !== byokProviderFilter.toLowerCase()) return false;
-      }
-      if (byokStatusFilter === "active" && b.isPaused) return false;
-      if (byokStatusFilter === "paused" && !b.isPaused) return false;
-
-      if (!byokSearchQuery.trim()) return true;
-      const q = byokSearchQuery.toLowerCase();
-      return (
-        b.userId.toLowerCase().includes(q) ||
-        (b.userName && b.userName.toLowerCase().includes(q)) ||
-        (b.userEmail && b.userEmail.toLowerCase().includes(q)) ||
-        b.providerId.toLowerCase().includes(q) ||
-        b.maskedKey.toLowerCase().includes(q)
-      );
-    });
-  }, [byokKeys, byokSearchQuery, byokProviderFilter, byokStatusFilter]);
-
-  // Distinct providers in BYOK
-  const distinctByokProviders = useMemo(() => {
-    const set = new Set<string>();
-    byokKeys.forEach((b) => set.add(b.providerId));
-    return Array.from(set);
-  }, [byokKeys]);
-
   if (isLoading) {
-    return <ShimmerPageLoader variant="users" />;
+    return (
+      <div className="p-6 max-w-7xl mx-auto space-y-6">
+        <ShimmerPageLoader />
+      </div>
+    );
   }
 
   return (
-    <div className="p-6 max-w-7xl mx-auto space-y-6">
+    <div className="p-4 md:p-6 max-w-7xl mx-auto space-y-6">
       {/* Page Header */}
-      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-border">
         <div>
-          <h1 className="text-2xl font-bold text-text-main flex items-center gap-2.5">
-            <span className="material-symbols-outlined text-primary text-[28px]">
-              group_add
+          <div className="flex items-center gap-2.5">
+            <span className="material-symbols-outlined text-[28px] text-action">group</span>
+            <h1 className="text-2xl font-bold text-text-main">Users & Quotas</h1>
+            <span className="px-2.5 py-0.5 text-xs font-semibold rounded-full bg-primary/10 text-primary border border-primary/20">
+              UID-Centric Quota Pool
             </span>
-            Users & API Management
-          </h1>
+          </div>
           <p className="text-sm text-text-muted mt-1">
-            Manage user accounts, issue scoped router keys, and track multi-tenant BYOK credentials.
+            Manage user accounts, quotas, plan descriptions, ban statuses, and BYOK credentials.
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
-          {activeTab === "apiKeys" ? (
-            <Button variant="primary" icon="add" onClick={handleOpenCreateModal}>
-              Issue API Key
+        {/* Action Button */}
+        <div className="flex items-center gap-2">
+          {activeTab === "users" ? (
+            <Button
+              onClick={() => {
+                setFormError(null);
+                setShowAddUserModal(true);
+              }}
+              className="flex items-center gap-1.5"
+            >
+              <span className="material-symbols-outlined text-[18px]">person_add</span>
+              Register User
             </Button>
           ) : (
-            <Button variant="primary" icon="key" onClick={handleOpenByokModal}>
+            <Button
+              onClick={() => {
+                setByokError(null);
+                setShowByokModal(true);
+              }}
+              className="flex items-center gap-1.5"
+            >
+              <span className="material-symbols-outlined text-[18px]">key</span>
               Connect BYOK Key
             </Button>
           )}
         </div>
       </div>
 
-      {/* TOP TABS: Issued API Keys vs BYOK Providers */}
-      <div className="flex items-center gap-2 border-b border-border pb-px">
+      {/* Tabs Navigation */}
+      <div className="flex items-center gap-2 border-b border-border">
         <button
-          type="button"
-          onClick={() => setActiveTab("apiKeys")}
-          className={`flex items-center gap-2 px-4 py-2.5 text-sm font-semibold border-b-2 transition-colors cursor-pointer ${
-            activeTab === "apiKeys"
+          onClick={() => setActiveTab("users")}
+          className={`flex items-center gap-2 px-4 py-2.5 text-sm font-semibold border-b-2 transition-colors ${
+            activeTab === "users"
               ? "border-primary text-primary"
               : "border-transparent text-text-muted hover:text-text-main"
           }`}
         >
-          <span className="material-symbols-outlined text-[18px]">vpn_key</span>
-          Issued API Keys
-          <span
-            className={`text-xs px-2 py-0.5 rounded-full ${
-              activeTab === "apiKeys"
-                ? "bg-primary/15 text-primary"
-                : "bg-bg-subtle text-text-muted"
-            }`}
-          >
-            {userKeys.length}
+          <span className="material-symbols-outlined text-[18px]">group</span>
+          Users & Quotas
+          <span className="ml-1 px-2 py-0.5 text-xs rounded-full bg-surface-raised border border-border text-text-muted font-normal">
+            {users.length}
           </span>
         </button>
 
         <button
-          type="button"
           onClick={() => setActiveTab("byok")}
-          className={`flex items-center gap-2 px-4 py-2.5 text-sm font-semibold border-b-2 transition-colors cursor-pointer ${
+          className={`flex items-center gap-2 px-4 py-2.5 text-sm font-semibold border-b-2 transition-colors ${
             activeTab === "byok"
-              ? "border-amber-500 text-amber-400"
+              ? "border-primary text-primary"
               : "border-transparent text-text-muted hover:text-text-main"
           }`}
         >
-          <span className="material-symbols-outlined text-[18px]">hub</span>
+          <span className="material-symbols-outlined text-[18px]">key</span>
           BYOK Providers
-          <span
-            className={`text-xs px-2 py-0.5 rounded-full ${
-              activeTab === "byok"
-                ? "bg-amber-500/15 text-amber-400"
-                : "bg-bg-subtle text-text-muted"
-            }`}
-          >
+          <span className="ml-1 px-2 py-0.5 text-xs rounded-full bg-surface-raised border border-border text-text-muted font-normal">
             {byokKeys.length}
           </span>
         </button>
       </div>
 
       {loadError && (
-        <Card className="p-4 border border-red-500/30 bg-red-500/10 text-red-400 text-sm flex items-center gap-2">
-          <span className="material-symbols-outlined text-[18px]">error</span>
-          {loadError}
-        </Card>
+        <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-sm flex items-center justify-between">
+          <span>{loadError}</span>
+          <Button size="sm" variant="ghost" onClick={loadData}>
+            Retry
+          </Button>
+        </div>
       )}
 
-      {/* ========================================================= */}
-      {/* TAB 1: ISSUED API KEYS */}
-      {/* ========================================================= */}
-      {activeTab === "apiKeys" && (
-        <>
-          {/* Filter and Search Bar */}
+      {/* TAB 1: USERS & QUOTAS */}
+      {activeTab === "users" && (
+        <div className="space-y-6">
+          {/* Metrics Overview Cards */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <Card className="p-4 flex items-center gap-3">
+              <div className="size-10 rounded-lg bg-blue-500/10 flex items-center justify-center text-blue-400">
+                <span className="material-symbols-outlined text-[24px]">group</span>
+              </div>
+              <div>
+                <p className="text-xs text-text-muted">Total Users</p>
+                <p className="text-xl font-bold text-text-main">{users.length}</p>
+              </div>
+            </Card>
+
+            <Card className="p-4 flex items-center gap-3">
+              <div className="size-10 rounded-lg bg-emerald-500/10 flex items-center justify-center text-emerald-400">
+                <span className="material-symbols-outlined text-[24px]">verified_user</span>
+              </div>
+              <div>
+                <p className="text-xs text-text-muted">Active Users</p>
+                <p className="text-xl font-bold text-text-main">
+                  {users.filter((u) => !u.isBanned).length}
+                </p>
+              </div>
+            </Card>
+
+            <Card className="p-4 flex items-center gap-3">
+              <div className="size-10 rounded-lg bg-red-500/10 flex items-center justify-center text-red-400">
+                <span className="material-symbols-outlined text-[24px]">block</span>
+              </div>
+              <div>
+                <p className="text-xs text-text-muted">Banned Users</p>
+                <p className="text-xl font-bold text-text-main">
+                  {users.filter((u) => u.isBanned).length}
+                </p>
+              </div>
+            </Card>
+
+            <Card className="p-4 flex items-center gap-3">
+              <div className="size-10 rounded-lg bg-amber-500/10 flex items-center justify-center text-amber-400">
+                <span className="material-symbols-outlined text-[24px]">vpn_key</span>
+              </div>
+              <div>
+                <p className="text-xs text-text-muted">Total Keys Issued</p>
+                <p className="text-xl font-bold text-text-main">
+                  {users.reduce((acc, u) => acc + (u.keysCount || 0), 0)}
+                </p>
+              </div>
+            </Card>
+          </div>
+
+          {/* Filter Bar */}
           <Card className="p-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div className="flex-1 max-w-md relative">
               <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-text-muted text-[18px]">
@@ -569,45 +626,63 @@ export default function UsersPage() {
               </span>
               <input
                 type="text"
-                placeholder="Search by UID, Name, Email/Phone or Key..."
+                placeholder="Search by UID, Name, Email/Phone or Plan..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full pl-9 pr-3 py-1.5 text-sm bg-bg-subtle border border-border rounded-lg text-text-main placeholder:text-text-muted/60 focus:outline-none focus:border-primary"
               />
             </div>
 
-            <div className="flex items-center gap-3">
-              <span className="text-xs text-text-muted font-medium">Plan Filter:</span>
-              <select
-                value={selectedPlanFilter}
-                onChange={(e) => setSelectedPlanFilter(e.target.value)}
-                className="px-3 py-1.5 text-sm bg-bg-subtle border border-border rounded-lg text-text-main focus:outline-none focus:border-primary"
-              >
-                <option value="all">All Plans</option>
-                <option value="free">Free</option>
-                <option value="pro">Pro</option>
-                <option value="business">Business</option>
-                <option value="enterprise">Enterprise</option>
-              </select>
+            <div className="flex flex-wrap items-center gap-3">
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-text-muted font-medium">Status:</span>
+                <select
+                  value={statusFilter}
+                  onChange={(e) => setStatusFilter(e.target.value as any)}
+                  className="px-3 py-1.5 text-sm bg-bg-subtle border border-border rounded-lg text-text-main focus:outline-none focus:border-primary"
+                >
+                  <option value="all">All Statuses</option>
+                  <option value="active">Active Only</option>
+                  <option value="banned">Banned Only</option>
+                </select>
+              </div>
+
+              {distinctPlans.length > 0 && (
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-text-muted font-medium">Plan:</span>
+                  <select
+                    value={planFilter}
+                    onChange={(e) => setPlanFilter(e.target.value)}
+                    className="px-3 py-1.5 text-sm bg-bg-subtle border border-border rounded-lg text-text-main focus:outline-none focus:border-primary capitalize"
+                  >
+                    <option value="all">All Plans</option>
+                    {distinctPlans.map((p) => (
+                      <option key={p} value={p}>
+                        {p}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
 
               <span className="text-xs text-text-muted">
-                Total: <strong>{filteredKeys.length}</strong>
+                Showing: <strong>{filteredUsers.length}</strong> of {users.length}
               </span>
             </div>
           </Card>
 
           {/* Users Table */}
-          {filteredKeys.length === 0 ? (
+          {filteredUsers.length === 0 ? (
             <Card className="p-12 text-center">
               <EmptyState
-                title="No Users or API Keys Found"
+                title="No Users Found"
                 description={
                   searchQuery
-                    ? "No users match your search criteria."
-                    : "No user API keys have been issued yet. Click 'Issue API Key' to generate one."
+                    ? "No users match your search query."
+                    : "No users registered yet. Click 'Register User' to create the first account."
                 }
-                actionLabel={!searchQuery ? "Issue First Key" : undefined}
-                onAction={!searchQuery ? handleOpenCreateModal : undefined}
+                actionLabel={!searchQuery ? "Register User" : undefined}
+                onAction={!searchQuery ? () => setShowAddUserModal(true) : undefined}
               />
             </Card>
           ) : (
@@ -620,151 +695,177 @@ export default function UsersPage() {
                       <th className="py-3 px-4">User ID (UID)</th>
                       <th className="py-3 px-4">User Name</th>
                       <th className="py-3 px-4">Email / Phone</th>
-                      <th className="py-3 px-4">API Key</th>
-                      <th className="py-3 px-4">Plan</th>
-                      <th className="py-3 px-4">Allowed Models</th>
-                      <th className="py-3 px-4">Token Limit</th>
-                      <th className="py-3 px-4">Rate Limit</th>
-                      <th className="py-3 px-4">Time / Expiry</th>
+                      <th className="py-3 px-4">Plan / Description</th>
+                      <th className="py-3 px-4 min-w-[200px]">Quota & Usage</th>
+                      <th className="py-3 px-4 text-center">Keys Generated</th>
+                      <th className="py-3 px-4 text-center">Status</th>
                       <th className="py-3 px-4 text-right">Actions</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border">
-                    {filteredKeys.map((item, index) => {
-                      const isRevealed = !!revealedKeys[item.id];
-                      const displayKey = isRevealed ? item.apiKey : maskApiKey(item.apiKey);
-                      const isCopied = copied === `key_${item.id}`;
+                    {filteredUsers.map((user, index) => {
+                      const totalBudget = user.tokenBudget || 0;
+                      const used = user.tokensUsed || 0;
+                      const percent =
+                        totalBudget > 0 ? Math.min(100, Math.round((used / totalBudget) * 100)) : 0;
+                      const modelUsageCount = user.modelUsage?.length || 0;
 
                       return (
                         <tr
-                          key={item.id}
-                          className="hover:bg-bg-subtle/30 transition-colors"
+                          key={user.id}
+                          className={`hover:bg-bg-subtle/30 transition-colors ${
+                            user.isBanned ? "bg-red-500/5 opacity-80" : ""
+                          }`}
                         >
-                          {/* # Row Number */}
+                          {/* Row # */}
                           <td className="py-3.5 px-4 text-center font-mono text-xs text-text-muted font-bold">
                             {index + 1}
                           </td>
 
-                          {/* User ID (UID) */}
-                          <td className="py-3.5 px-4 font-mono text-xs text-primary font-semibold">
-                            <span className="px-2 py-0.5 rounded bg-primary/10 border border-primary/20">
-                              {item.userId}
+                          {/* UID */}
+                          <td className="py-3.5 px-4 font-mono text-xs text-amber-400 font-semibold">
+                            <span className="px-2 py-0.5 rounded bg-amber-500/10 border border-amber-500/20">
+                              {user.id}
                             </span>
                           </td>
 
                           {/* User Name */}
                           <td className="py-3.5 px-4 font-medium text-text-main">
-                            {item.userName || "—"}
+                            {user.name || "—"}
                           </td>
 
                           {/* Email / Phone */}
                           <td className="py-3.5 px-4 text-text-muted font-mono text-xs">
-                            {item.userEmail}
-                          </td>
-
-                          {/* API Key */}
-                          <td className="py-3.5 px-4">
-                            <div className="flex items-center gap-1.5">
-                              <code className="font-mono text-xs bg-bg-subtle px-2 py-1 rounded border border-border text-text-main select-all">
-                                {displayKey}
-                              </code>
-                              <button
-                                type="button"
-                                title={isRevealed ? "Hide Key" : "Reveal Key"}
-                                onClick={() => toggleRevealKey(item.id)}
-                                className="p-1 hover:bg-bg-subtle rounded text-text-muted hover:text-text-main transition-colors"
-                              >
-                                <span className="material-symbols-outlined text-[16px]">
-                                  {isRevealed ? "visibility_off" : "visibility"}
-                                </span>
-                              </button>
-                              <button
-                                type="button"
-                                title="Copy API Key"
-                                onClick={() => copy(item.apiKey, `key_${item.id}`)}
-                                className="p-1 hover:bg-bg-subtle rounded text-text-muted hover:text-primary transition-colors"
-                              >
-                                <span className="material-symbols-outlined text-[16px]">
-                                  {isCopied ? "check" : "content_copy"}
-                                </span>
-                              </button>
-                            </div>
+                            {user.email || "—"}
                           </td>
 
                           {/* Plan */}
                           <td className="py-3.5 px-4">
                             <span
-                              className={`text-xs px-2.5 py-0.5 rounded-full font-medium border ${getPlanBadgeClass(
-                                item.planTier
+                              className={`px-2 py-0.5 text-xs font-semibold rounded-md border ${getPlanBadgeClass(
+                                user.planTier
                               )}`}
                             >
-                              {item.planTier}
+                              {user.planTier || "Free"}
                             </span>
                           </td>
 
-                          {/* Allowed Models */}
+                          {/* Quota & Usage */}
                           <td className="py-3.5 px-4">
-                            {item.allowedModels && item.allowedModels.length > 0 ? (
-                              <div className="flex flex-wrap gap-1 max-w-xs">
-                                {item.allowedModels.slice(0, 3).map((m) => (
-                                  <span
-                                    key={m}
-                                    className="text-[11px] font-mono px-1.5 py-0.5 rounded bg-bg-subtle text-text-main border border-border truncate max-w-[120px]"
-                                    title={m}
-                                  >
-                                    {m}
-                                  </span>
-                                ))}
-                                {item.allowedModels.length > 3 && (
-                                  <span
-                                    className="text-[10px] px-1 py-0.5 rounded bg-bg-subtle text-text-muted border border-border"
-                                    title={item.allowedModels.slice(3).join(", ")}
-                                  >
-                                    +{item.allowedModels.length - 3} more
+                            <div className="space-y-1.5">
+                              <div className="flex items-center justify-between text-xs">
+                                <span className="font-semibold text-text-main">
+                                  {formatTokens(user.tokenBudget)}
+                                </span>
+                                <span className="text-text-muted font-mono text-[11px]">
+                                  {user.tokenBudget
+                                    ? `${(used / 1_000_000).toFixed(1)}M used (${percent}%)`
+                                    : `${(used / 1_000_000).toFixed(1)}M used`}
+                                </span>
+                              </div>
+
+                              {user.tokenBudget && (
+                                <div className="w-full h-1.5 bg-surface-raised rounded-full overflow-hidden border border-border">
+                                  <div
+                                    className={`h-full rounded-full transition-all ${
+                                      percent >= 90
+                                        ? "bg-red-500"
+                                        : percent >= 75
+                                        ? "bg-amber-500"
+                                        : "bg-emerald-500"
+                                    }`}
+                                    style={{ width: `${percent}%` }}
+                                  />
+                                </div>
+                              )}
+
+                              <div className="flex items-center gap-2 pt-0.5">
+                                {user.rpmLimit && (
+                                  <span className="text-[10px] text-text-muted bg-surface-raised px-1.5 py-0.5 rounded border border-border">
+                                    {user.rpmLimit} RPM
                                   </span>
                                 )}
+
+                                {modelUsageCount > 0 && (
+                                  <button
+                                    onClick={() => {
+                                      setSelectedUserForUsage(user);
+                                      setShowUsageModal(true);
+                                    }}
+                                    className="text-[10px] text-primary hover:underline flex items-center gap-0.5"
+                                  >
+                                    <span className="material-symbols-outlined text-[12px]">
+                                      analytics
+                                    </span>
+                                    {modelUsageCount} model{modelUsageCount > 1 ? "s" : ""} used
+                                  </button>
+                                )}
                               </div>
-                            ) : (
-                              <span className="text-xs text-emerald-400 font-medium flex items-center gap-1">
-                                <span className="size-1.5 rounded-full bg-emerald-400 inline-block" />
-                                All Available Models
+                            </div>
+                          </td>
+
+                          {/* Keys Generated */}
+                          <td className="py-3.5 px-4 text-center">
+                            <span
+                              className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold border ${
+                                user.keysCount > 0
+                                  ? "bg-blue-500/10 text-blue-400 border-blue-500/20"
+                                  : "bg-surface-raised text-text-muted border-border"
+                              }`}
+                            >
+                              <span className="material-symbols-outlined text-[14px]">vpn_key</span>
+                              {user.keysCount} {user.keysCount === 1 ? "key" : "keys"}
+                            </span>
+                          </td>
+
+                          {/* Status (Active vs Banned toggle) */}
+                          <td className="py-3.5 px-4 text-center">
+                            <button
+                              onClick={() => handleToggleBan(user)}
+                              title={user.isBanned ? "Click to Activate User" : "Click to Ban User"}
+                              className={`px-2.5 py-1 text-xs font-semibold rounded-full border transition-all inline-flex items-center gap-1 ${
+                                user.isBanned
+                                  ? "bg-red-500/15 text-red-400 border-red-500/30 hover:bg-red-500/25"
+                                  : "bg-emerald-500/15 text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/25"
+                              }`}
+                            >
+                              <span className="material-symbols-outlined text-[14px]">
+                                {user.isBanned ? "block" : "check_circle"}
                               </span>
-                            )}
-                          </td>
-
-                          {/* Token Limit */}
-                          <td className="py-3.5 px-4 font-mono text-xs text-text-main">
-                            {formatTokens(item.tokenBudget)}
-                          </td>
-
-                          {/* Rate Limit */}
-                          <td className="py-3.5 px-4 font-mono text-xs text-text-main">
-                            {item.rpmLimit ? `${item.rpmLimit} RPM` : "Unlimited"}
-                          </td>
-
-                          {/* Expiry */}
-                          <td className="py-3.5 px-4 text-xs text-text-muted">
-                            {formatExpiry(item.expiresAt)}
+                              {user.isBanned ? "Banned" : "Active"}
+                            </button>
                           </td>
 
                           {/* Actions */}
                           <td className="py-3.5 px-4 text-right">
-                            <div className="flex items-center justify-end gap-1">
+                            <div className="flex items-center justify-end gap-1.5">
+                              {/* Edit Quota */}
                               <button
-                                type="button"
-                                title="Copy Key"
-                                onClick={() => copy(item.apiKey, `key_${item.id}`)}
-                                className="p-1.5 hover:bg-bg-subtle rounded text-text-muted hover:text-text-main transition-colors"
+                                onClick={() => handleOpenEditQuota(user)}
+                                title="Edit Plan & Quota"
+                                className="p-1.5 rounded-lg text-text-muted hover:text-text-main hover:bg-bg-subtle transition-colors"
                               >
                                 <span className="material-symbols-outlined text-[18px]">
-                                  {copied === `key_${item.id}` ? "check" : "content_copy"}
+                                  edit_note
                                 </span>
                               </button>
+
+                              {/* Issue API Key */}
                               <button
-                                type="button"
-                                title="Revoke / Delete Key"
-                                onClick={() => handleDeleteKey(item.id, item.userName)}
-                                className="p-1.5 hover:bg-red-500/10 rounded text-text-muted hover:text-red-400 transition-colors"
+                                onClick={() => handleIssueKeyForUser(user)}
+                                title="Generate API Key for this user"
+                                className="p-1.5 rounded-lg text-primary hover:text-primary/80 hover:bg-primary/10 transition-colors"
+                              >
+                                <span className="material-symbols-outlined text-[18px]">
+                                  key_vertical
+                                </span>
+                              </button>
+
+                              {/* Delete User */}
+                              <button
+                                onClick={() => handleDeleteUser(user.id)}
+                                title="Delete User & Revoke All Keys"
+                                className="p-1.5 rounded-lg text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-colors"
                               >
                                 <span className="material-symbols-outlined text-[18px]">
                                   delete
@@ -780,44 +881,54 @@ export default function UsersPage() {
               </div>
             </Card>
           )}
-        </>
+        </div>
       )}
 
-      {/* ========================================================= */}
       {/* TAB 2: BYOK PROVIDERS */}
-      {/* ========================================================= */}
       {activeTab === "byok" && (
-        <>
-          {/* Summary Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="space-y-6">
+          {/* BYOK Overview Cards */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <Card className="p-4 flex items-center gap-3">
-              <div className="size-10 rounded-lg bg-amber-500/10 flex items-center justify-center text-amber-400">
+              <div className="size-10 rounded-lg bg-blue-500/10 flex items-center justify-center text-blue-400">
                 <span className="material-symbols-outlined text-[24px]">key</span>
               </div>
               <div>
-                <p className="text-xs text-text-muted">Total Connected BYOK Keys</p>
+                <p className="text-xs text-text-muted">Total Attached Keys</p>
                 <p className="text-xl font-bold text-text-main">{byokKeys.length}</p>
               </div>
             </Card>
 
             <Card className="p-4 flex items-center gap-3">
-              <div className="size-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
-                <span className="material-symbols-outlined text-[24px]">group</span>
+              <div className="size-10 rounded-lg bg-emerald-500/10 flex items-center justify-center text-emerald-400">
+                <span className="material-symbols-outlined text-[24px]">check_circle</span>
               </div>
               <div>
-                <p className="text-xs text-text-muted">Users With BYOK</p>
+                <p className="text-xs text-text-muted">Active Keys</p>
                 <p className="text-xl font-bold text-text-main">
-                  {new Set(byokKeys.map((b) => b.userId)).size}
+                  {byokKeys.filter((b) => !b.isPaused).length}
                 </p>
               </div>
             </Card>
 
             <Card className="p-4 flex items-center gap-3">
-              <div className="size-10 rounded-lg bg-emerald-500/10 flex items-center justify-center text-emerald-400">
+              <div className="size-10 rounded-lg bg-amber-500/10 flex items-center justify-center text-amber-400">
+                <span className="material-symbols-outlined text-[24px]">pause_circle</span>
+              </div>
+              <div>
+                <p className="text-xs text-text-muted">Paused Keys</p>
+                <p className="text-xl font-bold text-text-main">
+                  {byokKeys.filter((b) => b.isPaused).length}
+                </p>
+              </div>
+            </Card>
+
+            <Card className="p-4 flex items-center gap-3">
+              <div className="size-10 rounded-lg bg-purple-500/10 flex items-center justify-center text-purple-400">
                 <span className="material-symbols-outlined text-[24px]">hub</span>
               </div>
               <div>
-                <p className="text-xs text-text-muted">Distinct Providers Used</p>
+                <p className="text-xs text-text-muted">Distinct Providers</p>
                 <p className="text-xl font-bold text-text-main">
                   {distinctByokProviders.length}
                 </p>
@@ -825,7 +936,7 @@ export default function UsersPage() {
             </Card>
           </div>
 
-          {/* BYOK Filter and Search Bar */}
+          {/* BYOK Filter Bar */}
           <Card className="p-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div className="flex-1 max-w-md relative">
               <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-text-muted text-[18px]">
@@ -846,7 +957,7 @@ export default function UsersPage() {
                 <select
                   value={byokProviderFilter}
                   onChange={(e) => setByokProviderFilter(e.target.value)}
-                  className="px-3 py-1.5 text-sm bg-bg-subtle border border-border rounded-lg text-text-main focus:outline-none focus:border-primary"
+                  className="px-3 py-1.5 text-sm bg-bg-subtle border border-border rounded-lg text-text-main focus:outline-none focus:border-primary capitalize"
                 >
                   <option value="all">All Providers</option>
                   {distinctByokProviders.map((p) => (
@@ -876,7 +987,7 @@ export default function UsersPage() {
             </div>
           </Card>
 
-          {/* BYOK Keys Table */}
+          {/* BYOK Table */}
           {filteredByokKeys.length === 0 ? (
             <Card className="p-12 text-center">
               <EmptyState
@@ -887,7 +998,7 @@ export default function UsersPage() {
                     : "No users have attached their own provider keys yet. Click 'Connect BYOK Key' to register one."
                 }
                 actionLabel={!byokSearchQuery ? "Connect BYOK Key" : undefined}
-                onAction={!byokSearchQuery ? handleOpenByokModal : undefined}
+                onAction={!byokSearchQuery ? () => setShowByokModal(true) : undefined}
               />
             </Card>
           ) : (
@@ -913,33 +1024,25 @@ export default function UsersPage() {
                       const isCopied = copied === `byok_${item.id}`;
 
                       return (
-                        <tr
-                          key={item.id}
-                          className="hover:bg-bg-subtle/30 transition-colors"
-                        >
-                          {/* Row # */}
+                        <tr key={item.id} className="hover:bg-bg-subtle/30 transition-colors">
                           <td className="py-3.5 px-4 text-center font-mono text-xs text-text-muted font-bold">
                             {index + 1}
                           </td>
 
-                          {/* UID */}
                           <td className="py-3.5 px-4 font-mono text-xs text-amber-400 font-semibold">
                             <span className="px-2 py-0.5 rounded bg-amber-500/10 border border-amber-500/20">
                               {item.userId}
                             </span>
                           </td>
 
-                          {/* User Name */}
                           <td className="py-3.5 px-4 font-medium text-text-main">
                             {item.userName || "—"}
                           </td>
 
-                          {/* Email / Phone */}
                           <td className="py-3.5 px-4 text-text-muted font-mono text-xs">
                             {item.userEmail || "—"}
                           </td>
 
-                          {/* Provider */}
                           <td className="py-3.5 px-4">
                             <div className="flex items-center gap-2">
                               <ProviderIcon providerId={item.providerId} size={20} />
@@ -949,17 +1052,15 @@ export default function UsersPage() {
                             </div>
                           </td>
 
-                          {/* Masked Key */}
                           <td className="py-3.5 px-4">
-                            <div className="flex items-center gap-1.5">
-                              <code className="font-mono text-xs bg-bg-subtle px-2 py-1 rounded border border-border text-text-main">
+                            <div className="flex items-center gap-2">
+                              <code className="text-xs font-mono bg-bg-subtle px-2 py-1 rounded border border-border text-text-main">
                                 {item.maskedKey}
                               </code>
                               <button
-                                type="button"
-                                title="Copy Masked Key"
                                 onClick={() => copy(item.maskedKey, `byok_${item.id}`)}
-                                className="p-1 hover:bg-bg-subtle rounded text-text-muted hover:text-primary transition-colors"
+                                title="Copy Masked Key"
+                                className="text-text-muted hover:text-text-main transition-colors"
                               >
                                 <span className="material-symbols-outlined text-[16px]">
                                   {isCopied ? "check" : "content_copy"}
@@ -968,52 +1069,51 @@ export default function UsersPage() {
                             </div>
                           </td>
 
-                          {/* Date Attached */}
-                          <td className="py-3.5 px-4 text-xs text-text-muted font-mono">
-                            {formatExpiry(item.createdAt)}
+                          <td className="py-3.5 px-4 text-text-muted text-xs">
+                            {new Date(item.createdAt).toLocaleDateString(undefined, {
+                              year: "numeric",
+                              month: "short",
+                              day: "numeric",
+                            })}
                           </td>
 
-                          {/* Usage */}
-                          <td className="py-3.5 px-4 text-xs font-mono text-text-muted">
-                            <div>{item.requests || 0} reqs</div>
-                            <div className="text-[11px] text-text-muted/70">
-                              {formatTokens(item.tokens)}
-                            </div>
-                          </td>
-
-                          {/* Status */}
-                          <td className="py-3.5 px-4">
-                            {item.isPaused ? (
-                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-amber-500/15 text-amber-400 border border-amber-500/30">
-                                <span className="size-1.5 rounded-full bg-amber-400" />
-                                Paused
-                              </span>
-                            ) : (
-                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
-                                <span className="size-1.5 rounded-full bg-emerald-400" />
-                                Active
+                          <td className="py-3.5 px-4 text-xs font-mono">
+                            <span className="text-text-main">{item.requests} reqs</span>
+                            {item.tokens > 0 && (
+                              <span className="text-text-muted ml-1">
+                                ({(item.tokens / 1_000_000).toFixed(2)}M)
                               </span>
                             )}
                           </td>
 
-                          {/* Actions */}
+                          <td className="py-3.5 px-4">
+                            <span
+                              className={`px-2.5 py-0.5 text-xs font-semibold rounded-full border ${
+                                item.isPaused
+                                  ? "bg-amber-500/15 text-amber-400 border-amber-500/30"
+                                  : "bg-emerald-500/15 text-emerald-400 border-emerald-500/30"
+                              }`}
+                            >
+                              {item.isPaused ? "Paused" : "Active"}
+                            </span>
+                          </td>
+
                           <td className="py-3.5 px-4 text-right">
-                            <div className="flex items-center justify-end gap-1">
+                            <div className="flex items-center justify-end gap-2">
                               <button
-                                type="button"
-                                title={item.isPaused ? "Resume Key" : "Pause Key"}
-                                onClick={() => handleTogglePauseByok(item)}
-                                className="p-1.5 hover:bg-bg-subtle rounded text-text-muted hover:text-text-main transition-colors"
+                                onClick={() => handleToggleByokPause(item)}
+                                className={`text-xs px-2.5 py-1 rounded border font-medium transition-colors ${
+                                  item.isPaused
+                                    ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/20"
+                                    : "bg-amber-500/10 border-amber-500/30 text-amber-400 hover:bg-amber-500/20"
+                                }`}
                               >
-                                <span className="material-symbols-outlined text-[18px]">
-                                  {item.isPaused ? "play_arrow" : "pause"}
-                                </span>
+                                {item.isPaused ? "Resume" : "Pause"}
                               </button>
                               <button
-                                type="button"
-                                title="Delete BYOK Key"
-                                onClick={() => handleDeleteByokKey(item)}
-                                className="p-1.5 hover:bg-red-500/10 rounded text-text-muted hover:text-red-400 transition-colors"
+                                onClick={() => handleDeleteByokKey(item.id)}
+                                title="Delete BYOK key"
+                                className="p-1 rounded text-red-400 hover:bg-red-500/10 transition-colors"
                               >
                                 <span className="material-symbols-outlined text-[18px]">
                                   delete
@@ -1029,303 +1129,333 @@ export default function UsersPage() {
               </div>
             </Card>
           )}
-        </>
+        </div>
       )}
 
-      {/* ========================================================= */}
-      {/* MODAL: ISSUE API KEY (Tab 1) */}
-      {/* ========================================================= */}
+      {/* MODAL 1: REGISTER / ADD USER */}
       <Modal
-        isOpen={showCreateModal}
-        onClose={() => setShowCreateModal(false)}
-        title="Issue User API Key"
-        size="lg"
+        isOpen={showAddUserModal}
+        onClose={() => setShowAddUserModal(false)}
+        title="Register New User & Assign Quota"
+        className="max-w-md"
       >
-        <form onSubmit={handleCreateKey} className="space-y-5">
-          {createError && (
-            <div className="p-3 bg-red-500/10 border border-red-500/30 text-red-400 text-sm rounded-lg flex items-center gap-2">
-              <span className="material-symbols-outlined text-[18px]">error</span>
-              {createError}
+        <form onSubmit={handleAddUserSubmit} className="space-y-4">
+          {formError && (
+            <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-xs">
+              {formError}
             </div>
           )}
 
-          {/* Section 1: User Identity (The 3 Required Entries) */}
-          <div className="space-y-3">
-            <h3 className="text-sm font-semibold text-text-main border-b border-border pb-1.5 flex items-center gap-1.5">
-              <span className="material-symbols-outlined text-[18px] text-primary">person</span>
-              1. User Information (Mandatory)
-            </h3>
+          <div>
+            <label className="block text-xs font-medium text-text-muted mb-1">
+              User ID (UID) <span className="text-red-400">*</span>
+            </label>
+            <input
+              type="text"
+              required
+              placeholder="e.g. usr_1001"
+              value={formUserId}
+              onChange={(e) => setFormUserId(e.target.value)}
+              className="w-full px-3 py-2 text-sm font-mono bg-bg-subtle border border-border rounded-lg text-text-main focus:outline-none focus:border-primary"
+            />
+          </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-              <div>
-                <label className="block text-xs font-medium text-text-muted mb-1">
-                  User ID (UID) <span className="text-red-400">*</span>
-                </label>
-                <input
-                  type="text"
-                  required
-                  placeholder="e.g. usr_1001"
-                  value={formUserId}
-                  onChange={(e) => setFormUserId(e.target.value)}
-                  className="w-full px-3 py-2 text-sm font-mono bg-bg-subtle border border-border rounded-lg text-text-main focus:outline-none focus:border-primary"
-                />
-              </div>
+          <div>
+            <label className="block text-xs font-medium text-text-muted mb-1">
+              User Name <span className="text-red-400">*</span>
+            </label>
+            <input
+              type="text"
+              required
+              placeholder="e.g. Hasan Ali"
+              value={formUserName}
+              onChange={(e) => setFormUserName(e.target.value)}
+              className="w-full px-3 py-2 text-sm bg-bg-subtle border border-border rounded-lg text-text-main focus:outline-none focus:border-primary"
+            />
+          </div>
 
-              <div>
-                <label className="block text-xs font-medium text-text-muted mb-1">
-                  User Name <span className="text-red-400">*</span>
-                </label>
-                <input
-                  type="text"
-                  required
-                  placeholder="e.g. Hasan Ali"
-                  value={formUserName}
-                  onChange={(e) => setFormUserName(e.target.value)}
-                  className="w-full px-3 py-2 text-sm bg-bg-subtle border border-border rounded-lg text-text-main focus:outline-none focus:border-primary"
-                />
-              </div>
+          <div>
+            <label className="block text-xs font-medium text-text-muted mb-1">
+              Email or Phone <span className="text-red-400">*</span>
+            </label>
+            <input
+              type="text"
+              required
+              placeholder="e.g. hasan@example.com / +92300..."
+              value={formUserEmail}
+              onChange={(e) => setFormUserEmail(e.target.value)}
+              className="w-full px-3 py-2 text-sm bg-bg-subtle border border-border rounded-lg text-text-main focus:outline-none focus:border-primary"
+            />
+          </div>
 
-              <div>
-                <label className="block text-xs font-medium text-text-muted mb-1">
-                  Email or Phone <span className="text-red-400">*</span>
-                </label>
-                <input
-                  type="text"
-                  required
-                  placeholder="e.g. hasan@example.com / +92300..."
-                  value={formUserEmail}
-                  onChange={(e) => setFormUserEmail(e.target.value)}
-                  className="w-full px-3 py-2 text-sm bg-bg-subtle border border-border rounded-lg text-text-main focus:outline-none focus:border-primary"
-                />
-              </div>
+          <div>
+            <label className="block text-xs font-medium text-text-muted mb-1">
+              Plan / Description
+            </label>
+            <div className="flex items-center gap-2">
+              <input
+                type="text"
+                placeholder="e.g. Free, Pro, VIP"
+                value={formPlanTier}
+                onChange={(e) => setFormPlanTier(e.target.value)}
+                className="flex-1 px-3 py-2 text-sm bg-bg-subtle border border-border rounded-lg text-text-main focus:outline-none focus:border-primary"
+              />
+              {["Free", "Pro", "VIP"].map((preset) => (
+                <button
+                  key={preset}
+                  type="button"
+                  onClick={() => setFormPlanTier(preset)}
+                  className={`text-xs px-2.5 py-1.5 rounded border transition-colors ${
+                    formPlanTier.toLowerCase() === preset.toLowerCase()
+                      ? "bg-primary text-white border-primary"
+                      : "bg-bg-subtle border-border text-text-muted hover:text-text-main"
+                  }`}
+                >
+                  {preset}
+                </button>
+              ))}
             </div>
+          </div>
 
-            {/* Plan Name */}
+          <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-xs font-medium text-text-muted mb-1">
-                Plan Name / Description
+                Token Budget (in Millions)
               </label>
-              <div className="flex items-center gap-2">
-                <input
-                  type="text"
-                  placeholder="e.g. Free, Pro, Business, VIP..."
-                  value={formPlanTier}
-                  onChange={(e) => setFormPlanTier(e.target.value)}
-                  className="flex-1 px-3 py-2 text-sm bg-bg-subtle border border-border rounded-lg text-text-main focus:outline-none focus:border-primary"
-                />
-                <div className="flex items-center gap-1">
-                  {["Free", "Pro", "Business"].map((preset) => (
-                    <button
-                      key={preset}
-                      type="button"
-                      onClick={() => setFormPlanTier(preset)}
-                      className={`text-xs px-2.5 py-1.5 rounded border transition-colors ${
-                        formPlanTier.toLowerCase() === preset.toLowerCase()
-                          ? "bg-primary text-white border-primary"
-                          : "bg-bg-subtle border-border text-text-muted hover:text-text-main"
-                      }`}
-                    >
-                      {preset}
-                    </button>
-                  ))}
-                </div>
-              </div>
+              <input
+                type="number"
+                step="any"
+                placeholder="e.g. 50 (for 50M)"
+                value={formTokenLimitMillions}
+                onChange={(e) => setFormTokenLimitMillions(e.target.value)}
+                className="w-full px-3 py-2 text-sm bg-bg-subtle border border-border rounded-lg text-text-main focus:outline-none focus:border-primary"
+              />
             </div>
-          </div>
 
-          {/* Section 2: Model Selection (From Combos & Manage Models) */}
-          <div className="space-y-3">
-            <div className="flex items-center justify-between border-b border-border pb-1.5">
-              <h3 className="text-sm font-semibold text-text-main flex items-center gap-1.5">
-                <span className="material-symbols-outlined text-[18px] text-amber-500">
-                  smart_toy
-                </span>
-                2. Model Access (Combos & Curated Models)
-              </h3>
-              <label className="flex items-center gap-2 text-xs font-medium text-text-muted cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={allowAllModels}
-                  onChange={(e) => setAllowAllModels(e.target.checked)}
-                  className="rounded border-border text-primary focus:ring-0"
-                />
-                Allow All Models & Combos (Unlimited)
+            <div>
+              <label className="block text-xs font-medium text-text-muted mb-1">
+                RPM Limit
               </label>
+              <input
+                type="number"
+                placeholder="e.g. 60"
+                value={formRpmLimit}
+                onChange={(e) => setFormRpmLimit(e.target.value)}
+                className="w-full px-3 py-2 text-sm bg-bg-subtle border border-border rounded-lg text-text-main focus:outline-none focus:border-primary"
+              />
             </div>
-
-            {!allowAllModels && (
-              <div className="p-3 bg-bg-subtle/50 border border-border rounded-lg space-y-3 max-h-56 overflow-y-auto">
-                {/* Active Combos */}
-                {availableData.combos.length > 0 && (
-                  <div>
-                    <span className="text-xs font-semibold text-amber-500 block mb-1.5">
-                      Combos ({availableData.combos.length})
-                    </span>
-                    <div className="flex flex-wrap gap-1.5">
-                      {availableData.combos.map((combo) => {
-                        const isSelected = selectedModels.includes(combo.id);
-                        return (
-                          <button
-                            key={combo.id}
-                            type="button"
-                            onClick={() => handleToggleModelSelection(combo.id)}
-                            className={`text-xs px-2.5 py-1 rounded-md border flex items-center gap-1.5 transition-colors ${
-                              isSelected
-                                ? "bg-amber-500/20 text-amber-300 border-amber-500/50"
-                                : "bg-bg-surface text-text-muted border-border hover:border-text-muted"
-                            }`}
-                          >
-                            <span className="material-symbols-outlined text-[14px]">tune</span>
-                            {combo.name}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
-
-                {/* Active Curated Models */}
-                {availableData.models.length > 0 && (
-                  <div>
-                    <span className="text-xs font-semibold text-primary block mb-1.5">
-                      Active Models from Manage Models ({availableData.models.length})
-                    </span>
-                    <div className="flex flex-wrap gap-1.5">
-                      {availableData.models.map((model) => {
-                        const isSelected = selectedModels.includes(model.id);
-                        return (
-                          <button
-                            key={model.id}
-                            type="button"
-                            onClick={() => handleToggleModelSelection(model.id)}
-                            className={`text-xs px-2.5 py-1 rounded-md border flex items-center gap-1.5 transition-colors ${
-                              isSelected
-                                ? "bg-primary/20 text-primary border-primary/50"
-                                : "bg-bg-surface text-text-muted border-border hover:border-text-muted"
-                            }`}
-                          >
-                            <span className="material-symbols-outlined text-[14px]">psychology</span>
-                            {model.name}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
-
-                {availableData.combos.length === 0 && availableData.models.length === 0 && (
-                  <p className="text-xs text-text-muted italic">
-                    No active combos or curated models found. Enable models in Manage Models or create combos.
-                  </p>
-                )}
-              </div>
-            )}
           </div>
 
-          {/* Section 3: Limits (Token limit, RPM, Duration / Time) */}
-          <div className="space-y-3">
-            <h3 className="text-sm font-semibold text-text-main border-b border-border pb-1.5 flex items-center gap-1.5">
-              <span className="material-symbols-outlined text-[18px] text-emerald-400">speed</span>
-              3. Limits (Leave blank for Unlimited)
-            </h3>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-              {/* Token Limit */}
-              <div>
-                <label className="block text-xs font-medium text-text-muted mb-1">
-                  Token Budget (Millions)
-                </label>
-                <input
-                  type="number"
-                  step="any"
-                  min="0"
-                  placeholder="e.g. 50 (50M) — Blank = Unlimited"
-                  value={formTokenLimitMillions}
-                  onChange={(e) => setFormTokenLimitMillions(e.target.value)}
-                  className="w-full px-3 py-2 text-sm bg-bg-subtle border border-border rounded-lg text-text-main focus:outline-none focus:border-primary"
-                />
-              </div>
-
-              {/* Rate Limit */}
-              <div>
-                <label className="block text-xs font-medium text-text-muted mb-1">
-                  Requests Per Minute (RPM)
-                </label>
-                <input
-                  type="number"
-                  min="1"
-                  placeholder="e.g. 60 — Blank = Unlimited"
-                  value={formRpmLimit}
-                  onChange={(e) => setFormRpmLimit(e.target.value)}
-                  className="w-full px-3 py-2 text-sm bg-bg-subtle border border-border rounded-lg text-text-main focus:outline-none focus:border-primary"
-                />
-              </div>
-
-              {/* Expiry Duration */}
-              <div>
-                <label className="block text-xs font-medium text-text-muted mb-1">
-                  Time Validity / Expiration
-                </label>
-                <select
-                  value={formExpiryPreset}
-                  onChange={(e) => setFormExpiryPreset(e.target.value)}
-                  className="w-full px-3 py-2 text-sm bg-bg-subtle border border-border rounded-lg text-text-main focus:outline-none focus:border-primary"
-                >
-                  <option value="unlimited">Unlimited Time</option>
-                  <option value="7d">7 Days</option>
-                  <option value="30d">30 Days</option>
-                  <option value="90d">90 Days</option>
-                  <option value="1y">1 Year</option>
-                  <option value="custom">Custom Date...</option>
-                </select>
-              </div>
-            </div>
-
-            {formExpiryPreset === "custom" && (
-              <div>
-                <label className="block text-xs font-medium text-text-muted mb-1">
-                  Custom Expiration Date
-                </label>
-                <input
-                  type="datetime-local"
-                  value={formCustomExpiry}
-                  onChange={(e) => setFormCustomExpiry(e.target.value)}
-                  className="w-full px-3 py-2 text-sm bg-bg-subtle border border-border rounded-lg text-text-main focus:outline-none focus:border-primary"
-                />
-              </div>
-            )}
-          </div>
-
-          {/* Modal Actions */}
-          <div className="flex items-center justify-end gap-3 pt-3 border-t border-border">
+          <div className="flex items-center justify-end gap-2 pt-3 border-t border-border">
             <Button
-              variant="ghost"
               type="button"
-              onClick={() => setShowCreateModal(false)}
+              variant="ghost"
+              onClick={() => setShowAddUserModal(false)}
               disabled={isSubmitting}
             >
               Cancel
             </Button>
-            <Button variant="primary" type="submit" disabled={isSubmitting}>
-              {isSubmitting ? "Generating..." : "Generate API Key"}
+            <Button type="submit" disabled={isSubmitting}>
+              {isSubmitting ? "Saving..." : "Save User"}
             </Button>
           </div>
         </form>
       </Modal>
 
-      {/* ========================================================= */}
-      {/* MODAL: CONNECT BYOK KEY (Tab 2) */}
-      {/* ========================================================= */}
+      {/* MODAL 2: EDIT USER QUOTA */}
+      <Modal
+        isOpen={showEditQuotaModal}
+        onClose={() => setShowEditQuotaModal(false)}
+        title={`Update Quota — ${selectedUserForEdit?.name || selectedUserForEdit?.id}`}
+        className="max-w-md"
+      >
+        <form onSubmit={handleSaveEditQuota} className="space-y-4">
+          <div>
+            <label className="block text-xs font-medium text-text-muted mb-1">
+              Plan / Description
+            </label>
+            <input
+              type="text"
+              value={editPlanTier}
+              onChange={(e) => setEditPlanTier(e.target.value)}
+              className="w-full px-3 py-2 text-sm bg-bg-subtle border border-border rounded-lg text-text-main focus:outline-none focus:border-primary"
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-medium text-text-muted mb-1">
+                Token Budget (Millions)
+              </label>
+              <input
+                type="number"
+                step="any"
+                placeholder="e.g. 50 (or empty for unlimited)"
+                value={editTokenLimitMillions}
+                onChange={(e) => setEditTokenLimitMillions(e.target.value)}
+                className="w-full px-3 py-2 text-sm bg-bg-subtle border border-border rounded-lg text-text-main focus:outline-none focus:border-primary"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-medium text-text-muted mb-1">
+                RPM Limit
+              </label>
+              <input
+                type="number"
+                placeholder="e.g. 60 (or empty for unlimited)"
+                value={editRpmLimit}
+                onChange={(e) => setEditRpmLimit(e.target.value)}
+                className="w-full px-3 py-2 text-sm bg-bg-subtle border border-border rounded-lg text-text-main focus:outline-none focus:border-primary"
+              />
+            </div>
+          </div>
+
+          <div className="p-3 rounded-lg bg-surface-raised border border-border">
+            <label className="flex items-center gap-2 cursor-pointer text-xs text-text-main">
+              <input
+                type="checkbox"
+                checked={editResetUsage}
+                onChange={(e) => setEditResetUsage(e.target.checked)}
+                className="rounded border-border text-primary focus:ring-0"
+              />
+              <span>
+                <strong>Reset tokens used to 0</strong> (New billing cycle / top-up)
+              </span>
+            </label>
+          </div>
+
+          <div className="flex items-center justify-end gap-2 pt-3 border-t border-border">
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={() => setShowEditQuotaModal(false)}
+              disabled={isUpdatingQuota}
+            >
+              Cancel
+            </Button>
+            <Button type="submit" disabled={isUpdatingQuota}>
+              {isUpdatingQuota ? "Updating..." : "Update Quota"}
+            </Button>
+          </div>
+        </form>
+      </Modal>
+
+      {/* MODAL 3: MODEL USAGE BREAKDOWN */}
+      <Modal
+        isOpen={showUsageModal}
+        onClose={() => setShowUsageModal(false)}
+        title={`Model-wise Token Breakdown — ${selectedUserForUsage?.name || selectedUserForUsage?.id}`}
+        className="max-w-lg"
+      >
+        <div className="space-y-4">
+          <div className="p-3 rounded-lg bg-surface-raised border border-border flex items-center justify-between text-xs">
+            <div>
+              <span className="text-text-muted">Total Budget: </span>
+              <strong className="text-text-main">{formatTokens(selectedUserForUsage?.tokenBudget || null)}</strong>
+            </div>
+            <div>
+              <span className="text-text-muted">Total Consumed: </span>
+              <strong className="text-amber-400">
+                {((selectedUserForUsage?.tokensUsed || 0) / 1_000_000).toFixed(2)}M
+              </strong>
+            </div>
+          </div>
+
+          {selectedUserForUsage?.modelUsage && selectedUserForUsage.modelUsage.length > 0 ? (
+            <div className="rounded-lg border border-border overflow-hidden">
+              <table className="w-full text-left text-xs">
+                <thead>
+                  <tr className="bg-bg-subtle border-b border-border text-text-muted font-semibold">
+                    <th className="py-2.5 px-3">Model</th>
+                    <th className="py-2.5 px-3 text-right">Tokens Consumed</th>
+                    <th className="py-2.5 px-3 text-right">Requests</th>
+                    <th className="py-2.5 px-3 text-right">Last Used</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border">
+                  {selectedUserForUsage.modelUsage.map((m, i) => (
+                    <tr key={i} className="hover:bg-bg-subtle/30">
+                      <td className="py-2.5 px-3 font-mono font-medium text-text-main">
+                        {m.model}
+                      </td>
+                      <td className="py-2.5 px-3 text-right font-mono text-amber-400 font-semibold">
+                        {(m.tokensUsed / 1_000_000).toFixed(3)}M
+                      </td>
+                      <td className="py-2.5 px-3 text-right font-mono text-text-muted">
+                        {m.requests}
+                      </td>
+                      <td className="py-2.5 px-3 text-right text-text-muted">
+                        {m.lastUsedAt ? new Date(m.lastUsedAt).toLocaleDateString() : "—"}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <div className="py-8 text-center text-text-muted text-xs">
+              No model usage recorded for this user yet.
+            </div>
+          )}
+
+          <div className="flex justify-end pt-2">
+            <Button variant="ghost" onClick={() => setShowUsageModal(false)}>
+              Close
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* MODAL 4: KEY GENERATED POPUP */}
+      <Modal
+        isOpen={showKeyResultModal}
+        onClose={() => setShowKeyResultModal(false)}
+        title="API Key Issued Successfully"
+        className="max-w-md"
+      >
+        <div className="space-y-4">
+          <p className="text-xs text-text-muted">
+            A new API key has been generated for UID <strong>{generatedKeyResult?.userId}</strong>.
+            This key uses the user&apos;s shared account quota.
+          </p>
+
+          <div className="p-3 rounded-lg bg-surface-raised border border-border">
+            <label className="block text-[11px] font-semibold text-text-muted uppercase mb-1">
+              API Key:
+            </label>
+            <div className="flex items-center gap-2">
+              <input
+                type="text"
+                readOnly
+                value={generatedKeyResult?.key || ""}
+                className="w-full px-2.5 py-1.5 text-xs font-mono bg-bg-subtle border border-border rounded text-text-main select-all"
+              />
+              <Button
+                size="sm"
+                onClick={() => generatedKeyResult?.key && copy(generatedKeyResult.key)}
+              >
+                {copied ? "Copied!" : "Copy"}
+              </Button>
+            </div>
+          </div>
+
+          <div className="flex justify-end pt-2">
+            <Button onClick={() => setShowKeyResultModal(false)}>Done</Button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* MODAL 5: CONNECT BYOK KEY */}
       <Modal
         isOpen={showByokModal}
         onClose={() => setShowByokModal(false)}
-        title="Connect User BYOK Key"
-        size="md"
+        title="Connect BYOK Provider Key"
+        className="max-w-md"
       >
-        <form onSubmit={handleSaveByokKey} className="space-y-4 py-1">
+        <form onSubmit={handleByokFormSubmit} className="space-y-4">
           {byokError && (
-            <div className="p-3 bg-red-500/10 border border-red-500/30 text-red-400 text-sm rounded-lg flex items-center gap-2">
-              <span className="material-symbols-outlined text-[18px]">error</span>
+            <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-xs">
               {byokError}
             </div>
           )}
@@ -1344,11 +1474,9 @@ export default function UsersPage() {
             />
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-medium text-text-muted mb-1">
-                User Name (Optional)
-              </label>
+              <label className="block text-xs font-medium text-text-muted mb-1">User Name</label>
               <input
                 type="text"
                 placeholder="e.g. Hasan Ali"
@@ -1358,9 +1486,7 @@ export default function UsersPage() {
               />
             </div>
             <div>
-              <label className="block text-xs font-medium text-text-muted mb-1">
-                Email or Phone (Optional)
-              </label>
+              <label className="block text-xs font-medium text-text-muted mb-1">Email / Phone</label>
               <input
                 type="text"
                 placeholder="e.g. hasan@example.com"
@@ -1376,144 +1502,58 @@ export default function UsersPage() {
               Provider <span className="text-red-400">*</span>
             </label>
             <select
+              required
               value={byokFormProviderId}
               onChange={(e) => setByokFormProviderId(e.target.value)}
               className="w-full px-3 py-2 text-sm bg-bg-subtle border border-border rounded-lg text-text-main focus:outline-none focus:border-primary capitalize"
             >
-              {publishedProviders.length > 0 ? (
-                publishedProviders.map((pid) => (
-                  <option key={pid} value={pid}>
-                    {pid}
-                  </option>
-                ))
-              ) : (
-                <>
-                  <option value="anthropic">Anthropic (Claude)</option>
-                  <option value="openai">OpenAI (ChatGPT)</option>
-                  <option value="gemini">Google Gemini</option>
-                  <option value="deepseek">DeepSeek</option>
-                  <option value="groq">Groq</option>
-                  <option value="mistral">Mistral AI</option>
-                  <option value="openrouter">OpenRouter</option>
-                </>
-              )}
+              <option value="">Select a provider...</option>
+              {publishedProviders.length > 0
+                ? publishedProviders.map((p) => (
+                    <option key={p} value={p}>
+                      {p}
+                    </option>
+                  ))
+                : ["openai", "anthropic", "gemini", "deepseek", "groq"].map((p) => (
+                    <option key={p} value={p}>
+                      {p}
+                    </option>
+                  ))}
             </select>
           </div>
 
           <div>
             <label className="block text-xs font-medium text-text-muted mb-1">
-              API Key (BYOK) <span className="text-red-400">*</span>
+              API Key <span className="text-red-400">*</span>
             </label>
             <input
-              type="text"
+              type="password"
               required
-              placeholder="e.g. sk-ant-api03-... or sk-proj-..."
+              placeholder="e.g. sk-ant-api03-..."
               value={byokFormKey}
               onChange={(e) => setByokFormKey(e.target.value)}
               className="w-full px-3 py-2 text-sm font-mono bg-bg-subtle border border-border rounded-lg text-text-main focus:outline-none focus:border-primary"
             />
             <p className="text-[11px] text-text-muted mt-1">
-              The user&apos;s personal key for this provider. Requests using BYOK routing will direct through this credential.
+              CheapRoute will automatically mask this key upon saving.
             </p>
           </div>
 
-          <div className="flex items-center justify-end gap-3 pt-3 border-t border-border">
+          <div className="flex items-center justify-end gap-2 pt-3 border-t border-border">
             <Button
-              variant="ghost"
               type="button"
+              variant="ghost"
               onClick={() => setShowByokModal(false)}
               disabled={byokSubmitting}
             >
               Cancel
             </Button>
-            <Button variant="primary" type="submit" disabled={byokSubmitting}>
+            <Button type="submit" disabled={byokSubmitting}>
               {byokSubmitting ? "Connecting..." : "Connect Key"}
             </Button>
           </div>
         </form>
       </Modal>
-
-      {/* ========================================================= */}
-      {/* MODAL: KEY GENERATED SUCCESS (Tab 1) */}
-      {/* ========================================================= */}
-      {createdKeyResult && (
-        <Modal
-          isOpen={!!createdKeyResult}
-          onClose={() => setCreatedKeyResult(null)}
-          title="API Key Generated Successfully"
-          size="md"
-        >
-          <div className="space-y-4 py-2">
-            <div className="p-3 bg-emerald-500/10 border border-emerald-500/30 rounded-lg flex items-start gap-3 text-emerald-400">
-              <span className="material-symbols-outlined text-[24px]">check_circle</span>
-              <div className="text-xs">
-                <p className="font-semibold text-emerald-300">Key is Active & Live</p>
-                <p className="mt-0.5 text-text-muted">
-                  Please copy this key now. It can immediately be used for API requests at{" "}
-                  <code>/v1/chat/completions</code>.
-                </p>
-              </div>
-            </div>
-
-            <div className="space-y-1">
-              <label className="text-xs font-medium text-text-muted">Generated API Key</label>
-              <div className="flex items-center gap-2">
-                <input
-                  type="text"
-                  readOnly
-                  value={createdKeyResult.apiKey}
-                  className="w-full px-3 py-2 font-mono text-sm bg-bg-subtle border border-border rounded-lg text-primary select-all"
-                />
-                <Button
-                  variant="primary"
-                  onClick={() => copy(createdKeyResult.apiKey, "generated_key_modal")}
-                >
-                  {copied === "generated_key_modal" ? "Copied!" : "Copy"}
-                </Button>
-              </div>
-            </div>
-
-            <div className="p-3 bg-bg-subtle border border-border rounded-lg text-xs space-y-1.5 font-mono">
-              <div className="flex justify-between">
-                <span className="text-text-muted">User ID:</span>
-                <span className="text-text-main font-semibold">{createdKeyResult.userId}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-text-muted">User Name:</span>
-                <span className="text-text-main">{createdKeyResult.userName}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-text-muted">Email / Phone:</span>
-                <span className="text-text-main">{createdKeyResult.userEmail}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-text-muted">Plan:</span>
-                <span className="text-text-main font-semibold">{createdKeyResult.planTier}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-text-muted">Token Limit:</span>
-                <span className="text-text-main">{formatTokens(createdKeyResult.tokenBudget)}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-text-muted">RPM Limit:</span>
-                <span className="text-text-main">
-                  {createdKeyResult.rpmLimit ? `${createdKeyResult.rpmLimit} RPM` : "Unlimited"}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-text-muted">Expiry:</span>
-                <span className="text-text-main">{formatExpiry(createdKeyResult.expiresAt)}</span>
-              </div>
-            </div>
-
-            <div className="flex justify-end pt-2">
-              <Button variant="secondary" onClick={() => setCreatedKeyResult(null)}>
-                Done
-              </Button>
-            </div>
-          </div>
-        </Modal>
-      )}
     </div>
   );
 }

@@ -47,135 +47,98 @@ flowchart TD
 
 ---
 
-## Tab 1: Issue & Manage User Keys (CRUD)
+## Tab 1: User Account, Quota Management & Key Issuance (CRUD)
 
-Is tab ke zariye aapki reseller website naye users ko CheapRoute ki scoped API keys issue karti hai, unke token limits aur model permissions set karti hai, aur keys ko revoke/delete karti hai.
+Is tab ke zariye aapki reseller website naye users ko register karti hai, unka quota assign/update karti hai, keys issue karti hai, aur account active/ban manage karti hai.
 
-### 1.1 Issue a New Scoped API Key for User
+### 1.1 Register User Account with Initial Quota (Free Signup)
+Jab user aapki reseller website par sign up kare:
 * **Method:** `POST`
 * **Endpoint:** `/api/v1/reseller/users`
 * **Content-Type:** `application/json`
 
-#### Request Body Parameters:
-| Field | Type | Required | Description |
-| :--- | :--- | :---: | :--- |
-| `userId` | `string` | **Yes** | User ka unique ID ya UID (e.g. `usr_1001` ya database ID) |
-| `userName` | `string` | **Yes** | User ka poora naam (e.g. `Hasan Ali`) |
-| `userEmail` | `string` | **Yes** | User ka Email address ya Phone number |
-| `plan` | `string` | No | Plan ka naam (e.g. `Free`, `Pro`, `VIP`, `Business`) |
-| `allowedModels` | `string[]`| No | Allowed models/combos ki array. Khali array `[]` ka matlab **All Models** |
-| `tokenBudget` | `number` | No | Token limit **Millions** mein (e.g. `20` = 20 Million tokens). Default `null` (Unlimited) |
-| `rpmLimit` | `number` | No | Requests Per Minute limit (e.g. `60`). Default `null` (Unlimited) |
-| `expiresAt` | `string` | No | ISO Date timestamp jab key expire hogi. Default `null` (Never expires) |
+```json
+{
+  "action": "upsertUser",
+  "userId": "usr_1001",
+  "userName": "Hasan Ali",
+  "userEmail": "hasan@example.com",
+  "plan": "Free",
+  "tokenBudget": 10,
+  "rpmLimit": 30
+}
+```
 
-#### Sample Request JSON:
+---
+
+### 1.2 Update User Quota (Plan Purchase / Upgrade / Renewal)
+Jab user aapki website par Pro/VIP plan khareede ya admin quota top-up kare:
+* **Method:** `POST` ya `PATCH`
+* **Endpoint:** `/api/v1/reseller/users`
+
+```json
+{
+  "action": "updateQuota",
+  "userId": "usr_1001",
+  "plan": "Pro",
+  "tokenBudget": 50,
+  "rpmLimit": 60,
+  "resetUsage": false
+}
+```
+*Note:* Agar billing cycle restart karni ho aur purana usage zero karna ho to `"resetUsage": true` pass karein.
+
+---
+
+### 1.3 Issue an API Key for User
+User apne portal par jitni marzi keys banaye, sab isi user ke account quota se chalengi:
+* **Method:** `POST`
+* **Endpoint:** `/api/v1/reseller/users`
+
 ```json
 {
   "userId": "usr_1001",
   "userName": "Hasan Ali",
   "userEmail": "hasan@example.com",
-  "plan": "Pro",
-  "allowedModels": ["auto", "openai/gpt-4o", "anthropic/claude-3-5-sonnet"],
-  "tokenBudget": 20,
-  "rpmLimit": 60,
-  "expiresAt": "2026-12-31T23:59:59Z"
+  "plan": "Pro"
 }
 ```
-
-#### Sample Response (201 Created):
-```json
-{
-  "success": true,
-  "userKey": {
-    "id": 12,
-    "userId": "usr_1001",
-    "userName": "Hasan Ali",
-    "userEmail": "hasan@example.com",
-    "planTier": "Pro",
-    "apiKey": "sk-cc835689c755e1c0-daa8ef-259ca21c",
-    "apiKeyId": "1d75c12f-c1a9-4307-91e2-5f221ab3105b",
-    "allowedModels": ["auto", "openai/gpt-4o", "anthropic/claude-3-5-sonnet"],
-    "tokenBudget": 20,
-    "tokensUsed": 0,
-    "rpmLimit": 60,
-    "expiresAt": "2026-12-31T23:59:59Z",
-    "isActive": true,
-    "createdAt": "2026-10-15T18:00:00.000Z"
-  },
-  "apiKey": "sk-cc835689c755e1c0-daa8ef-259ca21c"
-}
-```
-
-#### Code Examples:
-
-**cURL:**
-```bash
-curl -X POST https://api.tokendeal.cloud/api/v1/reseller/users \
-  -H "Content-Type: application/json" \
-  -d '{
-    "userId": "usr_1001",
-    "userName": "Hasan Ali",
-    "userEmail": "hasan@example.com",
-    "plan": "Pro",
-    "allowedModels": ["auto", "openai/gpt-4o"],
-    "tokenBudget": 20,
-    "rpmLimit": 60
-  }'
-```
-
-**Node.js / JavaScript:**
-```javascript
-const response = await fetch("https://api.tokendeal.cloud/api/v1/reseller/users", {
-  method: "POST",
-  headers: { "Content-Type": "application/json" },
-  body: JSON.stringify({
-    userId: "usr_1001",
-    userName: "Hasan Ali",
-    userEmail: "hasan@example.com",
-    plan: "Pro",
-    allowedModels: ["auto", "openai/gpt-4o"],
-    tokenBudget: 20,
-    rpmLimit: 60
-  })
-});
-const data = await response.json();
-console.log("Issued Key:", data.apiKey);
-```
-
-**Python:**
-```python
-import requests
-
-res = requests.post(
-    "https://api.tokendeal.cloud/api/v1/reseller/users",
-    json={
-        "userId": "usr_1001",
-        "userName": "Hasan Ali",
-        "userEmail": "hasan@example.com",
-        "plan": "Pro",
-        "allowedModels": ["auto", "openai/gpt-4o"],
-        "tokenBudget": 20,
-        "rpmLimit": 60
-    }
-)
-print("Issued Key:", res.json()["apiKey"])
-```
+*Response:* `{ "success": true, "apiKey": "sk-cc835689..." }`
 
 ---
 
-### 1.2 List All Issued Keys & Users
+### 1.4 List All Users with Live Quotas & Model Breakdown
 * **Method:** `GET`
 * **Endpoint:** `/api/v1/reseller/users`
 
 Return karta hai:
-- `userKeys`: Tamam issued CheapRoute API keys with metrics.
+- `users`: Tamam registered users with:
+  - `id`: UID
+  - `name`, `email`
+  - `planTier`: "Free", "Pro", etc.
+  - `tokenBudget`: Total quota in Millions
+  - `tokensUsed`: Total tokens consumed
+  - `keysCount`: Total keys generated by this user (1, 2, 3...)
+  - `isBanned`: `true` or `false`
+  - `modelUsage`: Kis model par kitne tokens kharch huye:
+    `[ { "model": "openai/gpt-4o", "tokensUsed": 10000000, "requests": 120 } ]`
 - `byokKeys`: Users ki attached personal BYOK provider keys.
-- `availableModels`: Active combos aur curated models ki list.
-- `publishedProviders`: Wo providers jin par BYOK allow hai.
+- `availableModels`: Active combos aur curated models.
 
-```bash
-curl https://api.tokendeal.cloud/api/v1/reseller/users
+---
+
+### 1.5 Toggle User Ban Status (Active vs Banned)
+* **Method:** `PATCH`
+* **Endpoint:** `/api/v1/reseller/users`
+
+```json
+{
+  "action": "setBanStatus",
+  "userId": "usr_1001",
+  "isBanned": true
+}
 ```
+*Note:* Ban karne par user ki tamam keys foran 403 Forbidden return karne lagengi. Unban karne ke liye `"isBanned": false` bhejein.
 
 ---
 
