@@ -19,6 +19,7 @@ import {
 import { CategoryDot } from "./CategoryDot";
 import { isCheaperInferenceProviderId, isKimiPartnerProviderId } from "../featuredProviders";
 import { useOpenRouterProviderStat } from "../context/openRouterProviderStatsContext";
+import { addRecentProvider } from "@/lib/providers/recentProviders";
 
 interface ProviderStats {
   total?: number;
@@ -93,6 +94,7 @@ interface ProviderCardProps {
   onCardClick?: (id: string) => void;
   onEdit?: (id: string) => void;
   onDelete?: (id: string) => void;
+  onOpenGuide?: (id: string, name: string) => void;
 }
 
 const DOT_COLORS: Record<string, string> = {
@@ -253,7 +255,17 @@ export type ProviderCardHandle = {
 };
 
 const ProviderCard = forwardRef<ProviderCardHandle, ProviderCardProps>(function ProviderCard(
-  { providerId, provider, stats, authType = "apikey", onToggle, onCardClick, onEdit, onDelete },
+  {
+    providerId,
+    provider,
+    stats,
+    authType = "apikey",
+    onToggle,
+    onCardClick,
+    onEdit,
+    onDelete,
+    onOpenGuide,
+  },
   ref
 ) {
   const t = useTranslations("providers");
@@ -466,8 +478,9 @@ const ProviderCard = forwardRef<ProviderCardHandle, ProviderCardProps>(function 
   };
 
   const handleCardClick = useCallback(() => {
+    addRecentProvider(providerId, provider.name);
     onCardClick?.(providerId);
-  }, [onCardClick, providerId]);
+  }, [onCardClick, providerId, provider.name]);
 
   return (
     <div ref={innerRef} id={`provider-${providerId}`} className="flex flex-col h-full">
@@ -526,13 +539,22 @@ const ProviderCard = forwardRef<ProviderCardHandle, ProviderCardProps>(function 
                   <ProviderIcon providerId={provider.id || providerId} size={24} type="color" />
                 )}
               </div>
-              <h3 className="text-sm font-semibold leading-snug flex-1 min-w-0">
+              <h3 className="text-sm font-semibold leading-snug flex-1 min-w-0 flex items-center gap-1.5 flex-wrap">
                 <span
-                  className={`block break-words ${provider.deprecated ? "line-through opacity-60" : ""}`}
+                  className={`break-words ${provider.deprecated ? "line-through opacity-60" : ""}`}
                   title={provider.name}
                 >
                   {provider.name}
                 </span>
+                {(provider.hasFree === true || authType === "free" || authType === "no-auth") && (
+                  <span
+                    className="inline-flex items-center gap-1 rounded-full border border-emerald-500/30 bg-emerald-500/15 px-1.5 py-0.2 text-[9px] font-bold uppercase tracking-wider text-emerald-400 shrink-0 shadow-sm"
+                    title={provider.freeNote || "Offers free models or zero-cost free tier"}
+                  >
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                    FREE
+                  </span>
+                )}
               </h3>
               <div className="flex items-center gap-1 shrink-0 pt-0.5">
                 {provider.deprecated && (
@@ -559,6 +581,29 @@ const ProviderCard = forwardRef<ProviderCardHandle, ProviderCardProps>(function 
                     info
                   </button>
                 )}
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    if (onOpenGuide) {
+                      onOpenGuide(providerId, provider.name);
+                    } else if (typeof window !== "undefined") {
+                      window.dispatchEvent(
+                        new CustomEvent("cheaproute:open_provider_guide", {
+                          detail: { id: providerId, name: provider.name },
+                        })
+                      );
+                    } else {
+                      router.push(`/dashboard/providers/${encodeURIComponent(providerId)}?action=guide`);
+                    }
+                  }}
+                  className="size-5 rounded-md flex items-center justify-center border border-border/70 hover:border-sky-500/70 bg-transparent hover:bg-sky-500/10 text-text-muted hover:text-sky-400 transition-all shadow-2xs"
+                  title="Provider Info, Limits & How to Connect"
+                  aria-label="Provider Info, Limits & How to Connect"
+                >
+                  <span className="material-symbols-outlined text-[13px] leading-none">info</span>
+                </button>
                 <CategoryDot
                   color={DOT_COLORS[authType] || DOT_COLORS.apikey}
                   hasFree={provider.hasFree === true}

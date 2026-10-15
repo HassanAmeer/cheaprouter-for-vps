@@ -127,7 +127,7 @@ async function testComboTarget(
         latencyMs: 0,
       });
     }
-    if (requiresWebSessionCredential(target.provider)) {
+    if (requiresWebSessionCredential(target.provider) && target.provider !== "duckduckgo-web") {
       return buildComboTestResult(target, {
         status: "error",
         error:

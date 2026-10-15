@@ -38,6 +38,8 @@ import AddApiKeyModal from "./components/modals/AddApiKeyModal";
 import KimiCodeAuthMethodModal from "./components/KimiCodeAuthMethodModal";
 import SiliconFlowEndpointModal from "./components/SiliconFlowEndpointModal";
 import { RemoteTunnelBanner } from "@/shared/components/RemoteTunnelBanner";
+import { CupertinoProviderGuideSheet } from "@/shared/components/CupertinoProviderGuideSheet";
+import { addRecentProvider } from "@/lib/providers/recentProviders";
 
 export default function ProviderDetailPageClient() {
   const router = useRouter();
@@ -50,6 +52,7 @@ export default function ProviderDetailPageClient() {
   const [showAddApiKeyModal, setShowAddApiKeyModal] = useState(false);
   const [showKimiAuthMethodModal, setShowKimiAuthMethodModal] = useState(false);
   const [showSiliconFlowEndpointModal, setShowSiliconFlowEndpointModal] = useState(false);
+  const [showGuideSheet, setShowGuideSheet] = useState(false);
   const [siliconFlowInitialBaseUrl, setSiliconFlowInitialBaseUrl] = useState<string | undefined>(
     undefined
   );
@@ -108,6 +111,12 @@ export default function ProviderDetailPageClient() {
       openAiCompatibleName: t("openaiCompatibleName"),
     },
   });
+
+  useEffect(() => {
+    if (providerId) {
+      addRecentProvider(providerId, providerInfo?.name);
+    }
+  }, [providerId, providerInfo?.name]);
 
   const [referralUrl, setReferralUrl] = useState<string | null>(null);
   useEffect(() => {
@@ -418,6 +427,7 @@ export default function ProviderDetailPageClient() {
           onOpenTutorial={() => {}}
           onConnect={openPrimaryAddFlow}
           onDisconnect={handleDisconnect}
+          onOpenGuide={() => setShowGuideSheet(true)}
           onEditProvider={providerNode ? () => setEditingProviderNode(true) : undefined}
           onTogglePause={providerNode ? handleTogglePause : undefined}
           onDeleteProvider={providerNode ? handleDeleteProvider : undefined}
@@ -433,6 +443,40 @@ export default function ProviderDetailPageClient() {
             isOpen={showCapabilityPrompt}
             onToggle={() => setShowCapabilityPrompt((prev) => !prev)}
           />
+        </div>
+      </div>
+
+      {/* ── CUPERTINO QUICK GUIDE & MODEL INFO BANNER ── */}
+      <div className="relative overflow-hidden rounded-2xl border border-sky-500/20 bg-gradient-to-r from-sky-950/40 via-[#1C1C1E]/80 to-[#1C1C1E]/60 p-4 sm:p-5 shadow-lg backdrop-blur-xl transition-all">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex items-start gap-3.5">
+            <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-sky-500/15 border border-sky-500/30 text-sky-400 shadow-inner">
+              <span className="material-symbols-outlined text-2xl">info</span>
+            </div>
+            <div>
+              <div className="flex items-center gap-2 flex-wrap">
+                <h3 className="text-sm font-semibold text-white tracking-tight">
+                  {providerInfo.name} — Quick Guide & Free Models
+                </h3>
+                <span className="rounded-full bg-sky-500/10 border border-sky-500/20 px-2 py-0.5 text-[10px] font-medium text-sky-300">
+                  Cupertino iOS Guide
+                </span>
+              </div>
+              <p className="text-xs text-white/70 mt-1 leading-relaxed max-w-2xl">
+                Bina login ya web session ke zariye model chalane ka tareeqa, CLI configuration aur live free models dekhne ke liye guide kholein.
+              </p>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => setShowGuideSheet(true)}
+            className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-sky-500 hover:bg-sky-400 text-slate-950 text-xs font-semibold shadow-md transition-all hover:scale-[1.02] active:scale-[0.98] shrink-0"
+          >
+            <span className="material-symbols-outlined text-base">menu_book</span>
+            <span>Open iOS Guide & Models</span>
+            <span className="material-symbols-outlined text-sm">arrow_forward</span>
+          </button>
         </div>
       </div>
 
@@ -551,6 +595,13 @@ export default function ProviderDetailPageClient() {
           setShowAddApiKeyModal(false);
           setSiliconFlowInitialBaseUrl(undefined);
         }}
+      />
+
+      <CupertinoProviderGuideSheet
+        isOpen={showGuideSheet}
+        onClose={() => setShowGuideSheet(false)}
+        providerId={providerId}
+        providerName={providerInfo?.name || providerId}
       />
     </div>
   );

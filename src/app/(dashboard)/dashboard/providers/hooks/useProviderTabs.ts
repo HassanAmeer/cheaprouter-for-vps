@@ -1,5 +1,6 @@
 export type ProviderTab =
   | "all-providers"
+  | "recent"
   | "connected"
   | "unconnected"
   | "reseller-api";
@@ -21,6 +22,14 @@ export const PROVIDER_TABS_CONFIG: ProviderTabsConfig = [
     descriptionKey: "allProvidersTabDesc",
     descriptionFallback: "Browse all 370+ supported providers with search and filters.",
     icon: "apps",
+  },
+  {
+    id: "recent",
+    key: "recentProvidersTab",
+    fallback: "Recent Providers",
+    descriptionKey: "recentProvidersTabDesc",
+    descriptionFallback: "Providers you recently opened or tested.",
+    icon: "history",
   },
   {
     id: "connected",

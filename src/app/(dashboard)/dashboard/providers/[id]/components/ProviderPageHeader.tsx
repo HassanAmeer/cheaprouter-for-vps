@@ -34,6 +34,7 @@ interface ProviderPageHeaderProps {
   onDeleteProvider?: () => void;
   onConnect?: () => void;
   onDisconnect?: () => void;
+  onOpenGuide?: () => void;
   isPaused?: boolean;
   t: ProviderMessageTranslator;
   /**
@@ -58,6 +59,7 @@ export default function ProviderPageHeader({
   onDeleteProvider,
   onConnect,
   onDisconnect,
+  onOpenGuide,
   isPaused = false,
   t,
   isReferralLink = false,
@@ -124,24 +126,37 @@ export default function ProviderPageHeader({
           />
         </div>
         <div>
-          {providerInfo.website ? (
-            <a
-              href={providerInfo.website}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-3xl font-semibold tracking-tight hover:underline inline-flex items-center gap-2"
-              style={{ color: providerInfo.color }}
-              title={showPartnerNote ? kimiPartnerLinkNote : undefined}
-              aria-label={
-                showPartnerNote ? `${providerInfo.name} — ${kimiPartnerLinkNote}` : undefined
-              }
-            >
-              {providerInfo.name}
-              <span className="material-symbols-outlined text-lg opacity-60">open_in_new</span>
-            </a>
-          ) : (
-            <h1 className="text-3xl font-semibold tracking-tight">{providerInfo.name}</h1>
-          )}
+          <div className="flex items-center gap-2.5">
+            {providerInfo.website ? (
+              <a
+                href={providerInfo.website}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-3xl font-semibold tracking-tight hover:underline inline-flex items-center gap-2"
+                style={{ color: providerInfo.color }}
+                title={showPartnerNote ? kimiPartnerLinkNote : undefined}
+                aria-label={
+                  showPartnerNote ? `${providerInfo.name} — ${kimiPartnerLinkNote}` : undefined
+                }
+              >
+                {providerInfo.name}
+                <span className="material-symbols-outlined text-lg opacity-60">open_in_new</span>
+              </a>
+            ) : (
+              <h1 className="text-3xl font-semibold tracking-tight">{providerInfo.name}</h1>
+            )}
+            {onOpenGuide && (
+              <button
+                type="button"
+                onClick={onOpenGuide}
+                className="size-7 rounded-md flex items-center justify-center border border-border/70 hover:border-sky-500/70 bg-transparent hover:bg-sky-500/10 text-text-muted hover:text-sky-400 transition-all shadow-2xs"
+                title="Provider Info, Limits & How to Connect"
+                aria-label="Provider Info, Limits & How to Connect"
+              >
+                <span className="material-symbols-outlined text-[18px] leading-none">info</span>
+              </button>
+            )}
+          </div>
           <div className="flex items-center gap-2 flex-wrap">
             <span
               className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium ${

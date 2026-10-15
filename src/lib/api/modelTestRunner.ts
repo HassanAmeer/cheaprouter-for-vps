@@ -40,6 +40,9 @@ const STREAMING_CHAT_TEST_MAX_TOKENS = 64;
 const RESPONSES_TEST_MAX_OUTPUT_TOKENS = 256;
 
 export function shouldSkipWebSessionModelTest(providerId: unknown): boolean {
+  if (typeof providerId === "string" && providerId.trim().toLowerCase() === "duckduckgo-web") {
+    return false;
+  }
   return (
     requiresWebSessionCredential(providerId) &&
     (typeof providerId !== "string" ||

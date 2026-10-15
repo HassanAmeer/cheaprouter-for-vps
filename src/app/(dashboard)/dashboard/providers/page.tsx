@@ -74,6 +74,8 @@ import {
   buildCompactProviderEntriesForPage,
   getCompactProviderAuthType,
 } from "./providerCompactMode";
+import { getRecentProviderIds } from "@/lib/providers/recentProviders";
+import { CupertinoProviderGuideSheet } from "@/shared/components/CupertinoProviderGuideSheet";
 
 type DashboardProviderInfo = {
   id?: string;
@@ -253,6 +255,30 @@ function ProvidersPageContent() {
     OpenRouterProviderStatsEntry[]
   >([]);
   const [activeTab, setActiveTab] = useState<ProviderTab>("all-providers");
+  const [recentProviderIds, setRecentProviderIds] = useState<string[]>([]);
+  const [guideModalProvider, setGuideModalProvider] = useState<{ id: string; name: string } | null>(null);
+
+  useEffect(() => {
+    setRecentProviderIds(getRecentProviderIds());
+    const handleRecent = () => setRecentProviderIds(getRecentProviderIds());
+    window.addEventListener("cheaproute:recent_providers_updated", handleRecent);
+
+    const handleOpenGuide = (e: Event) => {
+      const custom = e as CustomEvent<{ id: string; name: string }>;
+      if (custom.detail?.id) {
+        setGuideModalProvider({
+          id: custom.detail.id,
+          name: custom.detail.name || custom.detail.id,
+        });
+      }
+    };
+    window.addEventListener("cheaproute:open_provider_guide", handleOpenGuide);
+
+    return () => {
+      window.removeEventListener("cheaproute:recent_providers_updated", handleRecent);
+      window.removeEventListener("cheaproute:open_provider_guide", handleOpenGuide);
+    };
+  }, []);
   // #4240: media-category (serviceKind) filter — composes with activeTab,
   // search and configured-only. null = no serviceKind filter.
   const [activeServiceKind, setActiveServiceKind] = useState<string | null>(null);
@@ -803,6 +829,16 @@ function ProvidersPageContent() {
   const freeSectionEntriesAll = dashboardProviderEntriesAll.filter(providerEntryHasFree);
   const freeSectionEntries = filterEntries(freeSectionEntriesAll, false);
 
+  const recentEntries = useMemo(() => {
+    const entryMap = new Map<string, (typeof dashboardProviderEntriesAll)[number]>();
+    for (const e of dashboardProviderEntriesAll) {
+      entryMap.set(e.providerId, e);
+    }
+    return recentProviderIds
+      .map((id) => entryMap.get(id))
+      .filter((e): e is (typeof dashboardProviderEntriesAll)[number] => Boolean(e));
+  }, [recentProviderIds, dashboardProviderEntriesAll]);
+
   // IDE providers: subset of oauth/apikey providers that are editors/IDEs with
   // built-in AI subscription. Rendered in a dedicated "IDE Providers" section
   // and excluded from the regular OAuth/API Key sections to avoid duplication.
@@ -1043,6 +1079,68 @@ function ProvidersPageContent() {
               <span>Go to All Providers</span>
             </button>
           </div>
+        ) : activeTab === "recent" ? (
+          recentEntries.length > 0 ? (
+            <div className="flex flex-col gap-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="material-symbols-outlined text-primary text-xl">history</span>
+                  <h2 className="text-xl font-semibold text-text-main">Recent Providers</h2>
+                  <span className="px-2 py-0.5 rounded-full bg-primary/10 text-primary text-xs font-semibold">
+                    {recentEntries.length}
+                  </span>
+                </div>
+                <p className="text-xs text-text-muted hidden sm:block">
+                  Providers you recently viewed, tested, or configured
+                </p>
+              </div>
+              <div
+                className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4"
+                data-testid="recent-providers-grid"
+              >
+                {recentEntries.map((entry) => (
+                  <HighlightableProviderCard
+                    key={`recent-${entry.providerId}`}
+                    providerId={entry.providerId}
+                    provider={entry.provider}
+                    stats={entry.stats}
+                    authType={getCompactProviderAuthType(entry, showFreeOnly)}
+                    onToggle={(active) =>
+                      handleToggleProvider(entry.providerId, entry.toggleAuthType, active)
+                    }
+                    onEdit={handleEditCustomProvider}
+                    onDelete={handleDeleteCustomProvider}
+                    onOpenGuide={(id, name) => setGuideModalProvider({ id, name })}
+                  />
+                ))}
+              </div>
+            </div>
+          ) : (
+            <div
+              className="flex flex-col items-center justify-center gap-3 py-16 px-4 border border-dashed border-border rounded-2xl bg-bg-surface/50 text-center"
+              data-testid="recent-empty-state"
+            >
+              <div className="size-12 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+                <span className="material-symbols-outlined text-[28px]">history</span>
+              </div>
+              <div className="max-w-md">
+                <h3 className="text-base font-semibold text-text-main">
+                  No recent providers yet
+                </h3>
+                <p className="text-sm text-text-muted mt-1">
+                  Providers you click, open, or test will automatically appear here for rapid access.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setActiveTab("all-providers")}
+                className="mt-2 inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-white text-sm font-medium hover:bg-primary-hover transition-colors shadow-xs"
+              >
+                <span className="material-symbols-outlined text-[18px]">apps</span>
+                <span>Browse All Providers</span>
+              </button>
+            </div>
+          )
         ) : totalVisibleEntriesCount === 0 ? (
           <div
             className="flex items-center justify-center gap-2 py-12 border border-dashed border-border rounded-xl text-text-muted text-sm"
@@ -1974,6 +2072,14 @@ function ProvidersPageContent() {
             </div>
           </div>
         )}
+
+        {/* Cupertino Provider Guide Sheet for detailed limits, free tier info & CLI hints */}
+        <CupertinoProviderGuideSheet
+          isOpen={Boolean(guideModalProvider)}
+          onClose={() => setGuideModalProvider(null)}
+          providerId={guideModalProvider?.id ?? ""}
+          providerName={guideModalProvider?.name ?? ""}
+        />
       </div>
     </OpenRouterProviderStatsProvider>
   );
