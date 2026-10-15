@@ -303,6 +303,7 @@ export async function PATCH(request: Request) {
           { success: false, error: "Invalid payload", issues: parsed.error.issues },
           { status: 400, headers: CORS_HEADERS }
         );
+      }
       const raw = parsed.data.maskedKey || parsed.data.apiKey || parsed.data.key || "";
       const maskedKey = raw.includes("...")
         ? raw
