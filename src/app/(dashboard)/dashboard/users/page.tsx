@@ -10,6 +10,7 @@ import {
   ShimmerPageLoader,
   EmptyState,
 } from "@/shared/components";
+import ProviderIcon from "@/shared/components/ProviderIcon";
 import { useCopyToClipboard } from "@/shared/hooks/useCopyToClipboard";
 
 interface ResellerUserKey {
@@ -26,6 +27,21 @@ interface ResellerUserKey {
   rpmLimit: number | null;
   expiresAt: string | null;
   isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+interface UserByokKeyEntry {
+  id: number;
+  userId: string;
+  userName: string | null;
+  userEmail: string | null;
+  providerId: string;
+  maskedKey: string;
+  isPaused: boolean;
+  lastUsedAt: string | null;
+  requests: number;
+  tokens: number;
   createdAt: string;
   updatedAt: string;
 }
@@ -80,7 +96,10 @@ function maskApiKey(key: string): string {
 }
 
 export default function UsersPage() {
+  const [activeTab, setActiveTab] = useState<"apiKeys" | "byok">("apiKeys");
   const [userKeys, setUserKeys] = useState<ResellerUserKey[]>([]);
+  const [byokKeys, setByokKeys] = useState<UserByokKeyEntry[]>([]);
+  const [publishedProviders, setPublishedProviders] = useState<string[]>([]);
   const [availableData, setAvailableData] = useState<AvailableModelsData>({
     combos: [],
     models: [],
@@ -88,11 +107,16 @@ export default function UsersPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
 
-  // Search & Filter
+  // Search & Filter (Tab 1: API Keys)
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedPlanFilter, setSelectedPlanFilter] = useState("all");
 
-  // Create Modal State
+  // Search & Filter (Tab 2: BYOK)
+  const [byokSearchQuery, setByokSearchQuery] = useState("");
+  const [byokProviderFilter, setByokProviderFilter] = useState("all");
+  const [byokStatusFilter, setByokStatusFilter] = useState("all");
+
+  // Tab 1: Create Key Modal State
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [createError, setCreateError] = useState<string | null>(null);
@@ -109,6 +133,16 @@ export default function UsersPage() {
   const [formExpiryPreset, setFormExpiryPreset] = useState("unlimited");
   const [formCustomExpiry, setFormCustomExpiry] = useState("");
 
+  // Tab 2: Attach BYOK Modal State
+  const [showByokModal, setShowByokModal] = useState(false);
+  const [byokSubmitting, setByokSubmitting] = useState(false);
+  const [byokError, setByokError] = useState<string | null>(null);
+  const [byokFormUserId, setByokFormUserId] = useState("");
+  const [byokFormUserName, setByokFormUserName] = useState("");
+  const [byokFormUserEmail, setByokFormUserEmail] = useState("");
+  const [byokFormProviderId, setByokFormProviderId] = useState("");
+  const [byokFormKey, setByokFormKey] = useState("");
+
   // Key Generated Success Modal
   const [createdKeyResult, setCreatedKeyResult] = useState<ResellerUserKey | null>(null);
   const [revealedKeys, setRevealedKeys] = useState<Record<number, boolean>>({});
@@ -121,6 +155,10 @@ export default function UsersPage() {
       .then((data) => {
         if (data.success) {
           setUserKeys(data.userKeys || []);
+          setByokKeys(data.byokKeys || []);
+          if (data.publishedProviders) {
+            setPublishedProviders(data.publishedProviders);
+          }
           if (data.availableModels) {
             setAvailableData(data.availableModels);
           }
@@ -152,6 +190,16 @@ export default function UsersPage() {
     setFormCustomExpiry("");
     setCreateError(null);
     setShowCreateModal(true);
+  };
+
+  const handleOpenByokModal = () => {
+    setByokFormUserId("");
+    setByokFormUserName("");
+    setByokFormUserEmail("");
+    setByokFormProviderId(publishedProviders[0] || "anthropic");
+    setByokFormKey("");
+    setByokError(null);
+    setShowByokModal(true);
   };
 
   const handleToggleModelSelection = (modelId: string) => {
@@ -250,6 +298,108 @@ export default function UsersPage() {
     }
   };
 
+  const handleSaveByokKey = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!byokFormUserId.trim()) {
+      setByokError("User ID (UID) is required.");
+      return;
+    }
+    if (!byokFormProviderId.trim()) {
+      setByokError("Provider is required.");
+      return;
+    }
+    if (!byokFormKey.trim()) {
+      setByokError("API Key is required.");
+      return;
+    }
+
+    setByokSubmitting(true);
+    setByokError(null);
+
+    try {
+      const res = await fetch("/api/v1/reseller/users", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "addByok",
+          userId: byokFormUserId.trim(),
+          userName: byokFormUserName.trim() || undefined,
+          userEmail: byokFormUserEmail.trim() || undefined,
+          providerId: byokFormProviderId.trim(),
+          maskedKey: byokFormKey.trim(),
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.error?.message || data.error || "Failed to save BYOK key");
+      }
+
+      setShowByokModal(false);
+      loadData();
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      setByokError(message);
+    } finally {
+      setByokSubmitting(false);
+    }
+  };
+
+  const handleTogglePauseByok = async (item: UserByokKeyEntry) => {
+    const nextPaused = !item.isPaused;
+    try {
+      const res = await fetch("/api/v1/reseller/users", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "pauseByok",
+          userId: item.userId,
+          providerId: item.providerId,
+          paused: nextPaused,
+        }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setByokKeys((prev) =>
+          prev.map((k) => (k.id === item.id ? { ...k, isPaused: nextPaused } : k))
+        );
+      } else {
+        alert(data.error?.message || "Failed to toggle BYOK key status");
+      }
+    } catch (err) {
+      alert("Error: " + String(err));
+    }
+  };
+
+  const handleDeleteByokKey = async (item: UserByokKeyEntry) => {
+    if (
+      !confirm(
+        `Revoke & delete BYOK key for ${item.providerId} belonging to ${
+          item.userName || item.userId
+        }?`
+      )
+    ) {
+      return;
+    }
+
+    try {
+      const res = await fetch(
+        `/api/v1/reseller/users?userId=${encodeURIComponent(
+          item.userId
+        )}&providerId=${encodeURIComponent(item.providerId)}`,
+        { method: "DELETE" }
+      );
+      const data = await res.json();
+      if (data.success) {
+        loadData();
+      } else {
+        alert(data.error?.message || "Failed to delete BYOK key");
+      }
+    } catch (err) {
+      alert("Error: " + String(err));
+    }
+  };
+
   const handleDeleteKey = async (id: number, userName: string | null) => {
     if (!confirm(`Are you sure you want to revoke and delete API key for ${userName || `row #${id}`}?`)) {
       return;
@@ -274,7 +424,7 @@ export default function UsersPage() {
     setRevealedKeys((prev) => ({ ...prev, [id]: !prev[id] }));
   };
 
-  // Filter keys
+  // Filter keys (Tab 1)
   const filteredKeys = useMemo(() => {
     return userKeys.filter((k) => {
       if (selectedPlanFilter !== "all") {
@@ -291,6 +441,34 @@ export default function UsersPage() {
     });
   }, [userKeys, searchQuery, selectedPlanFilter]);
 
+  // Filter BYOK keys (Tab 2)
+  const filteredByokKeys = useMemo(() => {
+    return byokKeys.filter((b) => {
+      if (byokProviderFilter !== "all") {
+        if (b.providerId.toLowerCase() !== byokProviderFilter.toLowerCase()) return false;
+      }
+      if (byokStatusFilter === "active" && b.isPaused) return false;
+      if (byokStatusFilter === "paused" && !b.isPaused) return false;
+
+      if (!byokSearchQuery.trim()) return true;
+      const q = byokSearchQuery.toLowerCase();
+      return (
+        b.userId.toLowerCase().includes(q) ||
+        (b.userName && b.userName.toLowerCase().includes(q)) ||
+        (b.userEmail && b.userEmail.toLowerCase().includes(q)) ||
+        b.providerId.toLowerCase().includes(q) ||
+        b.maskedKey.toLowerCase().includes(q)
+      );
+    });
+  }, [byokKeys, byokSearchQuery, byokProviderFilter, byokStatusFilter]);
+
+  // Distinct providers in BYOK
+  const distinctByokProviders = useMemo(() => {
+    const set = new Set<string>();
+    byokKeys.forEach((b) => set.add(b.providerId));
+    return Array.from(set);
+  }, [byokKeys]);
+
   if (isLoading) {
     return <ShimmerPageLoader variant="users" />;
   }
@@ -304,18 +482,71 @@ export default function UsersPage() {
             <span className="material-symbols-outlined text-primary text-[28px]">
               group_add
             </span>
-            Users & Scoped API Keys
+            Users & API Management
           </h1>
           <p className="text-sm text-text-muted mt-1">
-            Generate and manage user keys with custom token budgets, model allowlists, and rate limits.
+            Manage user accounts, issue scoped router keys, and track multi-tenant BYOK credentials.
           </p>
         </div>
 
         <div className="flex items-center gap-3">
-          <Button variant="primary" icon="add" onClick={handleOpenCreateModal}>
-            Issue API Key
-          </Button>
+          {activeTab === "apiKeys" ? (
+            <Button variant="primary" icon="add" onClick={handleOpenCreateModal}>
+              Issue API Key
+            </Button>
+          ) : (
+            <Button variant="primary" icon="key" onClick={handleOpenByokModal}>
+              Connect BYOK Key
+            </Button>
+          )}
         </div>
+      </div>
+
+      {/* TOP TABS: Issued API Keys vs BYOK Providers */}
+      <div className="flex items-center gap-2 border-b border-border pb-px">
+        <button
+          type="button"
+          onClick={() => setActiveTab("apiKeys")}
+          className={`flex items-center gap-2 px-4 py-2.5 text-sm font-semibold border-b-2 transition-colors cursor-pointer ${
+            activeTab === "apiKeys"
+              ? "border-primary text-primary"
+              : "border-transparent text-text-muted hover:text-text-main"
+          }`}
+        >
+          <span className="material-symbols-outlined text-[18px]">vpn_key</span>
+          Issued API Keys
+          <span
+            className={`text-xs px-2 py-0.5 rounded-full ${
+              activeTab === "apiKeys"
+                ? "bg-primary/15 text-primary"
+                : "bg-bg-subtle text-text-muted"
+            }`}
+          >
+            {userKeys.length}
+          </span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setActiveTab("byok")}
+          className={`flex items-center gap-2 px-4 py-2.5 text-sm font-semibold border-b-2 transition-colors cursor-pointer ${
+            activeTab === "byok"
+              ? "border-amber-500 text-amber-400"
+              : "border-transparent text-text-muted hover:text-text-main"
+          }`}
+        >
+          <span className="material-symbols-outlined text-[18px]">hub</span>
+          BYOK Providers
+          <span
+            className={`text-xs px-2 py-0.5 rounded-full ${
+              activeTab === "byok"
+                ? "bg-amber-500/15 text-amber-400"
+                : "bg-bg-subtle text-text-muted"
+            }`}
+          >
+            {byokKeys.length}
+          </span>
+        </button>
       </div>
 
       {loadError && (
@@ -325,227 +556,485 @@ export default function UsersPage() {
         </Card>
       )}
 
-      {/* Filter and Search Bar */}
-      <Card className="p-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div className="flex-1 max-w-md relative">
-          <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-text-muted text-[18px]">
-            search
-          </span>
-          <input
-            type="text"
-            placeholder="Search by UID, Name, Email/Phone or Key..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-9 pr-3 py-1.5 text-sm bg-bg-subtle border border-border rounded-lg text-text-main placeholder:text-text-muted/60 focus:outline-none focus:border-primary"
-          />
-        </div>
+      {/* ========================================================= */}
+      {/* TAB 1: ISSUED API KEYS */}
+      {/* ========================================================= */}
+      {activeTab === "apiKeys" && (
+        <>
+          {/* Filter and Search Bar */}
+          <Card className="p-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div className="flex-1 max-w-md relative">
+              <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-text-muted text-[18px]">
+                search
+              </span>
+              <input
+                type="text"
+                placeholder="Search by UID, Name, Email/Phone or Key..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-9 pr-3 py-1.5 text-sm bg-bg-subtle border border-border rounded-lg text-text-main placeholder:text-text-muted/60 focus:outline-none focus:border-primary"
+              />
+            </div>
 
-        <div className="flex items-center gap-3">
-          <span className="text-xs text-text-muted font-medium">Plan Filter:</span>
-          <select
-            value={selectedPlanFilter}
-            onChange={(e) => setSelectedPlanFilter(e.target.value)}
-            className="px-3 py-1.5 text-sm bg-bg-subtle border border-border rounded-lg text-text-main focus:outline-none focus:border-primary"
-          >
-            <option value="all">All Plans</option>
-            <option value="free">Free</option>
-            <option value="pro">Pro</option>
-            <option value="business">Business</option>
-            <option value="enterprise">Enterprise</option>
-          </select>
+            <div className="flex items-center gap-3">
+              <span className="text-xs text-text-muted font-medium">Plan Filter:</span>
+              <select
+                value={selectedPlanFilter}
+                onChange={(e) => setSelectedPlanFilter(e.target.value)}
+                className="px-3 py-1.5 text-sm bg-bg-subtle border border-border rounded-lg text-text-main focus:outline-none focus:border-primary"
+              >
+                <option value="all">All Plans</option>
+                <option value="free">Free</option>
+                <option value="pro">Pro</option>
+                <option value="business">Business</option>
+                <option value="enterprise">Enterprise</option>
+              </select>
 
-          <span className="text-xs text-text-muted">
-            Total: <strong>{filteredKeys.length}</strong>
-          </span>
-        </div>
-      </Card>
+              <span className="text-xs text-text-muted">
+                Total: <strong>{filteredKeys.length}</strong>
+              </span>
+            </div>
+          </Card>
 
-      {/* Users Table */}
-      {filteredKeys.length === 0 ? (
-        <Card className="p-12 text-center">
-          <EmptyState
-            title="No Users or API Keys Found"
-            description={
-              searchQuery
-                ? "No users match your search criteria."
-                : "No user API keys have been issued yet. Click 'Issue API Key' to generate one."
-            }
-            actionLabel={!searchQuery ? "Issue First Key" : undefined}
-            onAction={!searchQuery ? handleOpenCreateModal : undefined}
-          />
-        </Card>
-      ) : (
-        <Card className="overflow-hidden p-0 border border-border">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm border-collapse">
-              <thead>
-                <tr className="border-b border-border bg-bg-subtle/60 text-xs font-semibold text-text-muted">
-                  <th className="py-3 px-4 w-12 text-center">#</th>
-                  <th className="py-3 px-4">User ID (UID)</th>
-                  <th className="py-3 px-4">User Name</th>
-                  <th className="py-3 px-4">Email / Phone</th>
-                  <th className="py-3 px-4">API Key</th>
-                  <th className="py-3 px-4">Plan</th>
-                  <th className="py-3 px-4">Allowed Models</th>
-                  <th className="py-3 px-4">Token Limit</th>
-                  <th className="py-3 px-4">Rate Limit</th>
-                  <th className="py-3 px-4">Time / Expiry</th>
-                  <th className="py-3 px-4 text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border">
-                {filteredKeys.map((item, index) => {
-                  const isRevealed = !!revealedKeys[item.id];
-                  const displayKey = isRevealed ? item.apiKey : maskApiKey(item.apiKey);
-                  const isCopied = copied === `key_${item.id}`;
+          {/* Users Table */}
+          {filteredKeys.length === 0 ? (
+            <Card className="p-12 text-center">
+              <EmptyState
+                title="No Users or API Keys Found"
+                description={
+                  searchQuery
+                    ? "No users match your search criteria."
+                    : "No user API keys have been issued yet. Click 'Issue API Key' to generate one."
+                }
+                actionLabel={!searchQuery ? "Issue First Key" : undefined}
+                onAction={!searchQuery ? handleOpenCreateModal : undefined}
+              />
+            </Card>
+          ) : (
+            <Card className="overflow-hidden p-0 border border-border">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-sm border-collapse">
+                  <thead>
+                    <tr className="border-b border-border bg-bg-subtle/60 text-xs font-semibold text-text-muted">
+                      <th className="py-3 px-4 w-12 text-center">#</th>
+                      <th className="py-3 px-4">User ID (UID)</th>
+                      <th className="py-3 px-4">User Name</th>
+                      <th className="py-3 px-4">Email / Phone</th>
+                      <th className="py-3 px-4">API Key</th>
+                      <th className="py-3 px-4">Plan</th>
+                      <th className="py-3 px-4">Allowed Models</th>
+                      <th className="py-3 px-4">Token Limit</th>
+                      <th className="py-3 px-4">Rate Limit</th>
+                      <th className="py-3 px-4">Time / Expiry</th>
+                      <th className="py-3 px-4 text-right">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-border">
+                    {filteredKeys.map((item, index) => {
+                      const isRevealed = !!revealedKeys[item.id];
+                      const displayKey = isRevealed ? item.apiKey : maskApiKey(item.apiKey);
+                      const isCopied = copied === `key_${item.id}`;
 
-                  return (
-                    <tr
-                      key={item.id}
-                      className="hover:bg-bg-subtle/30 transition-colors"
-                    >
-                      {/* # Row Number */}
-                      <td className="py-3.5 px-4 text-center font-mono text-xs text-text-muted font-bold">
-                        {index + 1}
-                      </td>
-
-                      {/* User ID (UID) */}
-                      <td className="py-3.5 px-4 font-mono text-xs text-primary font-semibold">
-                        <span className="px-2 py-0.5 rounded bg-primary/10 border border-primary/20">
-                          {item.userId}
-                        </span>
-                      </td>
-
-                      {/* User Name */}
-                      <td className="py-3.5 px-4 font-medium text-text-main">
-                        {item.userName || "—"}
-                      </td>
-
-                      {/* Email / Phone */}
-                      <td className="py-3.5 px-4 text-text-muted font-mono text-xs">
-                        {item.userEmail}
-                      </td>
-
-                      {/* API Key */}
-                      <td className="py-3.5 px-4">
-                        <div className="flex items-center gap-1.5">
-                          <code className="font-mono text-xs bg-bg-subtle px-2 py-1 rounded border border-border text-text-main select-all">
-                            {displayKey}
-                          </code>
-                          <button
-                            type="button"
-                            title={isRevealed ? "Hide Key" : "Reveal Key"}
-                            onClick={() => toggleRevealKey(item.id)}
-                            className="p-1 hover:bg-bg-subtle rounded text-text-muted hover:text-text-main transition-colors"
-                          >
-                            <span className="material-symbols-outlined text-[16px]">
-                              {isRevealed ? "visibility_off" : "visibility"}
-                            </span>
-                          </button>
-                          <button
-                            type="button"
-                            title="Copy API Key"
-                            onClick={() => copy(item.apiKey, `key_${item.id}`)}
-                            className="p-1 hover:bg-bg-subtle rounded text-text-muted hover:text-primary transition-colors"
-                          >
-                            <span className="material-symbols-outlined text-[16px]">
-                              {isCopied ? "check" : "content_copy"}
-                            </span>
-                          </button>
-                        </div>
-                      </td>
-
-                      {/* Plan */}
-                      <td className="py-3.5 px-4">
-                        <span
-                          className={`text-xs px-2.5 py-0.5 rounded-full font-medium border ${getPlanBadgeClass(
-                            item.planTier
-                          )}`}
+                      return (
+                        <tr
+                          key={item.id}
+                          className="hover:bg-bg-subtle/30 transition-colors"
                         >
-                          {item.planTier}
-                        </span>
-                      </td>
+                          {/* # Row Number */}
+                          <td className="py-3.5 px-4 text-center font-mono text-xs text-text-muted font-bold">
+                            {index + 1}
+                          </td>
 
-                      {/* Allowed Models */}
-                      <td className="py-3.5 px-4">
-                        {item.allowedModels && item.allowedModels.length > 0 ? (
-                          <div className="flex flex-wrap gap-1 max-w-xs">
-                            {item.allowedModels.slice(0, 3).map((m) => (
-                              <span
-                                key={m}
-                                className="text-[11px] font-mono px-1.5 py-0.5 rounded bg-bg-subtle text-text-main border border-border truncate max-w-[120px]"
-                                title={m}
+                          {/* User ID (UID) */}
+                          <td className="py-3.5 px-4 font-mono text-xs text-primary font-semibold">
+                            <span className="px-2 py-0.5 rounded bg-primary/10 border border-primary/20">
+                              {item.userId}
+                            </span>
+                          </td>
+
+                          {/* User Name */}
+                          <td className="py-3.5 px-4 font-medium text-text-main">
+                            {item.userName || "—"}
+                          </td>
+
+                          {/* Email / Phone */}
+                          <td className="py-3.5 px-4 text-text-muted font-mono text-xs">
+                            {item.userEmail}
+                          </td>
+
+                          {/* API Key */}
+                          <td className="py-3.5 px-4">
+                            <div className="flex items-center gap-1.5">
+                              <code className="font-mono text-xs bg-bg-subtle px-2 py-1 rounded border border-border text-text-main select-all">
+                                {displayKey}
+                              </code>
+                              <button
+                                type="button"
+                                title={isRevealed ? "Hide Key" : "Reveal Key"}
+                                onClick={() => toggleRevealKey(item.id)}
+                                className="p-1 hover:bg-bg-subtle rounded text-text-muted hover:text-text-main transition-colors"
                               >
-                                {m}
-                              </span>
-                            ))}
-                            {item.allowedModels.length > 3 && (
-                              <span
-                                className="text-[10px] px-1 py-0.5 rounded bg-bg-subtle text-text-muted border border-border"
-                                title={item.allowedModels.slice(3).join(", ")}
+                                <span className="material-symbols-outlined text-[16px]">
+                                  {isRevealed ? "visibility_off" : "visibility"}
+                                </span>
+                              </button>
+                              <button
+                                type="button"
+                                title="Copy API Key"
+                                onClick={() => copy(item.apiKey, `key_${item.id}`)}
+                                className="p-1 hover:bg-bg-subtle rounded text-text-muted hover:text-primary transition-colors"
                               >
-                                +{item.allowedModels.length - 3} more
+                                <span className="material-symbols-outlined text-[16px]">
+                                  {isCopied ? "check" : "content_copy"}
+                                </span>
+                              </button>
+                            </div>
+                          </td>
+
+                          {/* Plan */}
+                          <td className="py-3.5 px-4">
+                            <span
+                              className={`text-xs px-2.5 py-0.5 rounded-full font-medium border ${getPlanBadgeClass(
+                                item.planTier
+                              )}`}
+                            >
+                              {item.planTier}
+                            </span>
+                          </td>
+
+                          {/* Allowed Models */}
+                          <td className="py-3.5 px-4">
+                            {item.allowedModels && item.allowedModels.length > 0 ? (
+                              <div className="flex flex-wrap gap-1 max-w-xs">
+                                {item.allowedModels.slice(0, 3).map((m) => (
+                                  <span
+                                    key={m}
+                                    className="text-[11px] font-mono px-1.5 py-0.5 rounded bg-bg-subtle text-text-main border border-border truncate max-w-[120px]"
+                                    title={m}
+                                  >
+                                    {m}
+                                  </span>
+                                ))}
+                                {item.allowedModels.length > 3 && (
+                                  <span
+                                    className="text-[10px] px-1 py-0.5 rounded bg-bg-subtle text-text-muted border border-border"
+                                    title={item.allowedModels.slice(3).join(", ")}
+                                  >
+                                    +{item.allowedModels.length - 3} more
+                                  </span>
+                                )}
+                              </div>
+                            ) : (
+                              <span className="text-xs text-emerald-400 font-medium flex items-center gap-1">
+                                <span className="size-1.5 rounded-full bg-emerald-400 inline-block" />
+                                All Available Models
                               </span>
                             )}
-                          </div>
-                        ) : (
-                          <span className="text-xs text-emerald-400 font-medium flex items-center gap-1">
-                            <span className="size-1.5 rounded-full bg-emerald-400 inline-block" />
-                            All Available Models
-                          </span>
-                        )}
-                      </td>
+                          </td>
 
-                      {/* Token Limit */}
-                      <td className="py-3.5 px-4 font-mono text-xs text-text-main">
-                        {formatTokens(item.tokenBudget)}
-                      </td>
+                          {/* Token Limit */}
+                          <td className="py-3.5 px-4 font-mono text-xs text-text-main">
+                            {formatTokens(item.tokenBudget)}
+                          </td>
 
-                      {/* Rate Limit */}
-                      <td className="py-3.5 px-4 font-mono text-xs text-text-main">
-                        {item.rpmLimit ? `${item.rpmLimit} RPM` : "Unlimited"}
-                      </td>
+                          {/* Rate Limit */}
+                          <td className="py-3.5 px-4 font-mono text-xs text-text-main">
+                            {item.rpmLimit ? `${item.rpmLimit} RPM` : "Unlimited"}
+                          </td>
 
-                      {/* Expiry */}
-                      <td className="py-3.5 px-4 text-xs text-text-muted">
-                        {formatExpiry(item.expiresAt)}
-                      </td>
+                          {/* Expiry */}
+                          <td className="py-3.5 px-4 text-xs text-text-muted">
+                            {formatExpiry(item.expiresAt)}
+                          </td>
 
-                      {/* Actions */}
-                      <td className="py-3.5 px-4 text-right">
-                        <div className="flex items-center justify-end gap-1">
-                          <button
-                            type="button"
-                            title="Copy Key"
-                            onClick={() => copy(item.apiKey, `key_${item.id}`)}
-                            className="p-1.5 hover:bg-bg-subtle rounded text-text-muted hover:text-text-main transition-colors"
-                          >
-                            <span className="material-symbols-outlined text-[18px]">
-                              {copied === `key_${item.id}` ? "check" : "content_copy"}
-                            </span>
-                          </button>
-                          <button
-                            type="button"
-                            title="Revoke / Delete Key"
-                            onClick={() => handleDeleteKey(item.id, item.userName)}
-                            className="p-1.5 hover:bg-red-500/10 rounded text-text-muted hover:text-red-400 transition-colors"
-                          >
-                            <span className="material-symbols-outlined text-[18px]">
-                              delete
-                            </span>
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        </Card>
+                          {/* Actions */}
+                          <td className="py-3.5 px-4 text-right">
+                            <div className="flex items-center justify-end gap-1">
+                              <button
+                                type="button"
+                                title="Copy Key"
+                                onClick={() => copy(item.apiKey, `key_${item.id}`)}
+                                className="p-1.5 hover:bg-bg-subtle rounded text-text-muted hover:text-text-main transition-colors"
+                              >
+                                <span className="material-symbols-outlined text-[18px]">
+                                  {copied === `key_${item.id}` ? "check" : "content_copy"}
+                                </span>
+                              </button>
+                              <button
+                                type="button"
+                                title="Revoke / Delete Key"
+                                onClick={() => handleDeleteKey(item.id, item.userName)}
+                                className="p-1.5 hover:bg-red-500/10 rounded text-text-muted hover:text-red-400 transition-colors"
+                              >
+                                <span className="material-symbols-outlined text-[18px]">
+                                  delete
+                                </span>
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </Card>
+          )}
+        </>
       )}
 
-      {/* CREATE API KEY MODAL */}
+      {/* ========================================================= */}
+      {/* TAB 2: BYOK PROVIDERS */}
+      {/* ========================================================= */}
+      {activeTab === "byok" && (
+        <>
+          {/* Summary Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <Card className="p-4 flex items-center gap-3">
+              <div className="size-10 rounded-lg bg-amber-500/10 flex items-center justify-center text-amber-400">
+                <span className="material-symbols-outlined text-[24px]">key</span>
+              </div>
+              <div>
+                <p className="text-xs text-text-muted">Total Connected BYOK Keys</p>
+                <p className="text-xl font-bold text-text-main">{byokKeys.length}</p>
+              </div>
+            </Card>
+
+            <Card className="p-4 flex items-center gap-3">
+              <div className="size-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
+                <span className="material-symbols-outlined text-[24px]">group</span>
+              </div>
+              <div>
+                <p className="text-xs text-text-muted">Users With BYOK</p>
+                <p className="text-xl font-bold text-text-main">
+                  {new Set(byokKeys.map((b) => b.userId)).size}
+                </p>
+              </div>
+            </Card>
+
+            <Card className="p-4 flex items-center gap-3">
+              <div className="size-10 rounded-lg bg-emerald-500/10 flex items-center justify-center text-emerald-400">
+                <span className="material-symbols-outlined text-[24px]">hub</span>
+              </div>
+              <div>
+                <p className="text-xs text-text-muted">Distinct Providers Used</p>
+                <p className="text-xl font-bold text-text-main">
+                  {distinctByokProviders.length}
+                </p>
+              </div>
+            </Card>
+          </div>
+
+          {/* BYOK Filter and Search Bar */}
+          <Card className="p-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div className="flex-1 max-w-md relative">
+              <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-text-muted text-[18px]">
+                search
+              </span>
+              <input
+                type="text"
+                placeholder="Search BYOK by UID, Name, Provider or Key..."
+                value={byokSearchQuery}
+                onChange={(e) => setByokSearchQuery(e.target.value)}
+                className="w-full pl-9 pr-3 py-1.5 text-sm bg-bg-subtle border border-border rounded-lg text-text-main placeholder:text-text-muted/60 focus:outline-none focus:border-primary"
+              />
+            </div>
+
+            <div className="flex flex-wrap items-center gap-3">
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-text-muted font-medium">Provider:</span>
+                <select
+                  value={byokProviderFilter}
+                  onChange={(e) => setByokProviderFilter(e.target.value)}
+                  className="px-3 py-1.5 text-sm bg-bg-subtle border border-border rounded-lg text-text-main focus:outline-none focus:border-primary"
+                >
+                  <option value="all">All Providers</option>
+                  {distinctByokProviders.map((p) => (
+                    <option key={p} value={p}>
+                      {p}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-text-muted font-medium">Status:</span>
+                <select
+                  value={byokStatusFilter}
+                  onChange={(e) => setByokStatusFilter(e.target.value)}
+                  className="px-3 py-1.5 text-sm bg-bg-subtle border border-border rounded-lg text-text-main focus:outline-none focus:border-primary"
+                >
+                  <option value="all">All</option>
+                  <option value="active">Active Only</option>
+                  <option value="paused">Paused Only</option>
+                </select>
+              </div>
+
+              <span className="text-xs text-text-muted">
+                Total: <strong>{filteredByokKeys.length}</strong>
+              </span>
+            </div>
+          </Card>
+
+          {/* BYOK Keys Table */}
+          {filteredByokKeys.length === 0 ? (
+            <Card className="p-12 text-center">
+              <EmptyState
+                title="No BYOK Keys Attached"
+                description={
+                  byokSearchQuery
+                    ? "No user BYOK keys match your filter."
+                    : "No users have attached their own provider keys yet. Click 'Connect BYOK Key' to register one."
+                }
+                actionLabel={!byokSearchQuery ? "Connect BYOK Key" : undefined}
+                onAction={!byokSearchQuery ? handleOpenByokModal : undefined}
+              />
+            </Card>
+          ) : (
+            <Card className="overflow-hidden p-0 border border-border">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-sm border-collapse">
+                  <thead>
+                    <tr className="border-b border-border bg-bg-subtle/60 text-xs font-semibold text-text-muted">
+                      <th className="py-3 px-4 w-12 text-center">#</th>
+                      <th className="py-3 px-4">User ID (UID)</th>
+                      <th className="py-3 px-4">User Name</th>
+                      <th className="py-3 px-4">Email / Phone</th>
+                      <th className="py-3 px-4">Provider</th>
+                      <th className="py-3 px-4">Masked Key</th>
+                      <th className="py-3 px-4">Date Attached</th>
+                      <th className="py-3 px-4">Usage</th>
+                      <th className="py-3 px-4">Status</th>
+                      <th className="py-3 px-4 text-right">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-border">
+                    {filteredByokKeys.map((item, index) => {
+                      const isCopied = copied === `byok_${item.id}`;
+
+                      return (
+                        <tr
+                          key={item.id}
+                          className="hover:bg-bg-subtle/30 transition-colors"
+                        >
+                          {/* Row # */}
+                          <td className="py-3.5 px-4 text-center font-mono text-xs text-text-muted font-bold">
+                            {index + 1}
+                          </td>
+
+                          {/* UID */}
+                          <td className="py-3.5 px-4 font-mono text-xs text-amber-400 font-semibold">
+                            <span className="px-2 py-0.5 rounded bg-amber-500/10 border border-amber-500/20">
+                              {item.userId}
+                            </span>
+                          </td>
+
+                          {/* User Name */}
+                          <td className="py-3.5 px-4 font-medium text-text-main">
+                            {item.userName || "—"}
+                          </td>
+
+                          {/* Email / Phone */}
+                          <td className="py-3.5 px-4 text-text-muted font-mono text-xs">
+                            {item.userEmail || "—"}
+                          </td>
+
+                          {/* Provider */}
+                          <td className="py-3.5 px-4">
+                            <div className="flex items-center gap-2">
+                              <ProviderIcon providerId={item.providerId} size={20} />
+                              <span className="font-medium text-text-main capitalize">
+                                {item.providerId}
+                              </span>
+                            </div>
+                          </td>
+
+                          {/* Masked Key */}
+                          <td className="py-3.5 px-4">
+                            <div className="flex items-center gap-1.5">
+                              <code className="font-mono text-xs bg-bg-subtle px-2 py-1 rounded border border-border text-text-main">
+                                {item.maskedKey}
+                              </code>
+                              <button
+                                type="button"
+                                title="Copy Masked Key"
+                                onClick={() => copy(item.maskedKey, `byok_${item.id}`)}
+                                className="p-1 hover:bg-bg-subtle rounded text-text-muted hover:text-primary transition-colors"
+                              >
+                                <span className="material-symbols-outlined text-[16px]">
+                                  {isCopied ? "check" : "content_copy"}
+                                </span>
+                              </button>
+                            </div>
+                          </td>
+
+                          {/* Date Attached */}
+                          <td className="py-3.5 px-4 text-xs text-text-muted font-mono">
+                            {formatExpiry(item.createdAt)}
+                          </td>
+
+                          {/* Usage */}
+                          <td className="py-3.5 px-4 text-xs font-mono text-text-muted">
+                            <div>{item.requests || 0} reqs</div>
+                            <div className="text-[11px] text-text-muted/70">
+                              {formatTokens(item.tokens)}
+                            </div>
+                          </td>
+
+                          {/* Status */}
+                          <td className="py-3.5 px-4">
+                            {item.isPaused ? (
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-amber-500/15 text-amber-400 border border-amber-500/30">
+                                <span className="size-1.5 rounded-full bg-amber-400" />
+                                Paused
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+                                <span className="size-1.5 rounded-full bg-emerald-400" />
+                                Active
+                              </span>
+                            )}
+                          </td>
+
+                          {/* Actions */}
+                          <td className="py-3.5 px-4 text-right">
+                            <div className="flex items-center justify-end gap-1">
+                              <button
+                                type="button"
+                                title={item.isPaused ? "Resume Key" : "Pause Key"}
+                                onClick={() => handleTogglePauseByok(item)}
+                                className="p-1.5 hover:bg-bg-subtle rounded text-text-muted hover:text-text-main transition-colors"
+                              >
+                                <span className="material-symbols-outlined text-[18px]">
+                                  {item.isPaused ? "play_arrow" : "pause"}
+                                </span>
+                              </button>
+                              <button
+                                type="button"
+                                title="Delete BYOK Key"
+                                onClick={() => handleDeleteByokKey(item)}
+                                className="p-1.5 hover:bg-red-500/10 rounded text-text-muted hover:text-red-400 transition-colors"
+                              >
+                                <span className="material-symbols-outlined text-[18px]">
+                                  delete
+                                </span>
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </Card>
+          )}
+        </>
+      )}
+
+      {/* ========================================================= */}
+      {/* MODAL: ISSUE API KEY (Tab 1) */}
+      {/* ========================================================= */}
       <Modal
         isOpen={showCreateModal}
         onClose={() => setShowCreateModal(false)}
@@ -824,7 +1313,129 @@ export default function UsersPage() {
         </form>
       </Modal>
 
-      {/* KEY GENERATED SUCCESS MODAL */}
+      {/* ========================================================= */}
+      {/* MODAL: CONNECT BYOK KEY (Tab 2) */}
+      {/* ========================================================= */}
+      <Modal
+        isOpen={showByokModal}
+        onClose={() => setShowByokModal(false)}
+        title="Connect User BYOK Key"
+        size="md"
+      >
+        <form onSubmit={handleSaveByokKey} className="space-y-4 py-1">
+          {byokError && (
+            <div className="p-3 bg-red-500/10 border border-red-500/30 text-red-400 text-sm rounded-lg flex items-center gap-2">
+              <span className="material-symbols-outlined text-[18px]">error</span>
+              {byokError}
+            </div>
+          )}
+
+          <div>
+            <label className="block text-xs font-medium text-text-muted mb-1">
+              User ID (UID) <span className="text-red-400">*</span>
+            </label>
+            <input
+              type="text"
+              required
+              placeholder="e.g. usr_1001"
+              value={byokFormUserId}
+              onChange={(e) => setByokFormUserId(e.target.value)}
+              className="w-full px-3 py-2 text-sm font-mono bg-bg-subtle border border-border rounded-lg text-text-main focus:outline-none focus:border-primary"
+            />
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-medium text-text-muted mb-1">
+                User Name (Optional)
+              </label>
+              <input
+                type="text"
+                placeholder="e.g. Hasan Ali"
+                value={byokFormUserName}
+                onChange={(e) => setByokFormUserName(e.target.value)}
+                className="w-full px-3 py-2 text-sm bg-bg-subtle border border-border rounded-lg text-text-main focus:outline-none focus:border-primary"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-text-muted mb-1">
+                Email or Phone (Optional)
+              </label>
+              <input
+                type="text"
+                placeholder="e.g. hasan@example.com"
+                value={byokFormUserEmail}
+                onChange={(e) => setByokFormUserEmail(e.target.value)}
+                className="w-full px-3 py-2 text-sm bg-bg-subtle border border-border rounded-lg text-text-main focus:outline-none focus:border-primary"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-xs font-medium text-text-muted mb-1">
+              Provider <span className="text-red-400">*</span>
+            </label>
+            <select
+              value={byokFormProviderId}
+              onChange={(e) => setByokFormProviderId(e.target.value)}
+              className="w-full px-3 py-2 text-sm bg-bg-subtle border border-border rounded-lg text-text-main focus:outline-none focus:border-primary capitalize"
+            >
+              {publishedProviders.length > 0 ? (
+                publishedProviders.map((pid) => (
+                  <option key={pid} value={pid}>
+                    {pid}
+                  </option>
+                ))
+              ) : (
+                <>
+                  <option value="anthropic">Anthropic (Claude)</option>
+                  <option value="openai">OpenAI (ChatGPT)</option>
+                  <option value="gemini">Google Gemini</option>
+                  <option value="deepseek">DeepSeek</option>
+                  <option value="groq">Groq</option>
+                  <option value="mistral">Mistral AI</option>
+                  <option value="openrouter">OpenRouter</option>
+                </>
+              )}
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-xs font-medium text-text-muted mb-1">
+              API Key (BYOK) <span className="text-red-400">*</span>
+            </label>
+            <input
+              type="text"
+              required
+              placeholder="e.g. sk-ant-api03-... or sk-proj-..."
+              value={byokFormKey}
+              onChange={(e) => setByokFormKey(e.target.value)}
+              className="w-full px-3 py-2 text-sm font-mono bg-bg-subtle border border-border rounded-lg text-text-main focus:outline-none focus:border-primary"
+            />
+            <p className="text-[11px] text-text-muted mt-1">
+              The user&apos;s personal key for this provider. Requests using BYOK routing will direct through this credential.
+            </p>
+          </div>
+
+          <div className="flex items-center justify-end gap-3 pt-3 border-t border-border">
+            <Button
+              variant="ghost"
+              type="button"
+              onClick={() => setShowByokModal(false)}
+              disabled={byokSubmitting}
+            >
+              Cancel
+            </Button>
+            <Button variant="primary" type="submit" disabled={byokSubmitting}>
+              {byokSubmitting ? "Connecting..." : "Connect Key"}
+            </Button>
+          </div>
+        </form>
+      </Modal>
+
+      {/* ========================================================= */}
+      {/* MODAL: KEY GENERATED SUCCESS (Tab 1) */}
+      {/* ========================================================= */}
       {createdKeyResult && (
         <Modal
           isOpen={!!createdKeyResult}

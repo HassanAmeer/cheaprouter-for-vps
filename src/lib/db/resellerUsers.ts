@@ -36,6 +36,21 @@ export interface UserByokKey {
   updatedAt: string;
 }
 
+export interface EnrichedUserByokKey {
+  id: number;
+  userId: string;
+  userName: string | null;
+  userEmail: string | null;
+  providerId: string;
+  maskedKey: string;
+  isPaused: boolean;
+  lastUsedAt: string | null;
+  requests: number;
+  tokens: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface ResellerUserKey {
   id: number;
   userId: string;
@@ -399,10 +414,20 @@ export function upsertUserByokKey(params: {
   userId: string;
   providerId: string;
   maskedKey: string;
+  userName?: string | null;
+  userEmail?: string | null;
 }): UserByokKey {
   const db = getDbInstance();
   const now = new Date().toISOString();
   backupDbFile("pre-write");
+
+  if (params.userEmail || params.userName) {
+    upsertResellerUser({
+      id: params.userId,
+      email: params.userEmail || `${params.userId}@reseller.user`,
+      name: params.userName || params.userId,
+    });
+  }
 
   const existing = db
     .prepare("SELECT id FROM user_byok_keys WHERE user_id = ? AND provider_id = ?")
@@ -432,6 +457,66 @@ function getUserByokKeyById(userId: string, providerId: string): UserByokKey | u
   return row ? fromByokRow(row) : undefined;
 }
 
+/**
+ * Get all user BYOK keys across all users joined with user details.
+ */
+export function getAllUserByokKeys(): EnrichedUserByokKey[] {
+  const db = getDbInstance();
+  const rows = db
+    .prepare(
+      `SELECT
+        b.id,
+        b.user_id,
+        COALESCE(u.name, k.user_name) as user_name,
+        COALESCE(u.email, k.user_email) as user_email,
+        b.provider_id,
+        b.masked_key,
+        b.is_paused,
+        b.last_used_at,
+        b.requests,
+        b.tokens,
+        b.created_at,
+        b.updated_at
+      FROM user_byok_keys b
+      LEFT JOIN reseller_users u ON b.user_id = u.id
+      LEFT JOIN (
+        SELECT user_id, user_name, user_email
+        FROM reseller_user_keys
+        GROUP BY user_id
+      ) k ON b.user_id = k.user_id
+      ORDER BY b.created_at DESC`
+    )
+    .all() as Array<{
+      id: number;
+      user_id: string;
+      user_name: string | null;
+      user_email: string | null;
+      provider_id: string;
+      masked_key: string;
+      is_paused: number;
+      last_used_at: string | null;
+      requests: number;
+      tokens: number;
+      created_at: string;
+      updated_at: string;
+    }>;
+
+  return rows.map((r) => ({
+    id: r.id,
+    userId: r.user_id,
+    userName: r.user_name,
+    userEmail: r.user_email,
+    providerId: r.provider_id,
+    maskedKey: r.masked_key,
+    isPaused: r.is_paused === 1,
+    lastUsedAt: r.last_used_at,
+    requests: r.requests,
+    tokens: r.tokens,
+    createdAt: r.created_at,
+    updatedAt: r.updated_at,
+  }));
+}
+
 export function setUserByokPaused(userId: string, providerId: string, paused: boolean): void {
   const db = getDbInstance();
   backupDbFile("pre-write");
@@ -446,6 +531,39 @@ export function deleteUserByokKey(userId: string, providerId: string): boolean {
   const info = db
     .prepare("DELETE FROM user_byok_keys WHERE user_id = ? AND provider_id = ?")
     .run(userId, providerId);
+  return info.changes > 0;
+}
+
+export function deleteUserByokKeyById(id: number): boolean {
+  const db = getDbInstance();
+  backupDbFile("pre-write");
+  const info = db.prepare("DELETE FROM user_byok_keys WHERE id = ?").run(id);
+  return info.changes > 0;
+}
+
+export async function deleteResellerUser(userId: string): Promise<boolean> {
+  ensureResellerUserKeysTable();
+  const db = getDbInstance();
+  backupDbFile("pre-write");
+
+  const userKeys = db
+    .prepare("SELECT api_key_id FROM reseller_user_keys WHERE user_id = ?")
+    .all(userId) as Array<{ api_key_id?: string }>;
+
+  for (const k of userKeys) {
+    if (k.api_key_id) {
+      try {
+        const { deleteApiKey } = await import("./apiKeys");
+        await deleteApiKey(k.api_key_id);
+      } catch (e) {
+        console.warn("[resellerUsers] deleteApiKey failed:", e);
+      }
+    }
+  }
+
+  db.prepare("DELETE FROM reseller_user_keys WHERE user_id = ?").run(userId);
+  db.prepare("DELETE FROM user_byok_keys WHERE user_id = ?").run(userId);
+  const info = db.prepare("DELETE FROM reseller_users WHERE id = ?").run(userId);
   return info.changes > 0;
 }
 

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { CORS_HEADERS, handleCorsOptions } from "@/shared/utils/cors";
 import { buildErrorBody } from "@cheaproute/open-sse/utils/error.ts";
+import { getSettings } from "@/lib/db/settings";
 import {
   getResellerUsers,
   getUserByokKeys,
@@ -9,9 +10,12 @@ import {
   upsertUserByokKey,
   setUserByokPaused,
   deleteUserByokKey,
+  deleteUserByokKeyById,
+  getAllUserByokKeys,
   getResellerUserKeys,
   createResellerUserKey,
   deleteResellerUserKey,
+  deleteResellerUser,
   getAvailableModelsAndCombos,
 } from "@/lib/db/resellerUsers";
 
@@ -22,6 +26,7 @@ export async function OPTIONS() {
 }
 
 const createKeyUserSchema = z.object({
+  action: z.string().optional(),
   id: z.string().min(1).optional(),
   userId: z.string().min(1).optional(),
   name: z.string().nullable().optional(),
@@ -33,12 +38,18 @@ const createKeyUserSchema = z.object({
   tokenBudget: z.number().nullable().optional(),
   rpmLimit: z.number().int().nullable().optional(),
   expiresAt: z.string().nullable().optional(),
+  providerId: z.string().min(1).optional(),
+  maskedKey: z.string().min(1).optional(),
 });
 
 const byokSchema = z.object({
   userId: z.string().min(1),
   providerId: z.string().min(1),
-  maskedKey: z.string().min(1),
+  maskedKey: z.string().optional(),
+  apiKey: z.string().optional(),
+  key: z.string().optional(),
+  userName: z.string().nullable().optional(),
+  userEmail: z.string().nullable().optional(),
 });
 
 const pauseSchema = z.object({
@@ -50,6 +61,7 @@ const pauseSchema = z.object({
 export async function GET() {
   try {
     const userKeys = getResellerUserKeys();
+    const byokKeys = getAllUserByokKeys();
     const available = await getAvailableModelsAndCombos();
     const legacyUsers = getResellerUsers();
     const users = legacyUsers.map((u) => ({
@@ -57,12 +69,22 @@ export async function GET() {
       byokKeys: getUserByokKeys(u.id),
     }));
 
+    let publishedProviders: string[] = [];
+    try {
+      const settings = await getSettings();
+      publishedProviders = Array.isArray(settings.publishedProviders)
+        ? (settings.publishedProviders as string[])
+        : [];
+    } catch {}
+
     return NextResponse.json(
       {
         success: true,
         userKeys,
+        byokKeys,
         users,
         availableModels: available,
+        publishedProviders,
       },
       { headers: CORS_HEADERS }
     );
@@ -77,6 +99,40 @@ export async function GET() {
 export async function POST(request: Request) {
   try {
     const body = await request.json();
+
+    // Check if this is a BYOK key creation / registration request
+    if (body?.action === "addByok" || (body?.providerId && (body?.maskedKey || body?.apiKey || body?.key))) {
+      const parsedByok = byokSchema.safeParse(body);
+      if (!parsedByok.success) {
+        return NextResponse.json(
+          { success: false, error: "Invalid BYOK payload", issues: parsedByok.error.issues },
+          { status: 400, headers: CORS_HEADERS }
+        );
+      }
+      const raw = parsedByok.data.maskedKey || parsedByok.data.apiKey || parsedByok.data.key || "";
+      const maskedKey = raw.includes("...")
+        ? raw
+        : raw.length > 10
+        ? `${raw.slice(0, 6)}...${raw.slice(-4)}`
+        : raw;
+
+      if (!maskedKey) {
+        return NextResponse.json(
+          { success: false, error: "A key or maskedKey is required" },
+          { status: 400, headers: CORS_HEADERS }
+        );
+      }
+
+      const key = upsertUserByokKey({
+        userId: parsedByok.data.userId,
+        providerId: parsedByok.data.providerId,
+        maskedKey,
+        userName: parsedByok.data.userName,
+        userEmail: parsedByok.data.userEmail,
+      });
+      return NextResponse.json({ success: true, key }, { status: 201, headers: CORS_HEADERS });
+    }
+
     const parsed = createKeyUserSchema.safeParse(body);
     if (!parsed.success) {
       return NextResponse.json(
@@ -101,7 +157,7 @@ export async function POST(request: Request) {
       userId,
       userName,
       userEmail,
-      planTier: data.planTier || "free",
+      planTier: data.planTier || data.plan || "free",
       allowedModels: data.allowedModels || [],
       tokenBudget: data.tokenBudget ?? null,
       rpmLimit: data.rpmLimit ?? null,
@@ -171,12 +227,22 @@ export async function PATCH(request: Request) {
 export async function DELETE(request: Request) {
   try {
     const url = new URL(request.url);
+
+    // Delete BYOK key by row ID
+    const byokId = url.searchParams.get("byokId");
+    if (byokId) {
+      const deleted = deleteUserByokKeyById(Number(byokId));
+      return NextResponse.json({ success: true, deleted }, { status: 200, headers: CORS_HEADERS });
+    }
+
+    // Delete user API key by row ID
     const keyId = url.searchParams.get("id");
     if (keyId) {
       const deleted = await deleteResellerUserKey(Number(keyId));
       return NextResponse.json({ success: true, deleted }, { status: 200, headers: CORS_HEADERS });
     }
 
+    // Delete BYOK key by userId & providerId
     const userId = url.searchParams.get("userId");
     const providerId = url.searchParams.get("providerId");
     if (userId && providerId) {
@@ -187,8 +253,17 @@ export async function DELETE(request: Request) {
       );
     }
 
+    // Delete entire user (all keys and profile) by userId
+    if (userId) {
+      const deleted = await deleteResellerUser(userId);
+      return NextResponse.json(
+        { success: true, deleted },
+        { status: 200, headers: CORS_HEADERS }
+      );
+    }
+
     return NextResponse.json(
-      { success: false, error: "id parameter required to delete user key" },
+      { success: false, error: "id, byokId or userId parameters required" },
       { status: 400, headers: CORS_HEADERS }
     );
   } catch (error) {
