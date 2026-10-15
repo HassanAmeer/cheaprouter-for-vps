@@ -1219,6 +1219,10 @@ function CombosPageContent() {
         <div>
           <h1 className="text-2xl font-semibold">{t("title")}</h1>
           <p className="text-sm text-text-muted mt-1">{t("description")}</p>
+          <p className="text-xs text-amber-500 font-medium mt-1.5 flex items-center gap-1.5">
+            <span className="material-symbols-outlined text-[15px]">info</span>
+            Models and combos configured here are available via the /v1/models API endpoint.
+          </p>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
