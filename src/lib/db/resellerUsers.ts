@@ -8,7 +8,7 @@
 
 import { getDbInstance } from "./core";
 import { backupDbFile } from "./backup";
-import { createApiKey, updateApiKeyPermissions } from "./apiKeys";
+import { createApiKey, updateApiKeyPermissions, invalidateApiKeyCaches } from "./apiKeys";
 import { getConsistentMachineId } from "@/shared/utils/machineId";
 
 export interface UserModelUsage {
@@ -572,6 +572,7 @@ export function updateUserQuota(params: {
 
 /**
  * Toggle user Ban status (0 = Active, 1 = Banned).
+ * Synchronizes with native api_keys so requests fail immediately.
  */
 export function setUserBanStatus(userId: string, isBanned: boolean): void {
   ensureResellerUserKeysTable();
@@ -580,6 +581,54 @@ export function setUserBanStatus(userId: string, isBanned: boolean): void {
   const val = isBanned ? 1 : 0;
   db.prepare("UPDATE reseller_users SET is_banned = ?, updated_at = datetime('now') WHERE id = ?").run(val, userId);
   db.prepare("UPDATE reseller_user_keys SET is_active = ?, updated_at = datetime('now') WHERE user_id = ?").run(isBanned ? 0 : 1, userId);
+
+  try {
+    db.prepare(`
+      UPDATE api_keys
+      SET is_banned = ?, is_active = ?, updated_at = datetime('now')
+      WHERE id IN (SELECT api_key_id FROM reseller_user_keys WHERE user_id = ? AND api_key_id IS NOT NULL)
+    `).run(val, isBanned ? 0 : 1, userId);
+
+    invalidateApiKeyCaches();
+  } catch (err) {
+    console.warn("[resellerUsers] Failed to sync ban status to api_keys:", err);
+  }
+}
+
+/**
+ * Look up reseller user info by native api_key_id.
+ */
+export function getResellerUserByApiKeyId(apiKeyId: string): {
+  userId: string;
+  isBanned: boolean;
+  tokenBudget: number | null;
+  tokensUsed: number;
+  rpmLimit: number | null;
+} | null {
+  if (!apiKeyId) return null;
+  ensureResellerUserKeysTable();
+  const db = getDbInstance();
+  try {
+    const row = db
+      .prepare(
+        `SELECT u.id as user_id, u.is_banned, u.token_budget, u.tokens_used, u.rpm_limit
+         FROM reseller_user_keys k
+         JOIN reseller_users u ON u.id = k.user_id
+         WHERE k.api_key_id = ?
+         LIMIT 1`
+      )
+      .get(apiKeyId) as any;
+    if (!row) return null;
+    return {
+      userId: row.user_id,
+      isBanned: row.is_banned === 1,
+      tokenBudget: row.token_budget,
+      tokensUsed: row.tokens_used || 0,
+      rpmLimit: row.rpm_limit,
+    };
+  } catch {
+    return null;
+  }
 }
 
 /**
@@ -605,6 +654,36 @@ export function recordUserModelUsage(userId: string, model: string, tokens: numb
        last_used_at = excluded.last_used_at,
        updated_at = excluded.updated_at`
   ).run(userId, model, tokens, now, now, now);
+}
+
+/**
+ * Record token consumption from a live API request for a reseller user key.
+ */
+export function recordResellerKeyUsage(apiKeyId: string, model: string, tokens: number): void {
+  if (tokens <= 0 || !apiKeyId) return;
+  try {
+    ensureResellerUserKeysTable();
+    const db = getDbInstance();
+    const now = new Date().toISOString();
+
+    const keyRow = db
+      .prepare("SELECT id, user_id FROM reseller_user_keys WHERE api_key_id = ? LIMIT 1")
+      .get(apiKeyId) as { id: number; user_id: string } | undefined;
+
+    if (!keyRow) return;
+
+    // 1. Update key tokens_used
+    db.prepare(
+      `UPDATE reseller_user_keys
+       SET tokens_used = tokens_used + ?, updated_at = ?
+       WHERE id = ?`
+    ).run(tokens, now, keyRow.id);
+
+    // 2. Update user tokens_used and model usage
+    recordUserModelUsage(keyRow.user_id, model, tokens);
+  } catch (err) {
+    console.error("[resellerUsers] Failed to record reseller key usage:", err);
+  }
 }
 
 /**
@@ -779,6 +858,7 @@ export async function deleteResellerUser(userId: string): Promise<boolean> {
 
   db.prepare("DELETE FROM reseller_user_keys WHERE user_id = ?").run(userId);
   db.prepare("DELETE FROM user_byok_keys WHERE user_id = ?").run(userId);
+  db.prepare("DELETE FROM user_model_usage WHERE user_id = ?").run(userId);
   const info = db.prepare("DELETE FROM reseller_users WHERE id = ?").run(userId);
   return info.changes > 0;
 }

@@ -10,6 +10,7 @@
 
 import { extractApiKey } from "@/sse/services/auth";
 import { getApiKeyMetadata, isModelAllowedForKey, getApiKeyById } from "@/lib/db/apiKeys";
+import { getResellerUserByApiKeyId } from "@/lib/db/resellerUsers";
 import { getComboByName } from "@/lib/db/combos";
 import { isDashboardSessionAuthenticated } from "./apiAuth";
 import { resolveComboForModel } from "@/lib/db/modelComboMappings";
@@ -525,6 +526,14 @@ function validateKeyStatus(context: PolicyContext): Response | null {
       return errorResponse(HTTP_STATUS.FORBIDDEN, "This API key has expired");
     }
   }
+  if (apiKeyInfo.id) {
+    try {
+      const resellerUser = getResellerUserByApiKeyId(apiKeyInfo.id);
+      if (resellerUser?.isBanned) {
+        return errorResponse(HTTP_STATUS.FORBIDDEN, "User account is suspended or banned");
+      }
+    } catch {}
+  }
   return null;
 }
 
@@ -756,6 +765,23 @@ function validateTokenLimit(context: PolicyContext): Response | null {
 function validateKeyQuota(context: PolicyContext): Response | null {
   const { apiKeyInfo } = context;
   if (!apiKeyInfo.id) return null;
+
+  try {
+    const resellerUser = getResellerUserByApiKeyId(apiKeyInfo.id);
+    if (resellerUser) {
+      if (
+        typeof resellerUser.tokenBudget === "number" &&
+        resellerUser.tokenBudget > 0 &&
+        resellerUser.tokensUsed >= resellerUser.tokenBudget * 1_000_000
+      ) {
+        return errorResponse(
+          HTTP_STATUS.RATE_LIMITED,
+          `User account token quota exceeded (${(resellerUser.tokensUsed / 1_000_000).toFixed(2)}M / ${resellerUser.tokenBudget}M tokens used). Please upgrade your plan or top up.`
+        );
+      }
+    }
+  } catch {}
+
   try {
     const verdict = checkKeyQuota(apiKeyInfo.id);
     if (verdict.allowed) return null;

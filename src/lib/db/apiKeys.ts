@@ -287,6 +287,10 @@ function invalidateCaches() {
   _lastUsedUpdateCache.clear();
 }
 
+export function invalidateApiKeyCaches() {
+  invalidateCaches();
+}
+
 function toRecord(value: unknown): JsonRecord {
   return value && typeof value === "object" ? (value as JsonRecord) : {};
 }

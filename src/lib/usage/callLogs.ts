@@ -854,6 +854,20 @@ async function saveCallLogOperation(entry: any): Promise<void> {
     // attempt) keeps the summary instead of silently writing NULL.
     resetResilienceActions();
 
+    // Attribute tokens to reseller user & model breakdown if this key belongs to a reseller user
+    if (apiKeyId) {
+      try {
+        const totalTokens = (Number(logEntry.tokensIn) || 0) + (Number(logEntry.tokensOut) || 0);
+        const usedModel = logEntry.model || logEntry.requestedModel || "unknown";
+        if (totalTokens > 0) {
+          const { recordResellerKeyUsage } = await import("../db/resellerUsers");
+          recordResellerKeyUsage(apiKeyId, usedModel, totalTokens);
+        }
+      } catch {
+        // Non-blocking: fail-open for call log persistence
+      }
+    }
+
     if (detailState === "ready" && typeof logEntry.responseId === "string") {
       // The durable row is now authoritative; drop the bridge entry instead
       // of letting it idle until its TTL.
