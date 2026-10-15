@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useDisplayBaseUrl } from "@/shared/hooks";
 import { matchesSearch } from "@/shared/utils/turkishText";
+import ApiDocsIntegrationHub from "../components/ApiDocsIntegrationHub";
 
 /* ─── Types (mirror /api/openapi/spec) ────────────────────────────── */
 interface Endpoint {
@@ -178,6 +179,7 @@ function EndpointDoc({ ep, baseUrl }: { ep: Endpoint; baseUrl: string }) {
 
 export default function ApiReferencePage() {
   const baseUrl = useDisplayBaseUrl();
+  const [viewMode, setViewMode] = useState<"reseller" | "all">("reseller");
   const [catalog, setCatalog] = useState<CatalogData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -273,19 +275,49 @@ export default function ApiReferencePage() {
 
   return (
     <div className="p-4 md:p-6 max-w-7xl mx-auto">
-      <div className="mb-5">
-        <h1 className="text-2xl font-bold text-text-main">API Reference</h1>
-        <p className="text-sm text-text-muted mt-1">
-          Complete reference for every endpoint — grouped by method.{" "}
-          <span className="text-text-muted/70">Base URL: </span>
-          <span className="font-mono text-text-main">{baseUrl}</span>
-        </p>
-        <p className="text-xs text-text-muted mt-2 rounded-md border border-border bg-surface/50 p-2">
-          <span className="font-semibold text-text-main">Authentication:</span> pass your
-          CheapRoute API key as <span className="font-mono">Authorization: Bearer &lt;key&gt;</span>{" "}
-          (endpoints marked <span className="font-semibold">AUTH</span> require it).
-        </p>
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-5">
+        <div>
+          <h1 className="text-2xl font-bold text-text-main">API Documentation</h1>
+          <p className="text-sm text-text-muted mt-1">
+            Reseller website integration guides, CRUD endpoints, and AI proxy references.{" "}
+            <span className="text-text-muted/70">Base URL: </span>
+            <span className="font-mono text-text-main">{baseUrl}</span>
+          </p>
+        </div>
+
+        <div className="flex items-center gap-1 bg-surface-raised p-1 rounded-lg border border-border self-start md:self-auto">
+          <button
+            onClick={() => setViewMode("reseller")}
+            className={`px-3 py-1.5 text-xs font-medium rounded-md transition ${
+              viewMode === "reseller"
+                ? "bg-action text-white shadow-xs"
+                : "text-text-muted hover:text-text-primary"
+            }`}
+          >
+            Reseller Integration APIs (Recommended)
+          </button>
+          <button
+            onClick={() => setViewMode("all")}
+            className={`px-3 py-1.5 text-xs font-medium rounded-md transition ${
+              viewMode === "all"
+                ? "bg-action text-white shadow-xs"
+                : "text-text-muted hover:text-text-primary"
+            }`}
+          >
+            All Raw Endpoints
+          </button>
+        </div>
       </div>
+
+      {viewMode === "reseller" && <ApiDocsIntegrationHub />}
+
+      {viewMode === "all" && (
+        <>
+          <p className="text-xs text-text-muted mb-4 rounded-md border border-border bg-surface/50 p-2">
+            <span className="font-semibold text-text-main">Authentication:</span> pass your
+            CheapRoute API key as <span className="font-mono">Authorization: Bearer &lt;key&gt;</span>{" "}
+            (endpoints marked <span className="font-semibold">AUTH</span> require it).
+          </p>
 
       {loading && (
         <div className="space-y-3">
@@ -345,6 +377,8 @@ export default function ApiReferencePage() {
             )}
           </section>
         </div>
+      )}
+        </>
       )}
     </div>
   );
