@@ -85,7 +85,7 @@ export async function POST(request: Request) {
     const uploadRes = await fetch(workerScriptUrl, {
       method: "PUT",
       headers: { Authorization: `Bearer ${apiToken}`, ...uploadHeaders },
-      body: uploadBody,
+      body: uploadBody as any,
     });
 
     if (!uploadRes.ok) {

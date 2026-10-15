@@ -203,9 +203,14 @@ async function postHandler(request, _context) {
         if (!Array.isArray(models)) continue;
         for (const model of models) {
           if (!model?.id || !Array.isArray(model.supportedEndpoints)) continue;
-          if (!model.supportedEndpoints.includes("images")) continue;
+          const isImageEndpoint =
+            model.supportedEndpoints.includes("images") ||
+            model.supportedEndpoints.includes("images-generations") ||
+            model.supportedEndpoints.includes("image");
+          if (!isImageEndpoint) continue;
           const fullId = `${providerId}/${model.id}`;
-          if (fullId === body.model) {
+          const modelLower = body.model.toLowerCase();
+          if (fullId.toLowerCase() === modelLower || model.id.toLowerCase() === modelLower) {
             provider = providerId;
             requestedModel = model.id;
             isCustomModel = true;

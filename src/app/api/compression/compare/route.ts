@@ -17,7 +17,7 @@ const CompareRequestSchema = z.object({
   engineIds: z.array(z.string()).min(1).optional(),
 });
 
-function messagesToText(messages: Array<{ role: string; content: unknown }>): string {
+function messagesToText(messages: Array<{ role: string; content?: unknown }>): string {
   return messages
     .map((m) => `${m.role}: ${typeof m.content === "string" ? m.content : JSON.stringify(m.content)}`)
     .join("\n");

@@ -18,6 +18,7 @@ import {
 import { providerText } from "../providerPageHelpers";
 import ModelCompatPopover from "./ModelCompatPopover";
 import { formatManualContextBadge } from "./CustomModelsSection";
+import { detectModelCapabilities } from "@/shared/utils/modelCapabilities";
 
 // ---------------------------------------------------------------------------
 // Shared prop types
@@ -322,54 +323,20 @@ export default function ModelRow({
   const [aliasValue, setAliasValue] = useState(alias || "");
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // Detect capabilities
-  const mid = model.id.toLowerCase();
-  const capsLower = (model.capabilities ?? []).map((c) => String(c).toLowerCase());
-  const endpoints = (model.supportedEndpoints ?? []).map((e) => String(e).toLowerCase());
-  const hasReasoning =
-    capsLower.includes("reasoning") ||
-    capsLower.includes("thinking") ||
-    mid.includes("think") ||
-    mid.includes("reason") ||
-    mid.includes("r1") ||
-    mid.includes("o1") ||
-    mid.includes("o3") ||
-    model.reasoning === true;
-  const hasVision =
-    capsLower.includes("vision") ||
-    capsLower.includes("image") ||
-    model.supportsVision === true ||
-    endpoints.includes("images") ||
-    mid.includes("vision") ||
-    mid.includes("vl");
-  const hasCode =
-    capsLower.includes("code") ||
-    capsLower.includes("coding") ||
-    mid.includes("code") ||
-    mid.includes("coder");
-  const hasSearch =
-    capsLower.includes("search") ||
-    capsLower.includes("web_search") ||
-    capsLower.includes("browsing") ||
-    endpoints.includes("search") ||
-    mid.includes("search");
-  const hasChat =
-    capsLower.includes("chat") ||
-    endpoints.includes("chat") ||
-    (!mid.includes("embed") && !mid.includes("rerank") && !mid.includes("whisper"));
-  const hasTools =
-    capsLower.includes("tools") ||
-    capsLower.includes("tool_use") ||
-    endpoints.includes("tools") ||
-    (!mid.includes("embed") && !mid.includes("rerank"));
-  const hasAudio =
-    capsLower.includes("audio") ||
-    endpoints.includes("audio") ||
-    endpoints.includes("audio-speech") ||
-    endpoints.includes("audio-transcriptions") ||
-    mid.includes("audio") ||
-    mid.includes("tts") ||
-    mid.includes("whisper");
+  // Detect capabilities using centralized engine
+  const caps = detectModelCapabilities(model);
+  const {
+    hasReasoning,
+    hasVision,
+    hasCode,
+    hasSearch,
+    hasChat,
+    hasTools,
+    hasAudio,
+    hasImageGen,
+    hasVideo,
+    hasEmbedding,
+  } = caps;
 
   const contextWindow = model.inputTokenLimit || model.contextWindowOverride;
 
@@ -486,19 +453,9 @@ export default function ModelRow({
               </span>
             </span>
           )}
-          {hasCode && (
-            <span
-              title="Code: Programming, debugging & syntax generation"
-              className="p-1 rounded-md bg-[#222224] hover:bg-[#2c2c2e] text-[#8e8e93] hover:text-white border border-white/5 hover:border-white/20 transition-all duration-150 inline-flex items-center justify-center cursor-default shadow-xs"
-            >
-              <span className="material-symbols-outlined text-[12px] leading-none">
-                code
-              </span>
-            </span>
-          )}
           {hasVision && (
             <span
-              title="Vision: Image analysis & visual inputs"
+              title="Vision: Multimodal image analysis & visual inputs"
               className="p-1 rounded-md bg-[#222224] hover:bg-[#2c2c2e] text-[#8e8e93] hover:text-white border border-white/5 hover:border-white/20 transition-all duration-150 inline-flex items-center justify-center cursor-default shadow-xs"
             >
               <span className="material-symbols-outlined text-[12px] leading-none">
@@ -516,23 +473,33 @@ export default function ModelRow({
               </span>
             </span>
           )}
-          {hasSearch && (
+          {hasCode && (
             <span
-              title="Search: Live web search & real-time grounding"
+              title="Code: Programming, debugging & syntax generation"
               className="p-1 rounded-md bg-[#222224] hover:bg-[#2c2c2e] text-[#8e8e93] hover:text-white border border-white/5 hover:border-white/20 transition-all duration-150 inline-flex items-center justify-center cursor-default shadow-xs"
             >
               <span className="material-symbols-outlined text-[12px] leading-none">
-                travel_explore
+                code
               </span>
             </span>
           )}
-          {hasTools && (
+          {hasImageGen && (
             <span
-              title="Tools: Function calling & external tool use"
+              title="Image Generation: Text-to-image synthesis"
               className="p-1 rounded-md bg-[#222224] hover:bg-[#2c2c2e] text-[#8e8e93] hover:text-white border border-white/5 hover:border-white/20 transition-all duration-150 inline-flex items-center justify-center cursor-default shadow-xs"
             >
               <span className="material-symbols-outlined text-[12px] leading-none">
-                build
+                palette
+              </span>
+            </span>
+          )}
+          {hasVideo && (
+            <span
+              title="Video: Video understanding & motion analysis"
+              className="p-1 rounded-md bg-[#222224] hover:bg-[#2c2c2e] text-[#8e8e93] hover:text-white border border-white/5 hover:border-white/20 transition-all duration-150 inline-flex items-center justify-center cursor-default shadow-xs"
+            >
+              <span className="material-symbols-outlined text-[12px] leading-none">
+                videocam
               </span>
             </span>
           )}
@@ -543,6 +510,36 @@ export default function ModelRow({
             >
               <span className="material-symbols-outlined text-[12px] leading-none">
                 volume_up
+              </span>
+            </span>
+          )}
+          {hasSearch && (
+            <span
+              title="Search: Live web search & real-time grounding"
+              className="p-1 rounded-md bg-[#222224] hover:bg-[#2c2c2e] text-[#8e8e93] hover:text-white border border-white/5 hover:border-white/20 transition-all duration-150 inline-flex items-center justify-center cursor-default shadow-xs"
+            >
+              <span className="material-symbols-outlined text-[12px] leading-none">
+                travel_explore
+              </span>
+            </span>
+          )}
+          {hasEmbedding && (
+            <span
+              title="Embedding: Vector semantic representations"
+              className="p-1 rounded-md bg-[#222224] hover:bg-[#2c2c2e] text-[#8e8e93] hover:text-white border border-white/5 hover:border-white/20 transition-all duration-150 inline-flex items-center justify-center cursor-default shadow-xs"
+            >
+              <span className="material-symbols-outlined text-[12px] leading-none">
+                hub
+              </span>
+            </span>
+          )}
+          {hasTools && (
+            <span
+              title="Tools: Function calling & external tool use"
+              className="p-1 rounded-md bg-[#222224] hover:bg-[#2c2c2e] text-[#8e8e93] hover:text-white border border-white/5 hover:border-white/20 transition-all duration-150 inline-flex items-center justify-center cursor-default shadow-xs"
+            >
+              <span className="material-symbols-outlined text-[12px] leading-none">
+                build
               </span>
             </span>
           )}

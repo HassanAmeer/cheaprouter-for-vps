@@ -1,3 +1,5 @@
+import { resolveCustomStatusCodeMessage } from "../utils/statusCodeMessages.ts";
+
 export type ErrorInfo = {
   type: string;
   code: string;
@@ -211,7 +213,8 @@ export function getErrorInfo(statusCode: number): ErrorInfo {
 }
 
 export function getDefaultErrorMessage(statusCode: number): string {
-  return DEFAULT_ERROR_MESSAGES[statusCode] || "An error occurred";
+  const custom = resolveCustomStatusCodeMessage(statusCode);
+  return custom ?? DEFAULT_ERROR_MESSAGES[statusCode] ?? "An error occurred";
 }
 
 export function calculateBackoffCooldown(level = 0): number {

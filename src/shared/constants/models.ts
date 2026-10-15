@@ -32,9 +32,11 @@ export function isValidModel(aliasOrId: string, modelId: string) {
   if (isOpenAICompatibleProvider(aliasOrId)) return true;
   if (isAnthropicCompatibleProvider(aliasOrId)) return true;
   if (PASSTHROUGH_PROVIDERS.has(aliasOrId)) return true;
-  const models = MODELS[aliasOrId];
+  const alias = PROVIDER_ID_TO_ALIAS[aliasOrId] || aliasOrId;
+  const models = MODELS[alias] || MODELS[aliasOrId];
   if (!models) return false;
-  return models.some((m) => m.id === modelId);
+  const clean = modelId.toLowerCase().trim();
+  return models.some((m) => m.id === modelId || m.id.toLowerCase() === clean);
 }
 
 // Legacy AI_MODELS for backward compatibility

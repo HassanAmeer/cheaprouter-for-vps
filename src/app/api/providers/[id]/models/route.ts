@@ -100,6 +100,7 @@ import { fetchCursorAvailableModels } from "@/lib/providerModels/cursorAvailable
 import { ensureCursorAutoCatalogEntry } from "@/lib/providerModels/cursorAutoCatalog";
 import { resolveCursorBearerToken } from "@cheaproute/open-sse/services/cursorApiKeyAuth.ts";
 import { resolveCopilotDiscoveryToken } from "@/lib/providerModels/copilotDiscoveryToken";
+import { detectModelCapabilities } from "@/shared/utils/modelCapabilities";
 import {
   asRecord,
   toNonEmptyString,
@@ -494,57 +495,10 @@ export async function GET(
     };
 
     const extractModelCapabilities = (m: any) => {
-      const caps = new Set<string>();
-      let supportsVision = m.supportsVision === true;
-      let reasoning = m.reasoning === true;
-      let isFree = m.isFree === true;
-
-      if (Array.isArray(m.capabilities)) {
-        for (const c of m.capabilities) {
-          if (typeof c === "string") caps.add(c.toLowerCase());
-        }
-      } else if (m.capabilities && typeof m.capabilities === "object") {
-        for (const [key, val] of Object.entries(m.capabilities)) {
-          if (val === true) caps.add(key.toLowerCase());
-        }
-      }
-
-      if (Array.isArray(m.categories)) {
-        for (const cat of m.categories) {
-          if (typeof cat === "string") caps.add(cat.toLowerCase());
-        }
-      }
-
-      if (Array.isArray(m.peers)) {
-        for (const peer of m.peers) {
-          if (Array.isArray(peer?.categories)) {
-            for (const cat of peer.categories) {
-              if (typeof cat === "string") caps.add(cat.toLowerCase());
-            }
-          }
-        }
-      }
-
-      if (caps.has("vision") || caps.has("image") || caps.has("images")) {
-        supportsVision = true;
-        caps.add("vision");
-      }
-      if (caps.has("reasoning") || caps.has("thinking") || caps.has("thought")) {
-        reasoning = true;
-        caps.add("reasoning");
-      }
-      if (caps.has("coding") || caps.has("code")) {
-        caps.add("coding");
-      }
-      if (caps.has("search") || caps.has("web_search") || caps.has("browsing")) {
-        caps.add("search");
-      }
-      if (caps.has("tool_use") || caps.has("tools") || caps.has("function_calling")) {
-        caps.add("tool_use");
-      }
-      if (caps.has("chat")) {
-        caps.add("chat");
-      }
+      const detected = detectModelCapabilities(m);
+      let supportsVision = detected.hasVision;
+      let reasoning = detected.hasReasoning;
+      let isFree = detected.isFree === true || m.isFree === true;
 
       const modelIdLower = String(m.id || m.modelId || "").toLowerCase();
       if (
@@ -555,11 +509,13 @@ export async function GET(
         (m.pricing && (Number(m.pricing.prompt) === 0 || Number(m.pricing.input) === 0))
       ) {
         isFree = true;
-        caps.add("free");
+        if (!detected.capabilities.includes("free")) {
+          detected.capabilities.push("free");
+        }
       }
 
       return {
-        capabilities: Array.from(caps),
+        capabilities: detected.capabilities,
         supportsVision,
         reasoning,
         isFree,

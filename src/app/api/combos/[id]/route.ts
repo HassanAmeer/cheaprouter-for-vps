@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getComboById, updateCombo, deleteCombo, getComboByName, getCombos } from "@/lib/db/combos";
+import { getComboById, updateCombo, deleteCombo, getComboByName, getComboByNameInsensitive, getCombos } from "@/lib/db/combos";
 import { isCloudEnabled } from "@/lib/db/settings";
 import { getConsistentMachineId } from "@/shared/utils/machineId";
 import { syncToCloud } from "@/lib/cloudSync";
@@ -201,7 +201,7 @@ export async function PUT(request, { params }) {
 
     // Check if name already exists (exclude current combo)
     if (body.name) {
-      const existing = await getComboByName(body.name);
+      const existing = await getComboByNameInsensitive(body.name);
       if (existing && existing.id !== id) {
         return comboErrorResponse(
           "COMBO_004",

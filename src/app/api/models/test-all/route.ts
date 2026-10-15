@@ -15,6 +15,7 @@ import { z } from "zod";
 import { requireManagementAuth } from "@/lib/api/requireManagementAuth";
 import { DEFAULT_MODEL_TEST_TIMEOUT_MS, runSingleModelTest } from "@/lib/api/modelTestRunner";
 import { setModelIsHidden } from "@/lib/db/models";
+import { upsertCustomization } from "@/lib/db/providerModelCustomizations";
 import { sanitizeErrorMessage } from "@cheaproute/open-sse/utils/error";
 import { getSettings } from "@/lib/db/settings";
 import { getProviderConnections } from "@/lib/db/providers";
@@ -225,6 +226,24 @@ export async function POST(request: Request) {
     }
 
     results[modelId] = entry;
+    if (!entry.skipped) {
+      try {
+        const isOk = entry.status === "ok";
+        upsertCustomization({
+          providerId,
+          originalModelId: modelId,
+          isTested: true,
+          testStatus: isOk ? "verified" : "failed",
+          testHttpStatus: entry.statusCode ?? (isOk ? 200 : 500),
+          testLatencyMs: entry.latencyMs,
+          testResponse:
+            (typeof entry.responseText === "string" ? entry.responseText.slice(0, 500) : null) ||
+            (typeof entry.error === "string" ? entry.error.slice(0, 500) : null),
+        });
+      } catch (custErr) {
+        log.warn("MODEL_TEST_ALL", `Failed to persist customization for ${modelId}: ${custErr}`);
+      }
+    }
     log.info(
       "MODEL_TEST_ALL",
       `Tested ${modelId}: ${entry.status}${entry.rateLimited ? " (rate-limited)" : ""}${entry.isTimeout ? " (timeout)" : ""}`,

@@ -249,8 +249,10 @@ export async function POST(request) {
             apiKeyName: null,
             correlationId: resolveIncomingCorrelationId(request.headers.get("x-correlation-id")),
           });
-          admission.lease?.release();
-          return finishAdmission(structuralAdmission.response);
+          const leaseToRelease = admission.lease;
+          admission.lease = null;
+          leaseToRelease?.release();
+          return structuralAdmission.response;
         }
         admission.lease = structuralAdmission.lease;
 

@@ -36,7 +36,8 @@ def get_modified_files():
             check=True
         )
         files = []
-        for line in res.stdout.strip().split("\n"):
+        for raw_line in res.stdout.splitlines():
+            line = raw_line.rstrip()
             if not line:
                 continue
             path = line[3:].strip().strip('"')
@@ -80,7 +81,7 @@ def main():
 
     ssh = paramiko.SSHClient()
     ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-    ssh.connect(VPS_HOST, username=VPS_USER, password=VPS_PASS, timeout=10)
+    ssh.connect(VPS_HOST, username=VPS_USER, password=VPS_PASS, timeout=10, look_for_keys=False, allow_agent=False)
     sftp = ssh.open_sftp()
 
     known_dirs = set()

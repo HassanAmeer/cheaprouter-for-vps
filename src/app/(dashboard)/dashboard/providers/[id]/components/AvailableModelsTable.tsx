@@ -51,91 +51,62 @@ export function formatContextWindow(tokens?: number): string {
   return String(tokens);
 }
 
+import { detectModelCapabilities } from "@/shared/utils/modelCapabilities";
+
 export function getModelCapabilities(model: ModelEntry) {
-  const mid = (model.id || "").toLowerCase();
-  const capsLower = (model.capabilities ?? []).map((c) => String(c).toLowerCase());
-  const endpoints = (model.supportedEndpoints ?? []).map((e) => String(e).toLowerCase());
-
-  const hasReasoning =
-    capsLower.includes("reasoning") ||
-    capsLower.includes("thinking") ||
-    mid.includes("think") ||
-    mid.includes("reason") ||
-    mid.includes("r1") ||
-    mid.includes("o1") ||
-    mid.includes("o3") ||
-    model.reasoning === true ||
-    Boolean(model.supportsThinking) ||
-    Boolean(model.alwaysThinking);
-
-  const hasVision =
-    capsLower.includes("vision") ||
-    capsLower.includes("image") ||
-    model.supportsVision === true ||
-    endpoints.includes("images") ||
-    mid.includes("vision") ||
-    mid.includes("vl");
-
-  const hasCode =
-    capsLower.includes("code") ||
-    capsLower.includes("coding") ||
-    mid.includes("code") ||
-    mid.includes("coder") ||
-    mid.includes("codex") ||
-    mid.includes("devstral");
-
-  const hasSearch =
-    capsLower.includes("search") ||
-    capsLower.includes("web_search") ||
-    capsLower.includes("browsing") ||
-    endpoints.includes("search") ||
-    mid.includes("search");
-
-  const hasAudio =
-    capsLower.includes("audio") ||
-    capsLower.includes("stt") ||
-    capsLower.includes("tts") ||
-    endpoints.includes("audio-speech") ||
-    endpoints.includes("audio-transcriptions") ||
-    endpoints.some((e) => e.startsWith("audio")) ||
-    mid.includes("audio") ||
-    mid.includes("whisper");
-
-  const hasTools =
-    capsLower.includes("tools") ||
-    capsLower.includes("tool_use") ||
-    endpoints.includes("tools") ||
-    (!mid.includes("embed") && !mid.includes("rerank"));
-
-  const hasChat =
-    capsLower.includes("chat") ||
-    capsLower.includes("text") ||
-    endpoints.includes("chat") ||
-    (!mid.includes("embed") && !mid.includes("rerank") && !mid.includes("whisper"));
-
-  return { hasReasoning, hasVision, hasCode, hasSearch, hasAudio, hasTools, hasChat };
+  return detectModelCapabilities(model);
 }
 
 export const CAPABILITY_FILTER_BUTTONS = [
   { key: "all", label: "All", icon: "select_all" },
   { key: "text", label: "Text", icon: "chat" },
-  { key: "code", label: "Code", icon: "code" },
   { key: "vision", label: "Vision", icon: "visibility" },
   { key: "reasoning", label: "Reasoning", icon: "psychology" },
-  { key: "search", label: "Search", icon: "travel_explore" },
+  { key: "code", label: "Code", icon: "code" },
+  { key: "image", label: "Image Gen", icon: "palette" },
+  { key: "video", label: "Video", icon: "videocam" },
   { key: "audio", label: "Audio", icon: "volume_up" },
+  { key: "search", label: "Search", icon: "travel_explore" },
+  { key: "embedding", label: "Embedding", icon: "hub" },
 ] as const;
 
 function matchesCapabilityFilter(model: ModelEntry, filter: string): boolean {
   if (filter === "all") return true;
   const caps = getModelCapabilities(model);
   if (filter === "text") return caps.hasChat;
-  if (filter === "code") return caps.hasCode;
   if (filter === "vision") return caps.hasVision;
   if (filter === "reasoning") return caps.hasReasoning;
-  if (filter === "search") return caps.hasSearch;
+  if (filter === "code") return caps.hasCode;
+  if (filter === "image") return caps.hasImageGen;
+  if (filter === "video") return caps.hasVideo;
   if (filter === "audio") return caps.hasAudio;
+  if (filter === "search") return caps.hasSearch;
+  if (filter === "embedding") return caps.hasEmbedding;
   return true;
+}
+
+function isImageResponse(text?: string): boolean {
+  if (!text) return false;
+  const t = text.trim();
+  return (
+    t.startsWith("data:image/") ||
+    /^https?:\/\/[^\s"'<>]+\.(?:png|jpg|jpeg|webp|gif)(?:\?[^\s"'<>]*)?$/i.test(t) ||
+    /https?:\/\/images\.unsplash\.com\/[^\s"'<>]+/i.test(t) ||
+    /!\[.*?\]\((https?:\/\/[^\s)]+)\)/.test(t)
+  );
+}
+
+function extractImageUrl(text?: string): string {
+  if (!text) return "";
+  const t = text.trim();
+  if (t.startsWith("data:image/")) return t;
+  const mdMatch = t.match(/!\[.*?\]\((https?:\/\/[^\s)]+)\)/);
+  if (mdMatch) return mdMatch[1];
+  const urlMatch = t.match(/https?:\/\/[^\s"'<>]+\.(?:png|jpg|jpeg|webp|gif)(?:\?[^\s"'<>]*)?/i);
+  if (urlMatch) return urlMatch[0];
+  const unsplashMatch = t.match(/https?:\/\/images\.unsplash\.com\/[^\s"'<>]+/i);
+  if (unsplashMatch) return unsplashMatch[0];
+  return t;
 }
 
 const SELECTED_CAPS_STORAGE_KEY = "cheaproute.modelSelectedCapabilities.v1";
@@ -277,7 +248,16 @@ export default function AvailableModelsTable({
   };
 
   const handleRunTest = async (modelId: string) => {
-    const selectedCap = selectedCapabilities[modelId] || "text";
+    const model = models.find((m) => m.id === modelId);
+    const caps = model ? getModelCapabilities(model) : null;
+    const defaultCap = caps?.hasImageGen && !caps?.hasChat
+      ? "image"
+      : caps?.hasEmbedding && !caps?.hasChat
+        ? "embedding"
+        : caps?.hasAudio && !caps?.hasChat
+          ? "audio"
+          : "text";
+    const selectedCap = selectedCapabilities[modelId] || defaultCap;
     const promptToRun = getPromptForCapability(selectedCap, testPrompt);
     setTestingModelId(modelId);
     try {
@@ -337,20 +317,26 @@ export default function AvailableModelsTable({
     const counts: Record<string, number> = {
       all: models.length,
       text: 0,
-      code: 0,
       vision: 0,
       reasoning: 0,
-      search: 0,
+      code: 0,
+      image: 0,
+      video: 0,
       audio: 0,
+      search: 0,
+      embedding: 0,
     };
     for (const m of models) {
       const c = getModelCapabilities(m);
       if (c.hasChat) counts.text++;
-      if (c.hasCode) counts.code++;
       if (c.hasVision) counts.vision++;
       if (c.hasReasoning) counts.reasoning++;
-      if (c.hasSearch) counts.search++;
+      if (c.hasCode) counts.code++;
+      if (c.hasImageGen) counts.image++;
+      if (c.hasVideo) counts.video++;
       if (c.hasAudio) counts.audio++;
+      if (c.hasSearch) counts.search++;
+      if (c.hasEmbedding) counts.embedding++;
     }
     return counts;
   }, [models]);
@@ -524,7 +510,14 @@ export default function AvailableModelsTable({
 
                 // Detect capabilities using unified helper
                 const caps = getModelCapabilities(model);
-                const selectedCap = selectedCapabilities[model.id] || "text";
+                const defaultCap = caps.hasImageGen && !caps.hasChat
+                  ? "image"
+                  : caps.hasEmbedding && !caps.hasChat
+                    ? "embedding"
+                    : caps.hasAudio && !caps.hasChat
+                      ? "audio"
+                      : "text";
+                const selectedCap = selectedCapabilities[model.id] || defaultCap;
 
                 return (
                   <tr key={model.id} className="hover:bg-[#181818]/60 transition-colors group">
@@ -586,10 +579,10 @@ export default function AvailableModelsTable({
                           <button
                             type="button"
                             onClick={() => handleSelectCapability(model.id, "text")}
-                            title={`Text: Dialogue & instruction prompt (${
+                            title={`Text / Chat: Conversational dialogue & instructions (${
                               selectedCap === "text" ? "Active for test" : "Click to select for test"
                             })`}
-                            className={`px-1.5 py-1 rounded-md text-[11px] font-medium transition-all duration-150 inline-flex items-center gap-1 cursor-pointer ${
+                            className={`size-6 rounded-md text-[11px] font-medium transition-all duration-150 inline-flex items-center justify-center cursor-pointer ${
                               selectedCap === "text"
                                 ? "bg-emerald-500/25 text-emerald-300 border border-emerald-500/60 ring-1 ring-emerald-500/40 shadow-xs scale-105"
                                 : "bg-[#222224] text-[#8e8e93] hover:text-white hover:bg-[#2c2c2e] border border-white/5 hover:border-white/20"
@@ -598,42 +591,18 @@ export default function AvailableModelsTable({
                             <span className="material-symbols-outlined text-[13px] leading-none">
                               chat
                             </span>
-                            {selectedCap === "text" && (
-                              <span className="text-[10px] uppercase font-semibold">text</span>
-                            )}
-                          </button>
-                        )}
-                        {caps.hasCode && (
-                          <button
-                            type="button"
-                            onClick={() => handleSelectCapability(model.id, "code")}
-                            title={`Code: Programming & syntax prompt (${
-                              selectedCap === "code" ? "Active for test" : "Click to select for test"
-                            })`}
-                            className={`px-1.5 py-1 rounded-md text-[11px] font-medium transition-all duration-150 inline-flex items-center gap-1 cursor-pointer ${
-                              selectedCap === "code"
-                                ? "bg-emerald-500/25 text-emerald-300 border border-emerald-500/60 ring-1 ring-emerald-500/40 shadow-xs scale-105"
-                                : "bg-[#222224] text-[#8e8e93] hover:text-white hover:bg-[#2c2c2e] border border-white/5 hover:border-white/20"
-                            }`}
-                          >
-                            <span className="material-symbols-outlined text-[13px] leading-none">
-                              code
-                            </span>
-                            {selectedCap === "code" && (
-                              <span className="text-[10px] uppercase font-semibold">code</span>
-                            )}
                           </button>
                         )}
                         {caps.hasVision && (
                           <button
                             type="button"
                             onClick={() => handleSelectCapability(model.id, "vision")}
-                            title={`Vision: Multimodal image prompt (${
+                            title={`Vision: Multimodal visual input & image analysis (${
                               selectedCap === "vision"
                                 ? "Active for test"
                                 : "Click to select for test"
                             })`}
-                            className={`px-1.5 py-1 rounded-md text-[11px] font-medium transition-all duration-150 inline-flex items-center gap-1 cursor-pointer ${
+                            className={`size-6 rounded-md text-[11px] font-medium transition-all duration-150 inline-flex items-center justify-center cursor-pointer ${
                               selectedCap === "vision"
                                 ? "bg-emerald-500/25 text-emerald-300 border border-emerald-500/60 ring-1 ring-emerald-500/40 shadow-xs scale-105"
                                 : "bg-[#222224] text-[#8e8e93] hover:text-white hover:bg-[#2c2c2e] border border-white/5 hover:border-white/20"
@@ -642,21 +611,18 @@ export default function AvailableModelsTable({
                             <span className="material-symbols-outlined text-[13px] leading-none">
                               visibility
                             </span>
-                            {selectedCap === "vision" && (
-                              <span className="text-[10px] uppercase font-semibold">vision</span>
-                            )}
                           </button>
                         )}
                         {caps.hasReasoning && (
                           <button
                             type="button"
                             onClick={() => handleSelectCapability(model.id, "reasoning")}
-                            title={`Reasoning: Chain-of-thought prompt (${
+                            title={`Reasoning: Chain-of-thought logic & deep thinking (${
                               selectedCap === "reasoning"
                                 ? "Active for test"
                                 : "Click to select for test"
                             })`}
-                            className={`px-1.5 py-1 rounded-md text-[11px] font-medium transition-all duration-150 inline-flex items-center gap-1 cursor-pointer ${
+                            className={`size-6 rounded-md text-[11px] font-medium transition-all duration-150 inline-flex items-center justify-center cursor-pointer ${
                               selectedCap === "reasoning"
                                 ? "bg-emerald-500/25 text-emerald-300 border border-emerald-500/60 ring-1 ring-emerald-500/40 shadow-xs scale-105"
                                 : "bg-[#222224] text-[#8e8e93] hover:text-white hover:bg-[#2c2c2e] border border-white/5 hover:border-white/20"
@@ -665,9 +631,84 @@ export default function AvailableModelsTable({
                             <span className="material-symbols-outlined text-[13px] leading-none">
                               psychology
                             </span>
-                            {selectedCap === "reasoning" && (
-                              <span className="text-[10px] uppercase font-semibold">reason</span>
-                            )}
+                          </button>
+                        )}
+                        {caps.hasCode && (
+                          <button
+                            type="button"
+                            onClick={() => handleSelectCapability(model.id, "code")}
+                            title={`Code: Programming, debugging & syntax (${
+                              selectedCap === "code" ? "Active for test" : "Click to select for test"
+                            })`}
+                            className={`size-6 rounded-md text-[11px] font-medium transition-all duration-150 inline-flex items-center justify-center cursor-pointer ${
+                              selectedCap === "code"
+                                ? "bg-emerald-500/25 text-emerald-300 border border-emerald-500/60 ring-1 ring-emerald-500/40 shadow-xs scale-105"
+                                : "bg-[#222224] text-[#8e8e93] hover:text-white hover:bg-[#2c2c2e] border border-white/5 hover:border-white/20"
+                            }`}
+                          >
+                            <span className="material-symbols-outlined text-[13px] leading-none">
+                              code
+                            </span>
+                          </button>
+                        )}
+                        {caps.hasImageGen && (
+                          <button
+                            type="button"
+                            onClick={() => handleSelectCapability(model.id, "image_gen")}
+                            title={`Image Generation: Text-to-image synthesis (${
+                              selectedCap === "image_gen" || selectedCap === "image"
+                                ? "Active for test"
+                                : "Click to select for test"
+                            })`}
+                            className={`size-6 rounded-md text-[11px] font-medium transition-all duration-150 inline-flex items-center justify-center cursor-pointer ${
+                              selectedCap === "image_gen" || selectedCap === "image"
+                                ? "bg-emerald-500/25 text-emerald-300 border border-emerald-500/60 ring-1 ring-emerald-500/40 shadow-xs scale-105"
+                                : "bg-[#222224] text-[#8e8e93] hover:text-white hover:bg-[#2c2c2e] border border-white/5 hover:border-white/20"
+                            }`}
+                          >
+                            <span className="material-symbols-outlined text-[13px] leading-none">
+                              palette
+                            </span>
+                          </button>
+                        )}
+                        {caps.hasVideo && (
+                          <button
+                            type="button"
+                            onClick={() => handleSelectCapability(model.id, "video")}
+                            title={`Video: Temporal motion & video understanding (${
+                              selectedCap === "video"
+                                ? "Active for test"
+                                : "Click to select for test"
+                            })`}
+                            className={`size-6 rounded-md text-[11px] font-medium transition-all duration-150 inline-flex items-center justify-center cursor-pointer ${
+                              selectedCap === "video"
+                                ? "bg-emerald-500/25 text-emerald-300 border border-emerald-500/60 ring-1 ring-emerald-500/40 shadow-xs scale-105"
+                                : "bg-[#222224] text-[#8e8e93] hover:text-white hover:bg-[#2c2c2e] border border-white/5 hover:border-white/20"
+                            }`}
+                          >
+                            <span className="material-symbols-outlined text-[13px] leading-none">
+                              videocam
+                            </span>
+                          </button>
+                        )}
+                        {caps.hasAudio && (
+                          <button
+                            type="button"
+                            onClick={() => handleSelectCapability(model.id, "audio")}
+                            title={`Audio: Speech transcription & audio acoustics (${
+                              selectedCap === "audio"
+                                ? "Active for test"
+                                : "Click to select for test"
+                            })`}
+                            className={`size-6 rounded-md text-[11px] font-medium transition-all duration-150 inline-flex items-center justify-center cursor-pointer ${
+                              selectedCap === "audio"
+                                ? "bg-emerald-500/25 text-emerald-300 border border-emerald-500/60 ring-1 ring-emerald-500/40 shadow-xs scale-105"
+                                : "bg-[#222224] text-[#8e8e93] hover:text-white hover:bg-[#2c2c2e] border border-white/5 hover:border-white/20"
+                            }`}
+                          >
+                            <span className="material-symbols-outlined text-[13px] leading-none">
+                              volume_up
+                            </span>
                           </button>
                         )}
                         {caps.hasSearch && (
@@ -679,7 +720,7 @@ export default function AvailableModelsTable({
                                 ? "Active for test"
                                 : "Click to select for test"
                             })`}
-                            className={`px-1.5 py-1 rounded-md text-[11px] font-medium transition-all duration-150 inline-flex items-center gap-1 cursor-pointer ${
+                            className={`size-6 rounded-md text-[11px] font-medium transition-all duration-150 inline-flex items-center justify-center cursor-pointer ${
                               selectedCap === "search"
                                 ? "bg-emerald-500/25 text-emerald-300 border border-emerald-500/60 ring-1 ring-emerald-500/40 shadow-xs scale-105"
                                 : "bg-[#222224] text-[#8e8e93] hover:text-white hover:bg-[#2c2c2e] border border-white/5 hover:border-white/20"
@@ -688,32 +729,24 @@ export default function AvailableModelsTable({
                             <span className="material-symbols-outlined text-[13px] leading-none">
                               travel_explore
                             </span>
-                            {selectedCap === "search" && (
-                              <span className="text-[10px] uppercase font-semibold">search</span>
-                            )}
                           </button>
                         )}
-                        {caps.hasAudio && (
+                        {caps.hasEmbedding && (
                           <button
                             type="button"
-                            onClick={() => handleSelectCapability(model.id, "audio")}
-                            title={`Audio: Speech transcription prompt (${
-                              selectedCap === "audio"
-                                ? "Active for test"
-                                : "Click to select for test"
+                            onClick={() => handleSelectCapability(model.id, "embedding")}
+                            title={`Embedding: Vector semantic representations (${
+                              selectedCap === "embedding" ? "Active for test" : "Click to select for test"
                             })`}
-                            className={`px-1.5 py-1 rounded-md text-[11px] font-medium transition-all duration-150 inline-flex items-center gap-1 cursor-pointer ${
-                              selectedCap === "audio"
+                            className={`size-6 rounded-md text-[11px] font-medium transition-all duration-150 inline-flex items-center justify-center cursor-pointer ${
+                              selectedCap === "embedding"
                                 ? "bg-emerald-500/25 text-emerald-300 border border-emerald-500/60 ring-1 ring-emerald-500/40 shadow-xs scale-105"
                                 : "bg-[#222224] text-[#8e8e93] hover:text-white hover:bg-[#2c2c2e] border border-white/5 hover:border-white/20"
                             }`}
                           >
                             <span className="material-symbols-outlined text-[13px] leading-none">
-                              volume_up
+                              hub
                             </span>
-                            {selectedCap === "audio" && (
-                              <span className="text-[10px] uppercase font-semibold">audio</span>
-                            )}
                           </button>
                         )}
                       </div>
@@ -784,13 +817,30 @@ export default function AvailableModelsTable({
                           </button>
                         </div>
 
-                        {/* Live Snippet Preview */}
+                        {/* Live Snippet / Image Preview */}
                         {testResult?.snippet && (
-                          <div
-                            className="text-[10px] font-mono text-[#888] max-w-[200px] truncate"
-                            title={testResult.snippet}
-                          >
-                            &ldquo;{testResult.snippet}&rdquo;
+                          <div className="flex items-center gap-1.5 justify-end mt-0.5 max-w-[260px]">
+                            {isImageResponse(testResult.snippet) && (
+                              <a
+                                href={extractImageUrl(testResult.snippet)}
+                                target="_blank"
+                                rel="noreferrer"
+                                title="Click to view full image in new tab"
+                                className="shrink-0 group/img"
+                              >
+                                <img
+                                  src={extractImageUrl(testResult.snippet)}
+                                  alt="Generated output"
+                                  className="size-7 rounded object-cover border border-white/20 group-hover/img:scale-125 transition-transform shadow-xs"
+                                />
+                              </a>
+                            )}
+                            <div
+                              className="text-[10px] font-mono text-[#888] truncate"
+                              title={testResult.snippet}
+                            >
+                              &ldquo;{testResult.snippet}&rdquo;
+                            </div>
                           </div>
                         )}
                         {testResult?.error && (

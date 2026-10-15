@@ -20,9 +20,34 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { Card, ShimmerPageLoader } from "@/shared/components";
 import { isCatalogFreeModel } from "@/shared/utils/freeModels";
 import { matchesSearch } from "@/shared/utils/turkishText";
+import { detectModelCapabilities } from "@/shared/utils/modelCapabilities";
 import DefaultCapabilitiesPromptModal, {
   getPromptForCapability,
 } from "./DefaultCapabilitiesPromptModal";
+
+function isImageResponse(text?: string): boolean {
+  if (!text) return false;
+  const t = text.trim();
+  return (
+    t.startsWith("data:image/") ||
+    /^https?:\/\/[^\s"'<>]+\.(?:png|jpg|jpeg|webp|gif)(?:\?[^\s"'<>]*)?$/i.test(t) ||
+    /https?:\/\/images\.unsplash\.com\/[^\s"'<>]+/i.test(t) ||
+    /!\[.*?\]\((https?:\/\/[^\s)]+)\)/.test(t)
+  );
+}
+
+function extractImageUrl(text?: string): string {
+  if (!text) return "";
+  const t = text.trim();
+  if (t.startsWith("data:image/")) return t;
+  const mdMatch = t.match(/!\[.*?\]\((https?:\/\/[^\s)]+)\)/);
+  if (mdMatch) return mdMatch[1];
+  const urlMatch = t.match(/https?:\/\/[^\s"'<>]+\.(?:png|jpg|jpeg|webp|gif)(?:\?[^\s"'<>]*)?/i);
+  if (urlMatch) return urlMatch[0];
+  const unsplashMatch = t.match(/https?:\/\/images\.unsplash\.com\/[^\s"'<>]+/i);
+  if (unsplashMatch) return unsplashMatch[0];
+  return t;
+}
 
 interface SyncedModel {
   id: string;
@@ -71,26 +96,6 @@ function formatContextWindow(tokens: number | null | undefined): string | null {
   return `${tokens}`;
 }
 
-function deriveCapabilities(model: SyncedModel): string[] {
-  const caps: string[] = [];
-  const endpoints = new Set(model.supportedEndpoints ?? []);
-  if (model.supportsThinking || model.alwaysThinking) caps.push("Reasoning");
-  if (model.supportsVision) caps.push("Vision");
-  if (model.supportsTools) caps.push("Tools");
-  if (endpoints.has("audio-transcriptions")) caps.push("STT");
-  if (endpoints.has("audio-speech")) caps.push("TTS");
-  if (
-    !endpoints.has("audio-transcriptions") &&
-    !endpoints.has("audio-speech") &&
-    [...endpoints].some((e) => e.startsWith("audio"))
-  ) {
-    caps.push("Audio");
-  }
-  if (model.supportsVideo) caps.push("Video");
-  if (/code|coder|codex|devstral/i.test(model.id)) caps.push("Code");
-  return caps;
-}
-
 export interface SyncedModelCapabilities {
   hasReasoning: boolean;
   hasVision: boolean;
@@ -98,76 +103,34 @@ export interface SyncedModelCapabilities {
   hasSearch: boolean;
   hasAudio: boolean;
   hasChat: boolean;
+  hasImageGen?: boolean;
+  hasVideo?: boolean;
+  hasEmbedding?: boolean;
+  hasTools?: boolean;
 }
 
 export function getSyncedModelCapabilities(
   model: SyncedModel,
   cust?: Customization
 ): SyncedModelCapabilities {
-  const mid = (model.id || "").toLowerCase();
-  const caps = (cust?.capabilities ?? deriveCapabilities(model)).map((c) => c.toLowerCase());
-  const endpoints = new Set((model.supportedEndpoints ?? []).map((e) => e.toLowerCase()));
-
-  const hasReasoning =
-    Boolean(model.supportsThinking) ||
-    Boolean(model.alwaysThinking) ||
-    caps.includes("reasoning") ||
-    caps.includes("thinking") ||
-    caps.includes("logic") ||
-    mid.includes("think") ||
-    mid.includes("reason") ||
-    mid.includes("r1") ||
-    mid.includes("o1") ||
-    mid.includes("o3");
-
-  const hasVision =
-    Boolean(model.supportsVision) ||
-    caps.includes("vision") ||
-    caps.includes("image") ||
-    caps.includes("multimodal") ||
-    endpoints.has("images") ||
-    mid.includes("vision") ||
-    mid.includes("vl");
-
-  const hasCode =
-    caps.includes("code") ||
-    caps.includes("coding") ||
-    /code|coder|codex|devstral/i.test(model.id);
-
-  const hasSearch =
-    caps.includes("search") ||
-    caps.includes("web_search") ||
-    caps.includes("browsing") ||
-    endpoints.has("search") ||
-    mid.includes("search");
-
-  const hasAudio =
-    caps.includes("audio") ||
-    caps.includes("stt") ||
-    caps.includes("tts") ||
-    endpoints.has("audio-transcriptions") ||
-    endpoints.has("audio-speech") ||
-    [...endpoints].some((e) => e.startsWith("audio")) ||
-    mid.includes("audio") ||
-    mid.includes("whisper");
-
-  const hasChat =
-    caps.includes("chat") ||
-    caps.includes("text") ||
-    endpoints.has("chat") ||
-    (!mid.includes("embed") && !mid.includes("rerank") && !mid.includes("whisper"));
-
-  return { hasReasoning, hasVision, hasCode, hasSearch, hasAudio, hasChat };
+  const mergedModel = {
+    ...model,
+    ...(cust?.capabilities ? { capabilities: cust.capabilities } : {}),
+  };
+  return detectModelCapabilities(mergedModel);
 }
 
 export const CAPABILITY_FILTER_BUTTONS = [
   { key: "all", label: "All", icon: "select_all" },
   { key: "text", label: "Text", icon: "chat" },
-  { key: "code", label: "Code", icon: "code" },
   { key: "vision", label: "Vision", icon: "visibility" },
   { key: "reasoning", label: "Reasoning", icon: "psychology" },
-  { key: "search", label: "Search", icon: "travel_explore" },
+  { key: "code", label: "Code", icon: "code" },
+  { key: "image", label: "Image Gen", icon: "palette" },
+  { key: "video", label: "Video", icon: "videocam" },
   { key: "audio", label: "Audio", icon: "volume_up" },
+  { key: "search", label: "Search", icon: "travel_explore" },
+  { key: "embedding", label: "Embedding", icon: "hub" },
 ] as const;
 
 function matchesSyncedModelFilter(
@@ -178,11 +141,14 @@ function matchesSyncedModelFilter(
   if (filter === "all") return true;
   const caps = getSyncedModelCapabilities(model, cust);
   if (filter === "text") return caps.hasChat;
-  if (filter === "code") return caps.hasCode;
   if (filter === "vision") return caps.hasVision;
   if (filter === "reasoning") return caps.hasReasoning;
-  if (filter === "search") return caps.hasSearch;
+  if (filter === "code") return caps.hasCode;
+  if (filter === "image") return Boolean(caps.hasImageGen);
+  if (filter === "video") return Boolean(caps.hasVideo);
   if (filter === "audio") return caps.hasAudio;
+  if (filter === "search") return caps.hasSearch;
+  if (filter === "embedding") return Boolean(caps.hasEmbedding);
   return true;
 }
 
@@ -332,11 +298,14 @@ export default function ManageModelsPanel() {
     const counts: Record<string, number> = {
       all: 0,
       text: 0,
-      code: 0,
       vision: 0,
       reasoning: 0,
-      search: 0,
+      code: 0,
+      image: 0,
+      video: 0,
       audio: 0,
+      search: 0,
+      embedding: 0,
     };
     for (const pId of providerIds) {
       const pModels = modelsByProvider[pId] ?? [];
@@ -345,11 +314,14 @@ export default function ManageModelsPanel() {
         const cust = customizationByModel.get(`${pId}::${m.id}`);
         const c = getSyncedModelCapabilities(m, cust);
         if (c.hasChat) counts.text++;
-        if (c.hasCode) counts.code++;
         if (c.hasVision) counts.vision++;
         if (c.hasReasoning) counts.reasoning++;
-        if (c.hasSearch) counts.search++;
+        if (c.hasCode) counts.code++;
+        if (c.hasImageGen) counts.image++;
+        if (c.hasVideo) counts.video++;
         if (c.hasAudio) counts.audio++;
+        if (c.hasSearch) counts.search++;
+        if (c.hasEmbedding) counts.embedding++;
       }
     }
     return counts;
@@ -955,103 +927,155 @@ export default function ManageModelsPanel() {
                               <button
                                 type="button"
                                 onClick={() => handleSelectCapability(key, "text")}
-                                title="Text capability"
-                                className={`px-1.5 py-0.5 rounded-full text-[9px] font-medium transition-all inline-flex items-center gap-1 cursor-pointer ${
+                                title={`Text / Chat: Conversational dialogue & instructions (${
+                                  selectedCap === "text" ? "Active for test" : "Click to select for test"
+                                })`}
+                                className={`size-5.5 rounded-full text-[9px] font-medium transition-all inline-flex items-center justify-center cursor-pointer ${
                                   selectedCap === "text"
-                                    ? "bg-cyan-500/25 text-cyan-300 border border-cyan-400/40 ring-1 ring-cyan-400/20 font-semibold"
+                                    ? "bg-cyan-500/25 text-cyan-300 border border-cyan-400/40 ring-1 ring-cyan-400/20 shadow-xs"
                                     : "text-zinc-400 hover:text-white"
                                 }`}
                               >
                                 <span className="material-symbols-outlined text-[12px] leading-none">
                                   chat
                                 </span>
-                                {selectedCap === "text" && <span>text</span>}
-                              </button>
-                            )}
-                            {capsMeta.hasCode && (
-                              <button
-                                type="button"
-                                onClick={() => handleSelectCapability(key, "code")}
-                                title="Code capability"
-                                className={`px-1.5 py-0.5 rounded-full text-[9px] font-medium transition-all inline-flex items-center gap-1 cursor-pointer ${
-                                  selectedCap === "code"
-                                    ? "bg-cyan-500/25 text-cyan-300 border border-cyan-400/40 ring-1 ring-cyan-400/20 font-semibold"
-                                    : "text-zinc-400 hover:text-white"
-                                }`}
-                              >
-                                <span className="material-symbols-outlined text-[12px] leading-none">
-                                  code
-                                </span>
-                                {selectedCap === "code" && <span>code</span>}
                               </button>
                             )}
                             {capsMeta.hasVision && (
                               <button
                                 type="button"
                                 onClick={() => handleSelectCapability(key, "vision")}
-                                title="Vision capability"
-                                className={`px-1.5 py-0.5 rounded-full text-[9px] font-medium transition-all inline-flex items-center gap-1 cursor-pointer ${
+                                title={`Vision: Multimodal visual input & image analysis (${
+                                  selectedCap === "vision" ? "Active for test" : "Click to select for test"
+                                })`}
+                                className={`size-5.5 rounded-full text-[9px] font-medium transition-all inline-flex items-center justify-center cursor-pointer ${
                                   selectedCap === "vision"
-                                    ? "bg-cyan-500/25 text-cyan-300 border border-cyan-400/40 ring-1 ring-cyan-400/20 font-semibold"
+                                    ? "bg-cyan-500/25 text-cyan-300 border border-cyan-400/40 ring-1 ring-cyan-400/20 shadow-xs"
                                     : "text-zinc-400 hover:text-white"
                                 }`}
                               >
                                 <span className="material-symbols-outlined text-[12px] leading-none">
                                   visibility
                                 </span>
-                                {selectedCap === "vision" && <span>vision</span>}
                               </button>
                             )}
                             {capsMeta.hasReasoning && (
                               <button
                                 type="button"
                                 onClick={() => handleSelectCapability(key, "reasoning")}
-                                title="Reasoning capability"
-                                className={`px-1.5 py-0.5 rounded-full text-[9px] font-medium transition-all inline-flex items-center gap-1 cursor-pointer ${
+                                title={`Reasoning: Chain-of-thought logic & deep thinking (${
+                                  selectedCap === "reasoning" ? "Active for test" : "Click to select for test"
+                                })`}
+                                className={`size-5.5 rounded-full text-[9px] font-medium transition-all inline-flex items-center justify-center cursor-pointer ${
                                   selectedCap === "reasoning"
-                                    ? "bg-cyan-500/25 text-cyan-300 border border-cyan-400/40 ring-1 ring-cyan-400/20 font-semibold"
+                                    ? "bg-cyan-500/25 text-cyan-300 border border-cyan-400/40 ring-1 ring-cyan-400/20 shadow-xs"
                                     : "text-zinc-400 hover:text-white"
                                 }`}
                               >
                                 <span className="material-symbols-outlined text-[12px] leading-none">
                                   psychology
                                 </span>
-                                {selectedCap === "reasoning" && <span>reason</span>}
                               </button>
                             )}
-                            {capsMeta.hasSearch && (
+                            {capsMeta.hasCode && (
                               <button
                                 type="button"
-                                onClick={() => handleSelectCapability(key, "search")}
-                                title="Search capability"
-                                className={`px-1.5 py-0.5 rounded-full text-[9px] font-medium transition-all inline-flex items-center gap-1 cursor-pointer ${
-                                  selectedCap === "search"
-                                    ? "bg-cyan-500/25 text-cyan-300 border border-cyan-400/40 ring-1 ring-cyan-400/20 font-semibold"
+                                onClick={() => handleSelectCapability(key, "code")}
+                                title={`Code: Programming, debugging & syntax (${
+                                  selectedCap === "code" ? "Active for test" : "Click to select for test"
+                                })`}
+                                className={`size-5.5 rounded-full text-[9px] font-medium transition-all inline-flex items-center justify-center cursor-pointer ${
+                                  selectedCap === "code"
+                                    ? "bg-cyan-500/25 text-cyan-300 border border-cyan-400/40 ring-1 ring-cyan-400/20 shadow-xs"
                                     : "text-zinc-400 hover:text-white"
                                 }`}
                               >
                                 <span className="material-symbols-outlined text-[12px] leading-none">
-                                  travel_explore
+                                  code
                                 </span>
-                                {selectedCap === "search" && <span>search</span>}
+                              </button>
+                            )}
+                            {capsMeta.hasImageGen && (
+                              <button
+                                type="button"
+                                onClick={() => handleSelectCapability(key, "image_gen")}
+                                title={`Image Generation: Text-to-image synthesis (${
+                                  selectedCap === "image_gen" || selectedCap === "image" ? "Active for test" : "Click to select for test"
+                                })`}
+                                className={`size-5.5 rounded-full text-[9px] font-medium transition-all inline-flex items-center justify-center cursor-pointer ${
+                                  selectedCap === "image_gen" || selectedCap === "image"
+                                    ? "bg-cyan-500/25 text-cyan-300 border border-cyan-400/40 ring-1 ring-cyan-400/20 shadow-xs"
+                                    : "text-zinc-400 hover:text-white"
+                                }`}
+                              >
+                                <span className="material-symbols-outlined text-[12px] leading-none">
+                                  palette
+                                </span>
+                              </button>
+                            )}
+                            {capsMeta.hasVideo && (
+                              <button
+                                type="button"
+                                onClick={() => handleSelectCapability(key, "video")}
+                                title={`Video: Temporal motion & video understanding (${
+                                  selectedCap === "video" ? "Active for test" : "Click to select for test"
+                                })`}
+                                className={`size-5.5 rounded-full text-[9px] font-medium transition-all inline-flex items-center justify-center cursor-pointer ${
+                                  selectedCap === "video"
+                                    ? "bg-cyan-500/25 text-cyan-300 border border-cyan-400/40 ring-1 ring-cyan-400/20 shadow-xs"
+                                    : "text-zinc-400 hover:text-white"
+                                }`}
+                              >
+                                <span className="material-symbols-outlined text-[12px] leading-none">
+                                  videocam
+                                </span>
                               </button>
                             )}
                             {capsMeta.hasAudio && (
                               <button
                                 type="button"
                                 onClick={() => handleSelectCapability(key, "audio")}
-                                title="Audio capability"
-                                className={`px-1.5 py-0.5 rounded-full text-[9px] font-medium transition-all inline-flex items-center gap-1 cursor-pointer ${
+                                title={`Audio: Speech transcription & audio understanding (${
+                                  selectedCap === "audio" ? "Active for test" : "Click to select for test"
+                                })`}
+                                className={`size-5.5 rounded-full text-[9px] font-medium transition-all inline-flex items-center justify-center cursor-pointer ${
                                   selectedCap === "audio"
-                                    ? "bg-cyan-500/25 text-cyan-300 border border-cyan-400/40 ring-1 ring-cyan-400/20 font-semibold"
+                                    ? "bg-cyan-500/25 text-cyan-300 border border-cyan-400/40 ring-1 ring-cyan-400/20 shadow-xs"
                                     : "text-zinc-400 hover:text-white"
                                 }`}
                               >
                                 <span className="material-symbols-outlined text-[12px] leading-none">
                                   volume_up
                                 </span>
-                                {selectedCap === "audio" && <span>audio</span>}
                               </button>
+                            )}
+                            {capsMeta.hasSearch && (
+                              <button
+                                type="button"
+                                onClick={() => handleSelectCapability(key, "search")}
+                                title={`Search: Grounded web search & real-time info (${
+                                  selectedCap === "search" ? "Active for test" : "Click to select for test"
+                                })`}
+                                className={`size-5.5 rounded-full text-[9px] font-medium transition-all inline-flex items-center justify-center cursor-pointer ${
+                                  selectedCap === "search"
+                                    ? "bg-cyan-500/25 text-cyan-300 border border-cyan-400/40 ring-1 ring-cyan-400/20 shadow-xs"
+                                    : "text-zinc-400 hover:text-white"
+                                }`}
+                              >
+                                <span className="material-symbols-outlined text-[12px] leading-none">
+                                  travel_explore
+                                </span>
+                              </button>
+                            )}
+                            {capsMeta.hasEmbedding && (
+                              <span
+                                title="Embedding: Vector semantic representations"
+                                className="size-5.5 rounded-full text-zinc-500 inline-flex items-center justify-center cursor-default"
+                              >
+                                <span className="material-symbols-outlined text-[12px] leading-none">
+                                  hub
+                                </span>
+                              </span>
                             )}
                           </div>
 
@@ -1094,16 +1118,38 @@ export default function ManageModelsPanel() {
                         </div>
 
                         {/* Test Response Preview */}
-                        {(test?.preview || (cachedBadge && cust?.testResponse)) && (
-                          <div className="p-2 rounded-xl bg-black/50 border border-white/10 text-[11px] font-mono text-zinc-300 break-words leading-relaxed">
-                            <span>{(test?.preview ?? cust?.testResponse ?? "").slice(0, 500)}</span>
-                            {(test?.latencyMs ?? cust?.testLatencyMs) != null && (
-                              <span className="text-zinc-500 font-sans ml-2 text-[10px]">
-                                · {test?.latencyMs ?? cust?.testLatencyMs}ms
-                              </span>
-                            )}
-                          </div>
-                        )}
+                        {(() => {
+                          const previewText = (test?.preview ?? cust?.testResponse ?? "").slice(0, 500);
+                          if (!previewText) return null;
+                          const hasImg = isImageResponse(previewText);
+                          return (
+                            <div className="p-2 rounded-xl bg-black/50 border border-white/10 text-[11px] font-mono text-zinc-300 break-words leading-relaxed flex items-start gap-2.5">
+                              {hasImg && (
+                                <a
+                                  href={extractImageUrl(previewText)}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  title="Click to view full image in new tab"
+                                  className="shrink-0 group/img"
+                                >
+                                  <img
+                                    src={extractImageUrl(previewText)}
+                                    alt="Generated output"
+                                    className="size-12 rounded-lg object-cover border border-white/20 group-hover/img:scale-110 transition-transform shadow-md"
+                                  />
+                                </a>
+                              )}
+                              <div className="flex-1 min-w-0">
+                                <span>{previewText}</span>
+                                {(test?.latencyMs ?? cust?.testLatencyMs) != null && (
+                                  <span className="text-zinc-500 font-sans ml-2 text-[10px]">
+                                    · {test?.latencyMs ?? cust?.testLatencyMs}ms
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })()}
 
                         {/* Cupertino Inset Manageable Alias Fields with Minimal Gaps */}
                         {isActive && (

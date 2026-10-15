@@ -5,6 +5,7 @@ import { POST as postAudioTranscription } from "@/app/api/v1/audio/transcription
 import { handleValidatedEmbeddingRequestBody } from "@/app/api/v1/embeddings/route";
 import { POST as postRerank } from "@/app/api/v1/rerank/route";
 import { POST as postResponses } from "@/app/api/v1/responses/route";
+import { POST as postImageGeneration } from "@/app/api/v1/images/generations/route";
 import {
   buildComboTestPrompt,
   buildComboTestRequestBody,
@@ -34,10 +35,21 @@ const ZAI_WEB_PROVIDER_ID = "zai-web";
 const ZAI_WEB_TEST_TIMEOUT_MS = 60_000;
 const SLOW_WEB_TEST_MODELS = new Set(["dola-pro"]);
 const STREAMING_CHAT_TEST_MAX_TOKENS = 64;
+const REASONING_CHAT_TEST_MAX_TOKENS = 256;
 // Responses calls the same budget `max_output_tokens`; `max_tokens` is silently
 // ignored on that endpoint, which would let a reasoning model spend the whole
 // default budget before emitting any visible text.
 const RESPONSES_TEST_MAX_OUTPUT_TOKENS = 256;
+
+export function isReasoningModel(modelId: string): boolean {
+  const lower = modelId.toLowerCase();
+  return (
+    /\b(?:r1|reasoner|reasoning|o1|o3|o4|thinking|qwq)\b/i.test(lower) ||
+    lower.includes("deepseek-r1") ||
+    lower.includes("deepseek-reasoner") ||
+    lower.includes("flash-thinking")
+  );
+}
 
 export function shouldSkipWebSessionModelTest(providerId: unknown): boolean {
   if (typeof providerId === "string" && providerId.trim().toLowerCase() === "duckduckgo-web") {
@@ -166,14 +178,17 @@ async function findCustomModelMetadata(providerId: string, modelId: string) {
     const customModels = await getCustomModels(providerId);
     if (!Array.isArray(customModels)) return null;
 
-    const candidates = new Set([modelId]);
+    const candidates = new Set([modelId.toLowerCase()]);
     const stripped = stripFirstSegment(modelId);
-    if (stripped) candidates.add(stripped);
-    if (modelId.startsWith(`${providerId}/`)) candidates.add(modelId.slice(providerId.length + 1));
+    if (stripped) candidates.add(stripped.toLowerCase());
+    const provPrefix = `${providerId.toLowerCase()}/`;
+    if (modelId.toLowerCase().startsWith(provPrefix)) {
+      candidates.add(modelId.slice(providerId.length + 1).toLowerCase());
+    }
 
     return (
       customModels.find(
-        (model: any) => typeof model?.id === "string" && candidates.has(model.id)
+        (model: any) => typeof model?.id === "string" && candidates.has(model.id.toLowerCase())
       ) || null
     );
   } catch {
@@ -256,18 +271,54 @@ export function buildInternalRerankRequest(
   });
 }
 
+export function buildInternalImageGenerationRequest(
+  testBody: Record<string, unknown>,
+  signal: AbortSignal,
+  connectionId?: string
+) {
+  return new Request(`${INTERNAL_ORIGIN}/v1/images/generations`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "X-Internal-Test": "combo-health-check",
+      "X-CheapRoute-No-Cache": "true",
+      "X-Request-Id": `model-test-${randomUUID()}`,
+      ...(connectionId ? { "X-CheapRoute-Connection": connectionId } : {}),
+    },
+    body: JSON.stringify(testBody),
+    signal,
+  });
+}
+
 function buildTinyWavFile(): File {
-  return new File(
-    [
-      new Uint8Array([
-        0x52, 0x49, 0x46, 0x46, 0x24, 0x00, 0x00, 0x00, 0x57, 0x41, 0x56, 0x45, 0x66, 0x6d, 0x74,
-        0x20, 0x10, 0x00, 0x00, 0x00, 0x01, 0x00, 0x01, 0x00, 0x40, 0x1f, 0x00, 0x00, 0x80, 0x3e,
-        0x00, 0x00, 0x02, 0x00, 0x10, 0x00, 0x64, 0x61, 0x74, 0x61, 0x00, 0x00, 0x00, 0x00,
-      ]),
-    ],
-    "omniroute-model-test.wav",
-    { type: "audio/wav" }
-  );
+  // Generate 0.25s of 16kHz 16-bit mono PCM audio (silence) so strict
+  // transcription APIs (Whisper, Groq, Deepgram) do not reject 0-sample audio with 400 Bad Request.
+  const sampleRate = 16000;
+  const numSamples = 4000;
+  const dataSize = numSamples * 2;
+  const buffer = new Uint8Array(44 + dataSize);
+  const view = new DataView(buffer.buffer);
+
+  // RIFF chunk descriptor
+  view.setUint32(0, 0x52494646, false); // "RIFF"
+  view.setUint32(4, 36 + dataSize, true);
+  view.setUint32(8, 0x57415645, false); // "WAVE"
+
+  // "fmt " sub-chunk
+  view.setUint32(12, 0x666d7420, false);
+  view.setUint32(16, 16, true); // PCM chunk size
+  view.setUint16(20, 1, true);  // AudioFormat: 1 = PCM
+  view.setUint16(22, 1, true);  // NumChannels: 1 (mono)
+  view.setUint32(24, sampleRate, true);
+  view.setUint32(28, sampleRate * 2, true); // ByteRate
+  view.setUint16(32, 2, true);  // BlockAlign
+  view.setUint16(34, 16, true); // BitsPerSample
+
+  // "data" sub-chunk
+  view.setUint32(36, 0x64617461, false); // "data"
+  view.setUint32(40, dataSize, true);
+
+  return new File([buffer], "cheaproute-model-test.wav", { type: "audio/wav" });
 }
 
 export function buildInternalAudioTranscriptionRequest(
@@ -344,20 +395,55 @@ export function detectTestKind(modelStr: string, customModel: any, nodeApiType?:
     (apiFormat === "responses" ||
       nodeType === "responses" ||
       supportedEndpoints.includes("responses"));
-  // Non-chat generation endpoints (image, music, video) should NOT be dispatched
-  // as chat completions — they incur billable generation costs (#13376).
+  // Image generation endpoints & models — can be directly probed via /v1/images/generations
+  const isImageGeneration =
+    !isAudioTranscription &&
+    !isRerank &&
+    !isEmbedding &&
+    !isResponses &&
+    (supportedEndpoints.includes("images-generations") ||
+      (supportedEndpoints.includes("images") && !supportedEndpoints.includes("chat")) ||
+      /(?:dall-e|dalle|flux|sdxl|stable-diffusion|imagen|midjourney|recraft|ideogram)/i.test(
+        lowerModel
+      ));
+
+  // Audio speech / text-to-speech (TTS) models (e.g. tts-1, elevenlabs)
+  const isAudioSpeech =
+    !isAudioTranscription &&
+    !isRerank &&
+    !isEmbedding &&
+    !isResponses &&
+    !isImageGeneration &&
+    (apiFormat === "audio-speech" ||
+      nodeType === "audio-speech" ||
+      supportedEndpoints.includes("audio-speech") ||
+      supportedEndpoints.includes("speech") ||
+      supportedEndpoints.includes("tts") ||
+      /(?:tts-1|tts-1-hd|eleven_)/i.test(lowerModel));
+
+  // Other non-chat generation endpoints (music, video, TTS) that have no interactive probe handler
   const isNonChatGeneration =
     !isAudioTranscription &&
     !isRerank &&
     !isEmbedding &&
     !isResponses &&
-    supportedEndpoints.length > 0 &&
-    !supportedEndpoints.includes("chat") &&
-    (supportedEndpoints.includes("images") ||
-      supportedEndpoints.includes("music") ||
-      supportedEndpoints.includes("videos"));
+    !isImageGeneration &&
+    (isAudioSpeech ||
+      (supportedEndpoints.length > 0 &&
+        !supportedEndpoints.includes("chat") &&
+        (supportedEndpoints.includes("music") ||
+          supportedEndpoints.includes("videos") ||
+          supportedEndpoints.includes("audio-speech"))));
 
-  return { isRerank, isEmbedding, isAudioTranscription, isResponses, isNonChatGeneration };
+  return {
+    isRerank,
+    isEmbedding,
+    isAudioTranscription,
+    isAudioSpeech,
+    isResponses,
+    isImageGeneration,
+    isNonChatGeneration,
+  };
 }
 
 /**
@@ -432,7 +518,17 @@ export async function extractModelTestResponseText(
   if (streamChat && !contentType.includes("application/json")) {
     return extractComboTestStreamResult(await response.text());
   }
-  return { text: extractComboTestResponseText(await response.json()) };
+  const json = await response.json().catch(() => ({}));
+  if (Array.isArray(json?.data) && json.data.length > 0) {
+    const first = json.data[0];
+    if (typeof first?.url === "string" && first.url) {
+      return { text: first.url };
+    }
+    if (typeof first?.b64_json === "string" && first.b64_json) {
+      return { text: `data:image/png;base64,${first.b64_json}` };
+    }
+  }
+  return { text: extractComboTestResponseText(json) };
 }
 
 function isRateLimitMessage(message: string): boolean {
@@ -499,14 +595,16 @@ export async function runSingleModelTest(
   } = options;
 
   let cleanModelId = modelId;
-  while (cleanModelId.startsWith(`${providerId}/`)) {
+  const pPrefix = `${providerId.toLowerCase()}/`;
+  while (cleanModelId.toLowerCase().startsWith(pPrefix)) {
     cleanModelId = cleanModelId.slice(providerId.length + 1);
   }
   try {
     const node = (await getProviderNodeById(providerId)) as { prefix?: unknown } | null;
     const prefix = typeof node?.prefix === "string" ? node.prefix : undefined;
     if (prefix) {
-      while (cleanModelId.startsWith(`${prefix}/`)) {
+      const prefPrefix = `${prefix.toLowerCase()}/`;
+      while (cleanModelId.toLowerCase().startsWith(prefPrefix)) {
         cleanModelId = cleanModelId.slice(prefix.length + 1);
       }
     }
@@ -553,53 +651,49 @@ export async function runSingleModelTest(
     findCustomModelMetadata(providerId, fullModelStr),
     findProviderNodeApiType(providerId),
   ]);
-  const { isRerank, isEmbedding, isAudioTranscription, isResponses, isNonChatGeneration } =
-    detectTestKind(fullModelStr, customModel, nodeApiType);
+  const {
+    isRerank,
+    isEmbedding,
+    isAudioTranscription,
+    isAudioSpeech,
+    isResponses,
+    isImageGeneration,
+    isNonChatGeneration,
+  } = detectTestKind(fullModelStr, customModel, nodeApiType);
 
-  // #13376: Skip image/music/video generation models — dispatching them as
-  // chat completions incurs real billable generations the operator never asked for.
-  if (isNonChatGeneration) {
+  // Skip music/video generation models without interactive chat probe handlers
+  if (isNonChatGeneration && !isAudioSpeech) {
     return {
       modelId: fullModelStr,
       status: "error",
       latencyMs: 0,
-      // 422, not the 409 the managed-lease return above uses: the request is valid, but this
-      // model's modality cannot be exercised by a chat test. The route passes httpStatus
-      // straight to NextResponse — omitting it made Next answer 200 for a skipped test.
       httpStatus: 422,
-      error:
-        "Skipped: non-chat generation model (images/music/video) — use the corresponding generation endpoint instead",
+      error: `Skipped: non-chat generation model (music/video) — use the corresponding generation endpoint instead`,
     };
   }
 
-  if (options.prompt !== undefined && (isEmbedding || isRerank || isAudioTranscription)) {
-    return {
-      modelId: fullModelStr,
-      status: "error",
-      latencyMs: Date.now() - startTime,
-      httpStatus: 400,
-      error: "Test messages require a chat model",
-    };
-  }
-
-  const testBody = isRerank
+  const testBody = isEmbedding
     ? {
         model: fullModelStr,
-        query: "What is CheapRoute?",
-        documents: [
-          "CheapRoute routes AI requests across configured providers.",
-          "This document is unrelated to the test query.",
-        ],
-        top_n: 1,
-        return_documents: false,
+        input: options.prompt || "The quick brown fox jumps over the lazy dog.",
       }
-    : isAudioTranscription
-      ? { model: fullModelStr }
-      : isResponses
-        ? {
-            model: fullModelStr,
-            // Responses takes `input`, not `messages`.
-            input: buildComboTestPrompt(),
+    : isRerank
+      ? {
+          model: fullModelStr,
+          query: options.prompt || "What is CheapRoute?",
+          documents: [
+            "CheapRoute routes AI requests across configured providers.",
+            "This document is unrelated to the test query.",
+          ],
+          top_n: 1,
+          return_documents: false,
+        }
+      : isAudioTranscription
+        ? { model: fullModelStr }
+        : isResponses
+          ? {
+              model: fullModelStr,
+              input: options.prompt || buildComboTestPrompt(),
             max_output_tokens: RESPONSES_TEST_MAX_OUTPUT_TOKENS,
             // Non-streaming on purpose: the SSE reader below understands Chat
             // Completions deltas and the `output_text`/`output[]` shapes, but not
@@ -607,17 +701,33 @@ export async function runSingleModelTest(
             // streamed answer would read as empty — the very failure being fixed.
             stream: false,
           }
-        : buildComboTestRequestBody(fullModelStr, isEmbedding, {
-            stream: !isEmbedding && streamChat,
-            maxTokens: !isEmbedding && streamChat ? STREAMING_CHAT_TEST_MAX_TOKENS : undefined,
-          });
+        : isImageGeneration
+          ? {
+              model: fullModelStr,
+              prompt:
+                options.prompt ||
+                "A hyper-realistic cyberpunk metropolis at twilight, holographic neon signs, 8k",
+              size: "1024x1024",
+              n: 1,
+            }
+          : (() => {
+              const isReasoning = isReasoningModel(fullModelStr);
+              const tokenBudget = isReasoning
+                ? REASONING_CHAT_TEST_MAX_TOKENS
+                : STREAMING_CHAT_TEST_MAX_TOKENS;
+              return buildComboTestRequestBody(fullModelStr, isEmbedding, {
+                stream: !isEmbedding && streamChat,
+                maxTokens: !isEmbedding && streamChat ? tokenBudget : undefined,
+              });
+            })();
 
   if (options.prompt !== undefined && "messages" in testBody) {
     const rawPrompt = options.prompt.trim();
     // Detect image URL in prompt (e.g. vision capability test presets or user pasted image URL)
     const imgUrlMatch =
-      rawPrompt.match(/https?:\/\/[^\s]+?\.(?:png|jpg|jpeg|webp|gif)(?:\?[^\s]*)?/i) ||
-      rawPrompt.match(/https?:\/\/images\.unsplash\.com\/[^\s]+/i);
+      rawPrompt.match(/data:image\/(?:png|jpeg|jpg|webp|gif);base64,[A-Za-z0-9+/=]+/i) ||
+      rawPrompt.match(/https?:\/\/[^\s"'<>]+\.(?:png|jpg|jpeg|webp|gif)(?:\?[^\s"'<>]*)?/i) ||
+      rawPrompt.match(/https?:\/\/images\.unsplash\.com\/[^\s"'<>]+/i);
 
     if (imgUrlMatch) {
       const imgUrl = imgUrlMatch[0];
@@ -663,6 +773,15 @@ export async function runSingleModelTest(
     }
     if (isResponses) {
       return postResponses(buildInternalResponsesRequest(testBody, signal, connectionId));
+    }
+    if (isImageGeneration) {
+      return postImageGeneration(
+        buildInternalImageGenerationRequest(
+          testBody as Record<string, unknown>,
+          signal,
+          connectionId
+        )
+      );
     }
     return postChatCompletion(buildInternalChatRequest(testBody, signal, connectionId));
   };
@@ -765,6 +884,7 @@ export async function runSingleModelTest(
   if (res.ok) {
     let responseText = "";
     let streamError: ModelTestResponseText["error"];
+    let streamReadException: unknown = null;
     try {
       // T-PROBE: consume the stream inside the probe context too — the SSE
       // body is transformed by chatCore/chatHelpers generator code that
@@ -777,12 +897,30 @@ export async function runSingleModelTest(
       );
       responseText = parsedResponse.text;
       streamError = parsedResponse.error;
-    } catch {
+    } catch (err) {
+      streamReadException = err;
       responseText = "";
+      try {
+        await res.body?.cancel();
+      } catch {
+        // ignore cancel errors
+      }
     } finally {
       clearTimeout(timeoutHandle);
     }
     latencyMs = Date.now() - startTime;
+    if (streamReadException && !timedOut) {
+      const errMessage = getErrorMessage(streamReadException);
+      const isAbort = getErrorName(streamReadException) === "AbortError";
+      return {
+        modelId: fullModelStr,
+        status: isAbort ? "rate_limited" : "error",
+        latencyMs,
+        httpStatus: isAbort ? 429 : 502,
+        error: `Stream interrupted: ${errMessage}`,
+        isTransient: true,
+      };
+    }
     if (streamError) {
       const error = sanitizeErrorMessage(streamError.message) || "Upstream stream failed";
       const rateLimited = streamError.statusCode === 429 || isRateLimitMessage(error);
@@ -804,7 +942,17 @@ export async function runSingleModelTest(
         ...(quotaFlags.isQuota ? { isQuota: true } : {}),
       };
     }
-    const outputState = classifyModelTestOutput(timedOut, responseText, isEmbedding || isRerank);
+    if (isAudioTranscription && !responseText) {
+      responseText = "[Audio transcription completed successfully]";
+    }
+    if (isImageGeneration && !responseText) {
+      responseText = "[Image generated successfully]";
+    }
+    const outputState = classifyModelTestOutput(
+      timedOut,
+      responseText,
+      isEmbedding || isRerank || isAudioTranscription || isImageGeneration
+    );
     // A streaming response can yield partial text just as the test timeout
     // aborts the underlying request. Partial output does not make an aborted
     // request healthy: the call log correctly records that race as 499, so
@@ -826,6 +974,24 @@ export async function runSingleModelTest(
         latencyMs,
         httpStatus: 200,
         responseText: "[Rerank completed successfully]",
+      };
+    }
+    if (isAudioTranscription) {
+      return {
+        modelId: fullModelStr,
+        status: "ok",
+        latencyMs,
+        httpStatus: 200,
+        responseText: responseText || "[Audio transcription completed successfully]",
+      };
+    }
+    if (isImageGeneration) {
+      return {
+        modelId: fullModelStr,
+        status: "ok",
+        latencyMs,
+        httpStatus: 200,
+        responseText: responseText || "[Image generated successfully]",
       };
     }
     if (outputState === "empty") {

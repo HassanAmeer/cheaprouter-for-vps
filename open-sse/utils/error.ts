@@ -12,6 +12,7 @@ import type { ModelCooldownErrorPayload } from "@/types";
 import { buildPassthroughErrorResponse } from "./upstreamErrorPassthrough.ts";
 import { isFeatureFlagEnabled } from "@/shared/utils/featureFlags";
 import { resolveRetryAfterInstant } from "./retryAfterInstant.ts";
+import { resolveCustomStatusCodeMessage } from "./statusCodeMessages.ts";
 
 export { parseRetryAfterHeader, resolveRetryAfterInstant } from "./retryAfterInstant.ts";
 
@@ -388,7 +389,17 @@ export function buildErrorBody(
   classification?: ErrorBodyClassification
 ): ErrorResponseBody {
   const errorInfo = getErrorInfo(statusCode);
-  const safeMessage = sanitizeErrorMessage(message) || getDefaultErrorMessage(statusCode);
+  const sanitized = sanitizeErrorMessage(message);
+  const customMessage = resolveCustomStatusCodeMessage(statusCode, sanitized, {
+    error: sanitized,
+    reason: classification?.reason,
+    code: classification?.code ?? errorInfo.code,
+    type: classification?.type ?? errorInfo.type,
+    ...(upstreamDetails && typeof upstreamDetails === "object" && !Array.isArray(upstreamDetails)
+      ? (upstreamDetails as Record<string, unknown>)
+      : {}),
+  });
+  const safeMessage = customMessage ?? (sanitized || getDefaultErrorMessage(statusCode));
   const safeReason =
     typeof classification?.reason === "string" && isSafePublicErrorIdentifier(classification.reason)
       ? classification.reason

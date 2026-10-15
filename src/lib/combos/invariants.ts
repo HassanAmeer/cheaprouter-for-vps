@@ -11,6 +11,11 @@ const FAMILY_PATTERNS: ReadonlyArray<[string, RegExp]> = [
   ["llama", /^llama(?:-|$)/i],
   ["minimax", /^minimax(?:-|$)/i],
   ["mistral", /^(?:mistral|mixtral)(?:-|$)/i],
+  ["deepseek", /^deepseek(?:-|$)/i],
+  ["qwen", /^qwen(?:-|$)/i],
+  ["gemma", /^gemma(?:-|$)/i],
+  ["o1", /^o1(?:-|$)/i],
+  ["o3", /^o3(?:-|$)/i],
 ];
 
 function strings(value: unknown): string[] {

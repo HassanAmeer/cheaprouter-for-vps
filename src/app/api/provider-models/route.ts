@@ -488,9 +488,11 @@ export async function PATCH(request) {
       );
     }
 
-    if (typeof body.isHidden !== "boolean") {
+    const hasIsHidden = typeof body.isHidden === "boolean";
+    const hasIsFree = typeof body.isFree === "boolean" || typeof body.isFreeOverride === "boolean";
+    if (!hasIsHidden && !hasIsFree) {
       return Response.json(
-        { error: { message: "isHidden boolean is required", type: "validation_error" } },
+        { error: { message: "Either isHidden or isFree boolean is required", type: "validation_error" } },
         { status: 400 }
       );
     }
@@ -520,9 +522,26 @@ export async function PATCH(request) {
     }
 
     for (const modelId of modelIds) {
-      const updatedModel = await updateCustomModel(provider, modelId, { isHidden: body.isHidden });
-      if (!updatedModel) {
-        mergeModelCompatOverride(provider, modelId, { isHidden: body.isHidden, modality });
+      if (hasIsHidden) {
+        const isHiddenVal = body.isHidden === true;
+        const updatedModel = await updateCustomModel(provider, modelId, { isHidden: isHiddenVal });
+        if (!updatedModel) {
+          mergeModelCompatOverride(provider, modelId, { isHidden: isHiddenVal, modality });
+        }
+      }
+      if (hasIsFree) {
+        const isFreeVal = typeof body.isFree === "boolean" ? body.isFree : (body.isFreeOverride as boolean);
+        try {
+          const { upsertCustomization } = await import("@/lib/db/providerModelCustomizations");
+          upsertCustomization({
+            providerId: provider,
+            originalModelId: modelId,
+            isFreeOverride: isFreeVal,
+          });
+        } catch (e) {
+          console.error(`Failed to update isFreeOverride for ${modelId}:`, e);
+        }
+        await updateCustomModel(provider, modelId, { isFree: isFreeVal } as any);
       }
     }
 

@@ -172,19 +172,55 @@ function joinOriginAndBasePath(origin: string, basePath: string): string {
 }
 
 /**
+ * Maps a router origin to the dedicated API origin.
+ * When CheapRoute dashboard is accessed on router.tokendeal.cloud (or router.*),
+ * API endpoints presented in the dashboard and code samples point to api.tokendeal.cloud (or api.*).
+ */
+export function mapToApiOrigin(origin?: string | null): string | null {
+  if (!origin) return null;
+  try {
+    const url = new URL(origin);
+    const host = url.hostname.toLowerCase();
+    if (host === "router.tokendeal.cloud") {
+      url.hostname = "api.tokendeal.cloud";
+      return url.origin;
+    }
+    if (host.startsWith("router.")) {
+      url.hostname = host.replace(/^router\./i, "api.");
+      return url.origin;
+    }
+    return url.origin;
+  } catch {
+    return origin;
+  }
+}
+
+/**
  * Resolve the public origin (+ optional basePath) shown in the dashboard.
  *
  * @param envValue          `NEXT_PUBLIC_BASE_URL` (may include a path for subpath deploys)
  * @param browserOrigin     `window.location.origin`
  * @param browserPathname   `window.location.pathname` (still includes Next basePath)
  * @param envBasePath       `NEXT_PUBLIC_CHEAPROUTE_BASE_PATH` / `CHEAPROUTE_BASE_PATH`
+ * @param envApiValue       `NEXT_PUBLIC_API_BASE_URL` / `CHEAPROUTE_API_BASE_URL`
  */
 export function resolveDisplayBaseUrl(
   envValue?: string,
   browserOrigin?: string,
   browserPathname?: string,
-  envBasePath?: string
+  envBasePath?: string,
+  envApiValue?: string
 ): string {
+  const configuredApiUrl = normalizeUrl(
+    envApiValue ??
+      (typeof process !== "undefined"
+        ? process.env.NEXT_PUBLIC_API_BASE_URL || process.env.CHEAPROUTE_API_BASE_URL
+        : undefined)
+  );
+  if (configuredApiUrl && isPublicDisplayBaseUrl(configuredApiUrl)) {
+    return configuredApiUrl;
+  }
+
   const configuredUrl = normalizeUrl(envValue);
   const currentOrigin = normalizeUrl(browserOrigin);
   const basePath = resolveDeployBasePath(envBasePath, configuredUrl, browserPathname);
@@ -193,7 +229,8 @@ export function resolveDisplayBaseUrl(
   // Example: NEXT_PUBLIC_BASE_URL=https://host/cheaproute must not be collapsed to
   // https://host when the browser origin is the same host without a path.
   if (configuredUrl && isPublicDisplayBaseUrl(configuredUrl) && urlPathname(configuredUrl)) {
-    return configuredUrl;
+    const mappedConfigured = mapToApiOrigin(configuredUrl) || configuredUrl;
+    return mappedConfigured;
   }
 
   // Reachable public browser origin, with basePath re-applied when configured.
@@ -201,12 +238,14 @@ export function resolveDisplayBaseUrl(
   // (tunnels / alternate domains). basePath keeps /v1 examples correct under
   // reverse-proxy subpaths (CHEAPROUTE_BASE_PATH).
   if (currentOrigin && isPublicDisplayBaseUrl(currentOrigin)) {
-    return joinOriginAndBasePath(currentOrigin, basePath);
+    const mappedOrigin = mapToApiOrigin(currentOrigin) || currentOrigin;
+    return joinOriginAndBasePath(mappedOrigin, basePath);
   }
 
   // Configured public URL without a path — append basePath if present.
   if (configuredUrl && isPublicDisplayBaseUrl(configuredUrl)) {
-    return joinOriginAndBasePath(configuredUrl, basePath);
+    const mappedConfigured = mapToApiOrigin(configuredUrl) || configuredUrl;
+    return joinOriginAndBasePath(mappedConfigured, basePath);
   }
 
   const portFallback =
@@ -214,7 +253,8 @@ export function resolveDisplayBaseUrl(
       ? `http://localhost:${process.env.NEXT_PUBLIC_PORT || process.env.PORT}`
       : DEFAULT_DISPLAY_BASE_URL;
   const fallback = currentOrigin ?? configuredUrl ?? portFallback;
-  return joinOriginAndBasePath(fallback, basePath);
+  const mappedFallback = mapToApiOrigin(fallback) || fallback;
+  return joinOriginAndBasePath(mappedFallback, basePath);
 }
 
 /**
@@ -232,13 +272,22 @@ export function resolveDisplayBaseUrl(
  * `src/shared/utils/resolveCheapRouteBaseUrl.ts` instead.
  */
 export function useDisplayBaseUrl(): string {
+  const envApiValue = normalizeUrl(
+    process.env.NEXT_PUBLIC_API_BASE_URL || process.env.CHEAPROUTE_API_BASE_URL
+  );
   const envValue = normalizeUrl(process.env.NEXT_PUBLIC_BASE_URL);
   const envBasePath = normalizeBasePath(
     process.env.NEXT_PUBLIC_CHEAPROUTE_BASE_PATH || process.env.CHEAPROUTE_BASE_PATH
   );
 
   const [url, setUrl] = useState<string>(() =>
-    resolveDisplayBaseUrl(envValue ?? undefined, undefined, undefined, envBasePath || undefined)
+    resolveDisplayBaseUrl(
+      envValue ?? undefined,
+      undefined,
+      undefined,
+      envBasePath || undefined,
+      envApiValue ?? undefined
+    )
   );
 
   useEffect(() => {
@@ -246,7 +295,8 @@ export function useDisplayBaseUrl(): string {
       envValue ?? undefined,
       window.location.origin,
       window.location.pathname,
-      envBasePath || undefined
+      envBasePath || undefined,
+      envApiValue ?? undefined
     );
     // Schedule via queueMicrotask so setState is called inside a callback,
     // not synchronously in the effect body (react-hooks/set-state-in-effect).
@@ -260,7 +310,7 @@ export function useDisplayBaseUrl(): string {
     return () => {
       unmounted = true;
     };
-  }, [envValue, envBasePath]);
+  }, [envValue, envBasePath, envApiValue]);
 
   return url;
 }

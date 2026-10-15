@@ -84,10 +84,10 @@ function quantumExtras(quantumLock?: { enabled: boolean }) {
     : { configPatch: {}, applyOpts: {} };
 }
 
-function messagesToText(messages: Array<{ role: string; content: unknown }>): string {
+function messagesToText(messages: Array<{ role: string; content?: unknown }>): string {
   return messages
     .map((m) => {
-      const content = typeof m.content === "string" ? m.content : JSON.stringify(m.content);
+      const content = typeof m.content === "string" ? m.content : JSON.stringify(m.content ?? "");
       return `${m.role}: ${content}`;
     })
     .join("\n");

@@ -78,7 +78,7 @@ export async function POST(request: Request) {
     // Persist test result into SQLite provider_model_customizations table
     try {
       const { upsertCustomization } = await import("@/lib/db/providerModelCustomizations");
-      const isOk = result.status === "ok" && (result.responseText || "").trim().length > 0;
+      const isOk = result.status === "ok";
       upsertCustomization({
         providerId,
         originalModelId: modelId,

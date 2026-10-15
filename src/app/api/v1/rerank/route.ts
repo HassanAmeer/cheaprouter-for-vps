@@ -281,7 +281,7 @@ export async function handleValidatedRerankRequestBody(
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
         body: upstreamBody,
       };

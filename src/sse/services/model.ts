@@ -224,7 +224,12 @@ function findCustomModelMeta(models: unknown, modelId: string): any {
 }
 
 function findSyncedModelMeta(models: unknown, modelId: string): any {
-  return Array.isArray(models) ? models.find((model: any) => model.id === modelId) : undefined;
+  if (!Array.isArray(models)) return undefined;
+  const lower = modelId.toLowerCase();
+  return (
+    models.find((model: any) => model.id === modelId) ??
+    models.find((model: any) => typeof model.id === "string" && model.id.toLowerCase() === lower)
+  );
 }
 
 function findLiveCatalogModelMeta(

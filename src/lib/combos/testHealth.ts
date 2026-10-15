@@ -234,6 +234,14 @@ export function extractComboTestResponseText(responseBody: unknown): string {
     return "[Embedding generated successfully]";
   }
 
+  if (Array.isArray(body.data) && body.data[0]?.url) {
+    return String(body.data[0].url);
+  }
+
+  if (Array.isArray(body.data) && body.data[0]?.b64_json) {
+    return `data:image/png;base64,${body.data[0].b64_json}`;
+  }
+
   if (Array.isArray(body.choices)) {
     for (const choice of body.choices) {
       const choiceRecord = asRecord(choice);

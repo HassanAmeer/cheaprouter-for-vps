@@ -519,8 +519,11 @@ function validateKeyStatus(context: PolicyContext): Response | null {
   if (apiKeyInfo.isBanned === true) {
     return errorResponse(HTTP_STATUS.FORBIDDEN, "This API key is banned due to policy violations");
   }
-  if (apiKeyInfo.expiresAt && Date.now() > new Date(apiKeyInfo.expiresAt).getTime()) {
-    return errorResponse(HTTP_STATUS.FORBIDDEN, "This API key has expired");
+  if (apiKeyInfo.expiresAt) {
+    const expiresTime = Date.parse(apiKeyInfo.expiresAt);
+    if (Number.isFinite(expiresTime) && Date.now() > expiresTime) {
+      return errorResponse(HTTP_STATUS.FORBIDDEN, "This API key has expired");
+    }
   }
   return null;
 }

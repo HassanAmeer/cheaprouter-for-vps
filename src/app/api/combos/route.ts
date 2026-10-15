@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getCombos, getCombosCount, createCombo, getComboByName } from "@/lib/db/combos";
+import { getCombos, getCombosCount, createCombo, getComboByName, getComboByNameInsensitive } from "@/lib/db/combos";
 import { isCloudEnabled } from "@/lib/db/settings";
 import { getConsistentMachineId } from "@/shared/utils/machineId";
 import { syncToCloud } from "@/lib/cloudSync";
@@ -90,7 +90,7 @@ export async function POST(request) {
     }
 
     // Check if name already exists
-    const existing = await getComboByName(name);
+    const existing = await getComboByNameInsensitive(name);
     if (existing) {
       return NextResponse.json({ error: "Combo name already exists" }, { status: 400 });
     }

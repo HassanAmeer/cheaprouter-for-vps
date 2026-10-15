@@ -2506,7 +2506,7 @@ export default function APIPageClient({ machineId }: Readonly<APIPageClientProps
               <strong className="text-text">Temporary vs Permanent Domains:</strong> Quick Tunnel
               URLs are temporary and regenerate when restarted. When you are ready for a permanent
               branded address, you can map an A-Record (e.g.{" "}
-              <code className="font-mono text-text">router.tokendeal.cloud</code>) directly to your
+              <code className="font-mono text-text">api.tokendeal.cloud</code>) directly to your
               VPS with Nginx and SSL.
             </div>
           </div>

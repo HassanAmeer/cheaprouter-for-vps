@@ -107,6 +107,15 @@ export const CAPABILITY_PRESETS: CapabilityPreset[] = [
     prompt:
       "https://actions.google.com/sounds/v1/ambiences/outdoor_market.ogg Transcribe all spoken phrases and identify the background acoustic ambient sounds in this recording.",
   },
+  {
+    id: "embedding-text",
+    label: "Embedding",
+    category: "Embeddings",
+    icon: "hub",
+    description: "Semantic representation vector verification",
+    prompt:
+      "The quick brown fox jumps over the lazy dog. Vector semantic similarity search verification.",
+  },
 ];
 
 export interface DefaultCapabilitiesPromptModalProps {
@@ -386,10 +395,22 @@ export default function DefaultCapabilitiesPromptModal({
 
 export function getPromptForCapability(capabilityKey: string, customPrompt?: string): string {
   const cap = capabilityKey.toLowerCase();
-  if (cap === "vision" || cap === "image") {
+  if (cap === "vision") {
     return (
       CAPABILITY_PRESETS.find((p) => p.id === "vision-cat")?.prompt ||
       "https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?w=600 Describe the subject, colors, fur texture, and expression in this image in vivid detail."
+    );
+  }
+  if (cap === "image_gen" || cap === "image" || cap === "diffusion" || cap === "text-to-image" || cap === "palette") {
+    return (
+      CAPABILITY_PRESETS.find((p) => p.id === "text-to-image")?.prompt ||
+      "A hyper-realistic cyberpunk metropolis at twilight, holographic neon signs, reflections on rain-slicked asphalt, octane render 8k cinematic lighting."
+    );
+  }
+  if (cap === "video") {
+    return (
+      CAPABILITY_PRESETS.find((p) => p.id === "video-multimodal")?.prompt ||
+      "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4 Break down the scene transitions, camera pacing, and key dynamic events across timestamps."
     );
   }
   if (cap === "code" || cap === "coding") {
@@ -420,6 +441,13 @@ export function getPromptForCapability(capabilityKey: string, customPrompt?: str
     return (
       CAPABILITY_PRESETS.find((p) => p.id === "ocr-receipt")?.prompt ||
       "https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?w=600 Extract all legible text, numerical values, headers, and dates from this document."
+    );
+  }
+  if (cap === "embedding" || cap === "embeddings" || cap === "vector") {
+    return (
+      customPrompt ||
+      CAPABILITY_PRESETS.find((p) => p.id === "embedding-text")?.prompt ||
+      "The quick brown fox jumps over the lazy dog. Vector semantic similarity search verification."
     );
   }
   // Default: text / chat

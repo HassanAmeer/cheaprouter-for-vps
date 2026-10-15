@@ -116,10 +116,32 @@ export async function handleGetModels(request: Request, dependencies: GetModelsD
       hidePaid = settings?.hidePaidModels === true;
     } catch {}
 
-    // Filter before capability resolution so unavailable/paid rows cannot trigger
-    // needless capability work. One request-local snapshot supplies all persisted
-    // capability and custom-vision rows to the remaining resolutions.
-    const candidates = AI_MODELS.filter((model: any) => {
+    // Merge custom models into candidates list
+    let customModelCandidates: any[] = [];
+    try {
+      const { getAllCustomModels } = await import("@/lib/db/models");
+      const customModelsMap = (await getAllCustomModels()) as Record<string, any>;
+      for (const [providerId, models] of Object.entries(customModelsMap)) {
+        if (!Array.isArray(models)) continue;
+        for (const m of models) {
+          if (!m?.id) continue;
+          if (m.isHidden === true) continue;
+          customModelCandidates.push({
+            id: `${providerId}/${m.id}`,
+            name: m.name || m.id,
+            provider: providerId,
+            model: m.id,
+          });
+        }
+      }
+    } catch {}
+
+    const allModelCandidates = [...AI_MODELS, ...customModelCandidates];
+    const seenFullIds = new Set<string>();
+    const candidates = allModelCandidates.filter((model: any) => {
+      const full = `${model.provider}/${model.model}`;
+      if (seenFullIds.has(full)) return false;
+      seenFullIds.add(full);
       if (activeProviders && !activeProviders.has(model.provider)) return false;
       const canonicalKey = `${model.provider}::${model.model}`;
       if (inactiveCustomizationKeys.has(canonicalKey)) return false;

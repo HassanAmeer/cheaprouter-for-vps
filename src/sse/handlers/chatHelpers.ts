@@ -1006,7 +1006,7 @@ export function isEarlyEofSiblingFailoverOn(): boolean {
 
 export function decideProxyResolutionFailure(
   err: unknown,
-  env: { PROXY_FAIL_OPEN?: string } = process.env
+  env: Record<string, string | undefined> = process.env
 ): null {
   if ((env.PROXY_FAIL_OPEN ?? "").trim().toLowerCase() === "true") {
     log.warn(

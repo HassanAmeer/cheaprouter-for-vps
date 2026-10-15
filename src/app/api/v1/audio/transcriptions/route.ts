@@ -233,6 +233,10 @@ export async function POST(request) {
   if (!model) {
     return errorResponse(HTTP_STATUS.BAD_REQUEST, "Missing model");
   }
+  const file = formData.get("file");
+  if (!file) {
+    return errorResponse(HTTP_STATUS.BAD_REQUEST, "Missing required parameter: 'file'");
+  }
   const modelStr = String(model);
 
   // Enforce API key policies (model restrictions + budget limits)
