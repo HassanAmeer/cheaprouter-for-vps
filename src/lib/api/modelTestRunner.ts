@@ -861,6 +861,9 @@ export async function runSingleModelTest(
   if (!errorMsg || !errorMsg.trim()) {
     errorMsg = res.statusText ? `HTTP ${res.status}: ${res.statusText}` : `Provider returned HTTP ${res.status}`;
   }
+  if (errorMsg.includes("free tier can only be used from within OpenCode") || errorMsg.includes("FreeTierError")) {
+    errorMsg = "OpenCode Free Tier: Upstream requires an API key or OpenCode Go subscription. Configure an API key in Settings → Providers → OpenCode for full access.";
+  }
   // #9511: classify quota signals on the generic error branch so that
   // 401/402/403 "insufficient balance" / "quota exhausted" errors are
   // NOT auto-hidden by Test All.

@@ -909,6 +909,20 @@ OPENAI_API_KEY: "{{apiKey}}"`,
       },
     ],
   },
+  "cheaprouter-cli": {
+    id: "cheaprouter-cli",
+    name: "CheapRouter CLI",
+    image: "/providers/cli-generic.svg",
+    color: "#F97316",
+    description: "CheapRouter CLI — Built-in local high-speed AI engine and free model provider",
+    docsUrl: "/docs?section=cli-tools&tool=cheaprouter-cli",
+    configType: "custom",
+    category: "code",
+    vendor: "CheapRouter",
+    acpSpawnable: false,
+    baseUrlSupport: "full",
+    defaultCommand: "cheaprouter-cli",
+  },
 };
 
 // ─── Registry helpers ────────────────────────────────────────────────────────

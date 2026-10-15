@@ -14,6 +14,7 @@ export const clineProvider: RegistryEntry = {
   // streaming and let chatCore convert the SSE back to JSON for stream:false
   // clients (e.g. the model-test button, non-streaming API callers).
   forceStream: true,
+  anonymousApiKey: "anonymous",
   baseUrl: "https://api.cline.bot/api/v1/chat/completions",
   authType: "oauth",
   authHeader: "Authorization",

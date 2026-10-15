@@ -376,12 +376,12 @@ export const apKilocodeProvider: RegistryEntry = buildOpenAiCompatibleRegistryEn
   },
   passthroughModels: true,
   models: [
-    { id: "openrouter/free", name: "Free Models Router" },
-    { id: "stepfun/step-3.7-flash:free", name: "Step 3.7 Flash Free" },
-    { id: "poolside/laguna-m.1:free", name: "Laguna M.1 Free" },
-    { id: "nvidia/nemotron-3-ultra-550b-a55b:free", name: "Nemotron 3 Ultra Free" },
-    { id: "google/gemma-4-26b-a4b-it:free", name: "Gemma 4 26B A4B Free" },
     { id: "kilo-auto/free", name: "Auto Free" },
+    { id: "stepfun/step-5-preview-free", name: "StepFun Step 5 Preview (free)" },
+    { id: "nvidia/nemotron-3-ultra-550b-a55b:free", name: "Nemotron 3 Ultra Free" },
+    { id: "kilo-auto/efficient", name: "Auto Efficient" },
+    { id: "kilo-auto/balanced", name: "Auto Balanced" },
+    { id: "kilo-auto/frontier", name: "Auto Frontier" },
   ],
 });
 

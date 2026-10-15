@@ -32,6 +32,8 @@ interface ProviderPageHeaderProps {
   onEditProvider?: () => void;
   onTogglePause?: () => void;
   onDeleteProvider?: () => void;
+  onConnect?: () => void;
+  onDisconnect?: () => void;
   isPaused?: boolean;
   t: ProviderMessageTranslator;
   /**
@@ -54,6 +56,8 @@ export default function ProviderPageHeader({
   onEditProvider,
   onTogglePause,
   onDeleteProvider,
+  onConnect,
+  onDisconnect,
   isPaused = false,
   t,
   isReferralLink = false,
@@ -138,9 +142,23 @@ export default function ProviderPageHeader({
           ) : (
             <h1 className="text-3xl font-semibold tracking-tight">{providerInfo.name}</h1>
           )}
-          <div className="flex items-center gap-2">
-            <p className="text-text-muted">
-              {t("connectionCountLabel", { count: connectionsCount })}
+          <div className="flex items-center gap-2 flex-wrap">
+            <span
+              className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                connectionsCount > 0
+                  ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
+                  : "bg-white/5 text-text-muted border border-white/10"
+              }`}
+            >
+              <span
+                className={`w-1.5 h-1.5 rounded-full ${
+                  connectionsCount > 0 ? "bg-emerald-400" : "bg-neutral-500"
+                }`}
+              />
+              {connectionsCount > 0 ? "Connected" : "Not connected"}
+            </span>
+            <p className="text-text-muted text-xs">
+              ({t("connectionCountLabel", { count: connectionsCount })})
             </p>
             {showPartnerNote && providerInfo.website && (
               <span className="text-[10px] font-medium uppercase tracking-wide text-text-muted/70">
@@ -148,6 +166,43 @@ export default function ProviderPageHeader({
               </span>
             )}
             {apiKeyLink}
+            {onConnect && connectionsCount === 0 && (
+              <button
+                type="button"
+                onClick={onConnect}
+                className="inline-flex items-center gap-1.5 px-3 py-1 rounded-md bg-primary hover:bg-primary-hover text-white text-xs font-semibold shadow-sm transition-colors"
+                title="Connect this provider"
+              >
+                <span className="material-symbols-outlined text-[15px]">add_link</span>
+                Connect
+              </button>
+            )}
+            {connectionsCount > 0 && (
+              <>
+                {onDisconnect && (
+                  <button
+                    type="button"
+                    onClick={onDisconnect}
+                    className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md border border-red-500/30 bg-red-500/10 hover:bg-red-500/20 text-red-400 text-xs font-medium transition-colors"
+                    title="Disconnect this provider"
+                  >
+                    <span className="material-symbols-outlined text-[15px]">link_off</span>
+                    Disconnect
+                  </button>
+                )}
+                {onConnect && (
+                  <button
+                    type="button"
+                    onClick={onConnect}
+                    className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md border border-white/20 bg-white/5 hover:bg-white/10 text-white text-xs font-medium transition-colors"
+                    title="Add another connection"
+                  >
+                    <span className="material-symbols-outlined text-[15px]">add</span>
+                    Add Connection
+                  </button>
+                )}
+              </>
+            )}
             {onEditProvider && (
               <button
                 type="button"

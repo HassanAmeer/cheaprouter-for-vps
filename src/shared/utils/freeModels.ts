@@ -48,7 +48,11 @@ import { AI_MODELS } from "@/shared/constants/models";
 const FREE_BUDGETS = FREE_MODEL_BUDGETS.filter((m) => grantsFreeAccess(m.freeType));
 
 /** Provider ids that have at least one documented free model. */
-export const PROVIDERS_WITH_FREE_MODELS: Set<string> = new Set(FREE_BUDGETS.map((m) => m.provider));
+export const PROVIDERS_WITH_FREE_MODELS: Set<string> = new Set([
+  ...FREE_BUDGETS.map((m) => m.provider),
+  "kilocode",
+  "ap_kilocode",
+]);
 
 const FREE_MODEL_IDS_BY_PROVIDER: Map<string, Set<string>> = (() => {
   const map = new Map<string, Set<string>>();
@@ -94,6 +98,7 @@ export function isCatalogFreeModel(provider: string, modelId: unknown): boolean 
  * shipped-catalog entry, or a payload signal on a provider with a documented free tier.
  */
 export function isFreeModel(provider: string, model: FreeModelCandidate): boolean {
+  if (model.isFree === true) return true;
   if (isCatalogFreeModel(provider, model.id)) return true;
   return providerHasFreeModels(provider) && hasPayloadFreeEvidence(model);
 }

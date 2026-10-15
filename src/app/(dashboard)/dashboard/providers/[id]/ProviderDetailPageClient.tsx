@@ -1,15 +1,23 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useState, useEffect, useMemo, useCallback } from "react";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
-import { CardSkeleton, ShimmerPageLoader } from "@/shared/components";
+import {
+  CardSkeleton,
+  ShimmerPageLoader,
+  OAuthModal,
+  KiroOAuthWrapper,
+  CursorAuthModal,
+  TraeAuthModal,
+} from "@/shared/components";
 import {
   getProviderAlias,
   isOpenAICompatibleProvider,
   isAnthropicCompatibleProvider,
   isClaudeCodeCompatibleProvider,
+  OAUTH_PROVIDERS,
 } from "@/shared/constants/providers";
 import { getModelsByProviderId } from "@/shared/constants/models";
 import { providerUsesCuratedModelsOnly } from "@/lib/providers/modelListingCapability";
@@ -26,11 +34,26 @@ import AddCustomModelCard from "./components/AddCustomModelCard";
 import AvailableModelsTable from "./components/AvailableModelsTable";
 import DefaultCapabilitiesPromptModal from "../components/DefaultCapabilitiesPromptModal";
 import EditCustomProviderSheet from "./components/EditCustomProviderSheet";
+import AddApiKeyModal from "./components/modals/AddApiKeyModal";
+import KimiCodeAuthMethodModal from "./components/KimiCodeAuthMethodModal";
+import SiliconFlowEndpointModal from "./components/SiliconFlowEndpointModal";
+import { RemoteTunnelBanner } from "@/shared/components/RemoteTunnelBanner";
 
 export default function ProviderDetailPageClient() {
   const router = useRouter();
   const params = useParams();
+  const searchParams = useSearchParams();
   const providerId = params.id as string;
+
+  // ── Connection Auth Modals State ─────────────────────────────────────────
+  const [showOAuthModal, setShowOAuthModal] = useState(false);
+  const [showAddApiKeyModal, setShowAddApiKeyModal] = useState(false);
+  const [showKimiAuthMethodModal, setShowKimiAuthMethodModal] = useState(false);
+  const [showSiliconFlowEndpointModal, setShowSiliconFlowEndpointModal] = useState(false);
+  const [siliconFlowInitialBaseUrl, setSiliconFlowInitialBaseUrl] = useState<string | undefined>(
+    undefined
+  );
+  const [, setDisconnecting] = useState(false);
 
   // ── Edit Provider Sheet State ───────────────────────────────────────────
   const [editingProviderNode, setEditingProviderNode] = useState(false);
@@ -141,6 +164,94 @@ export default function ProviderDetailPageClient() {
     usesCuratedModelsOnly,
   ]);
 
+  const isOAuth = useMemo(() => {
+    return Boolean(
+      (OAUTH_PROVIDERS as Record<string, unknown>)[providerId] ||
+      providerInfo?.oauthProviderId ||
+      (providerInfo as Record<string, unknown>)?.authType === "oauth"
+    );
+  }, [providerId, providerInfo]);
+
+  const openPrimaryAddFlow = useCallback(() => {
+    if (providerId === "kimi-coding") {
+      setShowKimiAuthMethodModal(true);
+      return;
+    }
+    if (isOAuth) {
+      setShowOAuthModal(true);
+      return;
+    }
+    if (providerId === "siliconflow") {
+      setShowSiliconFlowEndpointModal(true);
+      return;
+    }
+    setShowAddApiKeyModal(true);
+  }, [providerId, isOAuth]);
+
+  // Handle URL ?action=connect (e.g. from ProviderCard "Connect" button)
+  useEffect(() => {
+    if (searchParams?.get("action") === "connect") {
+      openPrimaryAddFlow();
+    }
+  }, [searchParams, openPrimaryAddFlow]);
+
+  const handleOAuthSuccess = useCallback(async () => {
+    setShowOAuthModal(false);
+    await fetchConnections();
+    await fetchProviderModelMeta();
+    notify.success("Connected successfully");
+  }, [fetchConnections, fetchProviderModelMeta, notify]);
+
+  const handleSaveApiKey = useCallback(
+    async (formData: Record<string, unknown>) => {
+      try {
+        const res = await fetch("/api/providers", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            provider: providerId === "kimi-coding" ? "kimi-coding-apikey" : providerId,
+            ...formData,
+          }),
+        });
+        if (!res.ok) {
+          const errorData = await res.json().catch(() => null);
+          throw new Error(errorData?.error || "Failed to save API key");
+        }
+        setShowAddApiKeyModal(false);
+        setSiliconFlowInitialBaseUrl(undefined);
+        await fetchConnections();
+        await fetchProviderModelMeta();
+        notify.success("Connection added successfully");
+      } catch (err) {
+        notify.error(err instanceof Error ? err.message : "Failed to save API key");
+      }
+    },
+    [providerId, fetchConnections, fetchProviderModelMeta, notify]
+  );
+
+  const handleDisconnect = useCallback(async () => {
+    if (connections.length === 0) return;
+    const confirmed = window.confirm(
+      `Are you sure you want to disconnect ${providerInfo?.name || providerId}? This will remove your credentials/connections for this provider.`
+    );
+    if (!confirmed) return;
+    setDisconnecting(true);
+    try {
+      await Promise.all(
+        connections.map((conn) =>
+          fetch(`/api/providers/${encodeURIComponent(conn.id)}`, { method: "DELETE" })
+        )
+      );
+      await fetchConnections();
+      await fetchProviderModelMeta();
+      notify.success("Disconnected successfully");
+    } catch (err) {
+      notify.error(err instanceof Error ? err.message : "Failed to disconnect provider");
+    } finally {
+      setDisconnecting(false);
+    }
+  }, [connections, providerInfo?.name, providerId, fetchConnections, fetchProviderModelMeta, notify]);
+
   const handleFetchAllModels = async () => {
     setFetchingAllModels(true);
     setFetchError(null);
@@ -174,11 +285,15 @@ export default function ProviderDetailPageClient() {
           models: fetchedModels.map((m: any) => {
             const rawId = m.id || m.name || m.model;
             const modelId = typeof rawId === "string" ? rawId : String(rawId ?? "");
+            const isFree =
+              m.isFree === true ||
+              (Array.isArray(m.capabilities) && m.capabilities.includes("free"));
             return {
               id: modelId,
               name: m.name || modelId,
               source: "imported",
               apiFormat: m.apiFormat || "chat-completions",
+              isFree,
               supportedEndpoints: Array.isArray(m.supportedEndpoints)
                 ? m.supportedEndpoints
                 : ["chat"],
@@ -197,6 +312,8 @@ export default function ProviderDetailPageClient() {
                 ? { inputTokenLimit: m.max_input_tokens }
                 : {}),
               ...(Array.isArray(m.capabilities) ? { capabilities: m.capabilities } : {}),
+              ...(m.supportsVision !== undefined ? { supportsVision: Boolean(m.supportsVision) } : {}),
+              ...(m.reasoning !== undefined ? { reasoning: Boolean(m.reasoning) } : {}),
             };
           }),
         }),
@@ -299,6 +416,8 @@ export default function ProviderDetailPageClient() {
           isOpenAICompatible={isOpenAICompatible}
           isAnthropicProtocolCompatible={isAnthropicProtocolCompatible}
           onOpenTutorial={() => {}}
+          onConnect={openPrimaryAddFlow}
+          onDisconnect={handleDisconnect}
           onEditProvider={providerNode ? () => setEditingProviderNode(true) : undefined}
           onTogglePause={providerNode ? handleTogglePause : undefined}
           onDeleteProvider={providerNode ? handleDeleteProvider : undefined}
@@ -316,6 +435,11 @@ export default function ProviderDetailPageClient() {
           />
         </div>
       </div>
+
+      {/* ── REMOTE TUNNEL HELPER BANNER (WHEN NOT CONNECTED) ── */}
+      {connections.length === 0 && (
+        <RemoteTunnelBanner />
+      )}
 
       {/* ── SECTION 1: ➕ "Add Custom Model" Form ── */}
       <AddCustomModelCard providerId={providerId} onModelAdded={fetchProviderModelMeta} />
@@ -350,6 +474,84 @@ export default function ProviderDetailPageClient() {
           notify={notify}
         />
       )}
+
+      {/* ── CONNECTION AUTH MODALS ── */}
+      {providerId === "kimi-coding" && (
+        <KimiCodeAuthMethodModal
+          isOpen={showKimiAuthMethodModal}
+          onSelectOAuth={() => {
+            setShowKimiAuthMethodModal(false);
+            setShowOAuthModal(true);
+          }}
+          onSelectApiKey={() => {
+            setShowKimiAuthMethodModal(false);
+            setShowAddApiKeyModal(true);
+          }}
+          onClose={() => setShowKimiAuthMethodModal(false)}
+          t={t}
+        />
+      )}
+
+      {providerId === "kiro" || providerId === "amazon-q" ? (
+        <KiroOAuthWrapper
+          isOpen={showOAuthModal}
+          providerInfo={{ ...providerInfo, id: providerId }}
+          onSuccess={handleOAuthSuccess}
+          onClose={() => setShowOAuthModal(false)}
+        />
+      ) : providerId === "cursor" ? (
+        <CursorAuthModal
+          isOpen={showOAuthModal}
+          onSuccess={handleOAuthSuccess}
+          onClose={() => setShowOAuthModal(false)}
+        />
+      ) : providerId === "trae" ? (
+        <TraeAuthModal
+          isOpen={showOAuthModal}
+          onSuccess={handleOAuthSuccess}
+          onClose={() => setShowOAuthModal(false)}
+        />
+      ) : (
+        <OAuthModal
+          isOpen={showOAuthModal}
+          provider={providerInfo?.oauthProviderId || providerId}
+          providerInfo={providerInfo}
+          onSuccess={handleOAuthSuccess}
+          onClose={() => setShowOAuthModal(false)}
+        />
+      )}
+
+      {providerId === "siliconflow" && (
+        <SiliconFlowEndpointModal
+          isOpen={showSiliconFlowEndpointModal}
+          onSelect={(baseUrl) => {
+            setSiliconFlowInitialBaseUrl(baseUrl);
+            setShowSiliconFlowEndpointModal(false);
+            setShowAddApiKeyModal(true);
+          }}
+          onClose={() => {
+            setShowSiliconFlowEndpointModal(false);
+            setSiliconFlowInitialBaseUrl(undefined);
+          }}
+        />
+      )}
+
+      <AddApiKeyModal
+        isOpen={showAddApiKeyModal}
+        provider={providerId}
+        providerName={providerInfo?.name}
+        providerWebsite={providerInfo?.website}
+        initialBaseUrl={siliconFlowInitialBaseUrl}
+        existingConnectionNames={connections.map((c) => c.name)}
+        isCompatible={isCompatible}
+        isAnthropic={isAnthropicProtocolCompatible}
+        isCcCompatible={isCcCompatible}
+        onSave={handleSaveApiKey}
+        onClose={() => {
+          setShowAddApiKeyModal(false);
+          setSiliconFlowInitialBaseUrl(undefined);
+        }}
+      />
     </div>
   );
 }

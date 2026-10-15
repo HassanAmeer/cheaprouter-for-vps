@@ -302,12 +302,18 @@ export function connectionMatchesProviderCard(
 ): boolean {
   if (!conn || !connectionBelongsToProviderPage(conn.provider, providerId, providerNodes)) return false;
   if (cardAuthType === "free") return true;
+  if (conn.authType === "anonymous") return true;
   if (
     supportsApiKeyOnFreeProvider(providerId) ||
     supportsDualAuthProvider(providerId) ||
     OAUTH_CARD_API_KEY_CONNECTION_PROVIDER_IDS.has(providerId)
   ) {
-    return conn.authType === "oauth" || conn.authType === "apikey" || conn.authType === "api_key";
+    return (
+      conn.authType === "oauth" ||
+      conn.authType === "apikey" ||
+      conn.authType === "api_key" ||
+      conn.authType === "anonymous"
+    );
   }
   return conn.authType === cardAuthType;
 }

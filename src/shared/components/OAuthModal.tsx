@@ -30,6 +30,7 @@ import {
   buildPkceLoopbackMismatchHint,
   type PkceLoopbackMismatchHint,
 } from "@/lib/oauth/utils/pkceLoopbackWarning";
+import { RemoteTunnelBanner } from "./RemoteTunnelBanner";
 
 export { formatDeviceCodeRemaining } from "./OAuthModalPanels";
 
@@ -156,7 +157,9 @@ export default function OAuthModal({
   // effect below and re-anchored whenever a device flow (re)starts.
   const [now, setNow] = useState(() => Date.now());
   // API-key paste mode for direct-token providers.
-  const [showPasteToken, setShowPasteToken] = useState(PASTE_FIRST_PROVIDERS.has(provider));
+  const [showPasteToken, setShowPasteToken] = useState(
+    PASTE_FIRST_PROVIDERS.has(provider ?? "")
+  );
   const [pasteToken, setPasteToken] = useState("");
   const [savingToken, setSavingToken] = useState(false);
   // grok-cli only (#7013 rework): device_code is the default method (matches
@@ -248,9 +251,9 @@ export default function OAuthModal({
             typeof data.error === "object" && data.error !== null
               ? (data.error as Record<string, unknown>)
               : null;
-          const errMsg = errorObject
+          const errMsg: string = errorObject
             ? (errorObject.message as string) || JSON.stringify(errorObject)
-            : data.error || t("errorExchangeFailed");
+            : String(data.error || t("errorExchangeFailed"));
           const details = Array.isArray(errorObject?.details)
             ? (errorObject.details as Array<{ field?: string; message?: string }>)
                 .map((detail) => {
@@ -265,15 +268,16 @@ export default function OAuthModal({
 
         setStep("success");
         onSuccess?.();
-      } catch (err) {
+      } catch (err: unknown) {
+        const errorMsg = err instanceof Error ? err.message : String(err);
         // Provide actionable guidance for redirect_uri_mismatch on Google OAuth providers
         if (
-          err.message?.toLowerCase().includes("redirect_uri_mismatch") &&
-          GOOGLE_OAUTH_PROVIDERS.has(provider)
+          errorMsg.toLowerCase().includes("redirect_uri_mismatch") &&
+          GOOGLE_OAUTH_PROVIDERS.has(provider ?? "")
         ) {
           setError(t("errorGoogleRedirectMismatch"));
         } else {
-          setError(err.message);
+          setError(errorMsg);
         }
         setStep("error");
       }
@@ -314,9 +318,9 @@ export default function OAuthModal({
       }
       setStep("success");
       onSuccess?.();
-    } catch (err) {
+    } catch (err: unknown) {
       // Show error inline inside the paste-token form (don't flip to error step)
-      setError(err.message);
+      setError(err instanceof Error ? err.message : String(err));
     } finally {
       setSavingToken(false);
     }
@@ -500,7 +504,8 @@ export default function OAuthModal({
 
               setAuthData({ ...serverData, redirectUri: serverData.redirectUri });
               setStep("waiting");
-              popupRef.current = window.open(serverData.authUrl, "oauth_auth");
+              const serverAuthUrl = typeof serverData.authUrl === "string" ? serverData.authUrl : "";
+              popupRef.current = serverAuthUrl ? window.open(serverAuthUrl, "oauth_auth") : null;
 
               // If browser blocked the popup, switch to manual input step immediately
               if (!popupRef.current) {
@@ -528,8 +533,10 @@ export default function OAuthModal({
 
                 if (pollData.error && !pollData.pending) {
                   throw new Error(
-                    pollData.errorDescription ||
-                      errorMessageFromBody(pollData, t("errorAuthorizationFailed"))
+                    String(
+                      pollData.errorDescription ||
+                        errorMessageFromBody(pollData, t("errorAuthorizationFailed"))
+                    )
                   );
                 }
               }
@@ -604,28 +611,29 @@ export default function OAuthModal({
           throw new Error(errMsg);
         }
 
-        if (!data.authUrl) {
+        const authUrl = typeof data.authUrl === "string" ? data.authUrl : "";
+        if (!authUrl) {
           throw new Error(errorMessageFromBody(data, t("errorBrowserUnavailable")));
         }
 
-        setAuthData({ ...data, redirectUri: data.redirectUri || redirectUri });
+        setAuthData({ ...data, redirectUri: (data.redirectUri as string) || redirectUri });
 
         // For non-true-localhost (LAN IPs, remote) or manual fallback: use manual input mode (user pastes callback URL)
         if (!isTrueLocalhost || forceManual) {
           setStep("input");
-          window.open(data.authUrl, "oauth_auth");
+          window.open(authUrl, "oauth_auth");
         } else {
           // Localhost: Open popup and wait for message
           setStep("waiting");
-          popupRef.current = window.open(data.authUrl, "oauth_popup", "width=600,height=700");
+          popupRef.current = window.open(authUrl, "oauth_popup", "width=600,height=700");
 
           // Check if popup was blocked
           if (!popupRef.current) {
             setStep("input");
           }
         }
-      } catch (err) {
-        setError(err.message);
+      } catch (err: unknown) {
+        setError(err instanceof Error ? err.message : String(err));
         setStep("error");
       }
     },
@@ -975,8 +983,8 @@ export default function OAuthModal({
       }
 
       await exchangeTokens(code, state);
-    } catch (err) {
-      setError(err.message);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : String(err));
       setStep("error");
     }
   };
@@ -1015,6 +1023,8 @@ export default function OAuthModal({
       size="lg"
     >
       <div className="flex flex-col gap-4">
+        {step !== "success" && <RemoteTunnelBanner />}
+
         {/* Browser login with an optional token-import fallback. grok-cli adds a
             third "Device Code" tab since it keeps BOTH the device_code flow
             (#7358, default) and the browser PKCE login (#7013) alongside the

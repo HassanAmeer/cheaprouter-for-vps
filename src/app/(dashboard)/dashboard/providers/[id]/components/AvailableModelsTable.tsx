@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useMemo } from "react";
 import { useNotificationStore } from "@/store/notificationStore";
 import { matchesSearch } from "@/shared/utils/turkishText";
 import { getPromptForCapability } from "@/app/(dashboard)/dashboard/providers/components/DefaultCapabilitiesPromptModal";
+import { isFreeModel } from "@/shared/utils/freeModels";
 
 export interface ModelEntry {
   id: string;
@@ -510,7 +511,9 @@ export default function AvailableModelsTable({
             ) : (
               filteredModels.map((model) => {
                 const isActive = !model.isHidden;
-                const isFree = Boolean(model.isFree);
+                const isFree =
+                  Boolean(model.isFree) ||
+                  isFreeModel(providerId, { id: model.id, isFree: model.isFree });
                 const isTesting = testingModelId === model.id;
                 const testResult = testResults[model.id];
 

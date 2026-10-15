@@ -327,6 +327,9 @@ const ProviderCard = forwardRef<ProviderCardHandle, ProviderCardProps>(function 
   const connected = Number(stats.connected || 0);
   const error = Number(stats.error || 0);
   const allDisabled = Boolean(stats.allDisabled);
+  const isNoAuth = authType === "no-auth" || Boolean((provider as Record<string, unknown>).noAuth);
+  const effectiveConnected = isNoAuth ? Math.max(connected, 1) : connected;
+  const isCardConnected = Number(stats.total || 0) > 0 || isNoAuth;
   const isCompatible = isOpenAICompatibleProvider(providerId) || Boolean(provider.isCustomNode);
   const isCcCompatible = isClaudeCodeCompatibleProvider(providerId);
   const isAnthropicCompatible =
@@ -618,7 +621,7 @@ const ProviderCard = forwardRef<ProviderCardHandle, ProviderCardProps>(function 
                 ) : (
                   <>
                     {getStatusDisplay(
-                      connected,
+                      effectiveConnected,
                       error,
                       Number(stats.warning || 0),
                       stats.errorCode,
@@ -649,7 +652,7 @@ const ProviderCard = forwardRef<ProviderCardHandle, ProviderCardProps>(function 
                 )}
               </div>
               <div className="flex items-center gap-1.5 shrink-0">
-                {Number(stats.total || 0) > 0 ? (
+                {isCardConnected ? (
                   <>
                     {isCustomProvider && (
                       <button
@@ -756,7 +759,13 @@ const ProviderCard = forwardRef<ProviderCardHandle, ProviderCardProps>(function 
                         </span>
                       </button>
                     )}
-                    <span
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        router.push(`/dashboard/providers/${providerId}?action=connect`);
+                      }}
                       className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold rounded-md bg-primary text-white hover:bg-primary-hover shadow-xs transition-colors cursor-pointer"
                       title={providerText(t, "connectProvider", "Connect {name}", {
                         name: provider.name,
@@ -764,7 +773,7 @@ const ProviderCard = forwardRef<ProviderCardHandle, ProviderCardProps>(function 
                     >
                       <span className="material-symbols-outlined text-[14px] leading-none">add</span>
                       Connect
-                    </span>
+                    </button>
                   </>
                 )}
               </div>

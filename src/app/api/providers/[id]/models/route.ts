@@ -140,6 +140,7 @@ import { maybeHandleConolOrSyntxModelDiscovery } from "./webSessionDiscovery";
 import { maybeHandleTwinmindModelDiscovery } from "./twinmindDiscovery";
 import { maybeHandleVertexModelDiscovery } from "./vertexDiscovery";
 import { buildNoAuthModelsResponse, filterModelsForRoute } from "./modelRouteProjection";
+import { hasPayloadFreeEvidence } from "@/shared/utils/payloadFreeEvidence";
 
 /**
  * GET /api/providers/[id]/models - Get models list from provider
@@ -210,7 +211,8 @@ export async function GET(
             regEntry?.anonymousApiKey ||
             provDef?.anonymousFallback ||
             id === "kilocode" ||
-            id === "ap_kilocode"
+            id === "ap_kilocode" ||
+            id === "cline"
           ) {
             connection = {
               id: `${id}-anonymous`,
@@ -459,7 +461,7 @@ export async function GET(
         return buildDiscoveryFallbackResponse(warnings);
       }
       const status = getSafeOutboundFetchErrorStatus(error);
-      if (status === 400 || status === 503 || status === 504) return null;
+      if (status === 503 || status === 504) return null;
       return buildDiscoveryFallbackResponse(warnings);
     };
 
@@ -545,7 +547,13 @@ export async function GET(
       }
 
       const modelIdLower = String(m.id || m.modelId || "").toLowerCase();
-      if (modelIdLower.includes("free") || m.cost === 0 || m.pricing?.prompt === 0 || m.pricing?.input === 0) {
+      if (
+        isFree ||
+        hasPayloadFreeEvidence(m) ||
+        modelIdLower.includes("free") ||
+        m.cost === 0 ||
+        (m.pricing && (Number(m.pricing.prompt) === 0 || Number(m.pricing.input) === 0))
+      ) {
         isFree = true;
         caps.add("free");
       }
@@ -738,9 +746,9 @@ export async function GET(
       }
 
       try {
+        const psd = connection.providerSpecificData as Record<string, unknown> | null | undefined;
         const graphqlEndpoint =
-          (typeof connection.providerSpecificData?.graphqlEndpoint === "string" &&
-            connection.providerSpecificData.graphqlEndpoint) ||
+          (typeof psd?.graphqlEndpoint === "string" && psd.graphqlEndpoint) ||
           process.env.PROMPTQL_GRAPHQL_ENDPOINT ||
           "https://data.prompt.ql.app/promptql/playground-v2-hge/v1/graphql";
         const discovered = await discoverPromptQlModels({
@@ -798,13 +806,13 @@ export async function GET(
       try {
         const discovery = await discoverNotionWebModels({
           token,
-          fetchImpl: (url, init) =>
-            safeOutboundFetch(url, {
+          fetchImpl: ((url: unknown, init?: unknown) =>
+            safeOutboundFetch(url as string, {
               ...SAFE_OUTBOUND_FETCH_PRESETS.modelsDiscovery,
               guard: getProviderOutboundGuard(),
               proxyConfig: proxy,
-              ...init,
-            }),
+              ...(init as Record<string, unknown>),
+            })) as unknown as typeof fetch,
         });
         // Pass through plan-lock warnings (e.g. Fable 5 requires Business/Enterprise).
         return buildApiDiscoveryResponse(discovery.models, discovery.warning);
@@ -843,13 +851,13 @@ export async function GET(
           providerSpecificData: connection.providerSpecificData as
             Record<string, unknown> | null | undefined,
           accessToken: apiKey || accessToken,
-          fetchImpl: (url, init) =>
-            safeOutboundFetch(url, {
+          fetchImpl: ((url: unknown, init?: unknown) =>
+            safeOutboundFetch(url as string, {
               ...SAFE_OUTBOUND_FETCH_PRESETS.modelsDiscovery,
               guard: getProviderOutboundGuard(),
               proxyConfig: proxy,
-              ...init,
-            }),
+              ...(init as Record<string, unknown>),
+            })) as unknown as typeof fetch,
         });
         return buildApiDiscoveryResponse(discovery.models, discovery.warning);
       } catch (error) {
@@ -1541,7 +1549,7 @@ export async function GET(
           method: "GET",
           headers: {
             ...buildOptionalBearerHeaders(token),
-            ...(projectId ? { "OpenAI-Project": projectId } : {}),
+            ...(projectId ? { "OpenAI-Project": String(projectId) } : {}),
           },
         });
       } catch (error) {
@@ -1697,13 +1705,13 @@ export async function GET(
           const models = await fetchCursorAvailableModels({
             accessToken: token,
             machineId,
-            fetchImpl: (url, init) =>
-              safeOutboundFetch(url, {
+            fetchImpl: ((url: unknown, init?: unknown) =>
+              safeOutboundFetch(url as string, {
                 ...SAFE_OUTBOUND_FETCH_PRESETS.modelsDiscovery,
                 guard: getProviderOutboundGuard(),
                 proxyConfig: cursorProxy.proxy,
-                ...init,
-              }),
+                ...(init as Record<string, unknown>),
+              })) as unknown as typeof fetch,
           });
           return buildApiDiscoveryResponse(models);
         } catch (err) {
@@ -1812,8 +1820,10 @@ export async function GET(
 
         const modelsResp = await safeOutboundFetch(
           "https://platformapi.innerai.com/api/v1/ai_models",
-          { headers: innerAiHeaders },
-          getProviderOutboundGuard(provider)
+          {
+            headers: innerAiHeaders,
+            guard: getProviderOutboundGuard(),
+          }
         );
         if (!modelsResp.ok) {
           throw new Error(`Inner.ai models API returned HTTP ${modelsResp.status}`);
@@ -2020,13 +2030,13 @@ export async function GET(
 
       const discovery = await fetchGitHubCopilotModels({
         token: copilotToken,
-        fetchImpl: (url, init) =>
+        fetchImpl: ((url: unknown, init?: unknown) =>
           safeOutboundFetch(url as string, {
             ...SAFE_OUTBOUND_FETCH_PRESETS.modelsDiscovery,
             guard: getProviderOutboundGuard(),
             proxyConfig: proxy,
             ...(init as Record<string, unknown>),
-          }),
+          })) as unknown as typeof fetch,
         fallbackModels: toLocalCatalogModels(),
       });
 
@@ -2075,7 +2085,8 @@ export async function GET(
       const models = await fetchGheCopilotModels({
         apiUrl: copilotApiUrl,
         token: copilotToken,
-        fetchImpl: (url, init) => fetch(url as string, init as RequestInit),
+        fetchImpl: ((url: unknown, init?: unknown) =>
+          fetch(url as string, init as RequestInit)) as unknown as typeof fetch,
       });
 
       if (models.length > 0) {
@@ -2128,13 +2139,13 @@ export async function GET(
       const discovery = await fetchKiroAvailableModels({
         accessToken,
         providerSpecificData: connection.providerSpecificData,
-        fetchImpl: (url, init) =>
+        fetchImpl: ((url: unknown, init?: unknown) =>
           safeOutboundFetch(url as string, {
             ...SAFE_OUTBOUND_FETCH_PRESETS.modelsDiscovery,
             guard: getProviderOutboundGuard(),
             proxyConfig: proxy,
             ...(init as Record<string, unknown>),
-          }),
+          })) as unknown as typeof fetch,
         fallbackModels: toLocalCatalogModels(),
       });
 
@@ -2358,15 +2369,22 @@ export async function GET(
         getStaticModelsForProvider("codex") || []
       );
       const reconcileCodexCatalog = (
-        remoteModels: typeof cachedDiscoveryModels,
+        remoteModels: Array<{ id: string; name?: string }>,
         source: "live" | "github" = "live"
       ) =>
         reconcileCodexDiscoveryCatalog(
-          remoteModels.map((model) => ({ ...model, discoverySource: source })),
+          remoteModels.map((model) => ({
+            ...model,
+            name: (typeof model.name === "string" && model.name) || model.id,
+            owned_by: "codex" as const,
+            apiFormat: "responses" as const,
+            supportedEndpoints: ["responses"] as ["responses"],
+            discoverySource: source,
+          })),
           staticCodexCatalog,
           codexDiscoveryMode
         );
-      const finalizeCodexCatalog = (remoteModels: typeof cachedDiscoveryModels) =>
+      const finalizeCodexCatalog = (remoteModels: Array<{ id: string; name?: string }>) =>
         reconcileCodexCatalog(remoteModels).activeModels;
       const cachedCatalogModels = finalizeCodexCatalog(cachedDiscoveryModels);
       const cachedIdsMatchFinalCatalog =
@@ -2402,7 +2420,9 @@ export async function GET(
 
       const liveModels = await fetchCodexDiscoveryModels({
         accessToken: accessToken || null,
-        providerSpecificData: connection.providerSpecificData,
+        providerSpecificData: connection.providerSpecificData as
+          | Record<string, unknown>
+          | undefined,
         fetchImpl: (url, init) =>
           safeOutboundFetch(url, {
             ...SAFE_OUTBOUND_FETCH_PRESETS.modelsDiscovery,
@@ -2511,7 +2531,14 @@ export async function GET(
     if (autoFetchDisabledResponse) return autoFetchDisabledResponse;
 
     // Get auth token
-    const token = accessToken || apiKey;
+    const regEntry = getRegistryEntry(provider);
+    const token =
+      accessToken ||
+      apiKey ||
+      regEntry?.anonymousApiKey ||
+      (provider === "kilocode" || provider === "ap_kilocode" || provider === "cline"
+        ? "anonymous"
+        : "");
     if (!token) {
       if (!refresh) {
         const fallback = buildDiscoveryFallbackResponse({
@@ -2563,18 +2590,8 @@ export async function GET(
         url = `${base}/v1/models`;
       }
     }
-    // OpenRouter is pinned by PROVIDER_MODELS_CONFIG to the *global* catalog
-    // (https://openrouter.ai/api/v1/models), so it never consulted the
-    // per-connection base-URL override. A connection pointed at a different
-    // OpenRouter region — e.g. the EU in-region endpoint
-    // (https://eu.openrouter.ai/api/v1) — therefore kept importing the global
-    // catalog and advertised models that endpoint cannot serve. Those ids then
-    // 404 at inference time even though the per-connection model list, and the
-    // auto-sync that maintains it, look healthy. Mirrors the `openai` override
-    // handling above (#5899). addModelsSuffix() reuses the shared normalization:
-    // it drops a trailing chat/responses/messages path, appends /models, and
-    // leaves an already-/models URL untouched.
-    if (provider === "openrouter") {
+    // OpenRouter / KiloCode: honor per-connection base-URL override when configured.
+    if (provider === "openrouter" || provider === "kilocode" || provider === "ap_kilocode") {
       const customBaseUrl = getProviderBaseUrl(connection.providerSpecificData);
       if (customBaseUrl) {
         url = addModelsSuffix(customBaseUrl) || url;
