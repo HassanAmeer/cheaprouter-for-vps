@@ -5,7 +5,7 @@ import Footer from "../components/Footer";
 export const dynamic = "force-dynamic";
 
 export const metadata = {
-  title: "Pricing Plans & Credits — UnoRouter",
+  title: "Pricing Plans & Credits — CheapRouter",
   description: "Pay-as-you-go credits and regular monthly subscription plans for AI model routing.",
 };
 

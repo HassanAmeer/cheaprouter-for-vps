@@ -44,6 +44,13 @@ export default function ApiReferenceView({
 
   const API_TABS: { id: ApiTabType; label: string; badge: string; badgeColor: string; icon: any }[] = [
     {
+      id: "chat-completions",
+      label: "Chat Completions",
+      badge: "POST",
+      badgeColor: "rgba(239, 68, 68, 0.15)",
+      icon: MessageSquare,
+    },
+    {
       id: "models",
       label: "All Models",
       badge: "GET",

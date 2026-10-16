@@ -140,8 +140,10 @@ export const NOAUTH_PROVIDERS = {
     passthroughModels: true,
     serviceKinds: ["llm"],
     isLocalCli: true,
-    freeNote: "Local P2P Service • Port 8377 • Zero network cost, live decentralized models like GLM 5.3 Flash.",
-    authHint: "No API key required. Runs as a local daemon on 127.0.0.1:8377 (or custom port). Use 'Fetch All Models' to load active network models.",
+    freeNote:
+      "Local P2P Service • Port 8377 • Zero network cost, live decentralized models like GLM 5.3 Flash.",
+    authHint:
+      "No API key required. Runs as a local daemon on 127.0.0.1:8377 (or custom port). Use 'Fetch All Models' to load active network models.",
     notice: {
       text: "Antseed CLI runs locally as a P2P AI daemon (default port 8377). CheapRouter connects directly with zero API cost and no authentication required. Multiple Antseed daemons or custom ports can be connected.",
     },
@@ -181,13 +183,14 @@ export const NOAUTH_PROVIDERS = {
     website: "https://uncloseai.com",
     noAuth: true,
     hasFree: true,
+    isNew: true,
     passthroughModels: true,
-    serviceKinds: ["llm"],
+    serviceKinds: ["llm", "tts"],
     authHint:
-      "No auth required. API accepts any non-empty string as key for identification. If older built-in models return 404, use Available Models → Import from /models or Auto-Sync; verified live model: Lorbus/Qwen3.6-27B-int4-AutoRound.",
-    freeNote: "Free forever — no signup, no credit card. OpenAI-compatible endpoints.",
+      "No auth required. API accepts any non-empty string as key. Live chat: turboderp/Qwen3.8-27B-exl3. Live TTS: tts-1-f5 with voices aria, atlas, foxhop.",
+    freeNote: "Free forever — no signup, no card. Chat on RTX 4090 and F5-TTS voice cloning.",
     notice: {
-      text: "UncloseAI needs no API key. API accepts any non-empty string as key for identification. If older built-in models return 404, use Available Models → Import from /models or Auto-Sync.",
+      text: "UncloseAI needs no API key. Live chat on hermes.ai.unturf.com/v1 and speech on speech.ai.unturf.com/v1 with 42 cloned voices.",
     },
   },
   aihorde: {
@@ -208,6 +211,26 @@ export const NOAUTH_PROVIDERS = {
       "Crowdsourced inference from volunteer GPUs. Throughput is a shared queue, not a quota: there is no RPM/RPD cap, but waits grow when the network is busy.",
     notice: {
       text: "AI Horde routes to volunteer-run workers, so chat and image jobs can take minutes and tool calling is unavailable. Chat models come from the live oai.aihorde.net catalog. Image models are listed only while Horde reports at least one worker. An optional aihorde.net API key raises queue priority (kudos).",
+    },
+  },
+  "pollinations-text": {
+    id: "pollinations-text",
+    alias: "pol-text",
+    name: "Pollinations AI (Text)",
+    icon: "psychology",
+    color: "#6366F1",
+    textIcon: "PL",
+    website: "https://pollinations.ai",
+    noAuth: true,
+    hasFree: true,
+    isNew: true,
+    passthroughModels: true,
+    serviceKinds: ["llm"],
+    authHint: "No API key or account required — instant keyless free AI inference.",
+    freeNote:
+      "100% Free text generation without registration or API key on GPT-OSS, Qwen, Mistral, and DeepSeek.",
+    notice: {
+      text: "Pollinations Text provides direct keyless OpenAI-compatible inference at https://text.pollinations.ai/openai/chat/completions.",
     },
   },
 };

@@ -18,11 +18,12 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 }
 
 export function shouldForceResponsesUpstream(
-  provider: string,
+  provider: string | undefined | null,
   body: unknown,
   credentials: CredentialsLike | null
 ): boolean {
-  if (!provider.startsWith("openai-compatible-")) return false;
+  if (!provider || typeof provider !== "string" || !provider.startsWith("openai-compatible-"))
+    return false;
   if (!isRecord(body)) return false;
 
   const providerSpecificData = credentials?.providerSpecificData ?? null;

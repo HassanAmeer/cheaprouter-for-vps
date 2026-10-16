@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "UnoRouter — Unified AI Proxy & Model Router",
+  title: "CheapRouter — Unified AI Proxy & Model Router",
   description: "Connect to 226+ AI models through one key. Same speed, same price, zero setup.",
 };
 

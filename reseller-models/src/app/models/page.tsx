@@ -6,7 +6,7 @@ import { fetchPublicProviders, type PublicCombo, type PublicProvider } from "@/l
 export const dynamic = "force-dynamic";
 
 export const metadata = {
-  title: "Model Library — UnoRouter",
+  title: "Model Library — CheapRouter",
   description: "Browse 226+ AI models, live context length, uptime, success rate, and real-time pricing.",
 };
 

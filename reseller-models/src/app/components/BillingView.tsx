@@ -387,10 +387,10 @@ export default function BillingView({ user, sub }: BillingViewProps) {
           <span>NEED HELP?</span>
         </div>
         <p className="uno-billing-help-text">
-          Questions about billing or your account? Email us at support@unorouter.com and we will respond within one business day.
+          Questions about billing or your account? Email us at support@cheaprouter.com and we will respond within one business day.
         </p>
-        <a href="mailto:support@unorouter.com" className="uno-billing-help-link">
-          support@unorouter.com
+        <a href="mailto:support@cheaprouter.com" className="uno-billing-help-link">
+          support@cheaprouter.com
         </a>
       </div>
     </div>

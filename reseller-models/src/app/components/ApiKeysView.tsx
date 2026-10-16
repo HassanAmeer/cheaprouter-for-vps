@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 interface ApiKeyItem {
   id: string;
@@ -58,6 +58,27 @@ export default function ApiKeysView({ userKey, onRegenerateKey }: ApiKeysViewPro
     return DEFAULT_SAMPLE_KEYS;
   });
 
+  useEffect(() => {
+    if (userKey) {
+      const prefix = userKey.slice(0, 7);
+      const suffix = userKey.slice(-4);
+      setKeysList([
+        {
+          id: "active",
+          name: "api1",
+          status: "Enabled",
+          quota: "Unlimited",
+          group: "auto",
+          key: `${prefix}**********${suffix}`,
+          fullKey: userKey,
+          models: "All Models",
+          created: "Sep 24, 2026",
+          expires: "Never",
+        },
+      ]);
+    }
+  }, [userKey]);
+
   const [search, setSearch] = useState("");
   const [revealedIds, setRevealedIds] = useState<Record<string, boolean>>({});
   const [copiedId, setCopiedId] = useState<string | null>(null);
@@ -71,13 +92,15 @@ export default function ApiKeysView({ userKey, onRegenerateKey }: ApiKeysViewPro
   const [creating, setCreating] = useState(false);
   const [createdFullKey, setCreatedFullKey] = useState<string | null>(null);
 
-  const endpointUrl = "https://api.unorouter.com/v1/chat/completions";
+  const endpointUrl = typeof window !== "undefined"
+    ? `${window.location.origin}/v1/chat/completions`
+    : (process.env.NEXT_PUBLIC_CHEAPROUTE_API_URL ? `${process.env.NEXT_PUBLIC_CHEAPROUTE_API_URL}/chat/completions` : "http://localhost:20128/v1/chat/completions");
 
-  const curlCommand = `curl https://api.unorouter.com/v1/chat/completions \\
+  const curlCommand = `curl ${endpointUrl} \\
   -H "Authorization: Bearer YOUR_API_KEY" \\
   -H "Content-Type: application/json" \\
   -d '{
-    "model": "claude-opus-4-5-thinking",
+    "model": "gpt-4o",
     "messages": [{"role": "user", "content": "Hello!"}],
     "stream": true
   }'`;

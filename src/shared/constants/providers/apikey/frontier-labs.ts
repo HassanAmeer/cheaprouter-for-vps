@@ -257,6 +257,9 @@ export const APIKEY_PROVIDERS_FRONTIER = {
     color: "#0F766E",
     textIcon: "UP",
     website: "https://www.upstage.ai",
+    hasFree: true,
+    isNew: true,
+    freeNote: "Solar models — $10 free trial credits on signup without credit card.",
   },
   maritalk: {
     id: "maritalk",

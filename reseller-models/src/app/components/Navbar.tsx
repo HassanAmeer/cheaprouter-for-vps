@@ -2,9 +2,11 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import { usePathname } from "next/navigation";
 
 export default function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const pathname = usePathname();
 
   return (
     <nav className="uno-nav">
@@ -21,19 +23,15 @@ export default function Navbar() {
               <path d="M17 21L21 16L17 11" stroke="#FFFFFF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
           </div>
-          <span>UNOROUTER</span>
+          <span>CHEAPROUTER</span>
         </Link>
 
         {/* Center Links (Screenshot) */}
         <div className="uno-nav-links" style={{ display: mobileOpen ? "flex" : undefined }}>
-          <Link href="/dashboard" className="uno-nav-link">DASHBOARD</Link>
-          <Link href="/models" className="uno-nav-link active">MODELS</Link>
-          <Link href="/models" className="uno-nav-link">RANKINGS</Link>
-          <Link href="/pricing" className="uno-nav-link">PRICING</Link>
-          <Link href="/dashboard" className="uno-nav-link">CHAT</Link>
-          <Link href="/dashboard" className="uno-nav-link">IMAGE</Link>
-          <Link href="/dashboard" className="uno-nav-link">INSPECTOR</Link>
-          <Link href="/docs" className="uno-nav-link">DOCS</Link>
+          <Link href="/dashboard" className={`uno-nav-link ${pathname === "/dashboard" ? "active" : ""}`}>DASHBOARD</Link>
+          <Link href="/models" className={`uno-nav-link ${pathname === "/models" ? "active" : ""}`}>MODELS</Link>
+          <Link href="/pricing" className={`uno-nav-link ${pathname === "/pricing" ? "active" : ""}`}>PRICING</Link>
+          <Link href="/docs" className={`uno-nav-link ${pathname?.startsWith("/docs") ? "active" : ""}`}>DOCS</Link>
         </div>
 
         {/* Right Actions */}

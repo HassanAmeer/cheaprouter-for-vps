@@ -161,7 +161,7 @@ export const FREE_MODEL_BUDGETS: FreeModelBudget[] = [
   { provider: "deepseek", modelId: "deepseek-v4-flash", displayName: "DeepSeek V4 Flash", monthlyTokens: 0, creditTokens: 5000000, freeType: "one-time-initial", poolKey: "deepseek", tos: "ok" },
   { provider: "doubao", modelId: "doubao-pro-32k", displayName: "Doubao Pro 32K", monthlyTokens: 0, creditTokens: 15000000, freeType: "one-time-initial", poolKey: "doubao", tos: "ambiguous" },
   { provider: "duckduckgo-web", modelId: "gpt-5.4-mini", displayName: "GPT-5.4 Mini", monthlyTokens: 0, creditTokens: 0, freeType: "keyless", poolKey: "duckduckgo-web", tos: "avoid" },
-  { provider: "duckduckgo-web", modelId: "gpt-5.6-luna", displayName: "GPT-5.6 Luna", monthlyTokens: 0, creditTokens: 0, freeType: "keyless", poolKey: "duckduckgo-web", tos: "avoid" },
+  { provider: "duckduckgo-web", modelId: "gpt-6-luna", displayName: "GPT-6 Luna", monthlyTokens: 0, creditTokens: 0, freeType: "keyless", poolKey: "duckduckgo-web", tos: "avoid" },
   { provider: "duckduckgo-web", modelId: "claude-haiku-4-5", displayName: "Claude Haiku 4.5", monthlyTokens: 0, creditTokens: 0, freeType: "keyless", poolKey: "duckduckgo-web", tos: "avoid" },
   { provider: "duckduckgo-web", modelId: "mistral-small-2603", displayName: "Mistral Small 4", monthlyTokens: 0, creditTokens: 0, freeType: "keyless", poolKey: "duckduckgo-web", tos: "avoid" },
   { provider: "duckduckgo-web", modelId: "tinfoil/gpt-oss-120b", displayName: "gpt-oss 120B", monthlyTokens: 0, creditTokens: 0, freeType: "keyless", poolKey: "duckduckgo-web", tos: "avoid" },

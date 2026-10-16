@@ -142,6 +142,8 @@ export default function DocsPage() {
             activeTab={
               activeSection === "models"
                 ? "models"
+                : activeSection === "chat-completions"
+                ? "chat-completions"
                 : "custom-api"
             }
             onTabChange={(tab) => handleSelectSection(tab)}
@@ -237,7 +239,7 @@ export default function DocsPage() {
 
           <SpaceButton
             variant="nav-outline"
-            href="/signup"
+            href="/register"
             style={{ height: "36px", width: "auto", minWidth: "120px" }}
           >
             Get API Key

@@ -16,6 +16,7 @@ export interface ProviderGuideData {
   authTypeColor: "emerald" | "orange" | "blue" | "purple";
   isCompletelyFree: boolean;
   topSummaryText: string;
+  apiKeyUrl?: string;
 
   requirements: {
     loginStatus: string;
@@ -29,18 +30,120 @@ export interface ProviderGuideData {
     rateLimitBadge: string;
     rateLimitDetail: string;
     quotaReset?: string;
+    rpm?: string;
+    rpd?: string;
+    tpm?: string;
+    dailyLimit?: string;
   };
 
-  freeModels: Array<{ id: string; name: string; notes?: string }>;
+  freeModels: Array<{
+    id: string;
+    name: string;
+    notes?: string;
+    rpm?: string;
+    dailyQuota?: string;
+    contextWindow?: string;
+    pricing?: string;
+  }>;
 
   connectSteps: Array<{
     step: number;
     title: string;
     instruction: string;
+    linkUrl?: string;
+    linkLabel?: string;
   }>;
 }
 
 export const PROVIDER_GUIDES: Record<string, ProviderGuideData> = {
+  // ── UncloseAI (Free LLM & Free TTS) ──────────────────────────────────
+  uncloseai: {
+    authTypeBadge: "100% Free • Keyless",
+    authTypeColor: "emerald",
+    isCompletelyFree: true,
+    topSummaryText: "Free public domain AI • Chat (RTX 4090) & TTS Voice Cloning • Zero API keys",
+    requirements: {
+      loginStatus: "Without Login (Zero Signup / No Account)",
+      creditCardStatus: "No Credit Card Required (100% $0.00 Free)",
+      credentialsNeeded: "None (Accepts any string or blank for identification)",
+      connectionType: "Direct OpenAI-compatible HTTP facade",
+      toolsSupported: "CheapRouter Web Chat, /v1/chat/completions, /v1/audio/speech, CLI tools",
+    },
+    limits: {
+      rateLimitBadge: "Unlimited / Community GPU Queue",
+      rateLimitDetail:
+        "Public domain community GPUs (RTX 4090 for Hermes & RTX 3090 for Qwen, plus TTS cluster). Unlimited requests with zero billing. If a model returns 404, upstream has rotated the model ID — auto-discovery syncs the live model automatically.",
+      quotaReset: "Immediate / Continuous streaming without daily caps.",
+      rpm: "30–60 req/min",
+      rpd: "Unlimited",
+      dailyLimit: "Unlimited ($0.00 Cost)",
+    },
+    freeModels: [
+      {
+        id: "turboderp/Qwen3.8-27B-exl3",
+        name: "Qwen3.8 27B exl3 (Live Chat)",
+        pricing: "100% Free",
+        contextWindow: "65,536",
+        rpm: "30–60 RPM",
+        dailyQuota: "Unlimited",
+        notes: "65,536 context length on RTX 4090",
+      },
+      {
+        id: "tts-1-f5",
+        name: "F5-TTS Voice Cloning (Audio)",
+        pricing: "100% Free",
+        contextWindow: "Audio / TTS",
+        rpm: "30 RPM",
+        dailyQuota: "Unlimited",
+        notes: "42 human cloned voices, 10 languages",
+      },
+      {
+        id: "tts-1-qwen",
+        name: "Qwen3-TTS (Audio)",
+        pricing: "100% Free",
+        contextWindow: "Audio / TTS",
+        rpm: "30 RPM",
+        dailyQuota: "Unlimited",
+        notes: "1.7B parameter voice cloning",
+      },
+      {
+        id: "tts-1",
+        name: "UncloseAI Default TTS",
+        pricing: "100% Free",
+        contextWindow: "Audio / TTS",
+        rpm: "30 RPM",
+        dailyQuota: "Unlimited",
+        notes: "OpenAI-compatible speech endpoint",
+      },
+    ],
+    connectSteps: [
+      {
+        step: 1,
+        title: "No Credentials or Signup Required",
+        instruction:
+          "UncloseAI is completely public domain (free as in beer & free as in freedom). No registration, email, or API key is required.",
+      },
+      {
+        step: 2,
+        title: "Fetch Live Models",
+        instruction:
+          "Click 'Fetch All Models' on the provider card or detail page to dynamically load the current live model (turboderp/Qwen3.8-27B-exl3) straight from hermes.ai.unturf.com.",
+      },
+      {
+        step: 3,
+        title: "Chat & Speech Endpoints",
+        instruction:
+          "CheapRouter routes chat completions to https://hermes.ai.unturf.com/v1 and text-to-speech to https://speech.ai.unturf.com/v1 automatically.",
+      },
+      {
+        step: 4,
+        title: "Route in Chat, CLI, or TTS",
+        instruction:
+          "Use 'uncloseai/turboderp/Qwen3.8-27B-exl3' for chat completions or send TTS requests to /v1/audio/speech with model 'uncloseai/tts-1-f5' and voice 'aria', 'atlas', or 'foxhop'.",
+      },
+    ],
+  },
+
   // ── 1. DuckDuckGo AI Chat ──────────────────────────────────────────────
   "duckduckgo-web": {
     authTypeBadge: "100% Free • No Auth",
@@ -59,14 +162,65 @@ export const PROVIDER_GUIDES: Record<string, ProviderGuideData> = {
       rateLimitDetail:
         "Completely anonymous and free. Dynamic rate limit of 30–60 requests per minute with unlimited daily chats. No credit deductions or token billing counters.",
       quotaReset: "Stateless sessions reset automatically every 1–2 minutes if throttled.",
+      rpm: "30–60 req/min",
+      rpd: "Unlimited",
+      dailyLimit: "Unlimited ($0.00 Free)",
     },
     freeModels: [
-      { id: "claude-haiku-4-5", name: "Claude Haiku 4.5", notes: "Anthropic fast reasoning" },
-      { id: "gpt-5.4-mini", name: "GPT-5.4 mini", notes: "OpenAI fast intelligence" },
-      { id: "gpt-6-luna", name: "GPT-6 Luna", notes: "OpenAI latest free tier" },
-      { id: "mistral-small-2603", name: "Mistral Small 4", notes: "Mistral AI reasoning" },
-      { id: "tinfoil/gpt-oss-120b", name: "GPT OSS 120B", notes: "Massive open weights" },
-      { id: "tinfoil/gemma4-31b", name: "Gemma 4 31B", notes: "Google open model" },
+      {
+        id: "claude-haiku-4-5",
+        name: "Claude Haiku 4.5",
+        pricing: "100% Free",
+        contextWindow: "200k",
+        rpm: "30–60 RPM",
+        dailyQuota: "Unlimited",
+        notes: "Anthropic fast reasoning",
+      },
+      {
+        id: "gpt-5.4-mini",
+        name: "GPT-5.4 mini",
+        pricing: "100% Free",
+        contextWindow: "128k",
+        rpm: "30–60 RPM",
+        dailyQuota: "Unlimited",
+        notes: "OpenAI fast intelligence",
+      },
+      {
+        id: "gpt-6-luna",
+        name: "GPT-6 Luna",
+        pricing: "100% Free",
+        contextWindow: "128k",
+        rpm: "30–60 RPM",
+        dailyQuota: "Unlimited",
+        notes: "OpenAI latest free tier",
+      },
+      {
+        id: "mistral-small-2603",
+        name: "Mistral Small 4",
+        pricing: "100% Free",
+        contextWindow: "32k",
+        rpm: "30–60 RPM",
+        dailyQuota: "Unlimited",
+        notes: "Mistral AI reasoning",
+      },
+      {
+        id: "tinfoil/gpt-oss-120b",
+        name: "GPT OSS 120B",
+        pricing: "100% Free",
+        contextWindow: "128k",
+        rpm: "30–60 RPM",
+        dailyQuota: "Unlimited",
+        notes: "Massive open weights",
+      },
+      {
+        id: "tinfoil/gemma4-31b",
+        name: "Gemma 4 31B",
+        pricing: "100% Free",
+        contextWindow: "32k",
+        rpm: "30–60 RPM",
+        dailyQuota: "Unlimited",
+        notes: "Google open model",
+      },
     ],
     connectSteps: [
       {
@@ -77,12 +231,18 @@ export const PROVIDER_GUIDES: Record<string, ProviderGuideData> = {
       },
       {
         step: 2,
-        title: "Verify Connection",
+        title: "Fetch All Models Live",
         instruction:
-          "Go to the Available Models list below or Web Chat, and click 'Test' on Claude Haiku 4.5 to confirm live responses.",
+          "Click 'Fetch All Models' on the DuckDuckGo provider card to query duck.ai/duckchat/v1/models and sync all 10 live models (including GPT-6 Luna, Claude Haiku 4.5, and Mistral Small).",
       },
       {
         step: 3,
+        title: "Verify & Test Connection",
+        instruction:
+          "Go to the Available Models list below or Web Chat, and click 'Test' on Claude Haiku 4.5 or GPT-6 Luna to confirm live responses.",
+      },
+      {
+        step: 4,
         title: "Route in Chat or CLI",
         instruction:
           "Use model 'duckduckgo-web/claude-haiku-4-5' in Web Chat or your terminal CLI. CheapRouter manages all session tokens automatically.",
@@ -110,10 +270,42 @@ export const PROVIDER_GUIDES: Record<string, ProviderGuideData> = {
       quotaReset: "Dynamic 60-second sliding window.",
     },
     freeModels: [
-      { id: "glm-5-2", name: "GLM 5.2", notes: "Zhipu AI high performance" },
-      { id: "kimi-k2-7-code", name: "Kimi K2.7 Code", notes: "Moonshot coding model" },
-      { id: "deepseek-v4-pro", name: "DeepSeek V4 Pro", notes: "DeepSeek high intelligence" },
-      { id: "gpt-oss-120b", name: "GPT-OSS 120B", notes: "Massive open model" },
+      {
+        id: "glm-5-2",
+        name: "GLM 5.2",
+        pricing: "100% Free",
+        contextWindow: "128k",
+        rpm: "15–30 RPM",
+        dailyQuota: "Unlimited",
+        notes: "Zhipu AI high performance",
+      },
+      {
+        id: "kimi-k2-7-code",
+        name: "Kimi K2.7 Code",
+        pricing: "100% Free",
+        contextWindow: "128k",
+        rpm: "15–30 RPM",
+        dailyQuota: "Unlimited",
+        notes: "Moonshot coding model",
+      },
+      {
+        id: "deepseek-v4-pro",
+        name: "DeepSeek V4 Pro",
+        pricing: "100% Free",
+        contextWindow: "128k",
+        rpm: "15–30 RPM",
+        dailyQuota: "Unlimited",
+        notes: "DeepSeek high intelligence",
+      },
+      {
+        id: "gpt-oss-120b",
+        name: "GPT-OSS 120B",
+        pricing: "100% Free",
+        contextWindow: "128k",
+        rpm: "15–30 RPM",
+        dailyQuota: "Unlimited",
+        notes: "Massive open model",
+      },
     ],
     connectSteps: [
       {
@@ -143,42 +335,105 @@ export const PROVIDER_GUIDES: Record<string, ProviderGuideData> = {
     authTypeColor: "orange",
     isCompletelyFree: true,
     topSummaryText: "Free Tier • No credit card required • 10,000 Neurons/day",
+    apiKeyUrl: "https://dash.cloudflare.com/profile/api-tokens",
     requirements: {
       loginStatus: "Free Cloudflare Account (dash.cloudflare.com)",
       creditCardStatus: "No Credit Card Required (0% Cost on free tier)",
-      credentialsNeeded: "Account ID + API Token (Workers AI Read)",
-      connectionType: "Account ID + Token Authentication",
+      credentialsNeeded:
+        "API Token (Workers AI Read) + Account ID OR Global API Key (cfk_...) with Email",
+      connectionType: "Account ID + Bearer Token OR Global API Key",
       toolsSupported: "CheapRouter Web Chat, API routes, OpenCode CLI, Kilo",
     },
     limits: {
-      rateLimitBadge: "10,000 Neurons / Day",
+      rateLimitBadge: "10,000 Neurons / Day ($0.00)",
       rateLimitDetail:
-        "10,000 free neurons daily equals roughly 100,000 words or 200+ complete reasoning chats every single day on Llama 3.3 70B and DeepSeek R1.",
-      quotaReset: "Resets every day at 00:00 UTC.",
+        "Cloudflare grants 10,000 free Neurons every 24 hours ($0.00 billable cost). In real usage, 10,000 neurons equals roughly 100,000–150,000 LLM output tokens or ~200 full chat requests on models like Llama 3.3 70B and DeepSeek R1 Distill 32B. Per-minute limit: 300 requests/minute per account.",
+      quotaReset: "Resets every day at 00:00 UTC (hard reset, no rollover).",
+      rpm: "300 req/min",
+      rpd: "~200 full chats/day",
+      dailyLimit: "10,000 Neurons/day ($0.00)",
     },
     freeModels: [
-      { id: "llama-3.3-70b-instruct", name: "Llama 3.3 70B", notes: "Meta flagship open model" },
-      { id: "deepseek-r1-distill-qwen-32b", name: "DeepSeek R1 32B", notes: "High reasoning coding" },
-      { id: "qwen2.5-coder-32b-instruct", name: "Qwen 2.5 Coder", notes: "Specialized for coding" },
+      {
+        id: "@cf/meta/llama-3.3-70b-instruct",
+        name: "Llama 3.3 70B Instruct",
+        pricing: "Free Tier ($0.00)",
+        contextWindow: "128k",
+        rpm: "300 RPM",
+        dailyQuota: "10k Neurons/day (~200 chats)",
+        notes: "Flagship open weights model",
+      },
+      {
+        id: "@cf/deepseek-ai/deepseek-r1-distill-qwen-32b",
+        name: "DeepSeek R1 Distill 32B",
+        pricing: "Free Tier ($0.00)",
+        contextWindow: "64k",
+        rpm: "300 RPM",
+        dailyQuota: "10k Neurons/day (~200 chats)",
+        notes: "High reasoning & coding",
+      },
+      {
+        id: "@cf/qwen/qwen2.5-72b-instruct",
+        name: "Qwen 2.5 72B Instruct",
+        pricing: "Free Tier ($0.00)",
+        contextWindow: "128k",
+        rpm: "300 RPM",
+        dailyQuota: "10k Neurons/day (~200 chats)",
+        notes: "Specialized for programming",
+      },
+      {
+        id: "@cf/meta/llama-3.2-3b-instruct",
+        name: "Llama 3.2 3B Instruct",
+        pricing: "Free Tier ($0.00)",
+        contextWindow: "128k",
+        rpm: "300 RPM",
+        dailyQuota: "10k Neurons/day (~400 chats)",
+        notes: "Ultra fast low-neuron inference",
+      },
+      {
+        id: "@cf/meta/llama-3.1-8b-instruct",
+        name: "Llama 3.1 8B Instruct",
+        pricing: "Free Tier ($0.00)",
+        contextWindow: "128k",
+        rpm: "300 RPM",
+        dailyQuota: "10k Neurons/day (~350 chats)",
+        notes: "Fast 8B reasoning",
+      },
     ],
     connectSteps: [
       {
         step: 1,
-        title: "Get Cloudflare Account ID & Token",
+        title: "Find Your Account ID or Use Global API Key",
         instruction:
-          "Sign in to dash.cloudflare.com. In Workers & Pages → Overview, copy your 'Account ID'. Then go to My Profile → API Tokens → Create Token with 'Workers AI Read' permissions.",
+          "Sign in to dash.cloudflare.com. You can either copy your 32-character Account ID from the dashboard URL, or use your Global API Key (cfk_...) with your login email — CheapRouter auto-discovers your Account ID automatically.",
+        linkUrl: "https://dash.cloudflare.com",
+        linkLabel: "Open Cloudflare Dashboard",
       },
       {
         step: 2,
-        title: "Add Connection in CheapRouter",
+        title: "Generate API Token with Workers AI Permission",
         instruction:
-          "On the Cloudflare provider card, click 'Add Connection'. Enter your Account ID and API Token into the respective fields and click Save.",
+          "Go to My Profile → API Tokens. Click 'Create Token' → use the 'Workers AI' template (Account → Workers AI → Read). Copy your token immediately.",
+        linkUrl: "https://dash.cloudflare.com/profile/api-tokens",
+        linkLabel: "Generate API Token (Direct Link)",
       },
       {
         step: 3,
+        title: "Add Connection in CheapRouter",
+        instruction:
+          "On the Cloudflare Workers AI card, click 'Add Connection'. Paste your API Token (or Global API Key) and Account ID (if using token). Click Save.",
+      },
+      {
+        step: 4,
+        title: "Fetch All Models Live",
+        instruction:
+          "Click 'Fetch All Models' on the provider card. CheapRouter queries Cloudflare's catalog endpoint and syncs all 71+ active models directly to your dashboard.",
+      },
+      {
+        step: 5,
         title: "Test Connection",
         instruction:
-          "Click the 'Test' button on Llama 3.3 70B to confirm CheapRouter can reach Workers AI successfully.",
+          "Click the green 'Test' button on '@cf/meta/llama-3.3-70b-instruct' or '@cf/deepseek-ai/deepseek-r1-distill-qwen-32b' to verify live latency.",
       },
     ],
   },
@@ -189,6 +444,7 @@ export const PROVIDER_GUIDES: Record<string, ProviderGuideData> = {
     authTypeColor: "emerald",
     isCompletelyFree: true,
     topSummaryText: "Free API Tier • No credit card required • 14,400 chats/day",
+    apiKeyUrl: "https://console.groq.com/keys",
     requirements: {
       loginStatus: "Free Account Required (console.groq.com)",
       creditCardStatus: "No Credit Card Required (100% $0.00 Free)",
@@ -199,13 +455,41 @@ export const PROVIDER_GUIDES: Record<string, ProviderGuideData> = {
     limits: {
       rateLimitBadge: "30 req/min & 14,400 req/day",
       rateLimitDetail:
-        "Official generous free tier with zero card required. You get 30 requests every minute and up to 14,400 chats per day at ultra-fast 300+ tokens/second for Llama 3.3 70B (6,000 tokens/minute on 70B).",
+        "Official generous free tier with zero card required. You get 30 requests every minute and up to 14,400 chats per day at ultra-fast 300+ tokens/second for Llama 3.3 70B (6,000 tokens/minute on 70B; 20,000 TPM on 8B).",
       quotaReset: "Sliding 1-minute window for RPM; daily requests reset at 00:00 UTC.",
+      rpm: "30 req/min",
+      rpd: "14,400 req/day",
+      tpm: "6,000 (70B) / 20k (8B)",
+      dailyLimit: "14,400 requests/day",
     },
     freeModels: [
-      { id: "llama-3.3-70b-versatile", name: "Llama 3.3 70B", notes: "Fastest 70B reasoning (300+ tok/s)" },
-      { id: "llama-3.1-8b-instant", name: "Llama 3.1 8B", notes: "Ultra low latency (500 tok/s)" },
-      { id: "mixtral-8x7b-32768", name: "Mixtral 8x7B", notes: "Long context window" },
+      {
+        id: "llama-3.3-70b-versatile",
+        name: "Llama 3.3 70B",
+        pricing: "Free Tier ($0.00)",
+        contextWindow: "128k",
+        rpm: "30 RPM",
+        dailyQuota: "14,400 RPD",
+        notes: "Fastest 70B reasoning (300+ tok/s)",
+      },
+      {
+        id: "llama-3.1-8b-instant",
+        name: "Llama 3.1 8B",
+        pricing: "Free Tier ($0.00)",
+        contextWindow: "128k",
+        rpm: "30 RPM",
+        dailyQuota: "14,400 RPD",
+        notes: "Ultra low latency (500 tok/s)",
+      },
+      {
+        id: "mixtral-8x7b-32768",
+        name: "Mixtral 8x7B",
+        pricing: "Free Tier ($0.00)",
+        contextWindow: "32k",
+        rpm: "30 RPM",
+        dailyQuota: "14,400 RPD",
+        notes: "Long context window",
+      },
     ],
     connectSteps: [
       {
@@ -213,6 +497,8 @@ export const PROVIDER_GUIDES: Record<string, ProviderGuideData> = {
         title: "Generate Groq API Key",
         instruction:
           "Sign in to console.groq.com with email or GitHub. Go to 'API Keys' and click 'Create API Key'. Copy your key (gsk_...).",
+        linkUrl: "https://console.groq.com/keys",
+        linkLabel: "Generate Groq API Key",
       },
       {
         step: 2,
@@ -235,6 +521,7 @@ export const PROVIDER_GUIDES: Record<string, ProviderGuideData> = {
     authTypeColor: "emerald",
     isCompletelyFree: true,
     topSummaryText: "Free Tier • No credit card required • 1,500 chats/day",
+    apiKeyUrl: "https://aistudio.google.com/app/apikey",
     requirements: {
       loginStatus: "Free Google Account (aistudio.google.com)",
       creditCardStatus: "No Credit Card Required (0% Cost)",
@@ -247,10 +534,39 @@ export const PROVIDER_GUIDES: Record<string, ProviderGuideData> = {
       rateLimitDetail:
         "Google AI Studio gives 15 requests per minute and 1,500 free requests per day for Gemini 2.5 Flash and Pro without entering a credit card (1,000,000 tokens/minute on Flash).",
       quotaReset: "Resets daily at midnight Pacific Time.",
+      rpm: "15 req/min",
+      rpd: "1,500 req/day",
+      tpm: "1,000,000 TPM",
+      dailyLimit: "1,500 requests/day",
     },
     freeModels: [
-      { id: "gemini-2.5-flash", name: "Gemini 2.5 Flash", notes: "Ultra fast multimodal" },
-      { id: "gemini-2.5-pro", name: "Gemini 2.5 Pro", notes: "State of the art reasoning" },
+      {
+        id: "gemini-2.5-flash",
+        name: "Gemini 2.5 Flash",
+        pricing: "Free Tier ($0.00)",
+        contextWindow: "1M tokens",
+        rpm: "15 RPM",
+        dailyQuota: "1,500 RPD",
+        notes: "Ultra fast multimodal (1M context)",
+      },
+      {
+        id: "gemini-2.5-pro",
+        name: "Gemini 2.5 Pro",
+        pricing: "Free Tier ($0.00)",
+        contextWindow: "1M tokens",
+        rpm: "2 RPM",
+        dailyQuota: "50 RPD",
+        notes: "State of the art reasoning",
+      },
+      {
+        id: "gemini-2.0-flash",
+        name: "Gemini 2.0 Flash",
+        pricing: "Free Tier ($0.00)",
+        contextWindow: "1M tokens",
+        rpm: "15 RPM",
+        dailyQuota: "1,500 RPD",
+        notes: "High speed multimodal free tier",
+      },
     ],
     connectSteps: [
       {
@@ -258,6 +574,8 @@ export const PROVIDER_GUIDES: Record<string, ProviderGuideData> = {
         title: "Get Free Google API Key",
         instruction:
           "Visit aistudio.google.com with any standard Google account. Click 'Get API key' → 'Create API key'.",
+        linkUrl: "https://aistudio.google.com/app/apikey",
+        linkLabel: "Get Google AI Studio Key",
       },
       {
         step: 2,
@@ -280,6 +598,7 @@ export const PROVIDER_GUIDES: Record<string, ProviderGuideData> = {
     authTypeColor: "emerald",
     isCompletelyFree: true,
     topSummaryText: "Free Tier • No credit card required • 1,000,000 tokens/day",
+    apiKeyUrl: "https://cloud.cerebras.ai/platform",
     requirements: {
       loginStatus: "Free Account Required (cloud.cerebras.ai)",
       creditCardStatus: "No Credit Card Required (100% $0.00 Free)",
@@ -292,10 +611,29 @@ export const PROVIDER_GUIDES: Record<string, ProviderGuideData> = {
       rateLimitDetail:
         "1,000,000 free tokens per day equals about 750,000 words (or 1,500 full pages of text) every day at 1,000+ tokens/second without any credit card.",
       quotaReset: "Resets daily at 00:00 UTC.",
+      rpm: "30 req/min",
+      tpm: "60,000 TPM",
+      dailyLimit: "1,000,000 tokens/day",
     },
     freeModels: [
-      { id: "llama-3.3-70b", name: "Llama 3.3 70B", notes: "1,000+ tokens/sec Wafer-Scale chip" },
-      { id: "llama-3.1-8b", name: "Llama 3.1 8B", notes: "Instantaneous responses" },
+      {
+        id: "llama-3.3-70b",
+        name: "Llama 3.3 70B",
+        pricing: "Free Tier ($0.00)",
+        contextWindow: "8k",
+        rpm: "30 RPM",
+        dailyQuota: "1,000,000 Tokens/day",
+        notes: "1,000+ tokens/sec Wafer-Scale chip",
+      },
+      {
+        id: "llama-3.1-8b",
+        name: "Llama 3.1 8B",
+        pricing: "Free Tier ($0.00)",
+        contextWindow: "8k",
+        rpm: "30 RPM",
+        dailyQuota: "1,000,000 Tokens/day",
+        notes: "Instantaneous responses",
+      },
     ],
     connectSteps: [
       {
@@ -303,12 +641,13 @@ export const PROVIDER_GUIDES: Record<string, ProviderGuideData> = {
         title: "Sign Up at Cerebras",
         instruction:
           "Sign up at cloud.cerebras.ai (no credit card needed). Go to 'API Keys' and generate a key.",
+        linkUrl: "https://cloud.cerebras.ai/platform",
+        linkLabel: "Open Cerebras Platform",
       },
       {
         step: 2,
         title: "Add Connection in CheapRouter",
-        instruction:
-          "On the Cerebras card, click 'Add Connection'. Paste your key and click Save.",
+        instruction: "On the Cerebras card, click 'Add Connection'. Paste your key and click Save.",
       },
       {
         step: 3,
@@ -325,6 +664,7 @@ export const PROVIDER_GUIDES: Record<string, ProviderGuideData> = {
     authTypeColor: "emerald",
     isCompletelyFree: true,
     topSummaryText: "Free Tier • No credit card required • 10 req/min & 200k tok/min",
+    apiKeyUrl: "https://cloud.sambanova.ai/apis",
     requirements: {
       loginStatus: "Free Account Required (cloud.sambanova.ai)",
       creditCardStatus: "No Credit Card Required (100% $0.00 Free)",
@@ -333,15 +673,42 @@ export const PROVIDER_GUIDES: Record<string, ProviderGuideData> = {
       toolsSupported: "CheapRouter Web Chat, API routes, coding CLIs",
     },
     limits: {
-      rateLimitBadge: "10 req/min & 200k tok/min",
+      rateLimitBadge: "10–40 req/min & 200k tok/min",
       rateLimitDetail:
         "SambaNova provides 10 requests per minute and 200,000 tokens per minute for Llama 3.3 70B, Qwen 2.5 72B, and DeepSeek R1 with zero card required.",
       quotaReset: "Sliding 1-minute window.",
+      rpm: "10–40 req/min",
+      tpm: "200,000 TPM",
+      dailyLimit: "Unlimited (within RPM/TPM bounds)",
     },
     freeModels: [
-      { id: "Meta-Llama-3.3-70B-Instruct", name: "Llama 3.3 70B", notes: "Full capability 70B" },
-      { id: "Qwen2.5-72B-Instruct", name: "Qwen 2.5 72B", notes: "Flagship open coding model" },
-      { id: "DeepSeek-R1", name: "DeepSeek R1", notes: "Chain of thought reasoning" },
+      {
+        id: "Meta-Llama-3.3-70B-Instruct",
+        name: "Llama 3.3 70B",
+        pricing: "Free Tier ($0.00)",
+        contextWindow: "128k",
+        rpm: "10–40 RPM",
+        dailyQuota: "Unlimited (200k TPM)",
+        notes: "Full capability 70B",
+      },
+      {
+        id: "Qwen2.5-72B-Instruct",
+        name: "Qwen 2.5 72B",
+        pricing: "Free Tier ($0.00)",
+        contextWindow: "128k",
+        rpm: "10–40 RPM",
+        dailyQuota: "Unlimited (200k TPM)",
+        notes: "Flagship open coding model",
+      },
+      {
+        id: "DeepSeek-R1",
+        name: "DeepSeek R1",
+        pricing: "Free Tier ($0.00)",
+        contextWindow: "64k",
+        rpm: "10–20 RPM",
+        dailyQuota: "Unlimited (200k TPM)",
+        notes: "Chain of thought reasoning",
+      },
     ],
     connectSteps: [
       {
@@ -349,6 +716,8 @@ export const PROVIDER_GUIDES: Record<string, ProviderGuideData> = {
         title: "Get SambaNova API Key",
         instruction:
           "Create a free account at cloud.sambanova.ai. Navigate to API Keys and copy your key.",
+        linkUrl: "https://cloud.sambanova.ai/apis",
+        linkLabel: "Get SambaNova API Key",
       },
       {
         step: 2,
@@ -371,6 +740,7 @@ export const PROVIDER_GUIDES: Record<string, ProviderGuideData> = {
     authTypeColor: "emerald",
     isCompletelyFree: true,
     topSummaryText: "Free Tier • No credit card required • 150 chats/day",
+    apiKeyUrl: "https://github.com/settings/tokens",
     requirements: {
       loginStatus: "Free GitHub Account",
       creditCardStatus: "No Credit Card Required (100% Free)",
@@ -383,11 +753,38 @@ export const PROVIDER_GUIDES: Record<string, ProviderGuideData> = {
       rateLimitDetail:
         "15 requests per minute and 150 chats per day on Azure AI infrastructure for GPT-4o, Claude 3.5 Sonnet, and Llama 3.3 70B.",
       quotaReset: "Resets daily at 00:00 UTC.",
+      rpm: "15 req/min",
+      rpd: "150 req/day (50 for 70B)",
+      dailyLimit: "150 requests/day",
     },
     freeModels: [
-      { id: "gpt-4o", name: "OpenAI GPT-4o", notes: "Frontier multimodal" },
-      { id: "claude-3-5-sonnet", name: "Claude 3.5 Sonnet", notes: "Anthropic premier coding" },
-      { id: "meta-llama-3.3-70b-instruct", name: "Llama 3.3 70B", notes: "Meta open weights" },
+      {
+        id: "gpt-4o",
+        name: "OpenAI GPT-4o",
+        pricing: "Free Tier ($0.00)",
+        contextWindow: "128k",
+        rpm: "15 RPM",
+        dailyQuota: "150 RPD",
+        notes: "Frontier multimodal on Azure AI",
+      },
+      {
+        id: "claude-3-5-sonnet",
+        name: "Claude 3.5 Sonnet",
+        pricing: "Free Tier ($0.00)",
+        contextWindow: "128k",
+        rpm: "15 RPM",
+        dailyQuota: "50 RPD",
+        notes: "Anthropic premier coding",
+      },
+      {
+        id: "meta-llama-3.3-70b-instruct",
+        name: "Llama 3.3 70B",
+        pricing: "Free Tier ($0.00)",
+        contextWindow: "128k",
+        rpm: "15 RPM",
+        dailyQuota: "50 RPD",
+        notes: "Meta open weights",
+      },
     ],
     connectSteps: [
       {
@@ -395,6 +792,8 @@ export const PROVIDER_GUIDES: Record<string, ProviderGuideData> = {
         title: "Create GitHub PAT",
         instruction:
           "Visit github.com/settings/tokens. Create a Personal Access Token with model permissions.",
+        linkUrl: "https://github.com/settings/tokens",
+        linkLabel: "Generate GitHub PAT Token",
       },
       {
         step: 2,
@@ -405,8 +804,7 @@ export const PROVIDER_GUIDES: Record<string, ProviderGuideData> = {
       {
         step: 3,
         title: "Test Connection",
-        instruction:
-          "Click 'Test' on 'github/gpt-4o' to verify Azure AI inference.",
+        instruction: "Click 'Test' on 'github/gpt-4o' to verify Azure AI inference.",
       },
     ],
   },
@@ -417,6 +815,7 @@ export const PROVIDER_GUIDES: Record<string, ProviderGuideData> = {
     authTypeColor: "emerald",
     isCompletelyFree: true,
     topSummaryText: "Free Models • $0.00 Cost on 20+ ':free' models",
+    apiKeyUrl: "https://openrouter.ai/settings/keys",
     requirements: {
       loginStatus: "Free Account Required (openrouter.ai)",
       creditCardStatus: "No Credit Card Required for ':free' models",
@@ -429,24 +828,51 @@ export const PROVIDER_GUIDES: Record<string, ProviderGuideData> = {
       rateLimitDetail:
         "OpenRouter hosts 20+ models ending with ':free' that are 100% free with $0.00 credit balance.",
       quotaReset: "Sliding 1-minute window.",
+      rpm: "20 req/min",
+      rpd: "200 req/day",
+      dailyLimit: "200 free chats/day",
     },
     freeModels: [
-      { id: "meta-llama/llama-3.3-70b-instruct:free", name: "Llama 3.3 70B Free", notes: "Free tier" },
-      { id: "google/gemini-2.0-flash-exp:free", name: "Gemini 2.0 Flash Free", notes: "Free tier" },
-      { id: "deepseek/deepseek-r1:free", name: "DeepSeek R1 Free", notes: "Free reasoning" },
+      {
+        id: "meta-llama/llama-3.3-70b-instruct:free",
+        name: "Llama 3.3 70B Free",
+        pricing: "100% Free ($0.00)",
+        contextWindow: "128k",
+        rpm: "20 RPM",
+        dailyQuota: "200 RPD",
+        notes: "Free tier",
+      },
+      {
+        id: "google/gemini-2.0-flash-exp:free",
+        name: "Gemini 2.0 Flash Free",
+        pricing: "100% Free ($0.00)",
+        contextWindow: "1M tokens",
+        rpm: "20 RPM",
+        dailyQuota: "200 RPD",
+        notes: "Free tier",
+      },
+      {
+        id: "deepseek/deepseek-r1:free",
+        name: "DeepSeek R1 Free",
+        pricing: "100% Free ($0.00)",
+        contextWindow: "64k",
+        rpm: "20 RPM",
+        dailyQuota: "200 RPD",
+        notes: "Free reasoning",
+      },
     ],
     connectSteps: [
       {
         step: 1,
         title: "Create OpenRouter Key",
-        instruction:
-          "Sign up at openrouter.ai and generate a key under 'Keys' (sk-or-...).",
+        instruction: "Sign up at openrouter.ai and generate a key under 'Keys' (sk-or-...).",
+        linkUrl: "https://openrouter.ai/settings/keys",
+        linkLabel: "Generate OpenRouter Key",
       },
       {
         step: 2,
         title: "Connect in CheapRouter",
-        instruction:
-          "On the OpenRouter card, click 'Add Connection', paste your key, and save.",
+        instruction: "On the OpenRouter card, click 'Add Connection', paste your key, and save.",
       },
       {
         step: 3,
@@ -477,9 +903,33 @@ export const PROVIDER_GUIDES: Record<string, ProviderGuideData> = {
       quotaReset: "Unlimited continuous local speed.",
     },
     freeModels: [
-      { id: "glm-5.1", name: "GLM 5.1", notes: "Decentralized reasoning and coding model" },
-      { id: "glm-5.3-flash", name: "GLM 5.3 Flash", notes: "Ultra fast local coding assistant" },
-      { id: "abliterated-large-v2", name: "Abliterated Large V2", notes: "Uncensored assistant" },
+      {
+        id: "glm-5.1",
+        name: "GLM 5.1",
+        pricing: "Local ($0.00)",
+        contextWindow: "128k",
+        rpm: "Unlimited",
+        dailyQuota: "Unlimited",
+        notes: "Decentralized reasoning and coding model",
+      },
+      {
+        id: "glm-5.3-flash",
+        name: "GLM 5.3 Flash",
+        pricing: "Local ($0.00)",
+        contextWindow: "128k",
+        rpm: "Unlimited",
+        dailyQuota: "Unlimited",
+        notes: "Ultra fast local coding assistant",
+      },
+      {
+        id: "abliterated-large-v2",
+        name: "Abliterated Large V2",
+        pricing: "Local ($0.00)",
+        contextWindow: "128k",
+        rpm: "Unlimited",
+        dailyQuota: "Unlimited",
+        notes: "Uncensored assistant",
+      },
     ],
     connectSteps: [
       {
@@ -497,8 +947,7 @@ export const PROVIDER_GUIDES: Record<string, ProviderGuideData> = {
       {
         step: 3,
         title: "Test Local Model",
-        instruction:
-          "Click 'Test' on 'antseed/glm-5.3-flash' to verify instant local execution.",
+        instruction: "Click 'Test' on 'antseed/glm-5.3-flash' to verify instant local execution.",
       },
     ],
   },
@@ -521,10 +970,47 @@ export const PROVIDER_GUIDES: Record<string, ProviderGuideData> = {
       rateLimitDetail:
         "Public endpoint at https://opencode.ai/zen/v1. No account, signup, or card needed. Requests matching OpenCode contracts run directly.",
       quotaReset: "Sliding 1-minute window.",
+      rpm: "20 req/min",
+      rpd: "100–300 req/day",
+      dailyLimit: "OpenCode Free Client Allowance",
     },
     freeModels: [
-      { id: "kimi-k2.5", name: "Kimi K2.5", notes: "Free coding & reasoning" },
-      { id: "qwen-2.5-coder", name: "Qwen 2.5 Coder", notes: "Specialized for programming" },
+      {
+        id: "kimi-k2.5",
+        name: "Kimi K2.5",
+        pricing: "100% Free",
+        contextWindow: "128k",
+        rpm: "20 RPM",
+        dailyQuota: "100–300 RPD",
+        notes: "Free coding & reasoning",
+      },
+      {
+        id: "qwen-2.5-coder",
+        name: "Qwen 2.5 Coder",
+        pricing: "100% Free",
+        contextWindow: "128k",
+        rpm: "20 RPM",
+        dailyQuota: "100–300 RPD",
+        notes: "Specialized for programming",
+      },
+      {
+        id: "big-pickle",
+        name: "Big Pickle",
+        pricing: "100% Free",
+        contextWindow: "128k",
+        rpm: "20 RPM",
+        dailyQuota: "100–300 RPD",
+        notes: "DeepSeek thinking mode",
+      },
+      {
+        id: "glm-5.3-flash-free",
+        name: "GLM 5.3 Flash Free",
+        pricing: "100% Free",
+        contextWindow: "128k",
+        rpm: "20 RPM",
+        dailyQuota: "100–300 RPD",
+        notes: "Z.ai reasoning model",
+      },
     ],
     connectSteps: [
       {
@@ -535,12 +1021,18 @@ export const PROVIDER_GUIDES: Record<string, ProviderGuideData> = {
       },
       {
         step: 2,
-        title: "Test Connection",
+        title: "Fetch Live OpenCode Catalog",
         instruction:
-          "Click 'Test' on 'opencode/kimi-k2.5' to verify live responses.",
+          "Click 'Fetch All Models' on the OpenCode card to live-discover all 80+ models available on opencode.ai/zen/v1/models (including big-pickle, glm-5.3-flash-free, beam-free, and muse-spark).",
       },
       {
         step: 3,
+        title: "Test Connection",
+        instruction:
+          "Click 'Test' on 'opencode/kimi-k2.5' or any free model to verify live responses.",
+      },
+      {
+        step: 4,
         title: "Use in Web Chat or CLI",
         instruction:
           "Use 'opencode/<model-id>' in Web Chat or run via terminal with 'opencode run'.",
@@ -566,31 +1058,71 @@ export const PROVIDER_GUIDES: Record<string, ProviderGuideData> = {
       rateLimitDetail:
         "Pollinations AI offers keyless open access for text and image generations. Free models include OpenAI, Mistral, Qwen Coder, DeepSeek, and Flux image generation. Dynamic community queue with no token balance deductions.",
       quotaReset: "Dynamic community queue.",
+      rpm: "10–20 req/min",
+      rpd: "Unlimited",
+      dailyLimit: "Unlimited (Keyless Queue)",
     },
     freeModels: [
-      { id: "openai-fast", name: "OpenAI Fast", notes: "High speed chat" },
-      { id: "qwen-coder", name: "Qwen Coder", notes: "Coding assistant" },
-      { id: "mistral", name: "Mistral", notes: "Reasoning and general text" },
-      { id: "deepseek", name: "DeepSeek", notes: "Open intelligence" },
+      {
+        id: "openai-fast",
+        name: "OpenAI Fast",
+        pricing: "100% Free",
+        contextWindow: "128k",
+        rpm: "10–20 RPM",
+        dailyQuota: "Unlimited",
+        notes: "High speed GPT-OSS 20B reasoning",
+      },
+      {
+        id: "qwen-coder",
+        name: "Qwen Coder",
+        pricing: "100% Free",
+        contextWindow: "32k",
+        rpm: "10–20 RPM",
+        dailyQuota: "Unlimited",
+        notes: "Coding assistant",
+      },
+      {
+        id: "mistral",
+        name: "Mistral",
+        pricing: "100% Free",
+        contextWindow: "32k",
+        rpm: "10–20 RPM",
+        dailyQuota: "Unlimited",
+        notes: "Reasoning and general text",
+      },
+      {
+        id: "deepseek",
+        name: "DeepSeek",
+        pricing: "100% Free",
+        contextWindow: "64k",
+        rpm: "10–20 RPM",
+        dailyQuota: "Unlimited",
+        notes: "Open intelligence",
+      },
     ],
     connectSteps: [
       {
         step: 1,
         title: "Keyless Public Endpoint",
         instruction:
-          "Connects to https://text.pollinations.ai/v1 directly without registration.",
+          "Connects to https://text.pollinations.ai/openai/chat/completions directly without registration.",
       },
       {
         step: 2,
+        title: "Fetch Live Models",
+        instruction:
+          "Click 'Fetch All Models' on the provider card to dynamically load active models from text.pollinations.ai.",
+      },
+      {
+        step: 3,
         title: "Configure in CheapRouter",
         instruction:
           "If a connection modal asks for an API key, enter any dummy text like 'unused'.",
       },
       {
-        step: 3,
+        step: 4,
         title: "Test & Use",
-        instruction:
-          "Click 'Test' on 'pollinations/openai-fast' to verify live text output.",
+        instruction: "Click 'Test' on 'pollinations/openai-fast' to verify live text output.",
       },
     ],
   },
@@ -601,8 +1133,9 @@ export const PROVIDER_GUIDES: Record<string, ProviderGuideData> = {
     authTypeColor: "emerald",
     isCompletelyFree: true,
     topSummaryText: "Free Tier • No credit card required • 20 Million Free Tokens",
+    apiKeyUrl: "https://cloud.siliconflow.cn/account/ak",
     requirements: {
-      loginStatus: "Free Account Required (cloud.siliconflow.com)",
+      loginStatus: "Free Account Required (cloud.siliconflow.cn)",
       creditCardStatus: "No Credit Card Required (100% Free)",
       credentialsNeeded: "API Key (starts with sk-...)",
       connectionType: "API Key Authentication",
@@ -613,24 +1146,50 @@ export const PROVIDER_GUIDES: Record<string, ProviderGuideData> = {
       rateLimitDetail:
         "SiliconFlow gives 20,000,000 free tokens on registration (roughly 15 million words or 40,000 full chat messages). They also host permanent 100% free ($0.00) models like Qwen 2.5 7B and DeepSeek V3/R1 free tier.",
       quotaReset: "Free tokens valid on account; sliding 1-minute rate limits.",
+      rpm: "10–30 req/min",
+      dailyLimit: "20 Million Tokens + $0 Models",
     },
     freeModels: [
-      { id: "Qwen/Qwen2.5-7B-Instruct", name: "Qwen 2.5 7B", notes: "Permanent $0.00 free tier" },
-      { id: "deepseek-ai/DeepSeek-V3", name: "DeepSeek V3", notes: "Top open weights" },
-      { id: "deepseek-ai/DeepSeek-R1", name: "DeepSeek R1", notes: "Reasoning model" },
+      {
+        id: "Qwen/Qwen2.5-7B-Instruct",
+        name: "Qwen 2.5 7B",
+        pricing: "Permanent $0.00",
+        contextWindow: "32k",
+        rpm: "30 RPM",
+        dailyQuota: "Unlimited Free Tier",
+        notes: "Permanent $0.00 free tier",
+      },
+      {
+        id: "deepseek-ai/DeepSeek-V3",
+        name: "DeepSeek V3",
+        pricing: "20M Token Pool",
+        contextWindow: "64k",
+        rpm: "10–30 RPM",
+        dailyQuota: "From 20M Free Grant",
+        notes: "Top open weights 671B",
+      },
+      {
+        id: "deepseek-ai/DeepSeek-R1",
+        name: "DeepSeek R1",
+        pricing: "20M Token Pool",
+        contextWindow: "64k",
+        rpm: "10–30 RPM",
+        dailyQuota: "From 20M Free Grant",
+        notes: "Reasoning model",
+      },
     ],
     connectSteps: [
       {
         step: 1,
         title: "Register Free Account",
-        instruction:
-          "Sign up at cloud.siliconflow.com. Go to API Keys and copy your API key.",
+        instruction: "Sign up at cloud.siliconflow.cn. Go to API Keys and copy your API key.",
+        linkUrl: "https://cloud.siliconflow.cn/account/ak",
+        linkLabel: "Get SiliconFlow API Key",
       },
       {
         step: 2,
         title: "Add Connection in CheapRouter",
-        instruction:
-          "Click 'Add Connection' on SiliconFlow card, paste your API key, and save.",
+        instruction: "Click 'Add Connection' on SiliconFlow card, paste your API key, and save.",
       },
       {
         step: 3,
@@ -647,6 +1206,7 @@ export const PROVIDER_GUIDES: Record<string, ProviderGuideData> = {
     authTypeColor: "emerald",
     isCompletelyFree: true,
     topSummaryText: "Free Tier • No credit card required • ~1,000 req/hour",
+    apiKeyUrl: "https://huggingface.co/settings/tokens",
     requirements: {
       loginStatus: "Free Account Required (huggingface.co)",
       creditCardStatus: "No Credit Card Required (100% Free)",
@@ -659,11 +1219,38 @@ export const PROVIDER_GUIDES: Record<string, ProviderGuideData> = {
       rateLimitDetail:
         "Hugging Face provides free Serverless Inference API for open-weights models. You get approximately 1,000 requests per hour (~15 to 30 requests per minute) with zero credit card or billing setup required.",
       quotaReset: "Sliding hourly rate limit.",
+      rpm: "15–30 req/min",
+      rpd: "~1,000 req/hour",
+      dailyLimit: "~24,000 requests/day",
     },
     freeModels: [
-      { id: "Qwen/Qwen2.5-Coder-32B-Instruct", name: "Qwen 2.5 Coder 32B", notes: "High performance coding" },
-      { id: "meta-llama/Llama-3.3-70B-Instruct", name: "Llama 3.3 70B", notes: "Flagship general intelligence" },
-      { id: "deepseek-ai/DeepSeek-R1-Distill-Qwen-32B", name: "DeepSeek R1 32B", notes: "Math & reasoning" },
+      {
+        id: "Qwen/Qwen2.5-Coder-32B-Instruct",
+        name: "Qwen 2.5 Coder 32B",
+        pricing: "100% Free",
+        contextWindow: "32k",
+        rpm: "15–30 RPM",
+        dailyQuota: "~1,000 req/hour",
+        notes: "High performance coding",
+      },
+      {
+        id: "meta-llama/Llama-3.3-70B-Instruct",
+        name: "Llama 3.3 70B",
+        pricing: "100% Free",
+        contextWindow: "128k",
+        rpm: "15–30 RPM",
+        dailyQuota: "~1,000 req/hour",
+        notes: "Flagship general intelligence",
+      },
+      {
+        id: "deepseek-ai/DeepSeek-R1-Distill-Qwen-32B",
+        name: "DeepSeek R1 32B",
+        pricing: "100% Free",
+        contextWindow: "64k",
+        rpm: "15–30 RPM",
+        dailyQuota: "~1,000 req/hour",
+        notes: "Math & reasoning",
+      },
     ],
     connectSteps: [
       {
@@ -671,18 +1258,18 @@ export const PROVIDER_GUIDES: Record<string, ProviderGuideData> = {
         title: "Create Free Read Token",
         instruction:
           "Sign up at huggingface.co. Go to Settings → Access Tokens → Create 'Read' Token (hf_...).",
+        linkUrl: "https://huggingface.co/settings/tokens",
+        linkLabel: "Create Hugging Face Read Token",
       },
       {
         step: 2,
         title: "Paste in CheapRouter",
-        instruction:
-          "Click 'Add Connection' on Hugging Face card, paste your token, and save.",
+        instruction: "Click 'Add Connection' on Hugging Face card, paste your token, and save.",
       },
       {
         step: 3,
         title: "Test Connection",
-        instruction:
-          "Click 'Test' on any supported model to verify serverless inference.",
+        instruction: "Click 'Test' on any supported model to verify serverless inference.",
       },
     ],
   },
@@ -693,6 +1280,7 @@ export const PROVIDER_GUIDES: Record<string, ProviderGuideData> = {
     authTypeColor: "emerald",
     isCompletelyFree: true,
     topSummaryText: "Free Trial • No credit card required • 1,000 calls/month",
+    apiKeyUrl: "https://dashboard.cohere.com/api-keys",
     requirements: {
       loginStatus: "Free Account Required (dashboard.cohere.com)",
       creditCardStatus: "No Credit Card Required (100% Free)",
@@ -705,10 +1293,28 @@ export const PROVIDER_GUIDES: Record<string, ProviderGuideData> = {
       rateLimitDetail:
         "Cohere provides an official free Trial Key with 20 requests per minute and 1,000 complete API calls per month for testing Command R+ and Embed models without adding a credit card.",
       quotaReset: "Monthly quota reset.",
+      rpm: "20 req/min",
+      dailyLimit: "1,000 API calls/month",
     },
     freeModels: [
-      { id: "command-r-plus", name: "Command R+", notes: "State of the art multilingual & tools" },
-      { id: "command-r", name: "Command R", notes: "Fast retrieval & chat" },
+      {
+        id: "command-r-plus",
+        name: "Command R+",
+        pricing: "Free Trial",
+        contextWindow: "128k",
+        rpm: "20 RPM",
+        dailyQuota: "1,000 calls/month",
+        notes: "State of the art multilingual & tools",
+      },
+      {
+        id: "command-r",
+        name: "Command R",
+        pricing: "Free Trial",
+        contextWindow: "128k",
+        rpm: "20 RPM",
+        dailyQuota: "1,000 calls/month",
+        notes: "Fast retrieval & chat",
+      },
     ],
     connectSteps: [
       {
@@ -716,18 +1322,18 @@ export const PROVIDER_GUIDES: Record<string, ProviderGuideData> = {
         title: "Get Cohere Trial Key",
         instruction:
           "Sign up at dashboard.cohere.com. Navigate to API Keys and copy your Trial Key.",
+        linkUrl: "https://dashboard.cohere.com/api-keys",
+        linkLabel: "Get Cohere Trial Key",
       },
       {
         step: 2,
         title: "Add Connection in CheapRouter",
-        instruction:
-          "Click 'Add Connection' on Cohere card, paste your Trial Key, and save.",
+        instruction: "Click 'Add Connection' on Cohere card, paste your Trial Key, and save.",
       },
       {
         step: 3,
         title: "Test Connection",
-        instruction:
-          "Click 'Test' on 'cohere/command-r-plus' to confirm live output.",
+        instruction: "Click 'Test' on 'cohere/command-r-plus' to confirm live output.",
       },
     ],
   },
@@ -738,6 +1344,7 @@ export const PROVIDER_GUIDES: Record<string, ProviderGuideData> = {
     authTypeColor: "emerald",
     isCompletelyFree: true,
     topSummaryText: "Free Tier • No credit card required • 1 req/sec (60 RPM)",
+    apiKeyUrl: "https://console.mistral.ai/api-keys",
     requirements: {
       loginStatus: "Free Account Required (console.mistral.ai)",
       creditCardStatus: "No Credit Card Required (100% Free)",
@@ -750,30 +1357,132 @@ export const PROVIDER_GUIDES: Record<string, ProviderGuideData> = {
       rateLimitDetail:
         "Mistral provides a free Experimentation tier with 1 request per second (60 requests per minute) and 500,000 tokens per minute for Mistral Small 3, Codestral, and Mistral NeMo without entering credit card information.",
       quotaReset: "Sliding 1-second and 1-minute windows.",
+      rpm: "60 req/min (1 RPS)",
+      tpm: "500,000 TPM",
+      dailyLimit: "Free Experimentation Tier",
     },
     freeModels: [
-      { id: "mistral-small-latest", name: "Mistral Small 3", notes: "Fast reasoning & general chat" },
-      { id: "codestral-latest", name: "Codestral", notes: "Dedicated 80+ language coding model" },
-      { id: "open-mistral-nemo", name: "Mistral NeMo 12B", notes: "Compact open-weights" },
+      {
+        id: "mistral-small-latest",
+        name: "Mistral Small 3",
+        pricing: "Free Tier ($0.00)",
+        contextWindow: "32k",
+        rpm: "60 RPM (1 RPS)",
+        dailyQuota: "Unlimited (500k TPM)",
+        notes: "Fast reasoning & general chat",
+      },
+      {
+        id: "codestral-latest",
+        name: "Codestral",
+        pricing: "Free Tier ($0.00)",
+        contextWindow: "256k",
+        rpm: "60 RPM (1 RPS)",
+        dailyQuota: "Unlimited (500k TPM)",
+        notes: "Dedicated 80+ language coding model",
+      },
+      {
+        id: "open-mistral-nemo",
+        name: "Mistral NeMo 12B",
+        pricing: "Free Tier ($0.00)",
+        contextWindow: "128k",
+        rpm: "60 RPM (1 RPS)",
+        dailyQuota: "Unlimited (500k TPM)",
+        notes: "Compact open-weights",
+      },
     ],
     connectSteps: [
       {
         step: 1,
         title: "Generate Mistral API Key",
+        instruction: "Sign in to console.mistral.ai. Go to API Keys → Create New Key and copy it.",
+        linkUrl: "https://console.mistral.ai/api-keys",
+        linkLabel: "Generate Mistral API Key",
+      },
+      {
+        step: 2,
+        title: "Add Connection in CheapRouter",
+        instruction: "Click 'Add Connection' on Mistral card, paste the API key, and save.",
+      },
+      {
+        step: 3,
+        title: "Test Connection",
+        instruction: "Click 'Test' on 'mistral/codestral-latest' to verify coding capabilities.",
+      },
+    ],
+  },
+
+  // ── 16b. Puter.js ───────────────────────────────────────────────────────
+  puter: {
+    authTypeBadge: "100% Free • Zero Card",
+    authTypeColor: "emerald",
+    isCompletelyFree: true,
+    topSummaryText:
+      "Free developer AI • Claude 3.5 Sonnet, GPT-4o mini, DeepSeek R1 • No credit card",
+    apiKeyUrl: "https://puter.com",
+    requirements: {
+      loginStatus: "Optional Puter.com account (Instant key or anonymous session)",
+      creditCardStatus: "No Credit Card Required (100% $0.00 Free)",
+      credentialsNeeded: "Puter Auth Token or default anonymous connector",
+      connectionType: "OpenAI-compatible HTTP /api.puter.com/puterai/openai/v1",
+      toolsSupported: "CheapRouter Web Chat, /v1 API routes, CLI tools",
+    },
+    limits: {
+      rateLimitBadge: "20–30 req/min (Developer Free Tier)",
+      rateLimitDetail:
+        "Free cloud computing environment with daily AI quota. Generous requests per minute (20-30 RPM) across GPT-4o mini, Claude 3.5 Sonnet, and DeepSeek R1 without credit card entry.",
+      quotaReset: "Sliding window rate limit & daily replenishment at 00:00 UTC.",
+      rpm: "20–30 req/min",
+      dailyLimit: "Daily quota per account",
+    },
+    freeModels: [
+      {
+        id: "gpt-4o-mini",
+        name: "GPT-4o mini",
+        pricing: "100% Free",
+        contextWindow: "128k",
+        rpm: "20–30 RPM",
+        dailyQuota: "Developer Quota",
+        notes: "OpenAI fast intelligence via Puter",
+      },
+      {
+        id: "claude-3-5-sonnet",
+        name: "Claude 3.5 Sonnet",
+        pricing: "100% Free",
+        contextWindow: "200k",
+        rpm: "20–30 RPM",
+        dailyQuota: "Developer Quota",
+        notes: "Anthropic premier coding",
+      },
+      {
+        id: "deepseek-reasoner",
+        name: "DeepSeek R1",
+        pricing: "100% Free",
+        contextWindow: "64k",
+        rpm: "20–30 RPM",
+        dailyQuota: "Developer Quota",
+        notes: "Full chain-of-thought reasoning",
+      },
+    ],
+    connectSteps: [
+      {
+        step: 1,
+        title: "Get Puter Credentials (Optional)",
         instruction:
-          "Sign in to console.mistral.ai. Go to API Keys → Create New Key and copy it.",
+          "Puter runs in the cloud at puter.com. You can generate an API key from your Puter developer dashboard or use CheapRouter's built-in connector.",
+        linkUrl: "https://puter.com",
+        linkLabel: "Open Puter.com",
       },
       {
         step: 2,
         title: "Add Connection in CheapRouter",
         instruction:
-          "Click 'Add Connection' on Mistral card, paste the API key, and save.",
+          "On the Puter card, click 'Add Connection'. If you have a Puter user token paste it, or use the default preconfigured credentials.",
       },
       {
         step: 3,
         title: "Test Connection",
         instruction:
-          "Click 'Test' on 'mistral/codestral-latest' to verify coding capabilities.",
+          "Click 'Test' on 'gpt-4o-mini' or 'claude-3-5-sonnet' to verify response from api.puter.com.",
       },
     ],
   },
@@ -798,8 +1507,24 @@ export const PROVIDER_GUIDES: Record<string, ProviderGuideData> = {
       quotaReset: "Rolling hourly browser session window.",
     },
     freeModels: [
-      { id: "gemini-2.5-flash", name: "Gemini 2.5 Flash", notes: "High speed multimodal" },
-      { id: "gemini-2.5-pro", name: "Gemini 2.5 Pro", notes: "Deep reasoning" },
+      {
+        id: "gemini-2.5-flash",
+        name: "Gemini 2.5 Flash",
+        pricing: "Free Web Session",
+        contextWindow: "1M tokens",
+        rpm: "15–30 RPM",
+        dailyQuota: "~60 req/hour",
+        notes: "High speed multimodal via web session",
+      },
+      {
+        id: "gemini-2.5-pro",
+        name: "Gemini 2.5 Pro",
+        pricing: "Free Web Session",
+        contextWindow: "1M tokens",
+        rpm: "5–10 RPM",
+        dailyQuota: "~30 req/hour",
+        notes: "Deep reasoning web session",
+      },
     ],
     connectSteps: [
       {
@@ -838,13 +1563,28 @@ export const PROVIDER_GUIDES: Record<string, ProviderGuideData> = {
     },
     limits: {
       rateLimitBadge: "~30–45 messages / 5 hours",
-      rateLimitDetail:
-        "Standard claude.ai rolling window. Resets every 5 hours without payment.",
+      rateLimitDetail: "Standard claude.ai rolling window. Resets every 5 hours without payment.",
       quotaReset: "Rolling 5-hour window.",
     },
     freeModels: [
-      { id: "claude-3-7-sonnet", name: "Claude 3.7 Sonnet", notes: "Hybrid reasoning" },
-      { id: "claude-3-5-sonnet", name: "Claude 3.5 Sonnet", notes: "Premier coding" },
+      {
+        id: "claude-3-7-sonnet",
+        name: "Claude 3.7 Sonnet",
+        pricing: "Free Web Session",
+        contextWindow: "200k",
+        rpm: "10 RPM",
+        dailyQuota: "~30–45 msgs/5h",
+        notes: "Hybrid reasoning via claude.ai session",
+      },
+      {
+        id: "claude-3-5-sonnet",
+        name: "Claude 3.5 Sonnet",
+        pricing: "Free Web Session",
+        contextWindow: "200k",
+        rpm: "10 RPM",
+        dailyQuota: "~30–45 msgs/5h",
+        notes: "Premier coding via claude.ai session",
+      },
     ],
     connectSteps: [
       {
@@ -862,8 +1602,7 @@ export const PROVIDER_GUIDES: Record<string, ProviderGuideData> = {
       {
         step: 3,
         title: "Test Connection",
-        instruction:
-          "Click 'Test' on Claude 3.5 Sonnet to confirm web session proxy is working.",
+        instruction: "Click 'Test' on Claude 3.5 Sonnet to confirm web session proxy is working.",
       },
     ],
   },
@@ -888,8 +1627,24 @@ export const PROVIDER_GUIDES: Record<string, ProviderGuideData> = {
       quotaReset: "Rolling 3-hour window.",
     },
     freeModels: [
-      { id: "gpt-4o", name: "GPT-4o", notes: "Flagship multimodal" },
-      { id: "gpt-4o-mini", name: "GPT-4o mini", notes: "Fast intelligence" },
+      {
+        id: "gpt-4o",
+        name: "GPT-4o",
+        pricing: "Free Web Session",
+        contextWindow: "128k",
+        rpm: "10 RPM",
+        dailyQuota: "~10 msgs / 3h",
+        notes: "Flagship multimodal via chatgpt.com session",
+      },
+      {
+        id: "gpt-4o-mini",
+        name: "GPT-4o mini",
+        pricing: "Free Web Session",
+        contextWindow: "128k",
+        rpm: "20 RPM",
+        dailyQuota: "Unlimited turns",
+        notes: "Fast intelligence fallback",
+      },
     ],
     connectSteps: [
       {
@@ -907,8 +1662,7 @@ export const PROVIDER_GUIDES: Record<string, ProviderGuideData> = {
       {
         step: 3,
         title: "Test Connection",
-        instruction:
-          "Click 'Test' to verify headless browser session connectivity.",
+        instruction: "Click 'Test' to verify headless browser session connectivity.",
       },
     ],
   },
@@ -933,8 +1687,24 @@ export const PROVIDER_GUIDES: Record<string, ProviderGuideData> = {
       quotaReset: "Rolling 2-hour window.",
     },
     freeModels: [
-      { id: "grok-3", name: "Grok 3", notes: "xAI powerhouse" },
-      { id: "grok-3-mini", name: "Grok 3 Mini", notes: "Fast reasoning" },
+      {
+        id: "grok-3",
+        name: "Grok 3",
+        pricing: "Free Web Session",
+        contextWindow: "128k",
+        rpm: "10 RPM",
+        dailyQuota: "~20–50 msgs / 2h",
+        notes: "xAI powerhouse via grok.com session",
+      },
+      {
+        id: "grok-3-mini",
+        name: "Grok 3 Mini",
+        pricing: "Free Web Session",
+        contextWindow: "128k",
+        rpm: "15 RPM",
+        dailyQuota: "~50 msgs / 2h",
+        notes: "Fast reasoning via grok.com session",
+      },
     ],
     connectSteps: [
       {
@@ -952,8 +1722,7 @@ export const PROVIDER_GUIDES: Record<string, ProviderGuideData> = {
       {
         step: 3,
         title: "Save & Test",
-        instruction:
-          "Click Save, then click 'Test' on Grok 3 to verify session validation.",
+        instruction: "Click Save, then click 'Test' on Grok 3 to verify session validation.",
       },
     ],
   },
@@ -978,8 +1747,24 @@ export const PROVIDER_GUIDES: Record<string, ProviderGuideData> = {
       quotaReset: "Resets daily.",
     },
     freeModels: [
-      { id: "deepseek-chat", name: "DeepSeek V3", notes: "General chat & coding" },
-      { id: "deepseek-reasoner", name: "DeepSeek R1", notes: "Chain of thought reasoning" },
+      {
+        id: "deepseek-chat",
+        name: "DeepSeek V3",
+        pricing: "Free Web Session",
+        contextWindow: "64k",
+        rpm: "15 RPM",
+        dailyQuota: "~50 chats/day",
+        notes: "DeepSeek V3 chat & coding",
+      },
+      {
+        id: "deepseek-reasoner",
+        name: "DeepSeek R1",
+        pricing: "Free Web Session",
+        contextWindow: "64k",
+        rpm: "10 RPM",
+        dailyQuota: "~50 chats/day",
+        notes: "DeepSeek R1 reasoning session",
+      },
     ],
     connectSteps: [
       {
@@ -997,12 +1782,347 @@ export const PROVIDER_GUIDES: Record<string, ProviderGuideData> = {
       {
         step: 3,
         title: "Test Connection",
+        instruction: "Click 'Test' on DeepSeek V3 to verify response.",
+      },
+    ],
+  },
+
+  // ── 22. Genspark AI Web ────────────────────────────────────────────────
+  "genspark-web": {
+    authTypeBadge: "Web Cookie • 100 Credits/Day",
+    authTypeColor: "orange",
+    isCompletelyFree: true,
+    topSummaryText:
+      "Genspark AI Web Chat • 100 Free Credits Daily • Claude 3.5 Sonnet, GPT-4o & Spark 1 • No Credit Card Required",
+    apiKeyUrl: "https://www.genspark.ai",
+    requirements: {
+      loginStatus: "Login Required (Free Google or Email Signup)",
+      creditCardStatus: "No Credit Card Required ($0 Free Plan)",
+      credentialsNeeded: "Browser Session Cookie (GS_COOKIE) or local genspark2api proxy URL",
+      connectionType: "Web Session Cookie / Reverse Proxy",
+      toolsSupported: "CheapRouter Web Chat, /v1/chat/completions, AI Search Agents",
+    },
+    limits: {
+      rateLimitBadge: "100 Credits / Day (~20–50 Chat Queries)",
+      rateLimitDetail:
+        "Free tier grants 100 credits every day without requiring a credit card. Regular chat queries consume ~1–5 credits per prompt (allowing 20–50 queries/day). Heavy tasks like Deep Research, slide generation, or video creation consume 40–100 credits per run.",
+      quotaReset: "Refreshes every 24 hours (Midnight UTC).",
+      rpm: "10–20 req/min",
+      rpd: "20–50 chats/day",
+      dailyLimit: "100 Credits / Day",
+    },
+    freeModels: [
+      {
+        id: "spark-1",
+        name: "Spark 1 (Genspark Flagship)",
+        pricing: "100 Credits Daily",
+        contextWindow: "128k",
+        rpm: "10–20 RPM",
+        dailyQuota: "20–50 chats/day",
+        notes: "Fast multi-agent search model",
+      },
+      {
+        id: "claude-3-5-sonnet",
+        name: "Claude 3.5 Sonnet",
+        pricing: "100 Credits Daily",
+        contextWindow: "128k",
+        rpm: "10 RPM",
+        dailyQuota: "20–30 chats/day",
+        notes: "Via Genspark web agent",
+      },
+      {
+        id: "gpt-4o",
+        name: "GPT-4o",
+        pricing: "100 Credits Daily",
+        contextWindow: "128k",
+        rpm: "10 RPM",
+        dailyQuota: "20–30 chats/day",
+        notes: "Via Genspark web agent",
+      },
+      {
+        id: "deepseek-v3",
+        name: "DeepSeek V3",
+        pricing: "100 Credits Daily",
+        contextWindow: "64k",
+        rpm: "10–20 RPM",
+        dailyQuota: "20–50 chats/day",
+        notes: "Open-weight reasoning",
+      },
+    ],
+    connectSteps: [
+      {
+        step: 1,
+        title: "Create Free Genspark Account",
         instruction:
-          "Click 'Test' on DeepSeek V3 to verify response.",
+          "Visit genspark.ai and sign in with Google or Email. No credit card is required. You instantly receive 100 free credits for the day.",
+        linkUrl: "https://www.genspark.ai",
+        linkLabel: "Open Genspark.ai ↗",
+      },
+      {
+        step: 2,
+        title: "Copy Session Cookie (GS_COOKIE)",
+        instruction:
+          "Open your browser Developer Tools (F12) → go to Application → Cookies → https://www.genspark.ai. Copy the cookie value or full cookie header string.",
+      },
+      {
+        step: 3,
+        title: "Add Connection in CheapRouter",
+        instruction:
+          "In CheapRouter Dashboard, go to Providers → Genspark AI Web → Click 'Add Connection'. Paste your cookie string into the Cookie box and click Save.",
+      },
+      {
+        step: 4,
+        title: "Alternative: Use Local genspark2api Proxy",
+        instruction:
+          "If Cloudflare anti-bot blocks direct datacenter requests, run the open-source docker container 'deanxv/genspark2api' locally and connect via Custom Base URL (http://localhost:7055/v1).",
+        linkUrl: "https://github.com/deanxv/genspark2api",
+        linkLabel: "genspark2api GitHub ↗",
+      },
+      {
+        step: 5,
+        title: "Test Connection & Route Models",
+        instruction:
+          "Click 'Test' on 'genspark-web/claude-3-5-sonnet' or 'genspark-web/gpt-4o' to verify live responses. Route prompts with 'genspark-web/<model-id>'.",
+      },
+    ],
+  },
+
+  // ── 22. Arena (formerly LMArena) ───────────────────────────────────────
+  lmarena: {
+    authTypeBadge: "Free Web Session ($0.00)",
+    authTypeColor: "emerald",
+    isCompletelyFree: true,
+    topSummaryText: "Free Frontier Models • Claude Sonnet 5, DeepSeek V4, GPT-5/4o",
+    apiKeyUrl: "https://arena.ai",
+    requirements: {
+      loginStatus: "Free Account / Web Session (arena.ai)",
+      creditCardStatus: "No Credit Card Required (100% Free)",
+      credentialsNeeded: "Browser Cookie Header (arena-auth-prod-v1...)",
+      connectionType: "Web Cookie Authentication",
+      toolsSupported: "CheapRouter Web Chat, API routes, CLIs",
+    },
+    limits: {
+      rateLimitBadge: "Direct Chat Model Allowance",
+      rateLimitDetail:
+        "Free direct chat access to over 50 leading AI models including Claude Sonnet 5, DeepSeek V4 Pro, GPT-5, and Gemini 2.5 Pro without paying any subscription.",
+      quotaReset: "Sliding window / per-session allowance.",
+      rpm: "15–30 req/min",
+      rpd: "Unlimited (within sessions)",
+      dailyLimit: "Unlimited within session concurrency",
+    },
+    freeModels: [
+      {
+        id: "claude-sonnet-5",
+        name: "Claude Sonnet 5",
+        pricing: "100% Free",
+        contextWindow: "200k",
+        rpm: "15–30 RPM",
+        dailyQuota: "Unlimited / Session",
+        notes: "Anthropic flagship via Arena",
+      },
+      {
+        id: "deepseek-v4-pro-thinking",
+        name: "DeepSeek V4 Pro",
+        pricing: "100% Free",
+        contextWindow: "128k",
+        rpm: "15–30 RPM",
+        dailyQuota: "Unlimited / Session",
+        notes: "High reasoning CoT",
+      },
+      {
+        id: "amazon.nova-pro-v1:0",
+        name: "Nova Pro",
+        pricing: "100% Free",
+        contextWindow: "128k",
+        rpm: "15–30 RPM",
+        dailyQuota: "Unlimited / Session",
+        notes: "Amazon frontier model",
+      },
+    ],
+    connectSteps: [
+      {
+        step: 1,
+        title: "Open Arena.ai",
+        instruction:
+          "Visit arena.ai and sign in with your email or Google account (or use direct chat mode).",
+        linkUrl: "https://arena.ai",
+        linkLabel: "Open Arena.ai",
+      },
+      {
+        step: 2,
+        title: "Copy Session Cookie",
+        instruction:
+          "Press F12 to open Developer Tools → Network tab. Send a message or click any model. Inspect the request headers and copy the full 'Cookie' header string (must contain arena-auth-prod-v1...).",
+      },
+      {
+        step: 3,
+        title: "Add Connection in CheapRouter",
+        instruction:
+          "On the Arena card, click 'Add Connection'. Paste the Cookie header into the Cookie input and click Save.",
+      },
+      {
+        step: 4,
+        title: "Test Connection",
+        instruction: "Click 'Test' on 'lmarena/claude-sonnet-5' to verify live routing.",
+      },
+    ],
+  },
+
+  // ── 23. HuggingChat (Free) ─────────────────────────────────────────────
+  huggingchat: {
+    authTypeBadge: "Free Web Session ($0.00)",
+    authTypeColor: "emerald",
+    isCompletelyFree: true,
+    topSummaryText: "Free HuggingFace LLM Chat • Llama 3.3, Qwen 2.5, DeepSeek",
+    apiKeyUrl: "https://huggingface.co/chat",
+    requirements: {
+      loginStatus: "Free Hugging Face Account (huggingface.co)",
+      creditCardStatus: "No Credit Card Required (100% Free)",
+      credentialsNeeded: "hf-chat Cookie Header",
+      connectionType: "Web Cookie Authentication",
+      toolsSupported: "CheapRouter Web Chat, API routes",
+    },
+    limits: {
+      rateLimitBadge: "Generous Free Tier",
+      rateLimitDetail:
+        "Free LLM chat powered by Hugging Face inference. Provides fast access to open-weights models like Llama 3.3 70B, Qwen 2.5 72B, and DeepSeek models.",
+      quotaReset: "Sliding rate limit window.",
+      rpm: "20–40 req/min",
+      rpd: "Generous turns/day",
+      dailyLimit: "Generous daily turns",
+    },
+    freeModels: [
+      {
+        id: "meta-llama/Llama-3.3-70B-Instruct",
+        name: "Llama 3.3 70B",
+        pricing: "100% Free",
+        contextWindow: "128k",
+        rpm: "20–40 RPM",
+        dailyQuota: "Generous daily turns",
+        notes: "Hugging Face direct",
+      },
+      {
+        id: "Qwen/Qwen2.5-72B-Instruct",
+        name: "Qwen 2.5 72B",
+        pricing: "100% Free",
+        contextWindow: "128k",
+        rpm: "20–40 RPM",
+        dailyQuota: "Generous daily turns",
+        notes: "Open weights coding",
+      },
+    ],
+    connectSteps: [
+      {
+        step: 1,
+        title: "Log In to HuggingChat",
+        instruction: "Visit huggingface.co/chat and sign in with your free Hugging Face account.",
+        linkUrl: "https://huggingface.co/chat",
+        linkLabel: "Open HuggingChat",
+      },
+      {
+        step: 2,
+        title: "Copy hf-chat Cookie",
+        instruction:
+          "Open Developer Tools (F12) → Network tab. Send a chat message or refresh. Copy the Cookie header containing 'hf-chat'.",
+      },
+      {
+        step: 3,
+        title: "Paste into CheapRouter",
+        instruction:
+          "Click 'Add Connection' on the HuggingChat card in CheapRouter, paste your Cookie header and click Save.",
+      },
+    ],
+  },
+
+  // ── 24. AI Horde (Keyless Crowd-Sourced GPUs) ─────────────────────────
+  aihorde: {
+    authTypeBadge: "100% Free • Crowd GPUs",
+    authTypeColor: "emerald",
+    isCompletelyFree: true,
+    topSummaryText: "Decentralized GPU Cluster • 28+ Models • Zero Signup ($0.00)",
+    apiKeyUrl: "https://aihorde.net",
+    requirements: {
+      loginStatus: "Without Login (Zero Signup / Anonymous API Key: 0000000000)",
+      creditCardStatus: "No Credit Card Required (100% $0.00 Free)",
+      credentialsNeeded: "Anonymous Key '0000000000' (Pre-configured automatically)",
+      connectionType: "AI Horde OpenAI-compatible REST API (oai.aihorde.net/v1)",
+      toolsSupported: "CheapRouter Web Chat, /v1/chat/completions, OpenCode CLI, Kilo",
+    },
+    limits: {
+      rateLimitBadge: "Kudos Queue / Anonymous Priority",
+      rateLimitDetail:
+        "Crowd-sourced GPU cluster powered by community volunteers. The anonymous key ('0000000000') gives completely free access to all text models. Requests join the shared community queue (response times vary based on worker availability; usually 5–30s). Registered users who share GPU workers earn Kudos for higher queue priority.",
+      quotaReset: "Continuous queue processing (Zero daily caps).",
+      rpm: "10–20 req/min",
+      rpd: "Unlimited",
+      dailyLimit: "Unlimited ($0.00 Cost)",
+    },
+    freeModels: [
+      {
+        id: "aphrodite/koboldcpp/L3-8B-Stheno-v3.2",
+        name: "L3 8B Stheno v3.2",
+        pricing: "100% Free",
+        contextWindow: "8k",
+        rpm: "10 RPM",
+        dailyQuota: "Unlimited",
+        notes: "Crowd-sourced community worker",
+      },
+      {
+        id: "aphrodite/Sao10K/L3-8B-Lunaris-v1",
+        name: "L3 8B Lunaris v1",
+        pricing: "100% Free",
+        contextWindow: "8k",
+        rpm: "10 RPM",
+        dailyQuota: "Unlimited",
+        notes: "Creative roleplay & writing",
+      },
+      {
+        id: "aphrodite/meta-llama/Meta-Llama-3-8B-Instruct",
+        name: "Meta Llama 3 8B Instruct",
+        pricing: "100% Free",
+        contextWindow: "8k",
+        rpm: "10 RPM",
+        dailyQuota: "Unlimited",
+        notes: "Fast general instruction",
+      },
+    ],
+    connectSteps: [
+      {
+        step: 1,
+        title: "Anonymous Access Pre-Configured",
+        instruction:
+          "AI Horde uses public community GPUs. CheapRouter automatically supplies the anonymous key '0000000000' — zero registration or credit card needed.",
+      },
+      {
+        step: 2,
+        title: "Fetch All Live Models",
+        instruction:
+          "Click 'Fetch All Models' on the AI Horde card to query oai.aihorde.net/v1/models and live-discover all 28+ active community models.",
+      },
+      {
+        step: 3,
+        title: "Test Connection",
+        instruction:
+          "Click 'Test' on 'aphrodite/koboldcpp/L3-8B-Stheno-v3.2' to verify live queue response from community workers.",
+      },
+      {
+        step: 4,
+        title: "Optional: Add Custom API Key with Kudos",
+        instruction:
+          "If you register an account at aihorde.net or share a GPU worker, you can generate an API key with Kudos to get faster queue priority.",
+        linkUrl: "https://aihorde.net/register",
+        linkLabel: "Register at AI Horde (Optional for Kudos) ↗",
       },
     ],
   },
 };
+
+// Aliases for providers with multiple catalog IDs
+PROVIDER_GUIDES["genspark"] = PROVIDER_GUIDES["genspark-web"];
+PROVIDER_GUIDES["cloudflare-ai"] = PROVIDER_GUIDES["cloudflare"];
+PROVIDER_GUIDES["github-models"] = PROVIDER_GUIDES["github"];
+PROVIDER_GUIDES["pollinations-text"] = PROVIDER_GUIDES["pollinations"];
+PROVIDER_GUIDES["aihorde-community"] = PROVIDER_GUIDES["aihorde"];
 
 /**
  * Universal Fallback Resolver:
@@ -1014,8 +2134,15 @@ export function resolveProviderGuide(
   providerName: string,
   providerData?: any
 ): ProviderGuideData {
-  if (PROVIDER_GUIDES[providerId]) {
-    return PROVIDER_GUIDES[providerId];
+  const directMatch =
+    PROVIDER_GUIDES[providerId] ||
+    (providerId === "cloudflare-ai" ? PROVIDER_GUIDES["cloudflare"] : undefined) ||
+    (providerId === "cloudflare" ? PROVIDER_GUIDES["cloudflare-ai"] : undefined) ||
+    (providerId === "github-models" ? PROVIDER_GUIDES["github"] : undefined) ||
+    (providerId === "pollinations-text" ? PROVIDER_GUIDES["pollinations"] : undefined);
+
+  if (directMatch) {
+    return directMatch;
   }
 
   // Look up catalog metadata
@@ -1065,7 +2192,11 @@ export function resolveProviderGuide(
         quotaReset: "Sliding dynamic window.",
       },
       freeModels: [
-        { id: `${providerId}/default`, name: `${providerName} Model`, notes: "Default open endpoint" },
+        {
+          id: `${providerId}/default`,
+          name: `${providerName} Model`,
+          notes: "Default open endpoint",
+        },
       ],
       connectSteps: [
         {
@@ -1155,7 +2286,19 @@ export function resolveProviderGuide(
           "Rate limits and token quotas as governed by your OAuth account tier.",
         quotaReset: "Governed by upstream provider policy.",
       },
-      freeModels: [],
+      freeModels:
+        Array.isArray(catalogEntry.models) && catalogEntry.models.length > 0
+          ? catalogEntry.models.slice(0, 10).map((m: any) => ({
+              id: typeof m === "string" ? m : m.id || `${providerId}/model`,
+              name: typeof m === "string" ? m : m.name || m.id || `${providerName} Model`,
+              pricing: hasFree ? "Free Tier / Included" : "Standard Tier",
+              contextWindow:
+                typeof m === "object" && m.context_length
+                  ? `${Math.round(m.context_length / 1000)}k`
+                  : undefined,
+              notes: "Available for routing once connected",
+            }))
+          : [],
       connectSteps: [
         {
           step: 1,
@@ -1197,7 +2340,19 @@ export function resolveProviderGuide(
           "Runs directly on your machine or VPS. Zero network cost, no rate limit, no token charges.",
         quotaReset: "Unlimited local speed.",
       },
-      freeModels: [],
+      freeModels:
+        Array.isArray(catalogEntry.models) && catalogEntry.models.length > 0
+          ? catalogEntry.models.slice(0, 10).map((m: any) => ({
+              id: typeof m === "string" ? m : m.id || `${providerId}/model`,
+              name: typeof m === "string" ? m : m.name || m.id || `${providerName} Model`,
+              pricing: "100% Free / Local",
+              contextWindow:
+                typeof m === "object" && m.context_length
+                  ? `${Math.round(m.context_length / 1000)}k`
+                  : undefined,
+              notes: "Local hardware inference",
+            }))
+          : [],
       connectSteps: [
         {
           step: 1,
@@ -1213,8 +2368,7 @@ export function resolveProviderGuide(
         {
           step: 3,
           title: "Test Local Speed",
-          instruction:
-            "Click 'Test' on this provider card to measure instantaneous local latency.",
+          instruction: "Click 'Test' on this provider card to measure instantaneous local latency.",
         },
       ],
     };
@@ -1228,6 +2382,7 @@ export function resolveProviderGuide(
     topSummaryText: hasFree
       ? "Free Tier Available • No credit card required for starter quota"
       : "API Key Required • Standard provider rates",
+    apiKeyUrl: apiKeyUrl || undefined,
     requirements: {
       loginStatus: "Account Required at Provider Developer Console",
       creditCardStatus: hasFree
@@ -1244,7 +2399,19 @@ export function resolveProviderGuide(
         "Limits typically scale from 15 to 60 requests per minute depending on provider account tier. 1,000,000 tokens ≈ roughly 750,000 words or 2,000 chat messages.",
       quotaReset: "Resets dynamically or daily according to upstream dashboard.",
     },
-    freeModels: [],
+    freeModels:
+      Array.isArray(catalogEntry.models) && catalogEntry.models.length > 0
+        ? catalogEntry.models.slice(0, 10).map((m: any) => ({
+            id: typeof m === "string" ? m : m.id || `${providerId}/model`,
+            name: typeof m === "string" ? m : m.name || m.id || `${providerName} Model`,
+            pricing: hasFree ? "Free Tier / Included" : "Standard Tier",
+            contextWindow:
+              typeof m === "object" && m.context_length
+                ? `${Math.round(m.context_length / 1000)}k`
+                : undefined,
+            notes: "Available for routing once connected",
+          }))
+        : [],
     connectSteps: [
       {
         step: 1,
@@ -1252,6 +2419,8 @@ export function resolveProviderGuide(
         instruction: apiKeyUrl
           ? `Visit the developer dashboard at ${apiKeyUrl} and create an API Key.`
           : `Sign in to ${providerName}'s official developer console and copy your API Key.`,
+        linkUrl: apiKeyUrl || undefined,
+        linkLabel: apiKeyUrl ? `Open ${providerName} Developer Portal` : undefined,
       },
       {
         step: 2,
@@ -1321,10 +2490,10 @@ export function CupertinoProviderGuideSheet({
                   guide.authTypeColor === "emerald"
                     ? "bg-emerald-500/15 border-emerald-500/30 text-emerald-400"
                     : guide.authTypeColor === "orange"
-                    ? "bg-amber-500/15 border-amber-500/30 text-amber-400"
-                    : guide.authTypeColor === "purple"
-                    ? "bg-purple-500/15 border-purple-500/30 text-purple-400"
-                    : "bg-blue-500/15 border-blue-500/30 text-blue-400"
+                      ? "bg-amber-500/15 border-amber-500/30 text-amber-400"
+                      : guide.authTypeColor === "purple"
+                        ? "bg-purple-500/15 border-purple-500/30 text-purple-400"
+                        : "bg-blue-500/15 border-blue-500/30 text-blue-400"
                 }`}
               >
                 {guide.authTypeBadge}
@@ -1475,6 +2644,55 @@ export function CupertinoProviderGuideSheet({
                     ⏱ {guide.limits.quotaReset}
                   </p>
                 )}
+
+                {/* Structured Limits Metrics Grid */}
+                {(guide.limits.rpm ||
+                  guide.limits.rpd ||
+                  guide.limits.tpm ||
+                  guide.limits.dailyLimit) && (
+                  <div className="grid grid-cols-2 gap-2 text-xs pt-1">
+                    {guide.limits.rpm && (
+                      <div className="p-2 rounded-lg bg-black/40 border border-white/5 space-y-0.5">
+                        <div className="text-[10px] text-white/50 uppercase font-semibold">
+                          Rate Limit (RPM)
+                        </div>
+                        <div className="text-white font-mono font-medium text-xs">
+                          {guide.limits.rpm}
+                        </div>
+                      </div>
+                    )}
+                    {guide.limits.rpd && (
+                      <div className="p-2 rounded-lg bg-black/40 border border-white/5 space-y-0.5">
+                        <div className="text-[10px] text-white/50 uppercase font-semibold">
+                          Daily Requests (RPD)
+                        </div>
+                        <div className="text-white font-mono font-medium text-xs">
+                          {guide.limits.rpd}
+                        </div>
+                      </div>
+                    )}
+                    {guide.limits.tpm && (
+                      <div className="p-2 rounded-lg bg-black/40 border border-white/5 space-y-0.5">
+                        <div className="text-[10px] text-white/50 uppercase font-semibold">
+                          Tokens / Min (TPM)
+                        </div>
+                        <div className="text-white font-mono font-medium text-xs">
+                          {guide.limits.tpm}
+                        </div>
+                      </div>
+                    )}
+                    {guide.limits.dailyLimit && (
+                      <div className="p-2 rounded-lg bg-black/40 border border-white/5 space-y-0.5">
+                        <div className="text-[10px] text-white/50 uppercase font-semibold">
+                          Daily Allowance
+                        </div>
+                        <div className="text-emerald-300 font-mono font-medium text-xs">
+                          {guide.limits.dailyLimit}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
 
               {/* Free Models List */}
@@ -1492,27 +2710,61 @@ export function CupertinoProviderGuideSheet({
                 </div>
 
                 {guide.freeModels && guide.freeModels.length > 0 ? (
-                  <div className="space-y-1.5">
+                  <div className="space-y-2">
                     {guide.freeModels.map((m) => (
                       <div
                         key={m.id}
-                        className="flex items-center justify-between gap-2 p-1.5 rounded-lg bg-black/30 border border-white/5 hover:border-white/15 transition-all text-xs"
+                        className="flex items-start justify-between gap-2 p-2 rounded-lg bg-black/40 border border-white/5 hover:border-white/15 transition-all text-xs"
                       >
-                        <div className="min-w-0 flex-1">
-                          <div className="font-medium text-white truncate text-xs">{m.name}</div>
-                          <div className="font-mono text-[10px] text-white/50 truncate flex items-center gap-1">
-                            <span>{m.id}</span>
-                            {m.notes && <span className="text-white/30">• {m.notes}</span>}
+                        <div className="min-w-0 flex-1 space-y-1">
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="font-semibold text-white truncate text-xs">
+                              {m.name}
+                            </span>
+                            {m.pricing && (
+                              <span className="px-1.5 py-0.5 rounded text-[9px] font-mono font-semibold bg-emerald-500/15 text-emerald-300 border border-emerald-500/20 shrink-0">
+                                {m.pricing}
+                              </span>
+                            )}
                           </div>
+
+                          <div className="font-mono text-[10px] text-white/50 truncate flex items-center gap-1.5 flex-wrap">
+                            <span className="text-white/70">{m.id}</span>
+                            {m.contextWindow && (
+                              <span className="text-sky-300/80 bg-sky-500/10 px-1 py-0.5 rounded border border-sky-500/20 text-[9px]">
+                                {m.contextWindow}
+                              </span>
+                            )}
+                          </div>
+
+                          {(m.rpm || m.dailyQuota || m.notes) && (
+                            <div className="flex items-center gap-1.5 flex-wrap text-[10px] pt-0.5">
+                              {m.rpm && (
+                                <span className="px-1.5 py-0.5 rounded bg-white/5 text-amber-300/90 font-mono text-[9px] border border-white/10">
+                                  ⚡ {m.rpm}
+                                </span>
+                              )}
+                              {m.dailyQuota && (
+                                <span className="px-1.5 py-0.5 rounded bg-white/5 text-emerald-300/90 font-mono text-[9px] border border-white/10">
+                                  📅 {m.dailyQuota}
+                                </span>
+                              )}
+                              {m.notes && (
+                                <span className="text-white/50 text-[10px] leading-tight">
+                                  • {m.notes}
+                                </span>
+                              )}
+                            </div>
+                          )}
                         </div>
 
                         <button
                           type="button"
                           onClick={() => copy(m.id)}
-                          className="size-6 shrink-0 rounded flex items-center justify-center bg-white/5 hover:bg-white/15 text-white/60 hover:text-white transition-colors"
+                          className="size-7 shrink-0 rounded flex items-center justify-center bg-white/5 hover:bg-white/15 text-white/60 hover:text-white transition-colors mt-0.5"
                           title="Copy model ID"
                         >
-                          <span className="material-symbols-outlined text-[12px]">
+                          <span className="material-symbols-outlined text-[13px]">
                             {copied ? "check" : "content_copy"}
                           </span>
                         </button>
@@ -1521,8 +2773,8 @@ export function CupertinoProviderGuideSheet({
                   </div>
                 ) : (
                   <p className="text-xs text-white/60 py-2">
-                    Models for this provider are synced dynamically once connected. Click &apos;Test&apos; on
-                    any model to verify.
+                    Models for this provider are synced dynamically once connected. Click
+                    &apos;Test&apos; on any model to verify.
                   </p>
                 )}
               </div>
@@ -1531,7 +2783,35 @@ export function CupertinoProviderGuideSheet({
 
           {/* ═══════════ TAB 3: HOW TO CONNECT (NOT "How to Use"!) ═══════════ */}
           {activeTab === "connect" && (
-            <div className="space-y-2 animate-in fade-in duration-150">
+            <div className="space-y-2.5 animate-in fade-in duration-150">
+              {/* Direct API Key Generation Link Banner */}
+              {guide.apiKeyUrl && (
+                <a
+                  href={guide.apiKeyUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center justify-between p-2.5 rounded-xl border border-sky-500/30 bg-sky-500/10 hover:bg-sky-500/20 text-sky-200 transition-all text-xs font-medium group shadow-sm shadow-sky-950/20"
+                >
+                  <span className="flex items-center gap-2 min-w-0">
+                    <span className="material-symbols-outlined text-base text-sky-400 shrink-0">
+                      key
+                    </span>
+                    <span className="truncate">
+                      <span className="block text-white font-semibold text-xs truncate">
+                        Generate API Key / Token
+                      </span>
+                      <span className="text-[10px] text-sky-300/80 font-normal truncate block font-mono">
+                        {guide.apiKeyUrl}
+                      </span>
+                    </span>
+                  </span>
+                  <span className="inline-flex items-center gap-1 text-[11px] px-2 py-1 rounded-md bg-sky-500/20 text-sky-300 font-medium shrink-0 group-hover:bg-sky-500/30">
+                    Open Portal
+                    <span className="material-symbols-outlined text-xs">open_in_new</span>
+                  </span>
+                </a>
+              )}
+
               <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-2.5">
                 <div className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-emerald-300 mb-2">
                   <span className="material-symbols-outlined text-[13px] text-emerald-400">
@@ -1540,7 +2820,7 @@ export function CupertinoProviderGuideSheet({
                   How to Connect in CheapRouter (Step-by-Step)
                 </div>
 
-                <div className="space-y-2">
+                <div className="space-y-2.5">
                   {guide.connectSteps.map((step) => (
                     <div key={step.step} className="flex items-start gap-2.5 text-xs">
                       <span className="size-4 shrink-0 rounded-full bg-emerald-500/20 text-emerald-300 text-[10px] font-bold flex items-center justify-center mt-0.5 border border-emerald-500/30">
@@ -1551,6 +2831,19 @@ export function CupertinoProviderGuideSheet({
                         <p className="text-[11px] text-white/75 leading-relaxed mt-0.5">
                           {step.instruction}
                         </p>
+                        {step.linkUrl && (
+                          <a
+                            href={step.linkUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 mt-1 px-2 py-0.5 rounded bg-sky-500/15 hover:bg-sky-500/25 border border-sky-500/30 text-[11px] text-sky-300 hover:text-sky-200 font-medium transition-colors"
+                          >
+                            <span className="material-symbols-outlined text-[12px] text-sky-400">
+                              open_in_new
+                            </span>
+                            <span>{step.linkLabel || "Generate Credentials Here"}</span>
+                          </a>
+                        )}
                       </div>
                     </div>
                   ))}
@@ -1560,11 +2853,16 @@ export function CupertinoProviderGuideSheet({
               {/* Quick Admin Tip Card */}
               <div className="rounded-xl border border-white/10 bg-white/5 p-2.5 text-[11px] text-white/70 space-y-1">
                 <div className="font-semibold text-white/90 text-xs flex items-center gap-1.5">
-                  <span className="material-symbols-outlined text-[13px] text-sky-400">tips_and_updates</span>
+                  <span className="material-symbols-outlined text-[13px] text-sky-400">
+                    tips_and_updates
+                  </span>
                   Admin Verification Tip
                 </div>
                 <p className="leading-relaxed">
-                  After saving credentials, always click the <strong className="text-white">Test</strong> button on the provider card. A green latency response confirms the provider is ready for automated fallback and combo routing.
+                  After saving credentials, always click the{" "}
+                  <strong className="text-white">Test</strong> button on the provider card. A green
+                  latency response confirms the provider is ready for automated fallback and combo
+                  routing.
                 </p>
               </div>
             </div>

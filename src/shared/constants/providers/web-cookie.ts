@@ -94,6 +94,22 @@ export const WEB_COOKIE_PROVIDERS = {
     riskNoticeVariant: "webCookie",
     toolCalling: "emulated",
   },
+  "genspark-web": {
+    id: "genspark-web",
+    serviceKinds: ["llm"],
+    alias: "genspark",
+    name: "Genspark AI Web",
+    icon: "auto_awesome",
+    color: "#6366F1",
+    textIcon: "GS",
+    website: "https://www.genspark.ai",
+    hasFree: true,
+    freeNote: "100 credits/day free (No Credit Card) — Claude 3.5 Sonnet, GPT-4o & Spark models",
+    authHint:
+      "Paste the full cookie line from DevTools → Application → Cookies (GS_COOKIE) or connect via local genspark2api reverse proxy.",
+    subscriptionRisk: true,
+    riskNoticeVariant: "webCookie",
+  },
   "muse-spark-web": {
     id: "muse-spark-web",
     serviceKinds: ["llm"],

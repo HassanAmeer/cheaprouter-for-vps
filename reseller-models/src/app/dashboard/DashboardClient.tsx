@@ -374,7 +374,7 @@ export default function DashboardClient({
             {!sidebarCollapsed && <span>Image</span>}
           </Link>
 
-          <Link href="/" className="uno-dash-nav-item">
+          <Link href="/docs" className="uno-dash-nav-item">
             <span className="uno-dash-nav-icon">
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />

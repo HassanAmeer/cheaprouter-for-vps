@@ -12,7 +12,7 @@ export default function AffiliateView({ user }: AffiliateViewProps) {
     return "7yMv";
   }, []);
 
-  const inviteUrl = `https://unorouter.com/register?aff=${refCode}`;
+  const inviteUrl = `https://cheaprouter.com/register?aff=${refCode}`;
 
   // Badge Generator state
   const [badgeType, setBadgeType] = useState("Referral");
@@ -34,13 +34,13 @@ export default function AffiliateView({ user }: AffiliateViewProps) {
     navigator.clipboard?.writeText(text).then(cb);
   };
 
-  const badgeImgUrl = `https://unorouter.com/api/ops/badge/referral?locale=${badgeLang.toLowerCase()}&theme=${badgeTheme.toLowerCase()}&size=${badgeSize.toLowerCase()}&ref=${refCode}`;
+  const badgeImgUrl = `https://cheaprouter.com/api/ops/badge/referral?locale=${badgeLang.toLowerCase()}&theme=${badgeTheme.toLowerCase()}&size=${badgeSize.toLowerCase()}&ref=${refCode}`;
 
   const embedSnippets = {
-    HTML: `<a href="https://unorouter.com/?aff=${refCode}" target="_blank">\n  <img src="${badgeImgUrl}" alt="UnoRouter" />\n</a>`,
-    Markdown: `[![UnoRouter](${badgeImgUrl})](https://unorouter.com/?aff=${refCode})`,
-    BBCode: `[URL=https://unorouter.com/?aff=${refCode}][IMG]${badgeImgUrl}[/IMG][/URL]`,
-    URL: `https://unorouter.com/?aff=${refCode}`,
+    HTML: `<a href="https://cheaprouter.com/?aff=${refCode}" target="_blank">\n  <img src="${badgeImgUrl}" alt="CheapRouter" />\n</a>`,
+    Markdown: `[![CheapRouter](${badgeImgUrl})](https://cheaprouter.com/?aff=${refCode})`,
+    BBCode: `[URL=https://cheaprouter.com/?aff=${refCode}][IMG]${badgeImgUrl}[/IMG][/URL]`,
+    URL: `https://cheaprouter.com/?aff=${refCode}`,
   };
 
   return (
@@ -403,7 +403,7 @@ export default function AffiliateView({ user }: AffiliateViewProps) {
 
               <div className="uno-badge-preview-bottom">
                 <span className="mono" style={{ fontSize: 12, color: badgeTheme === "Light" ? "#1e293b" : "#cbd5e1" }}>
-                  unorouter.com/?aff={refCode}
+                  cheaprouter.com/?aff={refCode}
                 </span>
                 <span className="uno-badge-btn-get">
                   GET STARTED

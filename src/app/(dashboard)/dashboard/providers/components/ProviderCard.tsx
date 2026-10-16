@@ -87,6 +87,8 @@ interface ProviderCardProps {
     baseUrl?: string | null;
     prefix?: string | null;
     isActive?: boolean;
+    isNew?: boolean;
+    badge?: string;
   };
   stats: ProviderStats;
   authType?: string;
@@ -326,6 +328,7 @@ const ProviderCard = forwardRef<ProviderCardHandle, ProviderCardProps>(function 
   const handleTestClick = (e: MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
     e.stopPropagation();
+    addRecentProvider(providerId, provider.name);
     setTestExpanded((v) => !v);
   };
   const handleRiskIndicatorActivate = (e: MouseEvent | KeyboardEvent) => {
@@ -469,9 +472,7 @@ const ProviderCard = forwardRef<ProviderCardHandle, ProviderCardProps>(function 
     return null;
   })();
 
-  const handleToggle = (
-    event: MouseEvent<HTMLDivElement | HTMLButtonElement>
-  ) => {
+  const handleToggle = (event: MouseEvent<HTMLDivElement | HTMLButtonElement>) => {
     event.preventDefault();
     event.stopPropagation();
     onToggle(allDisabled);
@@ -586,6 +587,7 @@ const ProviderCard = forwardRef<ProviderCardHandle, ProviderCardProps>(function 
                   onClick={(e) => {
                     e.preventDefault();
                     e.stopPropagation();
+                    addRecentProvider(providerId, provider.name);
                     if (onOpenGuide) {
                       onOpenGuide(providerId, provider.name);
                     } else if (typeof window !== "undefined") {
@@ -595,7 +597,9 @@ const ProviderCard = forwardRef<ProviderCardHandle, ProviderCardProps>(function 
                         })
                       );
                     } else {
-                      router.push(`/dashboard/providers/${encodeURIComponent(providerId)}?action=guide`);
+                      router.push(
+                        `/dashboard/providers/${encodeURIComponent(providerId)}?action=guide`
+                      );
                     }
                   }}
                   className="size-5 rounded-md flex items-center justify-center border border-border/70 hover:border-sky-500/70 bg-transparent hover:bg-sky-500/10 text-text-muted hover:text-sky-400 transition-all shadow-2xs"
@@ -619,8 +623,15 @@ const ProviderCard = forwardRef<ProviderCardHandle, ProviderCardProps>(function 
               isCcCompatible ||
               isAnthropicCompatible ||
               isSponsorPartner ||
-              Boolean(openRouterStat)) && (
+              Boolean(openRouterStat) ||
+              provider.isNew ||
+              provider.badge === "NEW") && (
               <div className="flex flex-wrap items-center gap-1">
+                {(provider.isNew || provider.badge === "NEW") && (
+                  <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 leading-none shadow-2xs">
+                    NEW
+                  </span>
+                )}
                 {kimiOfficialSupporterChip}
                 {cheaperInferenceSupporterChip}
                 {openRouterPopularityChip}
@@ -816,7 +827,9 @@ const ProviderCard = forwardRef<ProviderCardHandle, ProviderCardProps>(function 
                         name: provider.name,
                       })}
                     >
-                      <span className="material-symbols-outlined text-[14px] leading-none">add</span>
+                      <span className="material-symbols-outlined text-[14px] leading-none">
+                        add
+                      </span>
                       Connect
                     </button>
                   </>

@@ -22,6 +22,7 @@ export const DUCKDUCKGO_MODEL_ALIASES: Readonly<Record<string, string>> = {
   // retired Llama (dropped from Duck.ai free) → nearest general free model
   "llama-4-scout": "gpt-5.4-mini",
   // renamed/versioned ids
+  "gpt-5.6-luna": "gpt-6-luna",
   "claude-3-5-haiku-20241022": "claude-haiku-4-5",
   "mistral-small-2501": "mistral-small-2603",
   "gpt-oss-120b": "tinfoil/gpt-oss-120b",
@@ -38,7 +39,10 @@ export function normalizeDuckDuckGoModel(model: string | undefined): string {
 // /duckchat/v1/models. When the live list is unavailable (`null` or empty),
 // pass the request through untouched so an offline probe can never silently
 // rewrite an otherwise valid model id.
-export function pickDuckDuckGoModel(requested: string, liveIds: ReadonlySet<string> | null): string {
+export function pickDuckDuckGoModel(
+  requested: string,
+  liveIds: ReadonlySet<string> | null
+): string {
   if (!liveIds || liveIds.size === 0) return requested;
   if (liveIds.has(requested)) return requested;
   const aliased = DUCKDUCKGO_MODEL_ALIASES[requested] ?? requested;

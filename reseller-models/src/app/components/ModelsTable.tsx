@@ -352,18 +352,27 @@ export default function ModelsTable({ providers = [], combos = [] }: ModelsTable
     return list;
   }, [catalogList, combos]);
 
-  // Modality Counts (Screenshot standards)
+  // Modality Counts (computed dynamically from modelsList)
   const counts = useMemo(() => {
-    return {
-      All: 214,
-      Text: 142,
-      Image: 55,
-      Audio: 8,
+    const res = {
+      All: modelsList.length,
+      Text: 0,
+      Image: 0,
+      Audio: 0,
       Video: 0,
-      Embeddings: 7,
-      Decisions: 2,
+      Embeddings: 0,
+      Decisions: 0,
     };
-  }, []);
+    for (const m of modelsList) {
+      if (m.modality === "text") res.Text++;
+      else if (m.modality === "image") res.Image++;
+      else if (m.modality === "audio") res.Audio++;
+      else if (m.modality === "video") res.Video++;
+      else if (m.modality === "embeddings") res.Embeddings++;
+      else if (m.modality === "decisions") res.Decisions++;
+    }
+    return res;
+  }, [modelsList]);
 
   // Filtered & Sorted items
   const filteredModels = useMemo(() => {
@@ -377,11 +386,12 @@ export default function ModelsTable({ providers = [], combos = [] }: ModelsTable
         if (activeTab === "Embeddings" && m.modality !== "embeddings") return false;
         if (activeTab === "Decisions" && m.modality !== "decisions") return false;
 
-        // Modalities sidebar checkbox filter
-        const activeModalities = Object.entries(modalities)
-          .filter(([_, active]) => active)
-          .map(([key]) => key.toLowerCase());
-        if (activeModalities.length > 0 && activeModalities.length < 5) {
+        // Modalities sidebar checkbox filter (applies to the modalities covered in sidebar checkboxes)
+        const sidebarChecklistModalities = ["text", "image", "file", "audio", "video"];
+        if (sidebarChecklistModalities.includes(m.modality)) {
+          const activeModalities = Object.entries(modalities)
+            .filter(([_, active]) => active)
+            .map(([key]) => key.toLowerCase());
           if (!activeModalities.includes(m.modality)) return false;
         }
 
@@ -406,13 +416,18 @@ export default function ModelsTable({ providers = [], combos = [] }: ModelsTable
 
         // Compare only (show flagship popular models)
         if (compareOnly) {
+          const nameLower = m.name.toLowerCase();
           const isFlagship =
-            m.name.includes("gpt-4") ||
-            m.name.includes("claude-3-5") ||
-            m.name.includes("claude-sonnet") ||
-            m.name.includes("gemini") ||
-            m.name.includes("llama-3.3") ||
-            m.name.includes("deepseek");
+            nameLower.includes("gpt-4") ||
+            nameLower.includes("gpt-5") ||
+            nameLower.includes("claude-3-5") ||
+            nameLower.includes("claude-3-7") ||
+            nameLower.includes("claude-sonnet") ||
+            nameLower.includes("gemini") ||
+            nameLower.includes("llama-3") ||
+            nameLower.includes("deepseek") ||
+            nameLower.includes("o1") ||
+            nameLower.includes("o3");
           if (!isFlagship) return false;
         }
 

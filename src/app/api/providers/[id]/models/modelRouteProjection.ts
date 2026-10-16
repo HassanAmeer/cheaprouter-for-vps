@@ -19,7 +19,12 @@ export function filterModelsForRoute<
 }
 
 function toLiveModel(item: Record<string, unknown>): { id: string; name: string } | null {
-  const itemId = typeof item.id === "string" ? item.id.trim() : "";
+  const itemId =
+    typeof item.id === "string" && item.id.trim().length > 0
+      ? item.id.trim()
+      : typeof item.name === "string" && item.name.trim().length > 0
+        ? item.name.trim()
+        : "";
   if (!itemId) return null;
   const itemName =
     typeof item.display_name === "string"
@@ -47,8 +52,15 @@ async function fetchLiveNoAuthModels(
     if (!liveResponse.ok) return null;
 
     const data = await liveResponse.json();
+    const rawList = Array.isArray(data)
+      ? data
+      : Array.isArray(data?.data)
+        ? data.data
+        : Array.isArray(data?.models)
+          ? data.models
+          : [];
     const liveModels: Array<{ id: string; name: string }> = (
-      (data.data || data.models || []) as Array<Record<string, unknown>>
+      rawList as Array<Record<string, unknown>>
     )
       .map(toLiveModel)
       .filter((model): model is { id: string; name: string } => model !== null);

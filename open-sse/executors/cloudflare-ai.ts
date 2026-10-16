@@ -5,8 +5,10 @@ type CloudflareCredentials = {
   apiKey?: string;
   accessToken?: string;
   accountId?: string;
+  email?: string;
   providerSpecificData?: {
     accountId?: string;
+    email?: string;
   } | null;
 } | null;
 
@@ -15,7 +17,7 @@ type CloudflareCredentials = {
  * Cloudflare Workers AI uses the authenticated user's account ID in the URL.
  *
  * URL pattern: https://api.cloudflare.com/client/v4/accounts/{accountId}/ai/v1/chat/completions
- * Auth: Bearer <API Token>
+ * Auth: Bearer <API Token> OR X-Auth-Key / X-Auth-Email (Global API Key)
  * Docs: https://developers.cloudflare.com/workers-ai/
  *
  * Free tier: 10,000 Neurons/day = ~150 LLM responses or 500s Whisper audio
@@ -51,10 +53,23 @@ export class CloudflareAIExecutor extends BaseExecutor {
   }
 
   buildHeaders(credentials: CloudflareCredentials, stream = true): Record<string, string> {
+    const key = credentials?.apiKey || credentials?.accessToken || "";
+    const email =
+      credentials?.email ||
+      credentials?.providerSpecificData?.email ||
+      process.env.CLOUDFLARE_EMAIL ||
+      "";
+
     const headers: Record<string, string> = {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${credentials.apiKey || credentials.accessToken}`,
     };
+
+    if (key.startsWith("cfk_") && email) {
+      headers["X-Auth-Key"] = key;
+      headers["X-Auth-Email"] = email;
+    } else {
+      headers["Authorization"] = `Bearer ${key}`;
+    }
 
     if (stream) {
       headers["Accept"] = "text/event-stream";

@@ -11,6 +11,7 @@ import {
 import ProviderIcon from "@/shared/components/ProviderIcon";
 import { useApiKey } from "@/app/(dashboard)/dashboard/providers/hooks/useApiKey";
 import { useProviderModels } from "@/app/(dashboard)/dashboard/providers/hooks/useProviderModels";
+import { addRecentProvider } from "@/lib/providers/recentProviders";
 
 interface SlideOverProvider {
   id?: string;
@@ -77,6 +78,12 @@ function ProviderTestSlideOverPanel({
       document.body.style.overflow = prev;
     };
   }, []);
+
+  useEffect(() => {
+    if (providerId && provider?.name) {
+      addRecentProvider(providerId, provider.name);
+    }
+  }, [providerId, provider?.name]);
 
   const color = provider.color || "#64748b";
   const modelOptions = models.length > 0 ? models : [];

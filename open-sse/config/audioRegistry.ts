@@ -441,6 +441,19 @@ export const AUDIO_SPEECH_PROVIDERS: Record<string, AudioProvider> = {
     models: [{ id: "qwen3-tts", name: "Qwen3 TTS" }],
   },
 
+  uncloseai: {
+    id: "uncloseai",
+    baseUrl: "https://speech.ai.unturf.com/v1/audio/speech",
+    authType: "none",
+    authHeader: "none",
+    format: "openai",
+    models: [
+      { id: "tts-1-f5", name: "F5-TTS Voice Cloning (🆓 Free)" },
+      { id: "tts-1-qwen", name: "Qwen3-TTS (🆓 Free)" },
+      { id: "tts-1", name: "UncloseAI Default TTS (🆓 Free)" },
+    ],
+  },
+
   // ── Cloud TTS Providers (#248) ────────────────────────────────────────────
 
   inworld: {

@@ -92,7 +92,12 @@ import {
 } from "@/lib/providerModels/modelDiscovery";
 import { buildProviderModelsUrl, getDiscoveryClientVersionOptions } from "./discoveryClientVersion";
 import { getAdobeModels } from "./adobeFireflyDiscovery";
-import { getSyncedAvailableModels, getCustomModels, replaceCustomModels, getModelIsHidden } from "@/lib/db/models";
+import {
+  getSyncedAvailableModels,
+  getCustomModels,
+  replaceCustomModels,
+  getModelIsHidden,
+} from "@/lib/db/models";
 import { isConnectionUnavailableToAuxiliaryActivity } from "@/lib/exclusiveLeaseIsolation";
 import { AUTHZ_HEADER_PEER_LOCALITY } from "@/server/authz/headers";
 import { fetchCursorAgentModels } from "@/lib/providerModels/cursorAgent";
@@ -235,7 +240,8 @@ export async function GET(
     }
 
     if (connection && matchedNode && !getProviderBaseUrl(connection.providerSpecificData)) {
-      const existingData = (connection.providerSpecificData as Record<string, unknown> | undefined) || {};
+      const existingData =
+        (connection.providerSpecificData as Record<string, unknown> | undefined) || {};
       connection.providerSpecificData = {
         ...existingData,
         baseUrl: matchedNode.baseUrl,
@@ -543,32 +549,46 @@ export async function GET(
           await persistDiscoveredModels(matchedNode.prefix, connectionId, models).catch(() => []);
         }
       }
-      if (id && id !== provider && (!matchedNode || (id !== matchedNode.id && id !== matchedNode.prefix))) {
+      if (
+        id &&
+        id !== provider &&
+        (!matchedNode || (id !== matchedNode.id && id !== matchedNode.prefix))
+      ) {
         await persistDiscoveredModels(id, connectionId, models).catch(() => []);
       }
 
       // Automatically persist to customModels table in DB so the models remain immediately available
       if (Array.isArray(models) && models.length > 0) {
-        const modelsToSave = models.map((m: any) => {
-          const rawId = m.id || m.modelId || m.name;
-          const modelId = typeof rawId === "string" ? rawId.trim() : String(rawId ?? "").trim();
-          const capInfo = extractModelCapabilities(m);
-          return {
-            id: modelId,
-            name: m.name || m.modelName || modelId,
-            source: "imported",
-            apiFormat: m.apiFormat || "chat-completions",
-            supportedEndpoints: Array.isArray(m.supportedEndpoints) ? m.supportedEndpoints : ["chat"],
-            ...(m.targetFormat ? { targetFormat: m.targetFormat } : {}),
-            ...(typeof m.inputTokenLimit === "number" ? { inputTokenLimit: m.inputTokenLimit } : {}),
-            ...(typeof m.max_input_tokens === "number" ? { inputTokenLimit: m.max_input_tokens } : {}),
-            ...(typeof m.outputTokenLimit === "number" ? { outputTokenLimit: m.outputTokenLimit } : {}),
-            supportsVision: capInfo.supportsVision,
-            reasoning: capInfo.reasoning,
-            isFree: capInfo.isFree,
-            capabilities: capInfo.capabilities,
-          };
-        }).filter((item) => Boolean(item.id));
+        const modelsToSave = models
+          .map((m: any) => {
+            const rawId = m.id || m.modelId || m.name;
+            const modelId = typeof rawId === "string" ? rawId.trim() : String(rawId ?? "").trim();
+            const capInfo = extractModelCapabilities(m);
+            return {
+              id: modelId,
+              name: m.name || m.modelName || modelId,
+              source: "imported",
+              apiFormat: m.apiFormat || "chat-completions",
+              supportedEndpoints: Array.isArray(m.supportedEndpoints)
+                ? m.supportedEndpoints
+                : ["chat"],
+              ...(m.targetFormat ? { targetFormat: m.targetFormat } : {}),
+              ...(typeof m.inputTokenLimit === "number"
+                ? { inputTokenLimit: m.inputTokenLimit }
+                : {}),
+              ...(typeof m.max_input_tokens === "number"
+                ? { inputTokenLimit: m.max_input_tokens }
+                : {}),
+              ...(typeof m.outputTokenLimit === "number"
+                ? { outputTokenLimit: m.outputTokenLimit }
+                : {}),
+              supportsVision: capInfo.supportsVision,
+              reasoning: capInfo.reasoning,
+              isFree: capInfo.isFree,
+              capabilities: capInfo.capabilities,
+            };
+          })
+          .filter((item) => Boolean(item.id));
 
         const saveTargets = new Set<string>([provider]);
         if (matchedNode) {
@@ -953,8 +973,8 @@ export async function GET(
       isOpenAICompatibleProvider(connection.id) ||
       Boolean(
         connection.providerSpecificData &&
-          getProviderBaseUrl(connection.providerSpecificData) &&
-          !isAnthropicCompatibleProvider(provider)
+        getProviderBaseUrl(connection.providerSpecificData) &&
+        !isAnthropicCompatibleProvider(provider)
       );
 
     if (
@@ -2384,8 +2404,7 @@ export async function GET(
       const liveModels = await fetchCodexDiscoveryModels({
         accessToken: accessToken || null,
         providerSpecificData: connection.providerSpecificData as
-          | Record<string, unknown>
-          | undefined,
+          Record<string, unknown> | undefined,
         fetchImpl: (url, init) =>
           safeOutboundFetch(url, {
             ...SAFE_OUTBOUND_FETCH_PRESETS.modelsDiscovery,
@@ -2512,8 +2531,7 @@ export async function GET(
       }
       return NextResponse.json(
         {
-          error:
-            `No API key configured for provider "${provider}". Please add an API key or connection in Connections before fetching upstream models.`,
+          error: `No API key configured for provider "${provider}". Please add an API key or connection in Connections before fetching upstream models.`,
           statusCode: 400,
         },
         { status: 400 }
@@ -2562,9 +2580,45 @@ export async function GET(
     }
     if (provider === "cloudflare-ai") {
       const pData = asRecord(connection.providerSpecificData);
-      const accountId =
+      let accountId =
         (typeof pData.accountId === "string" && pData.accountId) ||
+        (typeof (connection as Record<string, unknown>).accountId === "string" &&
+          (connection as Record<string, unknown>).accountId) ||
         process.env.CLOUDFLARE_ACCOUNT_ID;
+
+      if (!accountId && token) {
+        try {
+          const email =
+            (typeof connection.email === "string" && connection.email) ||
+            (typeof pData.email === "string" && pData.email) ||
+            process.env.CLOUDFLARE_EMAIL ||
+            "";
+          const cfHeaders: Record<string, string> = { "Content-Type": "application/json" };
+          if (token.startsWith("cfk_") && email) {
+            cfHeaders["X-Auth-Key"] = token;
+            cfHeaders["X-Auth-Email"] = email;
+          } else {
+            cfHeaders["Authorization"] = `Bearer ${token}`;
+          }
+          const accRes = await safeOutboundFetch("https://api.cloudflare.com/client/v4/accounts", {
+            ...SAFE_OUTBOUND_FETCH_PRESETS.modelsDiscovery,
+            guard: getProviderOutboundGuard(),
+            proxyConfig: proxy,
+            method: "GET",
+            headers: cfHeaders,
+          });
+          if (accRes.ok) {
+            const accData = await accRes.json();
+            const firstAccount = accData?.result?.[0]?.id;
+            if (typeof firstAccount === "string" && firstAccount) {
+              accountId = firstAccount;
+            }
+          }
+        } catch {
+          // ignore auto-discovery error and let validation handle missing accountId below
+        }
+      }
+
       if (!accountId) {
         return NextResponse.json(
           { error: "Cloudflare Workers AI requires an Account ID in provider settings." },
