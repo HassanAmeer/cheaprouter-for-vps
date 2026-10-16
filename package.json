@@ -1,5 +1,5 @@
 {
-  "name": "cheaproute",
+  "name": "cheaprouter",
   "version": "1.0.0",
   "description": "Unified AI router with 370 providers, RTK+Caveman compression, auto fallback, MCP/A2A, desktop, PWA, and OpenAI-compatible APIs.",
   "type": "module",
@@ -11,7 +11,7 @@
     "config/cli-tools-manifest.json",
     "bin/",
     "dist/",
-    "@cheaproute/",
+    "@cheaprouter/",
     "open-sse/",
     "src/domain/",
     "src/lib/",

@@ -23,7 +23,7 @@ const LOCAL_DB_IMPORT_RESTRICTION = {
 };
 
 const EXECUTOR_IMPORT_RESTRICTION = {
-  regex: "^(?:@cheaproute/|@omniroute/)?open-sse/executors(?:/|$)",
+  regex: "^(?:@cheaprouter/|@cheaproute/|@omniroute/)?open-sse/executors(?:/|$)",
   message: "Executor implementations must stay behind an open-sse handler or service boundary.",
 };
 

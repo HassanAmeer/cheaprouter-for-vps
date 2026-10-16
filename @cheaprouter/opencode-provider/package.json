@@ -1,7 +1,7 @@
 {
-  "name": "@cheaproute/opencode-provider",
+  "name": "@cheaprouter/opencode-provider",
   "version": "0.1.0",
-  "description": "DEPRECATED — use @cheaproute/opencode-plugin instead (it fetches the live CheapRoute /v1/models catalog at startup, so models never drift). This static-config generator still works but is no longer the recommended path. OpenCode provider helper for the CheapRoute AI Gateway.",
+  "description": "DEPRECATED — use @cheaprouter/opencode-plugin instead (it fetches the live CheapRouter /v1/models catalog at startup, so models never drift). This static-config generator still works but is no longer the recommended path. OpenCode provider helper for the CheapRouter AI Gateway.",
   "type": "module",
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
@@ -39,12 +39,12 @@
   "repository": {
     "type": "git",
     "url": "git+https://github.com/diegosouzapw/OmniRoute.git",
-    "directory": "@cheaproute/opencode-provider"
+    "directory": "@cheaprouter/opencode-provider"
   },
   "bugs": {
     "url": "https://github.com/diegosouzapw/OmniRoute/issues"
   },
-  "homepage": "https://github.com/diegosouzapw/OmniRoute/tree/main/%40cheaproute/opencode-provider#readme",
+  "homepage": "https://github.com/diegosouzapw/OmniRoute/tree/main/%40cheaprouter/opencode-provider#readme",
   "engines": {
     "node": ">=22.22.3"
   },
