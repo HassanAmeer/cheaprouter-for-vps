@@ -638,8 +638,8 @@ echo $result["choices"][0]["message"]["content"];`,
         display: "flex",
         flexDirection: "column",
         gap: "36px",
-        maxWidth: "960px",
-        margin: "0 auto",
+        width: "100%",
+        maxWidth: "100%",
         paddingBottom: "80px",
       }}
     >

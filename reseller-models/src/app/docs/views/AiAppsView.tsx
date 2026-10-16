@@ -165,7 +165,8 @@ export function AiAppsView({ onSelectGuide }: AiAppsViewProps) {
   return (
     <div
       style={{
-        maxWidth: "720px",
+        width: "100%",
+        maxWidth: "100%",
         paddingBottom: "96px",
         color: C.text,
         fontFamily: "'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif",

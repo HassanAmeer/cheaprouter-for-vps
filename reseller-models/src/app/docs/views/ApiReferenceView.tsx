@@ -69,8 +69,8 @@ export default function ApiReferenceView({
   return (
     <div
       style={{
-        maxWidth: "1020px",
-        margin: "0 auto",
+        width: "100%",
+        maxWidth: "100%",
         paddingBottom: "80px",
         display: "flex",
         flexDirection: "column",

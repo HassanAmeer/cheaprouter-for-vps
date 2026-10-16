@@ -17,8 +17,8 @@ export default function PlaygroundView({ baseUrl = "http://localhost:3000" }: { 
         display: "flex",
         flexDirection: "column",
         gap: "24px",
-        maxWidth: "1020px",
-        margin: "0 auto",
+        width: "100%",
+        maxWidth: "100%",
         paddingBottom: "80px",
       }}
     >

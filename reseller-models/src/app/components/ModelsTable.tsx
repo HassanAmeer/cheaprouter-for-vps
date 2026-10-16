@@ -248,6 +248,10 @@ interface ModelsTableProps {
 }
 
 export default function ModelsTable({ providers = [], combos = [] }: ModelsTableProps) {
+  // Sidebar open/collapse state
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [viewMode, setViewMode] = useState<"table" | "grid">("table");
+
   // Filters state
   const [modalities, setModalities] = useState<Record<string, boolean>>({
     Text: true,
@@ -260,6 +264,10 @@ export default function ModelsTable({ providers = [], combos = [] }: ModelsTable
   const [hideFree, setHideFree] = useState(false);
   const [discountedOnly, setDiscountedOnly] = useState(false);
   const [minContext, setMinContext] = useState(0);
+  const [maxInputPrice, setMaxInputPrice] = useState<number>(0);
+  const [maxOutputPrice, setMaxOutputPrice] = useState<number>(0);
+  const [compareOnly, setCompareOnly] = useState(false);
+
   const [collapsedSections, setCollapsedSections] = useState<Record<string, boolean>>({});
   const toggleSection = (key: string) => {
     setCollapsedSections((prev) => ({ ...prev, [key]: !prev[key] }));
@@ -270,6 +278,40 @@ export default function ModelsTable({ providers = [], combos = [] }: ModelsTable
   const [search, setSearch] = useState("");
   const [sortField, setSortField] = useState<keyof ModelLibraryItem>("released");
   const [sortAsc, setSortAsc] = useState(false);
+
+  const resetAllFilters = () => {
+    setModalities({
+      Text: true,
+      Image: true,
+      File: false,
+      Audio: true,
+      Video: false,
+    });
+    setFunctionCallingOnly(false);
+    setHideFree(false);
+    setDiscountedOnly(false);
+    setMinContext(0);
+    setMaxInputPrice(0);
+    setMaxOutputPrice(0);
+    setCompareOnly(false);
+    setSearch("");
+  };
+
+  const hasActiveFilters = Boolean(
+    !modalities.Text ||
+    !modalities.Image ||
+    modalities.File ||
+    !modalities.Audio ||
+    modalities.Video ||
+    functionCallingOnly ||
+    hideFree ||
+    discountedOnly ||
+    minContext > 0 ||
+    maxInputPrice > 0 ||
+    maxOutputPrice > 0 ||
+    compareOnly ||
+    search.trim()
+  );
 
   // Pagination state — 100 models per page
   const [currentPage, setCurrentPage] = useState<number>(1);
@@ -335,12 +377,44 @@ export default function ModelsTable({ providers = [], combos = [] }: ModelsTable
         if (activeTab === "Embeddings" && m.modality !== "embeddings") return false;
         if (activeTab === "Decisions" && m.modality !== "decisions") return false;
 
+        // Modalities sidebar checkbox filter
+        const activeModalities = Object.entries(modalities)
+          .filter(([_, active]) => active)
+          .map(([key]) => key.toLowerCase());
+        if (activeModalities.length > 0 && activeModalities.length < 5) {
+          if (!activeModalities.includes(m.modality)) return false;
+        }
+
         // Function calling
         if (functionCallingOnly && !m.hasFunctionCalling) return false;
 
         // Pricing filters
         if (hideFree && m.isFree) return false;
         if (discountedOnly && !m.inputDiscount && !m.outputDiscount) return false;
+
+        // Max Input Pricing
+        if (maxInputPrice > 0) {
+          const num = parseFloat(m.inputPrice.replace(/[^0-9.]/g, ""));
+          if (!isNaN(num) && num > maxInputPrice) return false;
+        }
+
+        // Max Output Pricing
+        if (maxOutputPrice > 0) {
+          const num = parseFloat(m.outputPrice.replace(/[^0-9.]/g, ""));
+          if (!isNaN(num) && num > maxOutputPrice) return false;
+        }
+
+        // Compare only (show flagship popular models)
+        if (compareOnly) {
+          const isFlagship =
+            m.name.includes("gpt-4") ||
+            m.name.includes("claude-3-5") ||
+            m.name.includes("claude-sonnet") ||
+            m.name.includes("gemini") ||
+            m.name.includes("llama-3.3") ||
+            m.name.includes("deepseek");
+          if (!isFlagship) return false;
+        }
 
         // Context length
         if (minContext > 0 && m.contextNum < minContext) return false;
@@ -368,7 +442,21 @@ export default function ModelsTable({ providers = [], combos = [] }: ModelsTable
           ? String(valA).localeCompare(String(valB))
           : String(valB).localeCompare(String(valA));
       });
-  }, [modelsList, activeTab, functionCallingOnly, hideFree, discountedOnly, minContext, search, sortField, sortAsc]);
+  }, [
+    modelsList,
+    activeTab,
+    modalities,
+    functionCallingOnly,
+    hideFree,
+    discountedOnly,
+    maxInputPrice,
+    maxOutputPrice,
+    compareOnly,
+    minContext,
+    search,
+    sortField,
+    sortAsc,
+  ]);
 
   const toggleSort = (field: keyof ModelLibraryItem) => {
     if (sortField === field) {
@@ -382,7 +470,18 @@ export default function ModelsTable({ providers = [], combos = [] }: ModelsTable
   // Reset to page 1 on filter or search changes
   useEffect(() => {
     setCurrentPage(1);
-  }, [activeTab, search, modalities, functionCallingOnly, hideFree, discountedOnly, minContext]);
+  }, [
+    activeTab,
+    search,
+    modalities,
+    functionCallingOnly,
+    hideFree,
+    discountedOnly,
+    maxInputPrice,
+    maxOutputPrice,
+    compareOnly,
+    minContext,
+  ]);
 
   // Pagination calculations (100 models per page)
   const totalPages = Math.max(1, Math.ceil(filteredModels.length / pageSize));
@@ -512,183 +611,302 @@ export default function ModelsTable({ providers = [], combos = [] }: ModelsTable
 
   return (
     <div id="models" className="uno-models-page-container">
-      <div className="uno-models-page-layout">
+      <div className={`uno-models-page-layout ${sidebarOpen ? "" : "sidebar-collapsed"}`}>
           {/* ========================================================
               LEFT SIDEBAR: FILTERS — CUPERTINO STYLE
              ======================================================== */}
-          <aside className="uno-filters-sidebar">
-            <h3 className="uno-filters-title">
-              <span>Filters</span>
-              <span style={{ fontSize: 10, color: "rgba(255,255,255,0.35)", fontWeight: 500 }}>
-                {filteredModels.length} models
-              </span>
-            </h3>
+          {sidebarOpen && (
+            <aside className="uno-filters-sidebar">
+              <h3 className="uno-filters-title">
+                <span>Filters</span>
+                {hasActiveFilters ? (
+                  <button
+                    type="button"
+                    onClick={resetAllFilters}
+                    style={{
+                      background: "transparent",
+                      border: "none",
+                      color: "#0A84FF",
+                      fontSize: 10.5,
+                      fontWeight: 600,
+                      cursor: "pointer",
+                      padding: "2px 4px",
+                    }}
+                  >
+                    Reset all
+                  </button>
+                ) : (
+                  <span style={{ fontSize: 10, color: "rgba(255,255,255,0.35)", fontWeight: 500 }}>
+                    {filteredModels.length} models
+                  </span>
+                )}
+              </h3>
 
-            {/* Input Modalities Accordion */}
-            <div className="uno-filter-section">
-              <div className="uno-filter-header" onClick={() => toggleSection("modalities")}>
-                <span>Input Modalities</span>
-                <span style={{ display: "inline-flex", opacity: 0.6 }}>
-                  {collapsedSections.modalities ? (
-                    <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9" /></svg>
-                  ) : (
-                    <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="18 15 12 9 6 15" /></svg>
-                  )}
-                </span>
-              </div>
-              {!collapsedSections.modalities && (
-                <div className="uno-filter-list">
-                  {["Text", "Image", "File", "Audio", "Video"].map((item) => (
-                    <label key={item} className="uno-filter-label">
-                      <span
-                        className={`uno-checkbox ${modalities[item] ? "checked" : ""}`}
-                        onClick={() =>
-                          setModalities((prev) => ({ ...prev, [item]: !prev[item] }))
-                        }
+              {/* Input Modalities Accordion */}
+              <div className="uno-filter-section">
+                <div className="uno-filter-header" onClick={() => toggleSection("modalities")}>
+                  <span>Input Modalities</span>
+                  <span style={{ display: "inline-flex", opacity: 0.6 }}>
+                    {collapsedSections.modalities ? (
+                      <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9" /></svg>
+                    ) : (
+                      <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="18 15 12 9 6 15" /></svg>
+                    )}
+                  </span>
+                </div>
+                {!collapsedSections.modalities && (
+                  <div className="uno-filter-list">
+                    {["Text", "Image", "File", "Audio", "Video"].map((item) => (
+                      <div
+                        key={item}
+                        className="uno-filter-label"
+                        onClick={() => {
+                          setModalities((prev) => ({ ...prev, [item]: !prev[item] }));
+                        }}
                       >
-                        {modalities[item] && (
-                          <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#ffffff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                        <span className={`uno-checkbox ${modalities[item] ? "checked" : ""}`}>
+                          {modalities[item] && (
+                            <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#000000" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round">
+                              <polyline points="20 6 9 17 4 12"></polyline>
+                            </svg>
+                          )}
+                        </span>
+                        <span>{item}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Tools Accordion */}
+              <div className="uno-filter-section">
+                <div className="uno-filter-header" onClick={() => toggleSection("tools")}>
+                  <span>Tools</span>
+                  <span style={{ display: "inline-flex", opacity: 0.6 }}>
+                    {collapsedSections.tools ? (
+                      <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9" /></svg>
+                    ) : (
+                      <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="18 15 12 9 6 15" /></svg>
+                    )}
+                  </span>
+                </div>
+                {!collapsedSections.tools && (
+                  <div className="uno-filter-list">
+                    <div
+                      className="uno-filter-label"
+                      onClick={() => {
+                        setFunctionCallingOnly((prev) => !prev);
+                      }}
+                    >
+                      <span className={`uno-checkbox ${functionCallingOnly ? "checked" : ""}`}>
+                        {functionCallingOnly && (
+                          <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#000000" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round">
                             <polyline points="20 6 9 17 4 12"></polyline>
                           </svg>
                         )}
                       </span>
-                      <span>{item}</span>
-                    </label>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {/* Tools Accordion */}
-            <div className="uno-filter-section">
-              <div className="uno-filter-header" onClick={() => toggleSection("tools")}>
-                <span>Tools</span>
-                <span style={{ display: "inline-flex", opacity: 0.6 }}>
-                  {collapsedSections.tools ? (
-                    <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9" /></svg>
-                  ) : (
-                    <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="18 15 12 9 6 15" /></svg>
-                  )}
-                </span>
+                      <span>Function calling</span>
+                    </div>
+                  </div>
+                )}
               </div>
-              {!collapsedSections.tools && (
-                <div className="uno-filter-list">
-                  <label className="uno-filter-label">
-                    <span
-                      className={`uno-checkbox ${functionCallingOnly ? "checked" : ""}`}
-                      onClick={() => setFunctionCallingOnly(!functionCallingOnly)}
-                    >
-                      {functionCallingOnly && (
-                        <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#ffffff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                          <polyline points="20 6 9 17 4 12"></polyline>
-                        </svg>
-                      )}
-                    </span>
-                    <span>Function calling</span>
-                  </label>
-                </div>
-              )}
-            </div>
 
-            {/* Pricing Filter Accordion */}
-            <div className="uno-filter-section">
-              <div className="uno-filter-header" onClick={() => toggleSection("pricing")}>
-                <span>Pricing</span>
-                <span style={{ display: "inline-flex", opacity: 0.6 }}>
-                  {collapsedSections.pricing ? (
-                    <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9" /></svg>
-                  ) : (
-                    <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="18 15 12 9 6 15" /></svg>
-                  )}
-                </span>
-              </div>
-              {!collapsedSections.pricing && (
-                <div className="uno-filter-list">
-                  <label className="uno-filter-label">
-                    <span
-                      className={`uno-checkbox ${hideFree ? "checked" : ""}`}
-                      onClick={() => setHideFree(!hideFree)}
-                    >
-                      {hideFree && (
-                        <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#ffffff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                          <polyline points="20 6 9 17 4 12"></polyline>
-                        </svg>
-                      )}
-                    </span>
-                    <span>Hide free</span>
-                  </label>
-                  <label className="uno-filter-label">
-                    <span
-                      className={`uno-checkbox ${discountedOnly ? "checked" : ""}`}
-                      onClick={() => setDiscountedOnly(!discountedOnly)}
-                    >
-                      {discountedOnly && (
-                        <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#ffffff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                          <polyline points="20 6 9 17 4 12"></polyline>
-                        </svg>
-                      )}
-                    </span>
-                    <span>Discounted only</span>
-                  </label>
+              {/* Pricing Filter Accordion */}
+              <div className="uno-filter-section">
+                <div className="uno-filter-header" onClick={() => toggleSection("pricing")}>
+                  <span>Pricing</span>
+                  <span style={{ display: "inline-flex", opacity: 0.6 }}>
+                    {collapsedSections.pricing ? (
+                      <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9" /></svg>
+                    ) : (
+                      <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="18 15 12 9 6 15" /></svg>
+                    )}
+                  </span>
                 </div>
-              )}
-            </div>
-
-            {/* Context Length Slider */}
-            <div className="uno-filter-section">
-              <div className="uno-filter-header" onClick={() => toggleSection("context")}>
-                <span>Context Length</span>
-                <span style={{ display: "inline-flex", opacity: 0.6 }}>
-                  {collapsedSections.context ? (
-                    <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9" /></svg>
-                  ) : (
-                    <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="18 15 12 9 6 15" /></svg>
-                  )}
-                </span>
-              </div>
-              {!collapsedSections.context && (
-                <div className="uno-slider-wrap">
-                  <div
-                    className="uno-slider-track"
-                    onClick={(e) => {
-                      const rect = e.currentTarget.getBoundingClientRect();
-                      const ratio = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
-                      setMinContext(Math.round(ratio * 1000000));
-                    }}
-                  >
+                {!collapsedSections.pricing && (
+                  <div className="uno-filter-list">
                     <div
-                      className="uno-slider-handle"
-                      style={{ left: `${(minContext / 1000000) * 100}%` }}
-                    />
+                      className="uno-filter-label"
+                      onClick={() => {
+                        setHideFree((prev) => !prev);
+                      }}
+                    >
+                      <span className={`uno-checkbox ${hideFree ? "checked" : ""}`}>
+                        {hideFree && (
+                          <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#000000" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round">
+                            <polyline points="20 6 9 17 4 12"></polyline>
+                          </svg>
+                        )}
+                      </span>
+                      <span>Hide free</span>
+                    </div>
+                    <div
+                      className="uno-filter-label"
+                      onClick={() => {
+                        setDiscountedOnly((prev) => !prev);
+                      }}
+                    >
+                      <span className={`uno-checkbox ${discountedOnly ? "checked" : ""}`}>
+                        {discountedOnly && (
+                          <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#000000" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round">
+                            <polyline points="20 6 9 17 4 12"></polyline>
+                          </svg>
+                        )}
+                      </span>
+                      <span>Discounted only</span>
+                    </div>
                   </div>
-                  <div className="uno-slider-labels">
-                    <span>{minContext > 0 ? `${Math.round(minContext / 1000)}k+` : "Min"}</span>
-                    <span>Any</span>
-                  </div>
+                )}
+              </div>
+
+              {/* Context Length Slider — Interactive */}
+              <div className="uno-filter-section">
+                <div className="uno-filter-header" onClick={() => toggleSection("context")}>
+                  <span>Context Length</span>
+                  <span style={{ display: "inline-flex", opacity: 0.6 }}>
+                    {collapsedSections.context ? (
+                      <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9" /></svg>
+                    ) : (
+                      <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="18 15 12 9 6 15" /></svg>
+                    )}
+                  </span>
                 </div>
-              )}
-            </div>
-
-            {/* Input Pricing Accordion */}
-            <div className="uno-filter-section">
-              <div className="uno-filter-header">
-                <span>Input Pricing</span>
-                <span style={{ display: "inline-flex", opacity: 0.5 }}>
-                  <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9" /></svg>
-                </span>
+                {!collapsedSections.context && (
+                  <div className="uno-slider-wrap">
+                    <div className="uno-slider-labels">
+                      <span>{minContext > 0 ? `${Math.round(minContext / 1000)}K+ min` : "Any length"}</span>
+                      {minContext > 0 && (
+                        <span
+                          onClick={() => setMinContext(0)}
+                          style={{ cursor: "pointer", color: "#0A84FF", fontWeight: 600 }}
+                        >
+                          Reset
+                        </span>
+                      )}
+                    </div>
+                    <input
+                      type="range"
+                      min={0}
+                      max={1000000}
+                      step={10000}
+                      value={minContext}
+                      onChange={(e) => setMinContext(Number(e.target.value))}
+                      className="uno-range-slider"
+                      title={`${minContext} tokens`}
+                    />
+                    <div className="uno-context-presets">
+                      <button
+                        type="button"
+                        className={`uno-preset-btn ${minContext === 0 ? "active" : ""}`}
+                        onClick={() => setMinContext(0)}
+                      >
+                        Any
+                      </button>
+                      <button
+                        type="button"
+                        className={`uno-preset-btn ${minContext === 32000 ? "active" : ""}`}
+                        onClick={() => setMinContext(32000)}
+                      >
+                        32K
+                      </button>
+                      <button
+                        type="button"
+                        className={`uno-preset-btn ${minContext === 128000 ? "active" : ""}`}
+                        onClick={() => setMinContext(128000)}
+                      >
+                        128K
+                      </button>
+                      <button
+                        type="button"
+                        className={`uno-preset-btn ${minContext === 1000000 ? "active" : ""}`}
+                        onClick={() => setMinContext(1000000)}
+                      >
+                        1M
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
-            </div>
 
-            {/* Output Pricing Accordion */}
-            <div className="uno-filter-section">
-              <div className="uno-filter-header">
-                <span>Output Pricing</span>
-                <span style={{ display: "inline-flex", opacity: 0.5 }}>
-                  <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9" /></svg>
-                </span>
+              {/* Input Pricing Filter */}
+              <div className="uno-filter-section">
+                <div className="uno-filter-header" onClick={() => toggleSection("inputPricing")}>
+                  <span>Input Pricing</span>
+                  <span style={{ display: "inline-flex", opacity: 0.6 }}>
+                    {collapsedSections.inputPricing ? (
+                      <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9" /></svg>
+                    ) : (
+                      <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="18 15 12 9 6 15" /></svg>
+                    )}
+                  </span>
+                </div>
+                {!collapsedSections.inputPricing && (
+                  <div className="uno-context-presets" style={{ marginTop: 2 }}>
+                    <button
+                      type="button"
+                      className={`uno-preset-btn ${maxInputPrice === 0 ? "active" : ""}`}
+                      onClick={() => setMaxInputPrice(0)}
+                    >
+                      Any
+                    </button>
+                    <button
+                      type="button"
+                      className={`uno-preset-btn ${maxInputPrice === 1 ? "active" : ""}`}
+                      onClick={() => setMaxInputPrice(1)}
+                    >
+                      &lt; $1
+                    </button>
+                    <button
+                      type="button"
+                      className={`uno-preset-btn ${maxInputPrice === 5 ? "active" : ""}`}
+                      onClick={() => setMaxInputPrice(5)}
+                    >
+                      &lt; $5
+                    </button>
+                  </div>
+                )}
               </div>
-            </div>
-          </aside>
+
+              {/* Output Pricing Filter */}
+              <div className="uno-filter-section">
+                <div className="uno-filter-header" onClick={() => toggleSection("outputPricing")}>
+                  <span>Output Pricing</span>
+                  <span style={{ display: "inline-flex", opacity: 0.6 }}>
+                    {collapsedSections.outputPricing ? (
+                      <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9" /></svg>
+                    ) : (
+                      <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="18 15 12 9 6 15" /></svg>
+                    )}
+                  </span>
+                </div>
+                {!collapsedSections.outputPricing && (
+                  <div className="uno-context-presets" style={{ marginTop: 2 }}>
+                    <button
+                      type="button"
+                      className={`uno-preset-btn ${maxOutputPrice === 0 ? "active" : ""}`}
+                      onClick={() => setMaxOutputPrice(0)}
+                    >
+                      Any
+                    </button>
+                    <button
+                      type="button"
+                      className={`uno-preset-btn ${maxOutputPrice === 2 ? "active" : ""}`}
+                      onClick={() => setMaxOutputPrice(2)}
+                    >
+                      &lt; $2
+                    </button>
+                    <button
+                      type="button"
+                      className={`uno-preset-btn ${maxOutputPrice === 10 ? "active" : ""}`}
+                      onClick={() => setMaxOutputPrice(10)}
+                    >
+                      &lt; $10
+                    </button>
+                  </div>
+                )}
+              </div>
+            </aside>
+          )}
 
           {/* ========================================================
               RIGHT MAIN AREA: MODEL LIBRARY
@@ -712,31 +930,49 @@ export default function ModelsTable({ providers = [], combos = [] }: ModelsTable
                   />
                 </div>
 
-                <button type="button" className="uno-btn-tool">
+                <button
+                  type="button"
+                  className={`uno-btn-tool ${compareOnly ? "active" : ""}`}
+                  onClick={() => setCompareOnly((prev) => !prev)}
+                  title={compareOnly ? "Show all models" : "Compare flagship models"}
+                >
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <line x1="18" y1="20" x2="18" y2="10"></line>
                     <line x1="12" y1="20" x2="12" y2="4"></line>
                     <line x1="6" y1="20" x2="6" y2="14"></line>
                   </svg>
-                  <span>Compare</span>
+                  <span>{compareOnly ? "Comparing" : "Compare"}</span>
                 </button>
 
                 <button
                   type="button"
                   className="uno-btn-tool"
                   onClick={() => toggleSort("released")}
+                  title={`Sorted by ${sortField} (${sortAsc ? "Ascending" : "Descending"})`}
                 >
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <polyline points="7 10 12 15 17 10"></polyline>
                   </svg>
-                  <span>Newest</span>
+                  <span>{sortField === "released" ? (sortAsc ? "Oldest" : "Newest") : "Sort"}</span>
                 </button>
 
                 <div style={{ display: "flex", gap: 2 }}>
-                  <button type="button" className="uno-btn-tool" style={{ padding: "8px 10px" }} title="Grid view">
+                  <button
+                    type="button"
+                    className={`uno-btn-tool ${viewMode === "grid" ? "active" : ""}`}
+                    style={{ padding: "8px 10px" }}
+                    onClick={() => setViewMode("grid")}
+                    title="Grid view"
+                  >
                     ⊞
                   </button>
-                  <button type="button" className="uno-btn-tool" style={{ padding: "8px 10px" }} title="List view">
+                  <button
+                    type="button"
+                    className={`uno-btn-tool ${viewMode === "table" ? "active" : ""}`}
+                    style={{ padding: "8px 10px" }}
+                    onClick={() => setViewMode("table")}
+                    title="List view"
+                  >
                     ≡
                   </button>
                 </div>
@@ -747,14 +983,16 @@ export default function ModelsTable({ providers = [], combos = [] }: ModelsTable
             <div className="uno-modality-tabs">
               <button
                 type="button"
-                className="uno-icon-btn"
-                style={{ padding: "6px 8px", marginRight: 4, display: "inline-flex" }}
-                title="Toggle sidebar"
+                className={`uno-icon-btn ${sidebarOpen ? "active" : ""}`}
+                style={{ padding: "6px 10px", marginRight: 4, display: "inline-flex", alignItems: "center", gap: 6 }}
+                title={sidebarOpen ? "Collapse sidebar" : "Expand sidebar"}
+                onClick={() => setSidebarOpen((prev) => !prev)}
               >
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
                   <line x1="9" y1="3" x2="9" y2="21" />
                 </svg>
+                {!sidebarOpen && <span style={{ fontSize: 11, fontWeight: 600 }}>Show Filters</span>}
               </button>
 
               <button
@@ -818,137 +1056,168 @@ export default function ModelsTable({ providers = [], combos = [] }: ModelsTable
             {/* Top Pagination Bar */}
             {renderPaginationBar("top")}
 
-            {/* Screenshot 2 Rich Table */}
-            <div className="uno-rich-table-wrap">
-              <table className="uno-rich-table">
-                <thead>
-                  <tr>
-                    <th onClick={() => toggleSort("name")} style={{ cursor: "pointer" }}>
-                      Model ↑↓
-                    </th>
-                    <th onClick={() => toggleSort("weeklyTokens")} style={{ cursor: "pointer", textAlign: "right" }}>
-                      Weekly Tokens ↑↓
-                    </th>
-                    <th onClick={() => toggleSort("inputPrice")} style={{ cursor: "pointer", textAlign: "right" }}>
-                      Input ↑↓
-                    </th>
-                    <th onClick={() => toggleSort("outputPrice")} style={{ cursor: "pointer", textAlign: "right" }}>
-                      Output ↑↓
-                    </th>
-                    <th onClick={() => toggleSort("contextNum")} style={{ cursor: "pointer", textAlign: "right" }}>
-                      Context ↑↓
-                    </th>
-                    <th onClick={() => toggleSort("uptime")} style={{ cursor: "pointer", textAlign: "right" }}>
-                      Uptime ↑↓
-                    </th>
-                    <th onClick={() => toggleSort("success")} style={{ cursor: "pointer", textAlign: "right" }}>
-                      Success ↑↓
-                    </th>
-                    <th onClick={() => toggleSort("latency")} style={{ cursor: "pointer", textAlign: "right" }}>
-                      Latency ↑↓
-                    </th>
-                    <th onClick={() => toggleSort("released")} style={{ cursor: "pointer", textAlign: "right" }}>
-                      Released ↑↓
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {pagedModels.map((item) => (
-                    <tr key={item.id}>
-                      {/* Model Name & Icon */}
-                      <td>
-                        <div className="uno-cell-model">
-                          <span className="uno-provider-symbol">{item.symbol}</span>
-                          <span className="uno-model-title">{item.name}</span>
-                          {item.isFree && (
-                            <span className="uno-pill-free-badge">
-                              <span style={{ fontSize: 10 }}>🎁</span>
-                              <span>free</span>
-                            </span>
-                          )}
-                        </div>
-                      </td>
-
-                      {/* Weekly Tokens */}
-                      <td style={{ textAlign: "right" }}>
-                        <span className="mono" style={{ color: "#ffffff" }}>
-                          {item.weeklyTokens}
+            {/* View Mode: Card Grid or Rich Table */}
+            {viewMode === "grid" ? (
+              <div className="uno-models-grid">
+                {pagedModels.map((item) => (
+                  <div key={item.id} className="uno-model-card">
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                      <div className="uno-cell-model">
+                        <span className="uno-provider-symbol">{item.symbol}</span>
+                        <span className="uno-model-title">{item.name}</span>
+                      </div>
+                      {item.isFree && (
+                        <span className="uno-pill-free-badge">
+                          <span style={{ fontSize: 10 }}>🎁</span>
+                          <span>free</span>
                         </span>
-                      </td>
-
-                      {/* Input */}
-                      <td style={{ textAlign: "right" }}>
-                        <div className="uno-price-col" style={{ alignItems: "flex-end" }}>
-                          <span className="uno-price-main">{item.inputPrice}</span>
-                          {item.inputOriginal && item.inputDiscount && (
-                            <div className="uno-price-discount">
-                              <span className="uno-price-strikethrough">{item.inputOriginal}</span>
-                              <span className="uno-price-off">{item.inputDiscount}</span>
-                            </div>
-                          )}
-                        </div>
-                      </td>
-
-                      {/* Output */}
-                      <td style={{ textAlign: "right" }}>
-                        <div className="uno-price-col" style={{ alignItems: "flex-end" }}>
-                          <span className="uno-price-main">{item.outputPrice}</span>
-                          {item.outputOriginal && item.outputDiscount && (
-                            <div className="uno-price-discount">
-                              <span className="uno-price-strikethrough">{item.outputOriginal}</span>
-                              <span className="uno-price-off">{item.outputDiscount}</span>
-                            </div>
-                          )}
-                        </div>
-                      </td>
-
-                      {/* Context */}
-                      <td style={{ textAlign: "right" }}>
-                        <span className="mono" style={{ color: "#ffffff" }}>
-                          {item.context}
-                        </span>
-                      </td>
-
-                      {/* Uptime */}
-                      <td style={{ textAlign: "right" }}>
-                        <span className={getUptimeColorClass(item.uptime)}>
-                          {item.uptime.toFixed(1)}%
-                        </span>
-                      </td>
-
-                      {/* Success */}
-                      <td style={{ textAlign: "right" }}>
-                        <span className={getSuccessColorClass(item.success)}>
-                          {item.success.toFixed(1)}%
-                        </span>
-                      </td>
-
-                      {/* Latency */}
-                      <td style={{ textAlign: "right" }}>
-                        <span className="mono" style={{ color: "var(--uno-text-secondary)" }}>
-                          {item.latency}
-                        </span>
-                      </td>
-
-                      {/* Released */}
-                      <td style={{ textAlign: "right" }}>
-                        <span style={{ color: "var(--uno-text-muted)", fontSize: 12 }}>
-                          {item.released}
-                        </span>
-                      </td>
-                    </tr>
-                  ))}
-
-                  {filteredModels.length === 0 && (
+                      )}
+                    </div>
+                    <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, color: "rgba(255,255,255,0.7)" }}>
+                      <span>Input: <strong style={{ color: "#fff" }}>{item.inputPrice}</strong></span>
+                      <span>Output: <strong style={{ color: "#fff" }}>{item.outputPrice}</strong></span>
+                    </div>
+                    <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: "var(--uno-text-muted)" }}>
+                      <span>Context: {item.context}</span>
+                      <span className={getUptimeColorClass(item.uptime)}>{item.uptime.toFixed(1)}% uptime</span>
+                      <span className={getSuccessColorClass(item.success)}>{item.success.toFixed(1)}% success</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              /* Screenshot 2 Rich Table */
+              <div className="uno-rich-table-wrap">
+                <table className="uno-rich-table">
+                  <thead>
                     <tr>
-                      <td colSpan={9} style={{ textAlign: "center", padding: "40px 0", color: "var(--uno-text-muted)" }}>
-                        No models found matching your current filter.
-                      </td>
+                      <th onClick={() => toggleSort("name")} style={{ cursor: "pointer" }}>
+                        Model {sortField === "name" ? (sortAsc ? "▲" : "▼") : "↑↓"}
+                      </th>
+                      <th onClick={() => toggleSort("weeklyTokens")} style={{ cursor: "pointer", textAlign: "right" }}>
+                        Weekly Tokens {sortField === "weeklyTokens" ? (sortAsc ? "▲" : "▼") : "↑↓"}
+                      </th>
+                      <th onClick={() => toggleSort("inputPrice")} style={{ cursor: "pointer", textAlign: "right" }}>
+                        Input {sortField === "inputPrice" ? (sortAsc ? "▲" : "▼") : "↑↓"}
+                      </th>
+                      <th onClick={() => toggleSort("outputPrice")} style={{ cursor: "pointer", textAlign: "right" }}>
+                        Output {sortField === "outputPrice" ? (sortAsc ? "▲" : "▼") : "↑↓"}
+                      </th>
+                      <th onClick={() => toggleSort("contextNum")} style={{ cursor: "pointer", textAlign: "right" }}>
+                        Context {sortField === "contextNum" ? (sortAsc ? "▲" : "▼") : "↑↓"}
+                      </th>
+                      <th onClick={() => toggleSort("uptime")} style={{ cursor: "pointer", textAlign: "right" }}>
+                        Uptime {sortField === "uptime" ? (sortAsc ? "▲" : "▼") : "↑↓"}
+                      </th>
+                      <th onClick={() => toggleSort("success")} style={{ cursor: "pointer", textAlign: "right" }}>
+                        Success {sortField === "success" ? (sortAsc ? "▲" : "▼") : "↑↓"}
+                      </th>
+                      <th onClick={() => toggleSort("latency")} style={{ cursor: "pointer", textAlign: "right" }}>
+                        Latency {sortField === "latency" ? (sortAsc ? "▲" : "▼") : "↑↓"}
+                      </th>
+                      <th onClick={() => toggleSort("released")} style={{ cursor: "pointer", textAlign: "right" }}>
+                        Released {sortField === "released" ? (sortAsc ? "▲" : "▼") : "↑↓"}
+                      </th>
                     </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody>
+                    {pagedModels.map((item) => (
+                      <tr key={item.id}>
+                        {/* Model Name & Icon */}
+                        <td>
+                          <div className="uno-cell-model">
+                            <span className="uno-provider-symbol">{item.symbol}</span>
+                            <span className="uno-model-title">{item.name}</span>
+                            {item.isFree && (
+                              <span className="uno-pill-free-badge">
+                                <span style={{ fontSize: 10 }}>🎁</span>
+                                <span>free</span>
+                              </span>
+                            )}
+                          </div>
+                        </td>
+
+                        {/* Weekly Tokens */}
+                        <td style={{ textAlign: "right" }}>
+                          <span className="mono" style={{ color: "#ffffff" }}>
+                            {item.weeklyTokens}
+                          </span>
+                        </td>
+
+                        {/* Input */}
+                        <td style={{ textAlign: "right" }}>
+                          <div className="uno-price-col" style={{ alignItems: "flex-end" }}>
+                            <span className="uno-price-main">{item.inputPrice}</span>
+                            {item.inputOriginal && item.inputDiscount && (
+                              <div className="uno-price-discount">
+                                <span className="uno-price-strikethrough">{item.inputOriginal}</span>
+                                <span className="uno-price-off">{item.inputDiscount}</span>
+                              </div>
+                            )}
+                          </div>
+                        </td>
+
+                        {/* Output */}
+                        <td style={{ textAlign: "right" }}>
+                          <div className="uno-price-col" style={{ alignItems: "flex-end" }}>
+                            <span className="uno-price-main">{item.outputPrice}</span>
+                            {item.outputOriginal && item.outputDiscount && (
+                              <div className="uno-price-discount">
+                                <span className="uno-price-strikethrough">{item.outputOriginal}</span>
+                                <span className="uno-price-off">{item.outputDiscount}</span>
+                              </div>
+                            )}
+                          </div>
+                        </td>
+
+                        {/* Context */}
+                        <td style={{ textAlign: "right" }}>
+                          <span className="mono" style={{ color: "#ffffff" }}>
+                            {item.context}
+                          </span>
+                        </td>
+
+                        {/* Uptime */}
+                        <td style={{ textAlign: "right" }}>
+                          <span className={getUptimeColorClass(item.uptime)}>
+                            {item.uptime.toFixed(1)}%
+                          </span>
+                        </td>
+
+                        {/* Success */}
+                        <td style={{ textAlign: "right" }}>
+                          <span className={getSuccessColorClass(item.success)}>
+                            {item.success.toFixed(1)}%
+                          </span>
+                        </td>
+
+                        {/* Latency */}
+                        <td style={{ textAlign: "right" }}>
+                          <span className="mono" style={{ color: "var(--uno-text-secondary)" }}>
+                            {item.latency}
+                          </span>
+                        </td>
+
+                        {/* Released */}
+                        <td style={{ textAlign: "right" }}>
+                          <span style={{ color: "var(--uno-text-muted)", fontSize: 12 }}>
+                            {item.released}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+
+                    {filteredModels.length === 0 && (
+                      <tr>
+                        <td colSpan={9} style={{ textAlign: "center", padding: "40px 0", color: "var(--uno-text-muted)" }}>
+                          No models found matching your current filter.
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            )}
 
             {/* Bottom Pagination Bar */}
             {renderPaginationBar("bottom")}

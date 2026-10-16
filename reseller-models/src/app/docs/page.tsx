@@ -23,7 +23,7 @@ export default function DocsPage() {
   const [activeSection, setActiveSection] = useState<string>("overview");
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [baseUrl, setBaseUrl] = useState("http://localhost:3000");
+  const [baseUrl, setBaseUrl] = useState("http://localhost:3001");
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -253,8 +253,7 @@ export default function DocsPage() {
           display: "flex",
           flex: 1,
           width: "100%",
-          maxWidth: "1536px",
-          margin: "0 auto",
+          minHeight: "calc(100vh - 54px)",
         }}
       >
         {/* Left Sidebar */}

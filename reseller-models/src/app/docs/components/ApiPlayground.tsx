@@ -467,8 +467,7 @@ export default function ApiPlayground({
         flexDirection: "column",
         gap: "20px",
         width: "100%",
-        maxWidth: "1020px",
-        margin: "0 auto",
+        maxWidth: "100%",
       }}
     >
       {/* ── Control Bar: Endpoint Dropdown + Model Dropdown + Auth ── */}
