@@ -12,6 +12,7 @@
 import { getDbInstance } from "./core";
 import { backupDbFile } from "./backup";
 import { setModelAlias, deleteModelAlias } from "./models/aliases";
+import { setModelContextOverride, removeModelContextOverride } from "./modelContextOverrides";
 import { invalidateAliasCache } from "@/lib/modelAliasResolver";
 import { finishModelCatalogWriteWithoutBackup } from "./models/modelCatalogWriteSignals";
 
@@ -140,7 +141,11 @@ function syncAlias(params: {
   originalModelId: string;
   alias: string | null;
   active: boolean;
+  oldAlias?: string | null;
 }): void {
+  if (params.oldAlias && params.oldAlias !== params.alias) {
+    deleteModelAlias(params.oldAlias).catch(() => {});
+  }
   if (params.alias && params.active) {
     setModelAlias(params.alias, `${params.providerId}/${params.originalModelId}`);
   } else {
@@ -181,12 +186,15 @@ export function upsertCustomization(params: {
   const tested = params.isTested ?? existing?.isTested ?? false;
   const caps = params.capabilities ?? existing?.capabilities ?? null;
 
-  const customName = params.customName ?? existing?.customName ?? null;
-  const customAlias = params.customAlias ?? existing?.customAlias ?? null;
+  const customName =
+    params.customName !== undefined ? params.customName : (existing?.customName ?? null);
+  const customAlias =
+    params.customAlias !== undefined ? params.customAlias : (existing?.customAlias ?? null);
   const testHttpStatus = params.testHttpStatus ?? existing?.testHttpStatus ?? null;
   const testLatencyMs = params.testLatencyMs ?? existing?.testLatencyMs ?? null;
   const testResponse = params.testResponse ?? existing?.testResponse ?? null;
-  const contextWindow = params.contextWindow ?? existing?.contextWindow ?? null;
+  const contextWindow =
+    params.contextWindow !== undefined ? params.contextWindow : (existing?.contextWindow ?? null);
   const freeOverride = params.isFreeOverride ?? existing?.isFreeOverride ?? null;
 
   backupDbFile("pre-write");
@@ -246,12 +254,20 @@ export function upsertCustomization(params: {
     )
     .get(params.providerId, params.originalModelId) as RowShape;
 
+  // Synchronize context window override into model_context_overrides table
+  if (contextWindow !== null && contextWindow > 0) {
+    setModelContextOverride(params.providerId, params.originalModelId, contextWindow, "manual");
+  } else if (params.contextWindow === null) {
+    removeModelContextOverride(params.providerId, params.originalModelId);
+  }
+
   // Keep the routing alias namespace in sync with the curation row.
   syncAlias({
     providerId: params.providerId,
     originalModelId: params.originalModelId,
-    alias: params.customAlias ?? existing?.customAlias ?? null,
+    alias: customAlias,
     active,
+    oldAlias: existing?.customAlias,
   });
 
   return fromRow(row);
@@ -275,12 +291,13 @@ export function deleteCustomization(providerId: string, originalModelId: string)
     )
     .run(providerId, originalModelId);
 
-  // Drop the alias from the routing namespace so it no longer resolves.
+  // Drop the alias and context override so they no longer resolve.
   if (row?.custom_alias) {
     deleteModelAlias(row.custom_alias).catch(() => {});
-    invalidateAliasCache();
-    finishModelCatalogWriteWithoutBackup();
   }
+  removeModelContextOverride(providerId, originalModelId);
+  invalidateAliasCache();
+  finishModelCatalogWriteWithoutBackup();
   return info.changes > 0;
 }
 

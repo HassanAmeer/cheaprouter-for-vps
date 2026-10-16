@@ -369,9 +369,8 @@ async function buildUnifiedModelsResponseCore(
     try {
       connections = (await getCachedRawProviderConnections()).map(createLazyConnectionView);
       // Filter to only active, genuinely connected connections
-      const { isProviderConnectionConnected } = await import(
-        "@/shared/utils/providerConnectionStatus"
-      );
+      const { isProviderConnectionConnected } =
+        await import("@/shared/utils/providerConnectionStatus");
       connections = connections.filter((c) => isProviderConnectionConnected(c));
     } catch (e) {
       // If database not available, show no provider models (safe default)
@@ -2112,6 +2111,37 @@ async function buildUnifiedModelsResponseCore(
           const bareId = mid.includes("/") ? mid.slice(mid.indexOf("/") + 1) : mid;
           return !inactiveKeys.has(`${pid}::${mid}`) && !inactiveKeys.has(`${pid}::${bareId}`);
         });
+      }
+
+      // Apply active operator customizations (custom name, custom alias, context window)
+      const activeCustomizationMap = new Map<string, any>();
+      for (const c of customizations) {
+        if (c.isActive !== false) {
+          activeCustomizationMap.set(`${c.providerId}::${c.originalModelId}`, c);
+        }
+      }
+
+      if (activeCustomizationMap.size > 0) {
+        for (const m of finalModels as any[]) {
+          if (m.owned_by === "combo") continue;
+          const pid = typeof m.owned_by === "string" ? m.owned_by : "";
+          const mid = typeof m.id === "string" ? m.id : "";
+          const bareId = mid.includes("/") ? mid.slice(mid.indexOf("/") + 1) : mid;
+          const cust =
+            activeCustomizationMap.get(`${pid}::${bareId}`) ||
+            activeCustomizationMap.get(`${pid}::${mid}`);
+          if (cust) {
+            if (cust.customName) {
+              m.name = cust.customName;
+            }
+            if (cust.customAlias) {
+              m.id = cust.customAlias;
+            }
+            if (cust.contextWindow && typeof cust.contextWindow === "number") {
+              m.context_length = cust.contextWindow;
+            }
+          }
+        }
       }
     } catch {
       // ignore

@@ -376,7 +376,10 @@ function buildModelOptions(
   builtInModels: RegistryModel[],
   syncedModels: SyncedModelLike[],
   customModels: CustomModelLike[],
-  activeCustomizations?: Map<string, { customAlias?: string | null; customName?: string | null }>
+  activeCustomizations?: Map<
+    string,
+    { customAlias?: string | null; customName?: string | null; contextWindow?: number | null }
+  >
 ): Map<string, ComboBuilderModelOption> {
   const modelMap = new Map<string, ComboBuilderModelOption>();
   const fallbackModels = getCompatibleFallbackModels(providerId, builtInModels);
@@ -581,6 +584,9 @@ function buildModelOptions(
       if (cust.customAlias) {
         option.qualifiedModel = cust.customAlias;
       }
+      if (cust.contextWindow && typeof cust.contextWindow === "number") {
+        option.contextLength = cust.contextWindow;
+      }
     }
   } else {
     modelMap.clear();
@@ -686,7 +692,10 @@ export async function getComboBuilderOptions(): Promise<ComboBuilderOptionsPaylo
   const customizations = getAllCustomizations();
   const activeCustomizationsByProvider = new Map<
     string,
-    Map<string, { customAlias?: string | null; customName?: string | null }>
+    Map<
+      string,
+      { customAlias?: string | null; customName?: string | null; contextWindow?: number | null }
+    >
   >();
   for (const c of customizations) {
     if (c.isActive === true) {
@@ -695,7 +704,11 @@ export async function getComboBuilderOptions(): Promise<ComboBuilderOptionsPaylo
         pMap = new Map();
         activeCustomizationsByProvider.set(c.providerId, pMap);
       }
-      pMap.set(c.originalModelId, { customAlias: c.customAlias, customName: c.customName });
+      pMap.set(c.originalModelId, {
+        customAlias: c.customAlias,
+        customName: c.customName,
+        contextWindow: c.contextWindow,
+      });
     }
   }
 
@@ -740,7 +753,9 @@ export async function getComboBuilderOptions(): Promise<ComboBuilderOptionsPaylo
 
     let activeCustomizations =
       activeCustomizationsByProvider.get(providerId) ||
-      (providerVisual.alias ? activeCustomizationsByProvider.get(providerVisual.alias) : undefined) ||
+      (providerVisual.alias
+        ? activeCustomizationsByProvider.get(providerVisual.alias)
+        : undefined) ||
       (providerNode?.prefix ? activeCustomizationsByProvider.get(providerNode.prefix) : undefined);
 
     if (!activeCustomizations || activeCustomizations.size === 0) {
@@ -750,7 +765,10 @@ export async function getComboBuilderOptions(): Promise<ComboBuilderOptionsPaylo
         ...customModels.map((m) => toStringOrNull(m.id)),
       ].filter((id): id is string => Boolean(id));
 
-      if (allCandidateIds.length > 0 && ensureProviderInitialActiveModels(providerId, allCandidateIds, 3)) {
+      if (
+        allCandidateIds.length > 0 &&
+        ensureProviderInitialActiveModels(providerId, allCandidateIds, 3)
+      ) {
         activeCustomizations = new Map();
         for (const mid of allCandidateIds.slice(0, 3)) {
           activeCustomizations.set(mid, {});

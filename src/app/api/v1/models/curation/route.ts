@@ -23,6 +23,7 @@ const saveSchema = z.object({
   originalModelId: z.string().min(1),
   customName: z.string().max(200).nullable().optional(),
   customAlias: z.string().max(200).nullable().optional(),
+  contextWindow: z.number().int().positive().nullable().optional(),
   isActive: z.boolean().optional(),
   isFreeOverride: z.boolean().nullable().optional(),
 });
@@ -82,9 +83,8 @@ export async function GET(request: Request) {
       // ignore
     }
 
-    const { isProviderConnectionConnected } = await import(
-      "@/shared/utils/providerConnectionStatus"
-    );
+    const { isProviderConnectionConnected } =
+      await import("@/shared/utils/providerConnectionStatus");
 
     // Only active, genuinely connected connections (not paused, not disabled)
     const activeConnections = connections.filter((c) => isProviderConnectionConnected(c));
@@ -159,9 +159,8 @@ export async function GET(request: Request) {
     // 💡 Idea 1: Smart Initial Activation on First Connect
     // If a connected provider has NO customization rows in DB at all (never configured),
     // automatically activate its top 3 flagship models so it is ready out of the box in Combos.
-    const { ensureProviderInitialActiveModels } = await import(
-      "@/lib/db/providerModelCustomizations"
-    );
+    const { ensureProviderInitialActiveModels } =
+      await import("@/lib/db/providerModelCustomizations");
     let refreshedNeeded = false;
     for (const pid of connectedProviderIds) {
       const models = modelsByProvider[pid] || [];
@@ -218,13 +217,21 @@ export async function POST(request: Request) {
     // ── Save customization ──
     const saveResult = saveSchema.safeParse(body);
     if (saveResult.success) {
-      const { providerId, originalModelId, customName, customAlias, isActive, isFreeOverride } =
-        saveResult.data;
+      const {
+        providerId,
+        originalModelId,
+        customName,
+        customAlias,
+        contextWindow,
+        isActive,
+        isFreeOverride,
+      } = saveResult.data;
       const row = upsertCustomization({
         providerId,
         originalModelId,
         customName,
         customAlias,
+        contextWindow,
         isActive,
         isFreeOverride,
       });

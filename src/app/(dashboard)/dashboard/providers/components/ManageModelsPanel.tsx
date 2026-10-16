@@ -96,6 +96,22 @@ function formatContextWindow(tokens: number | null | undefined): string | null {
   return `${tokens}`;
 }
 
+function parseContextWindowInput(raw: string): number | null {
+  if (!raw) return null;
+  const trimmed = raw.trim().toLowerCase();
+  if (!trimmed) return null;
+  if (trimmed.endsWith("m")) {
+    const num = parseFloat(trimmed.slice(0, -1));
+    return Number.isFinite(num) && num > 0 ? Math.round(num * 1_000_000) : null;
+  }
+  if (trimmed.endsWith("k")) {
+    const num = parseFloat(trimmed.slice(0, -1));
+    return Number.isFinite(num) && num > 0 ? Math.round(num * 1000) : null;
+  }
+  const parsed = parseInt(trimmed.replace(/,/g, ""), 10);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
+}
+
 export interface SyncedModelCapabilities {
   hasReasoning: boolean;
   hasVision: boolean;
@@ -193,9 +209,9 @@ export default function ManageModelsPanel() {
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [testingId, setTestingId] = useState<string | null>(null);
   const [testResults, setTestResults] = useState<Record<string, LiveTestResult>>({});
-  const [aliasDrafts, setAliasDrafts] = useState<Record<string, { name: string; alias: string }>>(
-    {}
-  );
+  const [aliasDrafts, setAliasDrafts] = useState<
+    Record<string, { name: string; alias: string; contextWindow: string }>
+  >({});
   const [savingAlias, setSavingAlias] = useState<string | null>(null);
 
   // ── Global Test Prompt State (Modal in Header) ───────────────────────────
@@ -493,9 +509,15 @@ export default function ManageModelsPanel() {
                   ? m.supportedEndpoints
                   : ["chat"],
                 ...(Array.isArray(m.capabilities) ? { capabilities: m.capabilities } : {}),
-                ...(typeof m.supportsVision === "boolean" ? { supportsVision: m.supportsVision } : {}),
-                ...(typeof m.inputTokenLimit === "number" ? { inputTokenLimit: m.inputTokenLimit } : {}),
-                ...(typeof m.outputTokenLimit === "number" ? { outputTokenLimit: m.outputTokenLimit } : {}),
+                ...(typeof m.supportsVision === "boolean"
+                  ? { supportsVision: m.supportsVision }
+                  : {}),
+                ...(typeof m.inputTokenLimit === "number"
+                  ? { inputTokenLimit: m.inputTokenLimit }
+                  : {}),
+                ...(typeof m.outputTokenLimit === "number"
+                  ? { outputTokenLimit: m.outputTokenLimit }
+                  : {}),
               })),
             }),
           });
@@ -514,15 +536,17 @@ export default function ManageModelsPanel() {
   const handleSaveAlias = useCallback(
     async (providerId: string, modelId: string) => {
       const key = `${providerId}::${modelId}`;
-      const draft = aliasDrafts[key] ?? { name: "", alias: "" };
+      const draft = aliasDrafts[key] ?? { name: "", alias: "", contextWindow: "" };
       setSavingAlias(key);
       try {
+        const parsedCtx = parseContextWindowInput(draft.contextWindow);
         const row = await postCuration({
           action: "save",
           providerId,
           originalModelId: modelId,
           customName: draft.name.trim() || null,
           customAlias: draft.alias.trim() || null,
+          contextWindow: parsedCtx,
         });
         if (row) patchCustomization(row);
       } finally {
@@ -588,7 +612,8 @@ export default function ManageModelsPanel() {
             <div>
               <h1 className="text-xl font-bold tracking-tight text-white">Manage Models</h1>
               <p className="text-xs text-zinc-400">
-                Configure active models, custom aliases, live capability verification, and billing tiers.
+                Configure active models, custom aliases, live capability verification, and billing
+                tiers.
               </p>
             </div>
           </div>
@@ -603,8 +628,8 @@ export default function ManageModelsPanel() {
         </div>
         <div className="p-6 rounded-2xl border border-white/10 bg-[#161618]/80 backdrop-blur-xl shadow-lg">
           <p className="text-xs text-zinc-400">
-            No active connected providers found. Connect a provider first — its models will appear here for
-            activation, aliasing, and testing.
+            No active connected providers found. Connect a provider first — its models will appear
+            here for activation, aliasing, and testing.
           </p>
         </div>
       </div>
@@ -748,7 +773,9 @@ export default function ManageModelsPanel() {
                     className="inline-flex items-center gap-1 px-2 py-1 rounded-lg border border-white/10 bg-white/5 hover:bg-white/10 text-zinc-300 text-[10px] font-medium transition-all cursor-pointer active:scale-95"
                     title={`Select all models for ${providerId}`}
                   >
-                    <span className="material-symbols-outlined text-[12px] text-emerald-400">done_all</span>
+                    <span className="material-symbols-outlined text-[12px] text-emerald-400">
+                      done_all
+                    </span>
                     <span>Select All</span>
                   </button>
                   <button
@@ -760,7 +787,9 @@ export default function ManageModelsPanel() {
                     className="inline-flex items-center gap-1 px-2 py-1 rounded-lg border border-white/10 bg-white/5 hover:bg-white/10 text-zinc-300 text-[10px] font-medium transition-all cursor-pointer active:scale-95"
                     title={`Deselect all models for ${providerId}`}
                   >
-                    <span className="material-symbols-outlined text-[12px] text-zinc-400">remove_done</span>
+                    <span className="material-symbols-outlined text-[12px] text-zinc-400">
+                      remove_done
+                    </span>
                     <span>Deselect All</span>
                   </button>
                   <button
@@ -772,7 +801,9 @@ export default function ManageModelsPanel() {
                     className="inline-flex items-center gap-1 px-2 py-1 rounded-lg border border-emerald-500/25 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300 text-[10px] font-medium transition-all cursor-pointer active:scale-95"
                     title={`Activate all models that passed tests for ${providerId}`}
                   >
-                    <span className="material-symbols-outlined text-[12px] text-emerald-400">check_circle</span>
+                    <span className="material-symbols-outlined text-[12px] text-emerald-400">
+                      check_circle
+                    </span>
                     <span>Activate Working</span>
                   </button>
                   <button
@@ -829,6 +860,7 @@ export default function ManageModelsPanel() {
                     const draft = aliasDrafts[key] ?? {
                       name: cust?.customName ?? "",
                       alias: cust?.customAlias ?? "",
+                      contextWindow: cust?.contextWindow ? String(cust.contextWindow) : "",
                     };
                     const ctxTokens = cust?.contextWindow ?? m.contextWindow ?? m.inputTokenLimit;
                     const ctxLabel = formatContextWindow(ctxTokens ?? null);
@@ -845,11 +877,17 @@ export default function ManageModelsPanel() {
                     const cachedBadge = !test && cust?.isTested && cust.testStatus;
 
                     return (
-                      <div key={m.id} className="px-3.5 py-2 space-y-1.5 hover:bg-white/[0.015] transition-colors">
+                      <div
+                        key={m.id}
+                        className="px-3.5 py-2 space-y-1.5 hover:bg-white/[0.015] transition-colors"
+                      >
                         {/* Compact Top Bar: Toggle, ID, Badges, Modality Pills, Test Button */}
                         <div className="flex flex-wrap items-center gap-2">
                           {/* Cupertino iOS Switch for Active Status */}
-                          <label className="relative inline-flex items-center cursor-pointer shrink-0" title={isActive ? "Active (downstream accessible)" : "Disabled"}>
+                          <label
+                            className="relative inline-flex items-center cursor-pointer shrink-0"
+                            title={isActive ? "Active (downstream accessible)" : "Disabled"}
+                          >
                             <input
                               type="checkbox"
                               checked={isActive}
@@ -861,7 +899,9 @@ export default function ManageModelsPanel() {
                             />
                             <div
                               className={`w-7.5 h-4.5 rounded-full transition-colors duration-200 ease-in-out p-0.5 flex items-center ${
-                                isActive ? "bg-cyan-500 shadow-sm shadow-cyan-500/30" : "bg-white/20"
+                                isActive
+                                  ? "bg-cyan-500 shadow-sm shadow-cyan-500/30"
+                                  : "bg-white/20"
                               }`}
                             >
                               <div
@@ -916,8 +956,19 @@ export default function ManageModelsPanel() {
                           </button>
 
                           {ctxLabel && (
-                            <span className="text-[9px] font-mono px-2 py-0.5 rounded-full bg-white/5 border border-white/10 text-zinc-400">
-                              {ctxLabel} ctx
+                            <span
+                              title={
+                                cust?.contextWindow
+                                  ? `Custom context window override: ${cust.contextWindow} tokens`
+                                  : `Context window: ${ctxTokens} tokens`
+                              }
+                              className={`text-[9px] font-mono px-2 py-0.5 rounded-full border ${
+                                cust?.contextWindow
+                                  ? "bg-purple-500/15 text-purple-300 border-purple-500/30"
+                                  : "bg-white/5 border border-white/10 text-zinc-400"
+                              }`}
+                            >
+                              {ctxLabel} ctx{cust?.contextWindow ? " (custom)" : ""}
                             </span>
                           )}
 
@@ -928,7 +979,9 @@ export default function ManageModelsPanel() {
                                 type="button"
                                 onClick={() => handleSelectCapability(key, "text")}
                                 title={`Text / Chat: Conversational dialogue & instructions (${
-                                  selectedCap === "text" ? "Active for test" : "Click to select for test"
+                                  selectedCap === "text"
+                                    ? "Active for test"
+                                    : "Click to select for test"
                                 })`}
                                 className={`size-5.5 rounded-full text-[9px] font-medium transition-all inline-flex items-center justify-center cursor-pointer ${
                                   selectedCap === "text"
@@ -946,7 +999,9 @@ export default function ManageModelsPanel() {
                                 type="button"
                                 onClick={() => handleSelectCapability(key, "vision")}
                                 title={`Vision: Multimodal visual input & image analysis (${
-                                  selectedCap === "vision" ? "Active for test" : "Click to select for test"
+                                  selectedCap === "vision"
+                                    ? "Active for test"
+                                    : "Click to select for test"
                                 })`}
                                 className={`size-5.5 rounded-full text-[9px] font-medium transition-all inline-flex items-center justify-center cursor-pointer ${
                                   selectedCap === "vision"
@@ -964,7 +1019,9 @@ export default function ManageModelsPanel() {
                                 type="button"
                                 onClick={() => handleSelectCapability(key, "reasoning")}
                                 title={`Reasoning: Chain-of-thought logic & deep thinking (${
-                                  selectedCap === "reasoning" ? "Active for test" : "Click to select for test"
+                                  selectedCap === "reasoning"
+                                    ? "Active for test"
+                                    : "Click to select for test"
                                 })`}
                                 className={`size-5.5 rounded-full text-[9px] font-medium transition-all inline-flex items-center justify-center cursor-pointer ${
                                   selectedCap === "reasoning"
@@ -982,7 +1039,9 @@ export default function ManageModelsPanel() {
                                 type="button"
                                 onClick={() => handleSelectCapability(key, "code")}
                                 title={`Code: Programming, debugging & syntax (${
-                                  selectedCap === "code" ? "Active for test" : "Click to select for test"
+                                  selectedCap === "code"
+                                    ? "Active for test"
+                                    : "Click to select for test"
                                 })`}
                                 className={`size-5.5 rounded-full text-[9px] font-medium transition-all inline-flex items-center justify-center cursor-pointer ${
                                   selectedCap === "code"
@@ -1000,7 +1059,9 @@ export default function ManageModelsPanel() {
                                 type="button"
                                 onClick={() => handleSelectCapability(key, "image_gen")}
                                 title={`Image Generation: Text-to-image synthesis (${
-                                  selectedCap === "image_gen" || selectedCap === "image" ? "Active for test" : "Click to select for test"
+                                  selectedCap === "image_gen" || selectedCap === "image"
+                                    ? "Active for test"
+                                    : "Click to select for test"
                                 })`}
                                 className={`size-5.5 rounded-full text-[9px] font-medium transition-all inline-flex items-center justify-center cursor-pointer ${
                                   selectedCap === "image_gen" || selectedCap === "image"
@@ -1018,7 +1079,9 @@ export default function ManageModelsPanel() {
                                 type="button"
                                 onClick={() => handleSelectCapability(key, "video")}
                                 title={`Video: Temporal motion & video understanding (${
-                                  selectedCap === "video" ? "Active for test" : "Click to select for test"
+                                  selectedCap === "video"
+                                    ? "Active for test"
+                                    : "Click to select for test"
                                 })`}
                                 className={`size-5.5 rounded-full text-[9px] font-medium transition-all inline-flex items-center justify-center cursor-pointer ${
                                   selectedCap === "video"
@@ -1036,7 +1099,9 @@ export default function ManageModelsPanel() {
                                 type="button"
                                 onClick={() => handleSelectCapability(key, "audio")}
                                 title={`Audio: Speech transcription & audio understanding (${
-                                  selectedCap === "audio" ? "Active for test" : "Click to select for test"
+                                  selectedCap === "audio"
+                                    ? "Active for test"
+                                    : "Click to select for test"
                                 })`}
                                 className={`size-5.5 rounded-full text-[9px] font-medium transition-all inline-flex items-center justify-center cursor-pointer ${
                                   selectedCap === "audio"
@@ -1054,7 +1119,9 @@ export default function ManageModelsPanel() {
                                 type="button"
                                 onClick={() => handleSelectCapability(key, "search")}
                                 title={`Search: Grounded web search & real-time info (${
-                                  selectedCap === "search" ? "Active for test" : "Click to select for test"
+                                  selectedCap === "search"
+                                    ? "Active for test"
+                                    : "Click to select for test"
                                 })`}
                                 className={`size-5.5 rounded-full text-[9px] font-medium transition-all inline-flex items-center justify-center cursor-pointer ${
                                   selectedCap === "search"
@@ -1119,7 +1186,10 @@ export default function ManageModelsPanel() {
 
                         {/* Test Response Preview */}
                         {(() => {
-                          const previewText = (test?.preview ?? cust?.testResponse ?? "").slice(0, 500);
+                          const previewText = (test?.preview ?? cust?.testResponse ?? "").slice(
+                            0,
+                            500
+                          );
                           if (!previewText) return null;
                           const hasImg = isImageResponse(previewText);
                           return (
@@ -1132,6 +1202,7 @@ export default function ManageModelsPanel() {
                                   title="Click to view full image in new tab"
                                   className="shrink-0 group/img"
                                 >
+                                  {/* eslint-disable-next-line @next/next/no-img-element */}
                                   <img
                                     src={extractImageUrl(previewText)}
                                     alt="Generated output"
@@ -1151,9 +1222,9 @@ export default function ManageModelsPanel() {
                           );
                         })()}
 
-                        {/* Cupertino Inset Manageable Alias Fields with Minimal Gaps */}
+                        {/* Cupertino Inset Manageable Fields with Display, Alias ID & Context Window */}
                         {isActive && (
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1 border-t border-white/[0.04]">
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-2 pt-1 border-t border-white/[0.04]">
                             <div className="flex items-center gap-1.5 min-w-0">
                               <span className="text-[10px] uppercase font-mono tracking-wider text-zinc-500 shrink-0">
                                 Display:
@@ -1184,6 +1255,27 @@ export default function ManageModelsPanel() {
                                   }))
                                 }
                                 placeholder={m.id}
+                                className="flex-1 h-6.5 px-2 py-0.5 text-[11px] bg-black/40 border border-white/10 rounded-md text-white font-mono placeholder:text-zinc-600 focus:outline-none focus:border-cyan-400/60 focus:ring-1 focus:ring-cyan-400/30 transition-all"
+                              />
+                            </div>
+
+                            <div className="flex items-center gap-1.5 min-w-0">
+                              <span className="text-[10px] uppercase font-mono tracking-wider text-zinc-500 shrink-0">
+                                Context:
+                              </span>
+                              <input
+                                value={draft.contextWindow}
+                                onChange={(e) =>
+                                  setAliasDrafts((prev) => ({
+                                    ...prev,
+                                    [key]: { ...draft, contextWindow: e.target.value },
+                                  }))
+                                }
+                                placeholder={
+                                  (m.contextWindow ?? m.inputTokenLimit)
+                                    ? `${m.contextWindow ?? m.inputTokenLimit} (e.g. 500k)`
+                                    : "e.g. 500k"
+                                }
                                 className="flex-1 h-6.5 px-2 py-0.5 text-[11px] bg-black/40 border border-white/10 rounded-md text-white font-mono placeholder:text-zinc-600 focus:outline-none focus:border-cyan-400/60 focus:ring-1 focus:ring-cyan-400/30 transition-all"
                               />
                               <button
