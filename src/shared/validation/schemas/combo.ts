@@ -400,6 +400,15 @@ export const createComboSchema = z
       .regex(/^\d+$/, "dimensions must be a positive integer string")
       .optional()
       .nullable(),
+    pricing: z
+      .object({
+        tier: z.enum(["free", "paid"]).optional().default("free"),
+        inputCost: z.number().nonnegative().optional().nullable(),
+        cacheCost: z.number().nonnegative().optional().nullable(),
+        outputCost: z.number().nonnegative().optional().nullable(),
+      })
+      .optional()
+      .nullable(),
   })
   .superRefine(validateQuotaOnlyComboRefs);
 
@@ -477,6 +486,15 @@ export const updateComboSchema = z
       .regex(/^\d+$/, "dimensions must be a positive integer string")
       .optional()
       .nullable(),
+    pricing: z
+      .object({
+        tier: z.enum(["free", "paid"]).optional().default("free"),
+        inputCost: z.number().nonnegative().optional().nullable(),
+        cacheCost: z.number().nonnegative().optional().nullable(),
+        outputCost: z.number().nonnegative().optional().nullable(),
+      })
+      .optional()
+      .nullable(),
   })
   .superRefine((value, ctx) => {
     if (
@@ -497,7 +515,8 @@ export const updateComboSchema = z
       value.compressionOverride === undefined &&
       value.universal_handoff === undefined &&
       value.universalHandoff === undefined &&
-      value.dimensions === undefined
+      value.dimensions === undefined &&
+      value.pricing === undefined
     ) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,

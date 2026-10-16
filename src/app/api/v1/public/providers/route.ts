@@ -190,13 +190,60 @@ export async function GET(request: Request) {
     // In normal public mode:
     // If publishedList has items, return only published ones.
     // Otherwise return connected providers (or all if none connected).
+    const connectedProviders = allProviders.filter((p) => p.hasConnection);
     const filtered = showAll
       ? allProviders
       : publishedList.length > 0
         ? allProviders.filter((p) => publishedList.includes(p.id))
-        : allProviders.filter((p) => p.hasConnection).length > 0
-          ? allProviders.filter((p) => p.hasConnection)
-          : allProviders.slice(0, 10);
+        : connectedProviders.length > 0
+          ? connectedProviders
+          : allProviders;
+    let publicCombos: Array<{
+      id?: string;
+      name?: string;
+      displayName?: string;
+      strategy?: string;
+      models: string[];
+      pricing?: {
+        tier?: "free" | "paid";
+        inputCost?: number | null;
+        cacheCost?: number | null;
+        outputCost?: number | null;
+      };
+    }> = [];
+
+    try {
+      const { getCombos } = await import("@/lib/db/combos");
+      const allCombos = await getCombos();
+      publicCombos = (allCombos || [])
+        .filter((c) => c.isActive !== false && !c.isHidden && typeof c.name === "string" && c.name.length > 0)
+        .map((c) => ({
+          id: typeof c.id === "string" ? c.id : (c.id ? String(c.id) : undefined),
+          name: typeof c.name === "string" ? c.name : undefined,
+          displayName: typeof c.displayName === "string" ? c.displayName : undefined,
+          strategy: typeof c.strategy === "string" ? c.strategy : "priority",
+          models: Array.isArray(c.models)
+            ? c.models
+                .map((m: unknown) => {
+                  if (typeof m === "string") return m;
+                  if (m && typeof m === "object") {
+                    const rec = m as Record<string, unknown>;
+                    return String(rec.model || rec.comboName || rec.target || "");
+                  }
+                  return "";
+                })
+                .filter(Boolean)
+            : [],
+          pricing: (c.pricing as { tier?: "free" | "paid"; inputCost?: number; cacheCost?: number; outputCost?: number }) || {
+            tier: "free",
+            inputCost: 0,
+            cacheCost: 0,
+            outputCost: 0,
+          },
+        }));
+    } catch (comboErr) {
+      console.warn("Could not load combos for public catalog:", comboErr);
+    }
 
     return NextResponse.json(
       {
@@ -206,6 +253,7 @@ export async function GET(request: Request) {
         totalConnected: allProviders.filter((p) => p.hasConnection).length,
         publishedCount: publishedList.length,
         providers: filtered,
+        combos: publicCombos,
       },
       {
         status: 200,

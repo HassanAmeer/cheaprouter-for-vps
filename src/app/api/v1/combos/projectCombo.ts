@@ -72,6 +72,7 @@ export interface PublicCombo {
   description?: string;
   models: PublicComboStep[];
   capabilities?: PublicComboCapabilities;
+  pricing?: Record<string, unknown>;
 }
 
 /** Capability subset projectCombo needs; injectable so tests stay DB-free + deterministic. */
@@ -205,6 +206,9 @@ export function projectCombo(
   const out: PublicCombo = { name, strategy, models: [] };
   if (typeof combo.description === "string" && combo.description.length > 0) {
     out.description = combo.description;
+  }
+  if (combo.pricing && typeof combo.pricing === "object") {
+    out.pricing = combo.pricing as Record<string, unknown>;
   }
 
   const rawModels = Array.isArray(combo.models) ? combo.models : [];

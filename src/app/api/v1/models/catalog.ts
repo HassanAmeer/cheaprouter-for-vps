@@ -994,6 +994,7 @@ async function buildUnifiedModelsResponseCore(
         ...(comboDisplayName ? { display_name: comboDisplayName } : {}),
         ...(comboDescription ? { description: comboDescription } : {}),
         ...comboMetadata,
+        ...(combo.pricing ? { pricing: combo.pricing } : {}),
       });
 
       // #9147: combos can number hundreds at catalog scale — yield periodically.

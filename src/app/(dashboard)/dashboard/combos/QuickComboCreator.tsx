@@ -113,6 +113,15 @@ export default function QuickComboCreator({
   const [candidates, setCandidates] = useState<Candidate[]>([]);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [filter, setFilter] = useState("");
+  const [page, setPage] = useState(1);
+  const PAGE_SIZE = 50;
+
+  // Pricing & Tier Label state
+  const [pricingTier, setPricingTier] = useState<"free" | "paid">("free");
+  const [inputCost, setInputCost] = useState("");
+  const [cacheCost, setCacheCost] = useState("");
+  const [outputCost, setOutputCost] = useState("");
+
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
@@ -180,10 +189,22 @@ export default function QuickComboCreator({
     }
     setCreating(true);
     try {
+      const pricingPayload = {
+        tier: pricingTier,
+        inputCost: pricingTier === "paid" && inputCost.trim() ? Math.max(0, Number(inputCost)) : 0,
+        cacheCost: pricingTier === "paid" && cacheCost.trim() ? Math.max(0, Number(cacheCost)) : 0,
+        outputCost: pricingTier === "paid" && outputCost.trim() ? Math.max(0, Number(outputCost)) : 0,
+      };
+
       const res = await fetch("/api/combos", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: comboName, models: targets, strategy }),
+        body: JSON.stringify({
+          name: comboName,
+          models: targets,
+          strategy,
+          pricing: pricingPayload,
+        }),
       });
       const data = await res.json().catch(() => null);
       if (!res.ok) {
@@ -202,13 +223,17 @@ export default function QuickComboCreator({
       setComboTestResult(null);
       setName("");
       setSelected(new Set());
+      setPricingTier("free");
+      setInputCost("");
+      setCacheCost("");
+      setOutputCost("");
       onCreated?.(createdId);
     } catch (err) {
       setFormError(err instanceof Error ? err.message : "Create failed");
     } finally {
       setCreating(false);
     }
-  }, [name, candidates, selected, strategy, onCreated]);
+  }, [name, candidates, selected, strategy, pricingTier, inputCost, cacheCost, outputCost, onCreated]);
 
   // 💡 Idea 4: Instant combo dry-run probe
   const testCreatedCombo = useCallback(async (comboName: string) => {
@@ -273,6 +298,50 @@ export default function QuickComboCreator({
       matchesSearch(c.providerId, filter)
   );
 
+  const totalPages = Math.max(1, Math.ceil(visible.length / PAGE_SIZE));
+  const currentPage = Math.min(Math.max(1, page), totalPages);
+  const startIndex = (currentPage - 1) * PAGE_SIZE;
+  const paginatedCandidates = visible.slice(startIndex, startIndex + PAGE_SIZE);
+
+  const renderPaginationBar = (position: "top" | "bottom") => {
+    if (visible.length <= PAGE_SIZE) return null;
+    return (
+      <div
+        className={`flex items-center justify-between gap-2 px-3 py-1.5 text-xs text-text-muted bg-black/20 dark:bg-white/5 rounded-lg border border-border/60 ${
+          position === "top" ? "mb-1" : "mt-1"
+        }`}
+      >
+        <span className="font-mono text-[11px] text-text-muted">
+          Showing {visible.length === 0 ? 0 : startIndex + 1}–
+          {Math.min(startIndex + PAGE_SIZE, visible.length)} of {visible.length} models
+        </span>
+        <div className="flex items-center gap-1.5">
+          <Button
+            size="sm"
+            variant="ghost"
+            disabled={currentPage <= 1}
+            onClick={() => setPage((p) => Math.max(1, p - 1))}
+            className="!px-2.5 !py-1 text-xs"
+          >
+            Previous
+          </Button>
+          <span className="px-2 py-0.5 rounded bg-black/30 dark:bg-white/10 font-mono text-[11px] font-semibold text-text-main">
+            Page {currentPage} of {totalPages}
+          </span>
+          <Button
+            size="sm"
+            variant="ghost"
+            disabled={currentPage >= totalPages}
+            onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+            className="!px-2.5 !py-1 text-xs"
+          >
+            Next
+          </Button>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <Card padding="sm">
       <button
@@ -285,7 +354,7 @@ export default function QuickComboCreator({
         </span>
         <span className="text-sm font-semibold">Quick combo</span>
         <span className="text-xs text-text-muted">
-          Name + active models + failover/random — no wizard needed
+          Name + active models + failover/random + pricing — no wizard needed
         </span>
       </button>
 
@@ -327,6 +396,103 @@ export default function QuickComboCreator({
             </div>
           </div>
 
+          {/* Pricing & Tier Label Section */}
+          <div className="flex flex-col gap-2.5 p-3 rounded-xl border border-border/70 bg-black/10 dark:bg-white/[0.02]">
+            <div className="flex items-center justify-between gap-2 flex-wrap">
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-semibold text-text-main flex items-center gap-1.5">
+                  <span className="material-symbols-outlined text-[16px] text-primary">sell</span>
+                  Pricing & Tier Label
+                </span>
+                <span className="text-[11px] text-text-muted">
+                  (Exported via API to Reseller platform & API docs)
+                </span>
+              </div>
+              {/* Free vs Paid Toggle */}
+              <div className="flex items-center gap-1 p-0.5 rounded-lg bg-black/20 dark:bg-white/10 border border-border/60">
+                <button
+                  type="button"
+                  onClick={() => setPricingTier("free")}
+                  className={`px-3 py-1 rounded-md text-xs font-semibold transition-all flex items-center gap-1.5 cursor-pointer ${
+                    pricingTier === "free"
+                      ? "bg-emerald-500 text-white shadow-sm"
+                      : "text-text-muted hover:text-text-main"
+                  }`}
+                >
+                  <span className="material-symbols-outlined text-[13px]">check_circle</span>
+                  Free
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPricingTier("paid")}
+                  className={`px-3 py-1 rounded-md text-xs font-semibold transition-all flex items-center gap-1.5 cursor-pointer ${
+                    pricingTier === "paid"
+                      ? "bg-amber-500 text-white shadow-sm"
+                      : "text-text-muted hover:text-text-main"
+                  }`}
+                >
+                  <span className="material-symbols-outlined text-[13px]">payments</span>
+                  Paid
+                </button>
+              </div>
+            </div>
+
+            {/* Cost inputs */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-1">
+              <label className="flex flex-col gap-1 text-[11px] text-text-muted">
+                <span className="flex items-center justify-between">
+                  <span>Input Cost ($/1M tokens)</span>
+                  {pricingTier === "free" && (
+                    <span className="text-emerald-400 font-semibold text-[10px]">$0 (Free)</span>
+                  )}
+                </span>
+                <Input
+                  type="number"
+                  step="0.0001"
+                  min="0"
+                  disabled={pricingTier === "free"}
+                  value={pricingTier === "free" ? "0" : inputCost}
+                  onChange={(e) => setInputCost(e.target.value)}
+                  placeholder="e.g. 0.50"
+                />
+              </label>
+              <label className="flex flex-col gap-1 text-[11px] text-text-muted">
+                <span className="flex items-center justify-between">
+                  <span>Cache Read Cost ($/1M tokens)</span>
+                  {pricingTier === "free" && (
+                    <span className="text-emerald-400 font-semibold text-[10px]">$0 (Free)</span>
+                  )}
+                </span>
+                <Input
+                  type="number"
+                  step="0.0001"
+                  min="0"
+                  disabled={pricingTier === "free"}
+                  value={pricingTier === "free" ? "0" : cacheCost}
+                  onChange={(e) => setCacheCost(e.target.value)}
+                  placeholder="e.g. 0.125"
+                />
+              </label>
+              <label className="flex flex-col gap-1 text-[11px] text-text-muted">
+                <span className="flex items-center justify-between">
+                  <span>Output Cost ($/1M tokens)</span>
+                  {pricingTier === "free" && (
+                    <span className="text-emerald-400 font-semibold text-[10px]">$0 (Free)</span>
+                  )}
+                </span>
+                <Input
+                  type="number"
+                  step="0.0001"
+                  min="0"
+                  disabled={pricingTier === "free"}
+                  value={pricingTier === "free" ? "0" : outputCost}
+                  onChange={(e) => setOutputCost(e.target.value)}
+                  placeholder="e.g. 1.50"
+                />
+              </label>
+            </div>
+          </div>
+
           <div className="flex flex-col gap-2">
             <div className="flex items-center gap-2">
               <span className="text-xs text-text-muted">
@@ -336,8 +502,11 @@ export default function QuickComboCreator({
               <span className="flex-1" />
               <Input
                 value={filter}
-                onChange={(e) => setFilter(e.target.value)}
-                placeholder="Filter…"
+                onChange={(e) => {
+                  setFilter(e.target.value);
+                  setPage(1);
+                }}
+                placeholder="Filter models…"
               />
             </div>
             {loading && <p className="text-xs text-text-muted">Loading active models…</p>}
@@ -347,65 +516,73 @@ export default function QuickComboCreator({
               </p>
             )}
             {!loading && !loadError && (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 max-h-[260px] overflow-y-auto pr-1">
-                {visible.map((c) => (
-                  <label
-                    key={c.key}
-                    className="flex items-start gap-2.5 px-3 py-2 rounded-xl border border-border/70 hover:border-primary/50 transition-all cursor-pointer bg-black/20 hover:bg-black/30"
-                  >
-                    <input
-                      type="checkbox"
-                      checked={selected.has(c.key)}
-                      onChange={(e) => toggleCandidate(c.key, e.target.checked)}
-                      className="size-4 accent-primary shrink-0 mt-0.5 rounded cursor-pointer"
-                    />
-                    <div className="flex flex-col min-w-0 flex-1">
-                      <div className="flex items-center gap-1.5 min-w-0">
-                        {/* 💡 Idea 5: Live Health Dot */}
-                        <span
-                          className={`size-2 rounded-full shrink-0 ${
-                            c.healthStatus === "cooldown"
-                              ? "bg-amber-400 ring-2 ring-amber-400/20"
-                              : c.healthStatus === "error"
-                                ? "bg-rose-500 ring-2 ring-rose-500/20"
-                                : "bg-emerald-400 ring-2 ring-emerald-400/20"
-                          }`}
-                          title={
-                            c.healthStatus === "cooldown"
-                              ? "Cooldown / Rate-limited"
-                              : c.healthStatus === "error"
-                                ? "Upstream Test Failed"
-                                : "Healthy & Ready"
-                          }
-                        />
-                        {/* 💡 Idea 3: Rich Model Identity (Display Name) */}
-                        <span
-                          className="font-semibold text-xs text-text-main truncate"
-                          title={c.displayName}
-                        >
-                          {c.displayName}
-                        </span>
+              <>
+                {/* Top Pagination Bar */}
+                {renderPaginationBar("top")}
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 max-h-[340px] overflow-y-auto pr-1">
+                  {paginatedCandidates.map((c) => (
+                    <label
+                      key={c.key}
+                      className="flex items-start gap-2.5 px-3 py-2 rounded-xl border border-border/70 hover:border-primary/50 transition-all cursor-pointer bg-black/20 hover:bg-black/30"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={selected.has(c.key)}
+                        onChange={(e) => toggleCandidate(c.key, e.target.checked)}
+                        className="size-4 accent-primary shrink-0 mt-0.5 rounded cursor-pointer"
+                      />
+                      <div className="flex flex-col min-w-0 flex-1">
+                        <div className="flex items-center gap-1.5 min-w-0">
+                          {/* 💡 Idea 5: Live Health Dot */}
+                          <span
+                            className={`size-2 rounded-full shrink-0 ${
+                              c.healthStatus === "cooldown"
+                                ? "bg-amber-400 ring-2 ring-amber-400/20"
+                                : c.healthStatus === "error"
+                                  ? "bg-rose-500 ring-2 ring-rose-500/20"
+                                  : "bg-emerald-400 ring-2 ring-emerald-400/20"
+                            }`}
+                            title={
+                              c.healthStatus === "cooldown"
+                                ? "Cooldown / Rate-limited"
+                                : c.healthStatus === "error"
+                                  ? "Upstream Test Failed"
+                                  : "Healthy & Ready"
+                            }
+                          />
+                          {/* 💡 Idea 3: Rich Model Identity (Display Name) */}
+                          <span
+                            className="font-semibold text-xs text-text-main truncate"
+                            title={c.displayName}
+                          >
+                            {c.displayName}
+                          </span>
+                        </div>
+                        {/* 💡 Idea 3: Provider and Model ID faint mono detail */}
+                        <div className="flex items-center gap-1 text-[10px] text-text-muted/70 font-mono truncate mt-0.5">
+                          <span className="truncate">
+                            {c.providerId} / {c.modelId}
+                          </span>
+                          {c.customAlias && (
+                            <span className="text-primary/80 shrink-0">➔ {c.customAlias}</span>
+                          )}
+                        </div>
                       </div>
-                      {/* 💡 Idea 3: Provider and Model ID faint mono detail */}
-                      <div className="flex items-center gap-1 text-[10px] text-text-muted/70 font-mono truncate mt-0.5">
-                        <span className="truncate">
-                          {c.providerId} / {c.modelId}
-                        </span>
-                        {c.customAlias && (
-                          <span className="text-primary/80 shrink-0">➔ {c.customAlias}</span>
-                        )}
-                      </div>
-                    </div>
-                  </label>
-                ))}
-                {visible.length === 0 && (
-                  <p className="text-xs text-text-muted col-span-full py-3 text-center">
-                    {candidates.length === 0
-                      ? "No active models — activate some in Providers → Manage Models first."
-                      : "No candidates match the filter."}
-                  </p>
-                )}
-              </div>
+                    </label>
+                  ))}
+                  {visible.length === 0 && (
+                    <p className="text-xs text-text-muted col-span-full py-3 text-center">
+                      {candidates.length === 0
+                        ? "No active models — activate some in Providers → Manage Models first."
+                        : "No candidates match the filter."}
+                    </p>
+                  )}
+                </div>
+
+                {/* Bottom Pagination Bar */}
+                {renderPaginationBar("bottom")}
+              </>
             )}
           </div>
 

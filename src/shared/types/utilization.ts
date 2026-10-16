@@ -90,6 +90,13 @@ export interface ComboHealthResponse {
   combos: ComboHealthMetrics[];
 }
 
+export interface ComboPricing {
+  tier?: "free" | "paid";
+  inputCost?: number | null;
+  cacheCost?: number | null;
+  outputCost?: number | null;
+}
+
 export interface ComboRecord {
   id?: string;
   name?: string;
@@ -97,6 +104,7 @@ export interface ComboRecord {
   models?: unknown[];
   autoConfig?: unknown;
   config?: unknown;
+  pricing?: ComboPricing | null;
 }
 
 export type UtilizationTimeRange = "1h" | "24h" | "7d" | "30d";

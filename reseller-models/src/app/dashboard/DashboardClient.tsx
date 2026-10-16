@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import type { PublicCombo } from "@/lib/cheaproute";
 
 interface Subscription {
   plan: {
@@ -37,6 +38,7 @@ export default function DashboardClient({
 }) {
   const [sub, setSub] = useState<Subscription | null>(null);
   const [keys, setKeys] = useState<ByokKey[]>([]);
+  const [combos, setCombos] = useState<PublicCombo[]>([]);
   const [analytics, setAnalytics] = useState<Analytics | null>(null);
   const [byokEnabled, setByokEnabled] = useState<boolean | null>(null);
   const [loading, setLoading] = useState(true);
@@ -64,6 +66,7 @@ export default function DashboardClient({
       if (s.error) throw new Error(s.error);
       setSub(s);
       setKeys(k.keys ?? []);
+      setCombos(c?.combos ?? []);
       setAnalytics(a.error ? null : a);
       setByokEnabled(c?.byokEnabled ?? null);
     } catch (err) {
@@ -158,6 +161,14 @@ export default function DashboardClient({
 
   const maxDaily = Math.max(1, ...((analytics?.daily ?? []).map((d) => d.tokens)));
 
+  function copyText(text: string) {
+    if (navigator?.clipboard?.writeText) {
+      navigator.clipboard.writeText(text);
+    }
+  }
+
+  const gatewayApiUrl = process.env.NEXT_PUBLIC_CHEAPROUTE_API_URL || "http://localhost:20128/v1";
+
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 16, padding: "32px 0" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
@@ -188,7 +199,13 @@ export default function DashboardClient({
       </section>
 
       <section className="card">
-        <h2 style={{ margin: "0 0 8px", fontSize: 18 }}>API Key</h2>
+        <h2 style={{ margin: "0 0 8px", fontSize: 18 }}>API Key & Endpoint</h2>
+        <div style={{ marginBottom: 12, fontSize: 13 }}>
+          <span className="muted">Base URL: </span>
+          <code className="mono" style={{ background: "rgba(255,255,255,0.06)", padding: "2px 6px", borderRadius: 4 }}>
+            {gatewayApiUrl}
+          </code>
+        </div>
         {!sub.plan.hasKey && !apiKey && (
           <p className="muted" style={{ fontSize: 13 }}>
             No key issued yet — ask your admin to assign a plan, or regenerate below.
@@ -203,6 +220,71 @@ export default function DashboardClient({
         {keyMsg && <div className="alert ok" style={{ marginBottom: 8 }}>{keyMsg}</div>}
         <button className="btn small" onClick={regenerate}>Regenerate key</button>
       </section>
+
+      {/* Combos & Models Catalog Card */}
+      {combos.length > 0 && (
+        <section className="card">
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+            <h2 style={{ margin: 0, fontSize: 18 }}>Available AI Combos ({combos.length})</h2>
+            <span className="badge">Auto-Routed</span>
+          </div>
+          <div style={{ display: "grid", gap: 10 }}>
+            {combos.map((c) => {
+              const tier = c.pricing?.tier || "free";
+              const isFree = tier === "free";
+              return (
+                <div
+                  key={c.name}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    padding: "10px 12px",
+                    borderRadius: 8,
+                    background: "rgba(255,255,255,0.02)",
+                    border: "1px solid var(--border-subtle, rgba(255,255,255,0.08))",
+                  }}
+                >
+                  <div>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <span className="mono" style={{ fontWeight: 600, fontSize: 13 }}>{c.name}</span>
+                      <span
+                        style={{
+                          fontSize: 10,
+                          padding: "2px 6px",
+                          borderRadius: 4,
+                          backgroundColor: isFree ? "rgba(16, 185, 129, 0.2)" : "rgba(168, 85, 247, 0.2)",
+                          color: isFree ? "#34d399" : "#c084fc",
+                          fontWeight: 700,
+                          textTransform: "uppercase",
+                        }}
+                      >
+                        {isFree
+                          ? "FREE"
+                          : `PAID ($${c.pricing?.inputCost ?? 0} in / $${c.pricing?.outputCost ?? 0} out)`}
+                      </span>
+                      <span className="badge" style={{ fontSize: 10 }}>{c.strategy || "priority"}</span>
+                    </div>
+                    {c.models && c.models.length > 0 && (
+                      <div className="muted" style={{ fontSize: 11, marginTop: 4 }}>
+                        Fallbacks: {c.models.slice(0, 4).join(" → ")}{c.models.length > 4 ? ` +${c.models.length - 4} more` : ""}
+                      </div>
+                    )}
+                  </div>
+                  <button
+                    className="btn ghost small"
+                    style={{ fontSize: 11 }}
+                    onClick={() => copyText(c.name)}
+                    title="Copy model name for API requests"
+                  >
+                    Copy Model
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        </section>
+      )}
 
       {byokEnabled !== false && (
         <section className="card">

@@ -8,7 +8,7 @@ export async function GET() {
     return NextResponse.json(catalog);
   } catch (err) {
     return NextResponse.json(
-      { providers: [], byokEnabled: null, error: err instanceof Error ? err.message : "Gateway unreachable" },
+      { providers: [], combos: [], byokEnabled: null, error: err instanceof Error ? err.message : "Gateway unreachable" },
       { status: 502 }
     );
   }

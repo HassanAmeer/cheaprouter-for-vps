@@ -19,18 +19,22 @@ export async function POST(request: Request) {
   try {
     const user = createUser(email, name, password);
     const token = createSession(user.id);
-    const cookieStore = await cookies();
-    cookieStore.set(SESSION_COOKIE, token, {
+    const response = NextResponse.json(
+      { user: { id: user.id, email: user.email, name: user.name, role: user.role } },
+      { status: 201 }
+    );
+    response.cookies.set(SESSION_COOKIE, token, {
       httpOnly: true,
       sameSite: "lax",
       path: "/",
       maxAge: 60 * 60 * 24 * 7,
     });
+    return response;
+  } catch (err) {
+    console.error("[register error]", err);
     return NextResponse.json(
-      { user: { id: user.id, email: user.email, name: user.name, role: user.role } },
-      { status: 201 }
+      { error: err instanceof Error ? err.message : "Registration failed" },
+      { status: 500 }
     );
-  } catch {
-    return NextResponse.json({ error: "Registration failed" }, { status: 500 });
   }
 }

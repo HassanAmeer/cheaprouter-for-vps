@@ -1917,6 +1917,30 @@ function ComboCardInner({
                   proxy
                 </span>
               )}
+              {combo.pricing && (
+                <Tooltip
+                  content={
+                    combo.pricing.tier === "paid"
+                      ? `Paid Tier — Input: $${combo.pricing.inputCost ?? 0}/1M | Cache: $${combo.pricing.cacheCost ?? 0}/1M | Output: $${combo.pricing.outputCost ?? 0}/1M`
+                      : "Free Tier — $0 / 1M tokens"
+                  }
+                >
+                  <span
+                    className={`text-[9px] uppercase font-semibold px-1.5 py-0.5 rounded-full flex items-center gap-0.5 ${
+                      combo.pricing.tier === "paid"
+                        ? "bg-amber-500/15 text-amber-500 border border-amber-500/30"
+                        : "bg-emerald-500/15 text-emerald-500 border border-emerald-500/30"
+                    }`}
+                  >
+                    <span className="material-symbols-outlined text-[10px]">
+                      {combo.pricing.tier === "paid" ? "payments" : "check_circle"}
+                    </span>
+                    {combo.pricing.tier === "paid"
+                      ? `Paid ($${combo.pricing.inputCost ?? 0}/$${combo.pricing.outputCost ?? 0})`
+                      : "Free"}
+                  </span>
+                </Tooltip>
+              )}
               <button
                 onClick={(e) => {
                   e.stopPropagation();

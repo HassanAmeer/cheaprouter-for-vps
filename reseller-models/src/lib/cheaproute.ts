@@ -23,8 +23,25 @@ export interface PublicProvider {
   models?: string[];
 }
 
+export interface PublicComboPricing {
+  tier?: "free" | "paid";
+  inputCost?: number | null;
+  cacheCost?: number | null;
+  outputCost?: number | null;
+}
+
+export interface PublicCombo {
+  id?: string;
+  name: string;
+  displayName?: string;
+  strategy?: string;
+  models: string[];
+  pricing?: PublicComboPricing;
+}
+
 export async function fetchPublicProviders(): Promise<{
   providers: PublicProvider[];
+  combos: PublicCombo[];
   byokEnabled: boolean | null;
 }> {
   const res = await fetch(`${gatewayUrl()}/api/v1/public/providers?all=true`, {
@@ -40,7 +57,11 @@ export async function fetchPublicProviders(): Promise<{
   } catch {
     byokEnabled = null;
   }
-  return { providers: data.providers ?? [], byokEnabled };
+  return {
+    providers: data.providers ?? [],
+    combos: data.combos ?? [],
+    byokEnabled,
+  };
 }
 
 export interface ProvisionKeyInput {

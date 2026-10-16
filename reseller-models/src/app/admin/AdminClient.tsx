@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import type { PublicCombo } from "@/lib/cheaproute";
 
 interface Plan {
   id: number;
@@ -35,6 +36,7 @@ export default function AdminClient() {
   const [plans, setPlans] = useState<Plan[]>([]);
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [catalogProviders, setCatalogProviders] = useState<CatalogProvider[]>([]);
+  const [catalogCombos, setCatalogCombos] = useState<PublicCombo[]>([]);
   const [modelFilter, setModelFilter] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -53,13 +55,14 @@ export default function AdminClient() {
       const [p, u, cat] = await Promise.all([
         fetch("/api/admin/plans").then((r) => r.json()),
         fetch("/api/admin/users").then((r) => r.json()),
-        fetch("/api/catalog").then((r) => r.json()).catch(() => ({ providers: [] })),
+        fetch("/api/catalog").then((r) => r.json()).catch(() => ({ providers: [], combos: [] })),
       ]);
       if (p.error) throw new Error(p.error);
       if (u.error) throw new Error(u.error);
       setPlans(p.plans ?? []);
       setUsers(u.users ?? []);
       setCatalogProviders(cat.providers ?? []);
+      setCatalogCombos(cat.combos ?? []);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load admin data");
     } finally {
@@ -96,6 +99,14 @@ export default function AdminClient() {
 
   function selectAllActive() {
     setPlanForm({ ...planForm, models: allActiveModels.join(", ") });
+  }
+
+  function selectCombosByTier(tier: "free" | "paid") {
+    const matching = catalogCombos
+      .filter((c) => (c.pricing?.tier || "free") === tier)
+      .map((c) => c.name);
+    const union = Array.from(new Set([...selectedModelsArray, ...matching]));
+    setPlanForm({ ...planForm, models: union.join(", ") });
   }
 
   function clearAllModels() {
@@ -230,6 +241,117 @@ export default function AdminClient() {
               onChange={(e) => setPlanForm({ ...planForm, models: e.target.value })}
               placeholder="e.g. glm-5.3_flash, deepseek-r1"
             />
+
+            {/* Configured Combos & Tiers Selector */}
+            {catalogCombos.length > 0 && (
+              <div
+                style={{
+                  marginTop: 10,
+                  padding: "10px 12px",
+                  borderRadius: 8,
+                  background: "var(--surface-2, rgba(255,255,255,0.03))",
+                  border: "1px solid var(--border-subtle, rgba(255,255,255,0.08))",
+                }}
+              >
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    fontSize: 12,
+                    marginBottom: 8,
+                  }}
+                >
+                  <span style={{ display: "inline-flex", alignItems: "center", gap: 6, fontWeight: 600 }}>
+                    <span
+                      style={{
+                        width: 8,
+                        height: 8,
+                        borderRadius: "50%",
+                        backgroundColor: "#8b5cf6",
+                      }}
+                    />
+                    CheapRouter Combos ({catalogCombos.length}):
+                  </span>
+                  <div style={{ display: "flex", gap: 6 }}>
+                    <button
+                      type="button"
+                      className="btn ghost small"
+                      style={{ fontSize: 11, padding: "2px 8px" }}
+                      onClick={() => selectCombosByTier("free")}
+                    >
+                      + Free Combos
+                    </button>
+                    <button
+                      type="button"
+                      className="btn ghost small"
+                      style={{ fontSize: 11, padding: "2px 8px" }}
+                      onClick={() => selectCombosByTier("paid")}
+                    >
+                      + Paid Combos
+                    </button>
+                  </div>
+                </div>
+                <div
+                  style={{
+                    display: "flex",
+                    flexWrap: "wrap",
+                    gap: 6,
+                    maxHeight: 140,
+                    overflowY: "auto",
+                    paddingTop: 2,
+                  }}
+                >
+                  {catalogCombos.map((c) => {
+                    const isSelected = selectedModelsSet.has(c.name);
+                    const tier = c.pricing?.tier || "free";
+                    const isFree = tier === "free";
+                    return (
+                      <button
+                        key={c.name}
+                        type="button"
+                        onClick={() => toggleModel(c.name)}
+                        style={{
+                          fontSize: 11,
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: 6,
+                          padding: "4px 8px",
+                          borderRadius: 6,
+                          cursor: "pointer",
+                          transition: "all 0.15s ease",
+                          border: isSelected
+                            ? "1px solid #8b5cf6"
+                            : "1px solid var(--border-subtle, rgba(255,255,255,0.12))",
+                          backgroundColor: isSelected
+                            ? "rgba(139, 92, 246, 0.2)"
+                            : "transparent",
+                          color: isSelected ? "#c084fc" : "var(--text-muted, #94a3b8)",
+                          fontWeight: isSelected ? 600 : 400,
+                        }}
+                      >
+                        <span>{isSelected ? `✓ ${c.name}` : `+ ${c.name}`}</span>
+                        <span
+                          style={{
+                            fontSize: 9,
+                            padding: "1px 4px",
+                            borderRadius: 4,
+                            backgroundColor: isFree ? "rgba(16, 185, 129, 0.2)" : "rgba(168, 85, 247, 0.2)",
+                            color: isFree ? "#34d399" : "#c084fc",
+                            fontWeight: 700,
+                            textTransform: "uppercase",
+                          }}
+                        >
+                          {isFree
+                            ? "FREE"
+                            : `$${c.pricing?.inputCost ?? 0}/$${c.pricing?.outputCost ?? 0}`}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
 
             {/* Dynamic Handshake Catalog Selector */}
             <div

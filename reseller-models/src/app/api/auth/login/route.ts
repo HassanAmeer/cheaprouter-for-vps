@@ -13,13 +13,21 @@ export async function POST(request: Request) {
   if (!user) {
     return NextResponse.json({ error: "Invalid credentials" }, { status: 401 });
   }
-  const token = createSession(user.id);
-  const cookieStore = await cookies();
-  cookieStore.set(SESSION_COOKIE, token, {
-    httpOnly: true,
-    sameSite: "lax",
-    path: "/",
-    maxAge: 60 * 60 * 24 * 7,
-  });
-  return NextResponse.json({ user });
+  try {
+    const token = createSession(user.id);
+    const response = NextResponse.json({ user });
+    response.cookies.set(SESSION_COOKIE, token, {
+      httpOnly: true,
+      sameSite: "lax",
+      path: "/",
+      maxAge: 60 * 60 * 24 * 7,
+    });
+    return response;
+  } catch (err) {
+    console.error("[login error]", err);
+    return NextResponse.json(
+      { error: err instanceof Error ? err.message : "Login failed" },
+      { status: 500 }
+    );
+  }
 }
