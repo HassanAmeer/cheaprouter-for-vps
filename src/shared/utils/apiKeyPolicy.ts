@@ -768,15 +768,19 @@ function validateKeyQuota(context: PolicyContext): Response | null {
 
   try {
     const resellerUser = getResellerUserByApiKeyId(apiKeyInfo.id);
-    if (resellerUser) {
-      if (
-        typeof resellerUser.tokenBudget === "number" &&
-        resellerUser.tokenBudget > 0 &&
-        resellerUser.tokensUsed >= resellerUser.tokenBudget * 1_000_000
-      ) {
+    if (resellerUser && typeof resellerUser.tokenBudget === "number" && resellerUser.tokenBudget > 0) {
+      // Normalize budget: support both raw tokens (>= 10,000) and millions (< 10,000)
+      const rawBudget =
+        resellerUser.tokenBudget < 10_000
+          ? resellerUser.tokenBudget * 1_000_000
+          : resellerUser.tokenBudget;
+
+      if (resellerUser.tokensUsed >= rawBudget) {
+        const usedM = (resellerUser.tokensUsed / 1_000_000).toFixed(2);
+        const budgetM = (rawBudget / 1_000_000).toFixed(2);
         return errorResponse(
           HTTP_STATUS.RATE_LIMITED,
-          `User account token quota exceeded (${(resellerUser.tokensUsed / 1_000_000).toFixed(2)}M / ${resellerUser.tokenBudget}M tokens used). Please upgrade your plan or top up.`
+          `User account token quota exceeded (${usedM}M / ${budgetM}M tokens used). Please upgrade your plan or top up.`
         );
       }
     }
