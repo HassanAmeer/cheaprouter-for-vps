@@ -1,6 +1,6 @@
 # wreq-js 3.2.0 native dependency notices
 
-> Generated evidence for OmniRoute release/v3.8.51. Keep this file together with
+> Generated evidence for CheapRouter release/v3.8.51. Keep this file together with
 > `wreq-js-native-manifest.json` and `wreq-js-rust-license-inventory.json`.
 
 ## Scope
@@ -9,12 +9,12 @@
 - Lock: upstream `rust/Cargo.lock` SHA-256 `b22954960bffe817721539c17c18d2c2fb5084b358ea3e009133b5403b123df3`.
 - Method: locked `cargo metadata` normal-edge traversal for all nine published targets. The union contains 153 link-eligible packages; build/proc-macro-only packages are inventoried separately and are not represented as shipped runtime components here.
 - This bundle intentionally includes the whole conservative normal-closure union, even though release LTO may eliminate some components. It also includes the BoringSSL license nested inside `btls-sys@0.5.6`.
-- The nine published binding tarballs omit LICENSE/NOTICE files, so OmniRoute ships this notice bundle beside the addons.
+- The nine published binding tarballs omit LICENSE/NOTICE files, so CheapRouter ships this notice bundle beside the addons.
 
 ## Artifact-level limitations
 
 - The published addons contain no cargo-auditable section, link map, upstream artifact SBOM, or reproducible-build receipt. Exact post-LTO membership remains unproven; the inventory is a conservative superset.
-- The Android addon dynamically requires `libc++_shared.so`, which is not inside its npm tarball. If an OmniRoute artifact supplies that library, its LLVM/Apache-with-LLVM-exception notice must be added after inspecting that exact artifact.
+- The Android addon dynamically requires `libc++_shared.so`, which is not inside its npm tarball. If an CheapRouter artifact supplies that library, its LLVM/Apache-with-LLVM-exception notice must be added after inspecting that exact artifact.
 
 ## Component inventory
 

@@ -553,7 +553,7 @@
       },
       "runModel": {
         "flag": "--model",
-        "prefix": "omniroute/",
+        "prefix": "cheaprouter/",
         "required": false
       },
       "agentBackend": {

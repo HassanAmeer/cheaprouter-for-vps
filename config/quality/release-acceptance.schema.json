@@ -1,5 +1,5 @@
 {
-  "$id": "https://omniroute.local/quality/release-acceptance.schema.json",
+  "$id": "https://cheaprouter.local/quality/release-acceptance.schema.json",
   "title": "Release acceptance report",
   "type": "object",
   "additionalProperties": false,
