@@ -46,7 +46,8 @@ export default function Footer() {
           <div className="uno-footer-col">
             <h4>Developers</h4>
             <ul className="uno-footer-links">
-              <li><Link href="/dashboard" className="uno-footer-link">API Reference</Link></li>
+              <li><Link href="/docs" className="uno-footer-link">Documentation &amp; Guides</Link></li>
+              <li><Link href="/docs#apis" className="uno-footer-link">API Reference</Link></li>
               <li><Link href="/dashboard" className="uno-footer-link">Usage Metrics</Link></li>
               <li><a href="https://github.com" target="_blank" rel="noopener noreferrer" className="uno-footer-link">GitHub Repository</a></li>
               <li><a href="https://discord.gg" target="_blank" rel="noopener noreferrer" className="uno-footer-link">Discord Community</a></li>

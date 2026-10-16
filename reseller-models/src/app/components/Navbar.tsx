@@ -33,7 +33,7 @@ export default function Navbar() {
           <Link href="/dashboard" className="uno-nav-link">CHAT</Link>
           <Link href="/dashboard" className="uno-nav-link">IMAGE</Link>
           <Link href="/dashboard" className="uno-nav-link">INSPECTOR</Link>
-          <Link href="/dashboard" className="uno-nav-link">DOCS</Link>
+          <Link href="/docs" className="uno-nav-link">DOCS</Link>
         </div>
 
         {/* Right Actions */}
