@@ -14,14 +14,14 @@ import { sanitizeErrorMessage } from "@cheaproute/open-sse/utils/error";
 function getAssessBaseUrl(): string {
   return (
     process.env.CHEAPROUTE_BASE_URL ??
-    process.env.OMNIROUTe_BASE_URL ??
+    process.env.CHEAPROUTER_BASE_URL ??
     process.env.BASE_URL ??
     `http://localhost:${process.env.API_PORT ?? process.env.PORT ?? 20128}/v1`
   );
 }
 
 const assessor = new Assessor(
-  process.env.CHEAPROUTE_API_KEY ?? process.env.OMNIROUTe_API_KEY ?? process.env.API_KEY ?? "",
+  process.env.CHEAPROUTE_API_KEY ?? process.env.CHEAPROUTER_API_KEY ?? process.env.API_KEY ?? "",
   getAssessBaseUrl()
 );
 
@@ -153,7 +153,7 @@ async function getAllModels(): Promise<Array<{ providerId: string; modelId: stri
   try {
     const baseUrl = getAssessBaseUrl();
     const apiKey =
-      process.env.CHEAPROUTE_API_KEY ?? process.env.OMNIROUTe_API_KEY ?? process.env.API_KEY ?? "";
+      process.env.CHEAPROUTE_API_KEY ?? process.env.CHEAPROUTER_API_KEY ?? process.env.API_KEY ?? "";
     const resp = await fetch(`${baseUrl}/models`, {
       headers: {
         Authorization: `Bearer ${apiKey}`,

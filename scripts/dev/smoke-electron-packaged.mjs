@@ -14,7 +14,7 @@ const ROOT = join(__dirname, "..", "..");
 const DEFAULT_TIMEOUT_MS = 45_000;
 const DEFAULT_SETTLE_MS = 2_000;
 const DEFAULT_URL = "http://127.0.0.1:20128/login";
-export const LINUX_EXECUTABLE_NAMES = ["omniroute-desktop", "cheaproute", "CheapRoute"];
+export const LINUX_EXECUTABLE_NAMES = ["cheaprouter-desktop", "cheaproute", "CheapRoute"];
 export const FATAL_LOG_PATTERNS = [
   /Cannot find module/i,
   /MODULE_NOT_FOUND/,
@@ -431,7 +431,7 @@ export async function ensureSmokeEnvDirs(smokeEnv, dataDir, { currentPlatform = 
   // requestSingleInstanceLock() runs synchronously at module load and
   // fails silently if the directory doesn't exist yet — causing exit(0).
   if (currentPlatform === "win32" && smokeEnv.APPDATA) {
-    for (const subdir of ["omniroute-desktop", "CheapRoute", "cheaproute"]) {
+    for (const subdir of ["cheaprouter-desktop", "CheapRoute", "cheaproute"]) {
       dirs.push(join(smokeEnv.APPDATA, subdir));
     }
   }
@@ -441,7 +441,7 @@ export async function ensureSmokeEnvDirs(smokeEnv, dataDir, { currentPlatform = 
   // which makes requestSingleInstanceLock() return false and the app exit(0)
   // before app.whenReady(). Pre-create the derived tree as well.
   if (currentPlatform === "win32" && smokeEnv.USERPROFILE) {
-    for (const subdir of ["omniroute-desktop", "CheapRoute", "cheaproute"]) {
+    for (const subdir of ["cheaprouter-desktop", "CheapRoute", "cheaproute"]) {
       dirs.push(join(smokeEnv.USERPROFILE, "AppData", "Roaming", subdir));
     }
   }
@@ -634,7 +634,7 @@ async function main() {
   const coldRestart = process.env.ELECTRON_SMOKE_COLD_RESTART === "1";
   const dataDir =
     process.env.ELECTRON_SMOKE_DATA_DIR ||
-    (await mkdtemp(join(tmpdir(), "omniroute-electron-smoke-")));
+    (await mkdtemp(join(tmpdir(), "cheaprouter-electron-smoke-")));
   const removeDataDir =
     !process.env.ELECTRON_SMOKE_DATA_DIR && process.env.ELECTRON_SMOKE_KEEP_DATA !== "1";
 

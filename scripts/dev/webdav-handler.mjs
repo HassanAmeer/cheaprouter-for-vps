@@ -51,11 +51,11 @@ const WEBDAV_METHODS = new Set([
 // ─────────────────────────────────────────────────────────────────────────────
 // Encryption: minimal port of src/lib/db/encryption.ts
 // Must reproduce the EXACT format: enc:v1:<iv_hex>:<ciphertext_hex>:<authTag_hex>
-// Key derivation: scryptSync(secret, "omniroute-field-encryption-v1", 32)
+// Key derivation: scryptSync(secret, "cheaprouter-field-encryption-v1", 32)
 // ─────────────────────────────────────────────────────────────────────────────
 
 const ENC_PREFIX = "enc:v1:";
-const STATIC_SALT = "omniroute-field-encryption-v1";
+const STATIC_SALT = "cheaprouter-field-encryption-v1";
 const KEY_LENGTH = 32;
 const AUTH_TAG_LENGTH = 16;
 const ALGORITHM = "aes-256-gcm";
@@ -647,7 +647,7 @@ async function handlePut(req, res, absPath) {
 
   let written = 0;
   let limitExceeded = false;
-  const tmpPath = absPath + ".omniroute-webdav-tmp-" + Date.now();
+  const tmpPath = absPath + ".cheaprouter-webdav-tmp-" + Date.now();
   let writeStream;
   try {
     writeStream = fs.createWriteStream(tmpPath);

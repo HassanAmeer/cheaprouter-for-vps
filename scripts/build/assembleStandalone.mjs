@@ -719,8 +719,8 @@ function stampServiceWorkerBuildId(resolvedOutDir) {
     process.env.CHEAPROUTE_SW_BUILD_ID || process.env.SOURCE_VERSION || String(Date.now());
   let sw = fsSync.readFileSync(swDest, "utf8");
   sw = sw.replace(
-    /^const CACHE_NAME = "omniroute-pwa-v3";$/m,
-    `const CACHE_NAME = "omniroute-pwa-v3-${buildId}"; // build ${buildId}`
+    /^const CACHE_NAME = "cheaprouter-pwa-v3";$/m,
+    `const CACHE_NAME = "cheaprouter-pwa-v3-${buildId}"; // build ${buildId}`
   );
   fsSync.writeFileSync(swDest, sw);
 }

@@ -86,8 +86,8 @@ electron/
 
 # Subprojects
 clipr/
-omnirouteCloud/
-omnirouteSite/
+cheaprouterCloud/
+cheaprouterSite/
 vscode-extension/
 
 # Root-level underscore-prefixed directories (private/draft — never publish)

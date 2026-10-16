@@ -62,9 +62,9 @@ if [ ! -f "$CODEX_HOME/config.toml" ]; then
   cat > "$CODEX_HOME/config.toml" <<EOF
 # Gerado por codex-ws.sh — config isolada para o WS local do CheapRoute.
 model = "$CHEAPROUTE_WS_MODEL"
-model_provider = "omniroute-local"
+model_provider = "cheaprouter-local"
 
-[model_providers.omniroute-local]
+[model_providers.cheaprouter-local]
 name = "CheapRoute Local (WS)"
 base_url = "$CHEAPROUTE_WS_BASE"   # a URL WebSocket é derivada desta base pela CLI
 wire_api = "responses"            # único valor suportado desde fev/2026
@@ -80,7 +80,7 @@ fi
 # ---- Overrides de precedência máxima ----------------------------------------
 # Vencem qualquer config de arquivo (inclusive a project-local da Cloud em
 # $CWD/.codex/config.toml). É o que garante o modelo certo no transporte certo.
-overrides=(-c model="$CHEAPROUTE_WS_MODEL" -c model_provider="omniroute-local")
+overrides=(-c model="$CHEAPROUTE_WS_MODEL" -c model_provider="cheaprouter-local")
 
 # ---- Dispatch ---------------------------------------------------------------
 # No modo headless (`exec`) injeta --skip-git-repo-check (senão a CLI recusa
