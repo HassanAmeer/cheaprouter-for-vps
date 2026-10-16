@@ -13,7 +13,7 @@ import { useRouter } from "next/navigation";
 
 export default function LoginPage() {
   const t = useTranslations("auth");
-  const appName = process.env.NEXT_PUBLIC_APP_NAME || "CheapRoute";
+  const appName = process.env.NEXT_PUBLIC_APP_NAME || "CheapRouter";
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);

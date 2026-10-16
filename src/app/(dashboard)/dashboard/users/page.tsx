@@ -1535,7 +1535,7 @@ export default function UsersPage() {
               className="w-full px-3 py-2 text-sm font-mono bg-bg-subtle border border-border rounded-lg text-text-main focus:outline-none focus:border-primary"
             />
             <p className="text-[11px] text-text-muted mt-1">
-              CheapRoute will automatically mask this key upon saving.
+              CheapRouter will automatically mask this key upon saving.
             </p>
           </div>
 

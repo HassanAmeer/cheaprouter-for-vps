@@ -23,7 +23,7 @@ export default function Navigation() {
           <div className="size-8 rounded-lg overflow-hidden border border-white/10 flex items-center justify-center shrink-0">
             <img
               src="/cheaprouter-logo.jpg"
-              alt={process.env.NEXT_PUBLIC_APP_NAME || "CheapRoute"}
+              alt={process.env.NEXT_PUBLIC_APP_NAME || "CheapRouter"}
               className="size-full object-cover"
             />
           </div>

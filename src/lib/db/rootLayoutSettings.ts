@@ -21,7 +21,7 @@ const ROOT_LAYOUT_SETTING_KEYS = [
 const ROOT_LAYOUT_SETTING_KEY_SET = new Set<string>(ROOT_LAYOUT_SETTING_KEYS);
 
 const DEFAULT_ROOT_LAYOUT_SETTINGS: RootLayoutSettings = {
-  instanceName: process.env.NEXT_PUBLIC_APP_NAME || "CheapRoute",
+  instanceName: process.env.NEXT_PUBLIC_APP_NAME || "CheapRouter",
   customFaviconUrl: "",
   customFaviconBase64: "",
 };
