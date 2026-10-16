@@ -73,17 +73,24 @@ export async function buildNoAuthModelsResponse(
   providerId: string,
   connectionId: string,
   excludeHidden: boolean,
-  chatOnly: boolean
+  chatOnly: boolean,
+  customBaseUrl?: string | null
 ) {
   if (isProviderBlockedByIdOrAlias(providerId, (await getSettings()).blockedProviders)) {
     return NextResponse.json({ error: "Provider is disabled" }, { status: 403 });
   }
 
   const registryEntry = getRegistryEntry(providerId);
-  const modelsUrl =
+  let modelsUrl =
     typeof registryEntry?.modelsUrl === "string" && registryEntry.modelsUrl.length > 0
       ? registryEntry.modelsUrl
       : null;
+
+  if (customBaseUrl) {
+    const clean = customBaseUrl.trim().replace(/\/$/, "");
+    modelsUrl = clean.endsWith("/models") ? clean : `${clean}/models`;
+  }
+
   if (modelsUrl) {
     const live = await fetchLiveNoAuthModels(
       modelsUrl,

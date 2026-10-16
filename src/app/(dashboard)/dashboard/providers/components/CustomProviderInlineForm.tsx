@@ -75,13 +75,13 @@ export const PROVIDER_CATEGORIES: ProviderCategoryConfig[] = [
   },
   {
     value: "local-self-hosted",
-    label: "Local / Self-Hosted",
-    badge: "Ollama / LM Studio / vLLM",
-    description: "Local models running without an API key (HTTP & HTTPS)",
-    placeholderBaseUrl: "http://localhost:11434/v1",
+    label: "Local / Self-Hosted / Antseed",
+    badge: "Antseed / Ollama / LM Studio",
+    description: "Local P2P daemon or self-hosted models running without an API key (e.g. Antseed port 8377, Ollama)",
+    placeholderBaseUrl: "http://127.0.0.1:8377/v1",
     defaultApi: "openai",
     apiTypeDefault: "chat",
-    keyHint: "No API key required. Leave blank for Ollama / LM Studio.",
+    keyHint: "No API key required. Leave blank for Antseed / Ollama.",
   },
   {
     value: "aggregator-router",

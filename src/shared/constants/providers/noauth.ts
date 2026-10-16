@@ -137,12 +137,13 @@ export const NOAUTH_PROVIDERS = {
     website: "https://antseed.ai",
     noAuth: true,
     hasFree: true,
+    passthroughModels: true,
     serviceKinds: ["llm"],
     isLocalCli: true,
-    freeNote: "Local P2P Service • Port 8377 • Zero network cost, free models like GLM 5.3 Flash.",
-    authHint: "No API key required. Runs directly as a local daemon on 127.0.0.1:8377.",
+    freeNote: "Local P2P Service • Port 8377 • Zero network cost, live decentralized models like GLM 5.3 Flash.",
+    authHint: "No API key required. Runs as a local daemon on 127.0.0.1:8377 (or custom port). Use 'Fetch All Models' to load active network models.",
     notice: {
-      text: "Antseed CLI runs locally as a P2P AI daemon (port 8377). CheapRouter connects to it directly with zero API cost and zero authentication required.",
+      text: "Antseed CLI runs locally as a P2P AI daemon (default port 8377). CheapRouter connects directly with zero API cost and no authentication required. Multiple Antseed daemons or custom ports can be connected.",
     },
   },
 

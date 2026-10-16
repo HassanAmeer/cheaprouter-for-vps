@@ -30,6 +30,18 @@ export async function checkToolConfigStatus(
       (toolId === "grok-build"
         ? resolveGrokBuildConfigPath(process.env, getCliConfigHome())
         : getCliPrimaryConfigPath(toolId));
+    if (toolId === "antseed") {
+      try {
+        const res = await fetch("http://127.0.0.1:8377/v1/models", {
+          signal: AbortSignal.timeout(1500),
+        });
+        if (res.ok) return "configured";
+      } catch {
+        // daemon not running on default port
+      }
+      return "not_configured";
+    }
+
     if (!configPath) return "unknown";
 
     const content = await fs.readFile(configPath, "utf-8");

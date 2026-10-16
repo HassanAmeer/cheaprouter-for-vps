@@ -398,6 +398,15 @@ export class BaseExecutor {
           : "/chat/completions";
       return `${normalized}${path}`;
     }
+    if (this.provider === "antseed") {
+      const psd = credentials?.providerSpecificData;
+      const baseUrl =
+        typeof psd?.baseUrl === "string" && psd.baseUrl.trim()
+          ? psd.baseUrl.trim()
+          : this.config.baseUrl || "http://127.0.0.1:8377/v1";
+      const normalized = baseUrl.replace(/\/$/, "");
+      return normalized.endsWith("/chat/completions") ? normalized : `${normalized}/chat/completions`;
+    }
     const baseUrls = this.getBaseUrls();
     return baseUrls[urlIndex] || baseUrls[0] || this.config.baseUrl || "";
   }

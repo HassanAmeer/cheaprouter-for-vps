@@ -186,6 +186,20 @@ export async function detectTool(id: string): Promise<DetectedTool | null> {
     configContents: configContents ?? undefined,
   };
 
+  if (canonicalId === "antseed") {
+    try {
+      const daemonRes = await fetch("http://127.0.0.1:8377/v1/models", {
+        signal: AbortSignal.timeout(1500),
+      });
+      if (daemonRes.ok) {
+        result.installed = true;
+        result.configured = true;
+      }
+    } catch {
+      // daemon not active on default port
+    }
+  }
+
   // Rich per-role status only for Hermes Agent
   if (tool.id === "hermes-agent") {
     try {

@@ -263,11 +263,18 @@ export async function GET(
     // and account-proxy metadata. That row must not turn public model discovery
     // into an API-key flow that expects a token.
     if (noAuthProviderId) {
+      const psd = connection?.providerSpecificData as Record<string, unknown> | undefined;
+      const customBaseUrl =
+        typeof psd?.baseUrl === "string" && psd.baseUrl.trim().length > 0
+          ? psd.baseUrl.trim()
+          : null;
+
       return buildNoAuthModelsResponse(
         noAuthProviderId,
         typeof connection?.id === "string" ? connection.id : id,
         excludeHidden,
-        chatOnly
+        chatOnly,
+        customBaseUrl
       );
     }
 

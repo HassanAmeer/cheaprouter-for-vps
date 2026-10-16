@@ -6,6 +6,7 @@ export const antseedProvider: RegistryEntry = {
   format: "openai",
   executor: "default",
   baseUrl: "http://127.0.0.1:8377/v1/chat/completions",
+  modelsUrl: "http://127.0.0.1:8377/v1/models",
   authType: "none",
   authHeader: "none",
   defaultContextLength: 200000,

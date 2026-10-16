@@ -269,9 +269,12 @@ export const CONFIGURABLE_BASE_URL_PROVIDERS = new Set([
   // the international apihub.agnes-ai.com default. Same always-on field as
   // #7447 Kimi/Moonshot so Add-connection can point at api.agnes-ai.cn.
   "agnes",
+  // Antseed P2P CLI running locally or on VPS (default port 8377)
+  "antseed",
 ]);
 
 export const DEFAULT_PROVIDER_BASE_URLS: Record<string, string> = {
+  antseed: "http://127.0.0.1:8377/v1",
   "azure-openai": "https://example-resource.openai.azure.com",
   "azure-ai": "https://example-resource.services.ai.azure.com/openai/v1",
   "bailian-coding-plan": "https://token-plan.ap-southeast-1.maas.aliyuncs.com/apps/anthropic/v1",
@@ -387,6 +390,7 @@ const BUILTIN_BASE_URL_PLACEHOLDER_EXAMPLES: Readonly<Record<string, string>> = 
   agnes: "https://api.agnes-ai.cn/v1",
   // #12704 — shows the Modal app URL shape the validator demands.
   modal: "https://<workspace>--<app>.modal.run/v1",
+  antseed: "http://127.0.0.1:8377/v1",
 };
 
 // These ids have no literal example: the placeholder is their configured default URL.
