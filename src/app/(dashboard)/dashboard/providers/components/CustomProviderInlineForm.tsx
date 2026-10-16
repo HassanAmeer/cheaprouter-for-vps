@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
 
-import { Button, Input, Select, Badge, Textarea } from "@/shared/components";
+import { Button, Input, Select, Badge, Textarea, ProviderImagePicker } from "@/shared/components";
 import { readFetchErrorMessage } from "@/shared/utils/fetchError";
 
 /** One repeatable model row — "ID / Name / Reasoning / Image". */
@@ -156,6 +156,7 @@ export default function CustomProviderInlineForm({
   const [apiKey, setApiKey] = useState("");
   const [models, setModels] = useState<ModelRow[]>([]);
   const [headers, setHeaders] = useState<HeaderRow[]>([]);
+  const [iconUrl, setIconUrl] = useState("");
 
   // Models view mode: "rows" or "bulk"
   const [modelsViewMode, setModelsViewMode] = useState<"rows" | "bulk">("rows");
@@ -248,6 +249,7 @@ export default function CustomProviderInlineForm({
     setApiKey("");
     setModels([]);
     setHeaders([]);
+    setIconUrl("");
     setBulkText("");
     setTestResult(null);
     setFetchResult(null);
@@ -407,6 +409,9 @@ export default function CustomProviderInlineForm({
       baseUrl: sanitizedBaseUrl,
       type: nodeType,
     };
+    if (iconUrl.trim()) {
+      nodeBody.iconUrl = iconUrl.trim();
+    }
     if (nodeType === "openai-compatible") {
       nodeBody.apiType = apiType;
     }
@@ -624,6 +629,16 @@ export default function CustomProviderInlineForm({
                 {t("customProviderDisplayNameHint")}
               </p>
             </div>
+          </div>
+
+          {/* ── Icon / Logo Picker ────────────────────────────────────────── */}
+          <div className="pt-1">
+            <ProviderImagePicker
+              label="Provider Logo / Icon (Optional)"
+              value={iconUrl}
+              onChange={setIconUrl}
+              hint="Select from 140+ storage assets or paste an image link (Google image, CDN, etc.)"
+            />
           </div>
 
           {/* ── Base URL & Test Connection ───────────────────────────────── */}

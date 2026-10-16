@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { Button, Input, Select } from "@/shared/components";
+import { Button, Input, Select, ProviderImagePicker } from "@/shared/components";
 import { isValidProviderIconUrl } from "@/shared/validation/iconUrl";
 import {
   CLIENT_IDENTITY_PROFILE_OPTIONS,
@@ -253,12 +253,11 @@ function EditCustomProviderSheetContent({
               hint="Root or /v1 endpoint URL of the upstream server"
             />
 
-            <Input
-              label="Icon URL (Optional)"
+            <ProviderImagePicker
+              label="Provider Logo / Icon"
               value={iconUrl}
-              onChange={(e) => setIconUrl(e.target.value)}
-              placeholder="https://example.com/logo.png"
-              hint="Image URL displayed in sidebar and headers"
+              onChange={setIconUrl}
+              hint="Pick from 140+ storage assets or paste an image link (Google image, CDN, etc.)"
             />
           </div>
 

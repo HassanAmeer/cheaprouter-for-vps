@@ -52,6 +52,13 @@ export function isValidProviderIconUrl(value: string): boolean {
   const trimmed = value.trim();
   if (trimmed === "") return true;
 
+  // Local static asset path branch (e.g. /storage/providers/..., /providers/...)
+  if (trimmed.startsWith("/")) {
+    if (trimmed.length > MAX_ICON_URL_LENGTH) return false;
+    if (trimmed.includes("..") || trimmed.includes("//") || trimmed.includes("\\")) return false;
+    return true;
+  }
+
   if (DATA_SCHEME_RE.test(trimmed)) {
     if (trimmed.length > MAX_ICON_DATA_URL_LENGTH) return false;
     return isValidDataIconUrl(trimmed);

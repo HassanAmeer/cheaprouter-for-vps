@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
 
-import { Badge, Button, Input, Modal, Select, Toggle } from "@/shared/components";
+import { Badge, Button, Input, Modal, Select, Toggle, ProviderImagePicker } from "@/shared/components";
 import { readFetchErrorMessage } from "@/shared/utils/fetchError";
 import { isValidProviderIconUrl } from "@/shared/validation/iconUrl";
 import {
@@ -404,11 +404,10 @@ export default function AddCompatibleProviderModal({
           placeholder={baseUrlPlaceholder}
           hint={baseUrlHint}
         />
-        <Input
+        <ProviderImagePicker
           label={t("iconUrlLabel")}
           value={formData.iconUrl}
-          onChange={(e) => setFormData({ ...formData, iconUrl: e.target.value })}
-          placeholder="https://example.com/logo.png"
+          onChange={(val) => setFormData({ ...formData, iconUrl: val })}
           hint={iconUrlError ?? t("iconUrlHint")}
         />
 

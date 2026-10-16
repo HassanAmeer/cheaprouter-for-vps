@@ -127,6 +127,25 @@ export const NOAUTH_PROVIDERS = {
       text: "ZCode runs locally through its native app-server. CheapRoute never receives or stores the Z.ai credential.",
     },
   },
+  antseed: {
+    id: "antseed",
+    alias: "ant",
+    name: "Antseed CLI",
+    icon: "terminal",
+    color: "#8B5CF6",
+    textIcon: "AS",
+    website: "https://antseed.ai",
+    noAuth: true,
+    hasFree: true,
+    serviceKinds: ["llm"],
+    isLocalCli: true,
+    freeNote: "Local P2P Service • Port 8377 • Zero network cost, free models like GLM 5.3 Flash.",
+    authHint: "No API key required. Runs directly as a local daemon on 127.0.0.1:8377.",
+    notice: {
+      text: "Antseed CLI runs locally as a P2P AI daemon (port 8377). CheapRouter connects to it directly with zero API cost and zero authentication required.",
+    },
+  },
+
   "codex-app-server": {
     id: "codex-app-server",
     alias: "cxa",

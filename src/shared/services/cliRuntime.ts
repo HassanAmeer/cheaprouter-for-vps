@@ -48,6 +48,13 @@ const CLI_TOOLS: Record<string, any> = {
       auth: ".codex/auth.json",
     },
   },
+  antseed: {
+    defaultCommand: "antseed",
+    envBinKey: "CLI_ANTSEED_BIN",
+    requiresBinary: true,
+    healthcheckTimeoutMs: 4000,
+    paths: {},
+  },
   droid: {
     defaultCommand: "droid",
     envBinKey: "CLI_DROID_BIN",

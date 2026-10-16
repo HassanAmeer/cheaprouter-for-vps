@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
 import { useTranslations } from "next-intl";
-import { Button, Badge, Input, Modal, Select, Toggle } from "@/shared/components";
+import { Button, Badge, Input, Modal, Select, Toggle, ProviderImagePicker } from "@/shared/components";
 import { isValidProviderIconUrl } from "@/shared/validation/iconUrl";
 import { CC_COMPATIBLE_DEFAULT_CHAT_PATH } from "../../providerDetailConstants";
 import NewApiAggregatorFields from "./NewApiAggregatorFields";
@@ -294,11 +294,10 @@ export default function EditCompatibleNodeModal({
                 })
           }
         />
-        <Input
+        <ProviderImagePicker
           label={t("iconUrlLabel")}
           value={formData.iconUrl}
-          onChange={(e) => setFormData({ ...formData, iconUrl: e.target.value })}
-          placeholder="https://example.com/logo.png"
+          onChange={(val) => setFormData({ ...formData, iconUrl: val })}
           hint={iconUrlError ?? t("iconUrlHint")}
         />
         <Toggle

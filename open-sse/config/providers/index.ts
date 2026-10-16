@@ -159,6 +159,7 @@ import { novitaProvider } from "./registry/novita/index.ts";
 import { regoloProvider } from "./registry/regolo/index.ts";
 import { devin_desktopProvider } from "./registry/devin-desktop/index.ts";
 import { zcodeProvider } from "./registry/zcode/index.ts";
+import { antseedProvider } from "./registry/antseed/index.ts";
 import { zed_hostedProvider } from "./registry/zed-hosted/index.ts";
 import { nanogptProvider } from "./registry/nanogpt/index.ts";
 import { apmixProvider } from "./registry/apmix/index.ts";
@@ -516,6 +517,7 @@ export const REGISTRY: Record<string, RegistryEntry> = {
   "devin-cli": devin_cliProvider,
   "devin-cli-agentic": devin_cli_agenticProvider,
   auggie: auggieProvider,
+  antseed: antseedProvider,
   chutes: chutesProvider,
   chenzk: chenzkProvider,
   factory: factoryProvider,

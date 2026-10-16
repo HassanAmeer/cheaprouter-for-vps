@@ -107,6 +107,26 @@ export const CLI_TOOLS: Record<string, CliCatalogEntry> = {
       { type: "warning", text: "The response is buffered until the ZCode turn completes." },
     ],
   },
+  antseed: {
+    id: "antseed",
+    name: "Antseed CLI",
+    image: "/providers/cli-generic.svg",
+    color: "#8B5CF6",
+    description: "Antseed CLI — Local P2P decentralized coding models daemon on port 8377",
+    docsUrl: "https://antseed.ai",
+    configType: "custom",
+    category: "code",
+    vendor: "Antseed P2P",
+    acpSpawnable: false,
+    baseUrlSupport: "full",
+    defaultCommand: "antseed",
+    notes: [
+      {
+        type: "info",
+        text: "Runs locally on http://127.0.0.1:8377 as an ultra-fast local daemon with decentralized coding models.",
+      },
+    ],
+  },
   droid: {
     id: "droid",
     name: "Factory Droid",

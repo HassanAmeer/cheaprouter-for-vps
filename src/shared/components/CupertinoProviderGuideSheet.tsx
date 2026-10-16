@@ -457,7 +457,7 @@ export const PROVIDER_GUIDES: Record<string, ProviderGuideData> = {
     ],
   },
 
-  // ── 10. CheapRouter CLI / Antseed (Local) ─────────────────────────────
+  // ── 10. Antseed CLI (Local) ──────────────────────────────────────────
   antseed: {
     authTypeBadge: "Local P2P Service",
     authTypeColor: "purple",
@@ -468,7 +468,7 @@ export const PROVIDER_GUIDES: Record<string, ProviderGuideData> = {
       creditCardStatus: "No Credit Card Required (100% Free)",
       credentialsNeeded: "None (Runs locally on 127.0.0.1:8377)",
       connectionType: "Local P2P Service",
-      toolsSupported: "CheapRouter Web Chat, /v1 endpoints, local CLI commands",
+      toolsSupported: "Antseed CLI, CheapRouter Web Chat, /v1 endpoints, local commands",
     },
     limits: {
       rateLimitBadge: "Unlimited Local Speed",
@@ -477,6 +477,7 @@ export const PROVIDER_GUIDES: Record<string, ProviderGuideData> = {
       quotaReset: "Unlimited continuous local speed.",
     },
     freeModels: [
+      { id: "glm-5.1", name: "GLM 5.1", notes: "Decentralized reasoning and coding model" },
       { id: "glm-5.3-flash", name: "GLM 5.3 Flash", notes: "Ultra fast local coding assistant" },
       { id: "abliterated-large-v2", name: "Abliterated Large V2", notes: "Uncensored assistant" },
     ],
@@ -485,7 +486,7 @@ export const PROVIDER_GUIDES: Record<string, ProviderGuideData> = {
         step: 1,
         title: "Verify Local Daemon Status",
         instruction:
-          "In your terminal, run 'systemctl status cheaprouter-cli' or 'cheaprouter-cli status' to ensure port 8377 is active.",
+          "In your terminal, run 'antseed buyer status' or verify that port 8377 is active.",
       },
       {
         step: 2,
@@ -1520,7 +1521,7 @@ export function CupertinoProviderGuideSheet({
                   </div>
                 ) : (
                   <p className="text-xs text-white/60 py-2">
-                    Models for this provider are synced dynamically once connected. Click 'Test' on
+                    Models for this provider are synced dynamically once connected. Click &apos;Test&apos; on
                     any model to verify.
                   </p>
                 )}
