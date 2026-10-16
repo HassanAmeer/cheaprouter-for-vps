@@ -12,6 +12,38 @@
 
 * {
   box-sizing: border-box;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.18) transparent;
+}
+
+/* Global Custom Theme-Matched Scrollbar (WebKit / Chrome / Safari / Edge) */
+::-webkit-scrollbar {
+  width: 7px;
+  height: 7px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.18);
+  border-radius: 999px;
+  border: 1px solid transparent;
+  background-clip: padding-box;
+  transition: background-color 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.36);
+}
+
+::-webkit-scrollbar-thumb:active {
+  background: rgba(255, 255, 255, 0.52);
+}
+
+::-webkit-scrollbar-corner {
+  background: transparent;
 }
 
 html,
@@ -330,13 +362,14 @@ table.table th {
 }
 
 .uno-nav-inner {
-  max-width: 1380px;
+  width: 100%;
+  max-width: 100%;
   margin: 0 auto;
-  height: 64px;
+  height: 60px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 24px;
+  padding: 0 32px;
   gap: 20px;
 }
 
@@ -1578,37 +1611,72 @@ table.table th {
    Screenshot 2: Models Library & 2-Column Sidebar Layout Styles
    ========================================================================== */
 
+.uno-models-page-container {
+  width: 100%;
+  max-width: 100%;
+  padding: 0 32px;
+  box-sizing: border-box;
+}
+
+@media (min-width: 1600px) {
+  .uno-models-page-container {
+    padding: 0 40px;
+  }
+}
+
 .uno-models-page-layout {
   display: grid;
   grid-template-columns: 1fr;
   gap: 24px;
-  padding: 24px 0 60px;
+  padding: 16px 0 60px;
+  width: 100%;
 }
 
 @media (min-width: 1024px) {
   .uno-models-page-layout {
-    grid-template-columns: 240px 1fr;
-    gap: 32px;
+    grid-template-columns: 185px minmax(0, 1fr);
+    gap: 22px;
   }
 }
 
-/* Left Sidebar Filters */
+@media (min-width: 1440px) {
+  .uno-models-page-layout {
+    grid-template-columns: 195px minmax(0, 1fr);
+    gap: 26px;
+  }
+}
+
+/* Left Sidebar Filters — Cupertino Style */
 .uno-filters-sidebar {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 14px;
+  background: rgba(255, 255, 255, 0.025);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border-radius: 14px;
+  padding: 14px 12px;
+  box-shadow: 0 4px 24px -4px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  position: sticky;
+  top: 86px;
+  height: fit-content;
 }
 
 .uno-filters-title {
-  font-size: 16px;
+  font-size: 12.5px;
   font-weight: 700;
+  letter-spacing: -0.01em;
   color: #ffffff;
-  margin: 0 0 12px;
+  margin: 0 0 4px 2px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
 }
 
 .uno-filter-section {
-  border-top: 1px solid rgba(255, 255, 255, 0.07);
-  padding-top: 14px;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  padding-top: 10px;
 }
 
 .uno-filter-header {
@@ -1616,84 +1684,108 @@ table.table th {
   align-items: center;
   justify-content: space-between;
   cursor: pointer;
-  font-family: var(--uno-font-mono);
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.8px;
-  color: var(--uno-text-muted);
+  font-family: -apple-system, BlinkMacSystemFont, var(--uno-font-sans, "Inter", sans-serif);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.6px;
+  color: rgba(255, 255, 255, 0.42);
   text-transform: uppercase;
-  margin-bottom: 12px;
+  margin-bottom: 8px;
+  user-select: none;
+  padding: 0 2px;
+}
+
+.uno-filter-header:hover {
+  color: rgba(255, 255, 255, 0.7);
 }
 
 .uno-filter-list {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 4px;
 }
 
 .uno-filter-label {
   display: flex;
   align-items: center;
-  gap: 10px;
-  font-size: 13px;
-  color: var(--uno-text-secondary);
+  gap: 8px;
+  font-size: 12px;
+  font-weight: 450;
+  color: rgba(255, 255, 255, 0.72);
   cursor: pointer;
   user-select: none;
+  padding: 4px 6px;
+  border-radius: 6px;
+  transition: all 0.15s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .uno-filter-label:hover {
+  background: rgba(255, 255, 255, 0.05);
   color: #ffffff;
 }
 
 .uno-checkbox {
-  width: 15px;
-  height: 15px;
-  border-radius: 3px;
-  border: 1px solid var(--uno-border-highlight);
-  background: #0d1117;
+  width: 14px;
+  height: 14px;
+  border-radius: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  background: rgba(255, 255, 255, 0.04);
   display: inline-flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
   cursor: pointer;
+  transition: all 0.16s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.uno-checkbox:hover {
+  border-color: rgba(255, 255, 255, 0.4);
 }
 
 .uno-checkbox.checked {
-  background: #10b981;
-  border-color: #10b981;
+  background: #0A84FF;
+  border-color: #0A84FF;
+  box-shadow: 0 1px 4px rgba(10, 132, 255, 0.4);
 }
 
-/* Context length range slider */
+/* Context length range slider — Cupertino */
 .uno-slider-wrap {
-  padding: 8px 0;
+  padding: 6px 2px 2px;
 }
 
 .uno-slider-track {
   width: 100%;
   height: 3px;
-  background: var(--uno-border);
-  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 999px;
   position: relative;
   margin: 8px 0;
+  cursor: pointer;
 }
 
 .uno-slider-handle {
-  width: 14px;
-  height: 14px;
+  width: 13px;
+  height: 13px;
   border-radius: 50%;
-  border: 2px solid #ffffff;
-  background: #07080a;
+  border: 0.5px solid rgba(0, 0, 0, 0.15);
+  background: #ffffff;
   position: absolute;
   top: 50%;
   transform: translate(-50%, -50%);
   cursor: pointer;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.45);
+  transition: transform 0.1s ease;
+}
+
+.uno-slider-handle:hover {
+  transform: translate(-50%, -50%) scale(1.15);
 }
 
 .uno-slider-labels {
   display: flex;
   justify-content: space-between;
-  font-size: 11px;
-  color: var(--uno-text-muted);
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.38);
 }
 
 /* Right Main Area */
@@ -1954,6 +2046,153 @@ table.table th {
   color: #ef4444;
   font-family: var(--uno-font-mono);
   font-weight: 600;
+}
+
+/* ==========================================================================
+   Model Library Pagination Bar (Top & Bottom) — Cupertino Glass Aesthetic
+   ========================================================================== */
+.uno-pagination-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 8px 14px;
+  background: rgba(255, 255, 255, 0.025);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-radius: 12px;
+  font-size: 12px;
+  user-select: none;
+}
+
+.uno-pagination-top {
+  margin: 14px 0 12px;
+}
+
+.uno-pagination-bottom {
+  margin: 14px 0 24px;
+}
+
+.uno-pagination-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 12px;
+}
+
+.uno-pagination-info strong {
+  color: #ffffff;
+  font-weight: 600;
+}
+
+.uno-pagination-pill-tag {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 2px 8px;
+  border-radius: 999px;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.uno-pagination-controls {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.uno-page-btn {
+  height: 28px;
+  min-width: 28px;
+  padding: 0 9px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.035);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.82);
+  font-size: 11.5px;
+  font-weight: 500;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+}
+
+.uno-page-btn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.09);
+  color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.15);
+}
+
+.uno-page-btn.active {
+  background: #0A84FF;
+  border-color: #0A84FF;
+  color: #ffffff;
+  font-weight: 700;
+  box-shadow: 0 2px 8px rgba(10, 132, 255, 0.4);
+}
+
+.uno-page-btn:disabled {
+  opacity: 0.28;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.uno-jump-box {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: 8px;
+  padding-left: 10px;
+  border-left: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.uno-jump-label {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.45);
+}
+
+.uno-jump-input {
+  width: 48px;
+  height: 27px;
+  padding: 0 4px;
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.45);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 600;
+  text-align: center;
+  outline: none;
+  transition: border-color 0.15s ease;
+}
+
+.uno-jump-input:focus {
+  border-color: #0A84FF;
+  box-shadow: 0 0 0 2px rgba(10, 132, 255, 0.25);
+}
+
+.uno-jump-btn {
+  height: 27px;
+  padding: 0 10px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.uno-jump-btn:hover {
+  background: #0A84FF;
+  border-color: #0A84FF;
 }
 
 /* ==========================================================================

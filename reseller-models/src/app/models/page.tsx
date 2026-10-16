@@ -26,7 +26,7 @@ export default async function ModelsPage() {
   return (
     <div style={{ background: "var(--uno-bg)", minHeight: "100vh", color: "#ffffff" }}>
       <Navbar />
-      <main style={{ paddingTop: 20 }}>
+      <main style={{ width: "100%", padding: 0 }}>
         <ModelsTable providers={providers} combos={combos} />
       </main>
       <Footer />

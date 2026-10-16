@@ -1,7 +1,18 @@
-import Database from "better-sqlite3";
+import type BetterSqlite3 from "better-sqlite3";
+import * as nodeModule from "node:module";
 import fs from "node:fs";
 import path from "node:path";
 import { hashPassword } from "./crypto";
+
+const esmRequire = nodeModule.createRequire(
+  process.argv[1] && process.argv[1] !== "[eval]"
+    ? process.argv[1]
+    : `${process.cwd()}/package.json`
+);
+
+function getDatabaseConstructor(): any {
+  return Reflect.apply(esmRequire, undefined, ["better-sqlite3"]);
+}
 
 export interface User {
   id: number;
@@ -41,7 +52,9 @@ export interface ByokKey {
   created_at: string;
 }
 
-let db: Database.Database | null = null;
+const globalForDb = globalThis as unknown as {
+  __reseller_db?: BetterSqlite3.Database;
+};
 
 export function dbPath(): string {
   return (
@@ -50,18 +63,20 @@ export function dbPath(): string {
   );
 }
 
-export function getDb(): Database.Database {
-  if (db) return db;
+export function getDb(): BetterSqlite3.Database {
+  if (globalForDb.__reseller_db) return globalForDb.__reseller_db;
   const file = dbPath();
   fs.mkdirSync(path.dirname(file), { recursive: true });
-  db = new Database(file);
-  db.pragma("journal_mode = WAL");
-  ensureSchema(db);
-  ensureSeeded(db);
-  return db;
+  const Database = getDatabaseConstructor();
+  const instance = new Database(file);
+  instance.pragma("journal_mode = WAL");
+  ensureSchema(instance);
+  ensureSeeded(instance);
+  globalForDb.__reseller_db = instance;
+  return instance;
 }
 
-function ensureSchema(handle: Database.Database): void {
+function ensureSchema(handle: BetterSqlite3.Database): void {
   handle.exec(`
     CREATE TABLE IF NOT EXISTS users (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -138,7 +153,7 @@ export function rowToPlan(row: Record<string, unknown>): Plan {
 }
 
 /** Idempotent seed: default plans + the three pre-seeded accounts. */
-export function ensureSeeded(handle: Database.Database): void {
+export function ensureSeeded(handle: BetterSqlite3.Database): void {
   const seedPlans = [
     { name: "Free", token_budget: 10_000_000, rpm_limit: 10, validity_days: 7, models: null as string[] | null },
     { name: "Pro", token_budget: 50_000_000, rpm_limit: 30, validity_days: 30, models: null },

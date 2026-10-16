@@ -1,9 +1,10 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { PublicCombo, PublicProvider } from "@/lib/cheaproute";
+import { generateCatalog } from "./modelsData";
 
-interface ModelLibraryItem {
+export interface ModelLibraryItem {
   id: string;
   name: string;
   symbol: string;
@@ -259,6 +260,10 @@ export default function ModelsTable({ providers = [], combos = [] }: ModelsTable
   const [hideFree, setHideFree] = useState(false);
   const [discountedOnly, setDiscountedOnly] = useState(false);
   const [minContext, setMinContext] = useState(0);
+  const [collapsedSections, setCollapsedSections] = useState<Record<string, boolean>>({});
+  const toggleSection = (key: string) => {
+    setCollapsedSections((prev) => ({ ...prev, [key]: !prev[key] }));
+  };
 
   // Tab & Search state
   const [activeTab, setActiveTab] = useState<string>("All");
@@ -266,9 +271,18 @@ export default function ModelsTable({ providers = [], combos = [] }: ModelsTable
   const [sortField, setSortField] = useState<keyof ModelLibraryItem>("released");
   const [sortAsc, setSortAsc] = useState(false);
 
+  // Pagination state — 100 models per page
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const pageSize = 100;
+  const [jumpInputTop, setJumpInputTop] = useState<string>("");
+  const [jumpInputBottom, setJumpInputBottom] = useState<string>("");
+
+  // Base 214 models catalog
+  const catalogList = useMemo(() => generateCatalog(), []);
+
   // Combine static library with live catalog providers
   const modelsList: ModelLibraryItem[] = useMemo(() => {
-    const list = [...SCREENSHOT_MODELS];
+    const list = [...catalogList];
 
     // Merge live combos from router if available
     for (const c of combos) {
@@ -294,7 +308,7 @@ export default function ModelsTable({ providers = [], combos = [] }: ModelsTable
     }
 
     return list;
-  }, [combos]);
+  }, [catalogList, combos]);
 
   // Modality Counts (Screenshot standards)
   const counts = useMemo(() => {
@@ -365,6 +379,28 @@ export default function ModelsTable({ providers = [], combos = [] }: ModelsTable
     }
   };
 
+  // Reset to page 1 on filter or search changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [activeTab, search, modalities, functionCallingOnly, hideFree, discountedOnly, minContext]);
+
+  // Pagination calculations (100 models per page)
+  const totalPages = Math.max(1, Math.ceil(filteredModels.length / pageSize));
+  const startIndex = (currentPage - 1) * pageSize;
+  const endIndex = Math.min(startIndex + pageSize, filteredModels.length);
+  const pagedModels = useMemo(() => {
+    return filteredModels.slice(startIndex, endIndex);
+  }, [filteredModels, startIndex, endIndex]);
+
+  const handleJump = (inputVal: string) => {
+    const p = parseInt(inputVal, 10);
+    if (!isNaN(p) && p >= 1 && p <= totalPages) {
+      setCurrentPage(p);
+      setJumpInputTop("");
+      setJumpInputBottom("");
+    }
+  };
+
   const getSuccessColorClass = (pct: number) => {
     if (pct >= 95) return "uno-pct-green";
     if (pct >= 70) return "uno-pct-yellow";
@@ -378,142 +414,278 @@ export default function ModelsTable({ providers = [], combos = [] }: ModelsTable
     return "uno-pct-red";
   };
 
+  const renderPaginationBar = (position: "top" | "bottom") => {
+    const jumpVal = position === "top" ? jumpInputTop : jumpInputBottom;
+    const setJumpVal = position === "top" ? setJumpInputTop : setJumpInputBottom;
+
+    return (
+      <div className={`uno-pagination-bar uno-pagination-${position}`}>
+        <div className="uno-pagination-info">
+          <span>
+            Showing <strong>{filteredModels.length === 0 ? 0 : startIndex + 1}</strong>–
+            <strong>{endIndex}</strong> of <strong>{filteredModels.length}</strong> models
+          </span>
+          <span className="uno-pagination-pill-tag">100 / page</span>
+        </div>
+
+        <div className="uno-pagination-controls">
+          {/* Step-by-Step One-by-One Navigation */}
+          <button
+            type="button"
+            className="uno-page-btn"
+            disabled={currentPage <= 1}
+            onClick={() => setCurrentPage(1)}
+            title="First Page"
+          >
+            « First
+          </button>
+          <button
+            type="button"
+            className="uno-page-btn"
+            disabled={currentPage <= 1}
+            onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+            title="Previous Page"
+          >
+            ‹ Prev
+          </button>
+
+          {/* Numbered Page Buttons */}
+          {Array.from({ length: totalPages }, (_, i) => i + 1).map((pageNum) => (
+            <button
+              key={pageNum}
+              type="button"
+              className={`uno-page-btn ${currentPage === pageNum ? "active" : ""}`}
+              onClick={() => setCurrentPage(pageNum)}
+            >
+              {pageNum}
+            </button>
+          ))}
+
+          <button
+            type="button"
+            className="uno-page-btn"
+            disabled={currentPage >= totalPages}
+            onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+            title="Next Page"
+          >
+            Next ›
+          </button>
+          <button
+            type="button"
+            className="uno-page-btn"
+            disabled={currentPage >= totalPages}
+            onClick={() => setCurrentPage(totalPages)}
+            title="Last Page"
+          >
+            Last »
+          </button>
+
+          {/* Jumping Page Control */}
+          <div className="uno-jump-box">
+            <span className="uno-jump-label">Go to:</span>
+            <input
+              type="number"
+              min={1}
+              max={totalPages}
+              placeholder={String(currentPage)}
+              value={jumpVal}
+              onChange={(e) => setJumpVal(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  handleJump(jumpVal);
+                }
+              }}
+              className="uno-jump-input"
+            />
+            <button
+              type="button"
+              className="uno-jump-btn"
+              onClick={() => handleJump(jumpVal)}
+            >
+              Jump
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   return (
-    <section id="models" className="uno-section">
-      <div className="uno-container">
-        <div className="uno-models-page-layout">
+    <div id="models" className="uno-models-page-container">
+      <div className="uno-models-page-layout">
           {/* ========================================================
-              LEFT SIDEBAR: FILTERS
+              LEFT SIDEBAR: FILTERS — CUPERTINO STYLE
              ======================================================== */}
           <aside className="uno-filters-sidebar">
-            <h3 className="uno-filters-title">Filters</h3>
+            <h3 className="uno-filters-title">
+              <span>Filters</span>
+              <span style={{ fontSize: 10, color: "rgba(255,255,255,0.35)", fontWeight: 500 }}>
+                {filteredModels.length} models
+              </span>
+            </h3>
 
             {/* Input Modalities Accordion */}
             <div className="uno-filter-section">
-              <div className="uno-filter-header">
-                <span>INPUT MODALITIES</span>
-                <span>^</span>
+              <div className="uno-filter-header" onClick={() => toggleSection("modalities")}>
+                <span>Input Modalities</span>
+                <span style={{ display: "inline-flex", opacity: 0.6 }}>
+                  {collapsedSections.modalities ? (
+                    <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9" /></svg>
+                  ) : (
+                    <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="18 15 12 9 6 15" /></svg>
+                  )}
+                </span>
               </div>
-              <div className="uno-filter-list">
-                {["Text", "Image", "File", "Audio", "Video"].map((item) => (
-                  <label key={item} className="uno-filter-label">
-                    <span
-                      className={`uno-checkbox ${modalities[item] ? "checked" : ""}`}
-                      onClick={() =>
-                        setModalities((prev) => ({ ...prev, [item]: !prev[item] }))
-                      }
-                    >
-                      {modalities[item] && (
-                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#ffffff" strokeWidth="3">
-                          <polyline points="20 6 9 17 4 12"></polyline>
-                        </svg>
-                      )}
-                    </span>
-                    <span>{item}</span>
-                  </label>
-                ))}
-              </div>
+              {!collapsedSections.modalities && (
+                <div className="uno-filter-list">
+                  {["Text", "Image", "File", "Audio", "Video"].map((item) => (
+                    <label key={item} className="uno-filter-label">
+                      <span
+                        className={`uno-checkbox ${modalities[item] ? "checked" : ""}`}
+                        onClick={() =>
+                          setModalities((prev) => ({ ...prev, [item]: !prev[item] }))
+                        }
+                      >
+                        {modalities[item] && (
+                          <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#ffffff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                            <polyline points="20 6 9 17 4 12"></polyline>
+                          </svg>
+                        )}
+                      </span>
+                      <span>{item}</span>
+                    </label>
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* Tools Accordion */}
             <div className="uno-filter-section">
-              <div className="uno-filter-header">
-                <span>TOOLS</span>
-                <span>^</span>
+              <div className="uno-filter-header" onClick={() => toggleSection("tools")}>
+                <span>Tools</span>
+                <span style={{ display: "inline-flex", opacity: 0.6 }}>
+                  {collapsedSections.tools ? (
+                    <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9" /></svg>
+                  ) : (
+                    <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="18 15 12 9 6 15" /></svg>
+                  )}
+                </span>
               </div>
-              <div className="uno-filter-list">
-                <label className="uno-filter-label">
-                  <span
-                    className={`uno-checkbox ${functionCallingOnly ? "checked" : ""}`}
-                    onClick={() => setFunctionCallingOnly(!functionCallingOnly)}
-                  >
-                    {functionCallingOnly && (
-                      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#ffffff" strokeWidth="3">
-                        <polyline points="20 6 9 17 4 12"></polyline>
-                      </svg>
-                    )}
-                  </span>
-                  <span>Function calling</span>
-                </label>
-              </div>
+              {!collapsedSections.tools && (
+                <div className="uno-filter-list">
+                  <label className="uno-filter-label">
+                    <span
+                      className={`uno-checkbox ${functionCallingOnly ? "checked" : ""}`}
+                      onClick={() => setFunctionCallingOnly(!functionCallingOnly)}
+                    >
+                      {functionCallingOnly && (
+                        <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#ffffff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                          <polyline points="20 6 9 17 4 12"></polyline>
+                        </svg>
+                      )}
+                    </span>
+                    <span>Function calling</span>
+                  </label>
+                </div>
+              )}
             </div>
 
-            {/* Pricing Filter Accordion (Screenshot) */}
+            {/* Pricing Filter Accordion */}
             <div className="uno-filter-section">
-              <div className="uno-filter-header">
-                <span>PRICING</span>
-                <span>^</span>
+              <div className="uno-filter-header" onClick={() => toggleSection("pricing")}>
+                <span>Pricing</span>
+                <span style={{ display: "inline-flex", opacity: 0.6 }}>
+                  {collapsedSections.pricing ? (
+                    <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9" /></svg>
+                  ) : (
+                    <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="18 15 12 9 6 15" /></svg>
+                  )}
+                </span>
               </div>
-              <div className="uno-filter-list">
-                <label className="uno-filter-label">
-                  <span
-                    className={`uno-checkbox ${hideFree ? "checked" : ""}`}
-                    onClick={() => setHideFree(!hideFree)}
-                  >
-                    {hideFree && (
-                      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#ffffff" strokeWidth="3">
-                        <polyline points="20 6 9 17 4 12"></polyline>
-                      </svg>
-                    )}
-                  </span>
-                  <span>Hide free models</span>
-                </label>
-                <label className="uno-filter-label">
-                  <span
-                    className={`uno-checkbox ${discountedOnly ? "checked" : ""}`}
-                    onClick={() => setDiscountedOnly(!discountedOnly)}
-                  >
-                    {discountedOnly && (
-                      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#ffffff" strokeWidth="3">
-                        <polyline points="20 6 9 17 4 12"></polyline>
-                      </svg>
-                    )}
-                  </span>
-                  <span>Discounted only</span>
-                </label>
-              </div>
+              {!collapsedSections.pricing && (
+                <div className="uno-filter-list">
+                  <label className="uno-filter-label">
+                    <span
+                      className={`uno-checkbox ${hideFree ? "checked" : ""}`}
+                      onClick={() => setHideFree(!hideFree)}
+                    >
+                      {hideFree && (
+                        <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#ffffff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                          <polyline points="20 6 9 17 4 12"></polyline>
+                        </svg>
+                      )}
+                    </span>
+                    <span>Hide free</span>
+                  </label>
+                  <label className="uno-filter-label">
+                    <span
+                      className={`uno-checkbox ${discountedOnly ? "checked" : ""}`}
+                      onClick={() => setDiscountedOnly(!discountedOnly)}
+                    >
+                      {discountedOnly && (
+                        <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#ffffff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                          <polyline points="20 6 9 17 4 12"></polyline>
+                        </svg>
+                      )}
+                    </span>
+                    <span>Discounted only</span>
+                  </label>
+                </div>
+              )}
             </div>
 
             {/* Context Length Slider */}
             <div className="uno-filter-section">
-              <div className="uno-filter-header">
-                <span>CONTEXT LENGTH</span>
-                <span>^</span>
+              <div className="uno-filter-header" onClick={() => toggleSection("context")}>
+                <span>Context Length</span>
+                <span style={{ display: "inline-flex", opacity: 0.6 }}>
+                  {collapsedSections.context ? (
+                    <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9" /></svg>
+                  ) : (
+                    <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="18 15 12 9 6 15" /></svg>
+                  )}
+                </span>
               </div>
-              <div className="uno-slider-wrap">
-                <div
-                  className="uno-slider-track"
-                  onClick={(e) => {
-                    const rect = e.currentTarget.getBoundingClientRect();
-                    const ratio = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
-                    setMinContext(Math.round(ratio * 1000000));
-                  }}
-                >
+              {!collapsedSections.context && (
+                <div className="uno-slider-wrap">
                   <div
-                    className="uno-slider-handle"
-                    style={{ left: `${(minContext / 1000000) * 100}%` }}
-                  />
+                    className="uno-slider-track"
+                    onClick={(e) => {
+                      const rect = e.currentTarget.getBoundingClientRect();
+                      const ratio = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+                      setMinContext(Math.round(ratio * 1000000));
+                    }}
+                  >
+                    <div
+                      className="uno-slider-handle"
+                      style={{ left: `${(minContext / 1000000) * 100}%` }}
+                    />
+                  </div>
+                  <div className="uno-slider-labels">
+                    <span>{minContext > 0 ? `${Math.round(minContext / 1000)}k+` : "Min"}</span>
+                    <span>Any</span>
+                  </div>
                 </div>
-                <div className="uno-slider-labels">
-                  <span>Min</span>
-                  <span>Any</span>
-                </div>
-              </div>
+              )}
             </div>
 
             {/* Input Pricing Accordion */}
             <div className="uno-filter-section">
               <div className="uno-filter-header">
-                <span>INPUT PRICING</span>
-                <span>v</span>
+                <span>Input Pricing</span>
+                <span style={{ display: "inline-flex", opacity: 0.5 }}>
+                  <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9" /></svg>
+                </span>
               </div>
             </div>
 
             {/* Output Pricing Accordion */}
             <div className="uno-filter-section">
               <div className="uno-filter-header">
-                <span>OUTPUT PRICING</span>
-                <span>v</span>
+                <span>Output Pricing</span>
+                <span style={{ display: "inline-flex", opacity: 0.5 }}>
+                  <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9" /></svg>
+                </span>
               </div>
             </div>
           </aside>
@@ -643,6 +815,9 @@ export default function ModelsTable({ providers = [], combos = [] }: ModelsTable
               </button>
             </div>
 
+            {/* Top Pagination Bar */}
+            {renderPaginationBar("top")}
+
             {/* Screenshot 2 Rich Table */}
             <div className="uno-rich-table-wrap">
               <table className="uno-rich-table">
@@ -651,34 +826,34 @@ export default function ModelsTable({ providers = [], combos = [] }: ModelsTable
                     <th onClick={() => toggleSort("name")} style={{ cursor: "pointer" }}>
                       Model ↑↓
                     </th>
-                    <th onClick={() => toggleSort("weeklyTokens")} style={{ cursor: "pointer" }}>
+                    <th onClick={() => toggleSort("weeklyTokens")} style={{ cursor: "pointer", textAlign: "right" }}>
                       Weekly Tokens ↑↓
                     </th>
-                    <th onClick={() => toggleSort("inputPrice")} style={{ cursor: "pointer" }}>
+                    <th onClick={() => toggleSort("inputPrice")} style={{ cursor: "pointer", textAlign: "right" }}>
                       Input ↑↓
                     </th>
-                    <th onClick={() => toggleSort("outputPrice")} style={{ cursor: "pointer" }}>
+                    <th onClick={() => toggleSort("outputPrice")} style={{ cursor: "pointer", textAlign: "right" }}>
                       Output ↑↓
                     </th>
-                    <th onClick={() => toggleSort("contextNum")} style={{ cursor: "pointer" }}>
+                    <th onClick={() => toggleSort("contextNum")} style={{ cursor: "pointer", textAlign: "right" }}>
                       Context ↑↓
                     </th>
-                    <th onClick={() => toggleSort("uptime")} style={{ cursor: "pointer" }}>
+                    <th onClick={() => toggleSort("uptime")} style={{ cursor: "pointer", textAlign: "right" }}>
                       Uptime ↑↓
                     </th>
-                    <th onClick={() => toggleSort("success")} style={{ cursor: "pointer" }}>
+                    <th onClick={() => toggleSort("success")} style={{ cursor: "pointer", textAlign: "right" }}>
                       Success ↑↓
                     </th>
-                    <th onClick={() => toggleSort("latency")} style={{ cursor: "pointer" }}>
+                    <th onClick={() => toggleSort("latency")} style={{ cursor: "pointer", textAlign: "right" }}>
                       Latency ↑↓
                     </th>
-                    <th onClick={() => toggleSort("released")} style={{ cursor: "pointer" }}>
+                    <th onClick={() => toggleSort("released")} style={{ cursor: "pointer", textAlign: "right" }}>
                       Released ↑↓
                     </th>
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredModels.map((item) => (
+                  {pagedModels.map((item) => (
                     <tr key={item.id}>
                       {/* Model Name & Icon */}
                       <td>
@@ -695,15 +870,15 @@ export default function ModelsTable({ providers = [], combos = [] }: ModelsTable
                       </td>
 
                       {/* Weekly Tokens */}
-                      <td>
+                      <td style={{ textAlign: "right" }}>
                         <span className="mono" style={{ color: "#ffffff" }}>
                           {item.weeklyTokens}
                         </span>
                       </td>
 
                       {/* Input */}
-                      <td>
-                        <div className="uno-price-col">
+                      <td style={{ textAlign: "right" }}>
+                        <div className="uno-price-col" style={{ alignItems: "flex-end" }}>
                           <span className="uno-price-main">{item.inputPrice}</span>
                           {item.inputOriginal && item.inputDiscount && (
                             <div className="uno-price-discount">
@@ -715,8 +890,8 @@ export default function ModelsTable({ providers = [], combos = [] }: ModelsTable
                       </td>
 
                       {/* Output */}
-                      <td>
-                        <div className="uno-price-col">
+                      <td style={{ textAlign: "right" }}>
+                        <div className="uno-price-col" style={{ alignItems: "flex-end" }}>
                           <span className="uno-price-main">{item.outputPrice}</span>
                           {item.outputOriginal && item.outputDiscount && (
                             <div className="uno-price-discount">
@@ -728,35 +903,35 @@ export default function ModelsTable({ providers = [], combos = [] }: ModelsTable
                       </td>
 
                       {/* Context */}
-                      <td>
+                      <td style={{ textAlign: "right" }}>
                         <span className="mono" style={{ color: "#ffffff" }}>
                           {item.context}
                         </span>
                       </td>
 
                       {/* Uptime */}
-                      <td>
+                      <td style={{ textAlign: "right" }}>
                         <span className={getUptimeColorClass(item.uptime)}>
                           {item.uptime.toFixed(1)}%
                         </span>
                       </td>
 
                       {/* Success */}
-                      <td>
+                      <td style={{ textAlign: "right" }}>
                         <span className={getSuccessColorClass(item.success)}>
                           {item.success.toFixed(1)}%
                         </span>
                       </td>
 
                       {/* Latency */}
-                      <td>
+                      <td style={{ textAlign: "right" }}>
                         <span className="mono" style={{ color: "var(--uno-text-secondary)" }}>
                           {item.latency}
                         </span>
                       </td>
 
                       {/* Released */}
-                      <td>
+                      <td style={{ textAlign: "right" }}>
                         <span style={{ color: "var(--uno-text-muted)", fontSize: 12 }}>
                           {item.released}
                         </span>
@@ -774,9 +949,11 @@ export default function ModelsTable({ providers = [], combos = [] }: ModelsTable
                 </tbody>
               </table>
             </div>
+
+            {/* Bottom Pagination Bar */}
+            {renderPaginationBar("bottom")}
           </main>
         </div>
-      </div>
-    </section>
+    </div>
   );
 }
