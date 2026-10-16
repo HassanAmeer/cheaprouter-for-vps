@@ -414,7 +414,7 @@ class CheapRouteA2A(BaseLLM):
 
     @property
     def _llm_type(self) -> str:
-        return "omniroute-a2a"
+        return "cheaprouter-a2a"
 
     def _call(self, prompt: str, stop: Optional[List[str]] = None, **kwargs) -> str:
         response = requests.post(

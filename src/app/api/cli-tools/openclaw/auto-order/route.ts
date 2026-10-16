@@ -65,7 +65,7 @@ export async function GET(request: Request) {
         allow_fallbacks: true,
       },
       generated_at: new Date().toISOString(),
-      source: "omniroute-auto-combo",
+      source: "cheaprouter-auto-combo",
     });
   } catch {
     return NextResponse.json({
@@ -74,7 +74,7 @@ export async function GET(request: Request) {
         allow_fallbacks: true,
       },
       generated_at: new Date().toISOString(),
-      source: "omniroute-fallback",
+      source: "cheaprouter-fallback",
     });
   }
 }

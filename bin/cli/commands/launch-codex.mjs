@@ -48,7 +48,7 @@ const STRIPPED_CODEX_ENV_KEYS = [
 ];
 
 /** Placeholder so codex's `env_key` is always satisfied when the backend is open. */
-const NO_AUTH_SENTINEL = "omniroute-no-auth";
+const NO_AUTH_SENTINEL = "cheaprouter-no-auth";
 
 // On Windows the `codex` binary is an npm `.cmd` shim that `spawn` cannot resolve
 // without a shell (bare "codex" → ENOENT). Mirror the qodercli Windows fix (#6263):

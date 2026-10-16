@@ -68,7 +68,7 @@ function enrichmentOf(...pairs: Array<[string, string]>) {
 }
 
 const baseOpts = {
-  providerId: "omniroute",
+  providerId: "cheaprouter",
   baseURL: "https://gw.example.com",
   apiKey: "k",
   timeoutMs: 1000,
@@ -107,8 +107,8 @@ describe("catalog usableOnly gating", () => {
     assert.equal(providersCalls, 0);
     assert.equal(res.models, 3);
     assert.deepEqual(res, { models: 3, combos: 0 });
-    assert.ok(models.has("omniroute/cc/keep-me"));
-    assert.ok(models.has("omniroute/dead/drop-me"));
+    assert.ok(models.has("cheaprouter/cc/keep-me"));
+    assert.ok(models.has("cheaprouter/dead/drop-me"));
   });
 
   it("usableOnly=true drops known-but-not-provisioned models, keeps unknown prefixes", async () => {
@@ -129,9 +129,9 @@ describe("catalog usableOnly gating", () => {
       }
     );
     assert.equal(res.models, 2);
-    assert.ok(models.has("omniroute/cc/keep-me"));
-    assert.ok(!models.has("omniroute/dead/drop-me"));
-    assert.ok(models.has("omniroute/agentrouter/mystery"));
+    assert.ok(models.has("cheaprouter/cc/keep-me"));
+    assert.ok(!models.has("cheaprouter/dead/drop-me"));
+    assert.ok(models.has("cheaprouter/agentrouter/mystery"));
   });
 
   it("usableOnly=true with providers soft-fail keeps the full catalog", async () => {
@@ -148,7 +148,7 @@ describe("catalog usableOnly gating", () => {
       }
     );
     assert.equal(res.models, 3);
-    assert.ok(models.has("omniroute/dead/drop-me"));
+    assert.ok(models.has("cheaprouter/dead/drop-me"));
   });
 
   it("usableOnly=true filters combos by member usability", async () => {
@@ -173,8 +173,8 @@ describe("catalog usableOnly gating", () => {
     );
     assert.equal(res.combos, 1);
     assert.deepEqual(res, { models: 1, combos: 1 });
-    assert.ok(models.has("omniroute/Good"));
-    assert.ok(!models.has("omniroute/Bad"));
+    assert.ok(models.has("cheaprouter/Good"));
+    assert.ok(!models.has("cheaprouter/Bad"));
   });
 
   it("usableOnly=false issues no providers request through setup (gating)", async () => {
@@ -218,7 +218,7 @@ describe("catalog usableOnly gating", () => {
       const { tmpdir } = await import("node:os");
       const { join } = await import("node:path");
       const prevDataDir = process.env.OPENCODE_DATA_DIR;
-      process.env.OPENCODE_DATA_DIR = mkdtempSync(join(tmpdir(), "omniroute-usable-"));
+      process.env.OPENCODE_DATA_DIR = mkdtempSync(join(tmpdir(), "cheaprouter-usable-"));
       try {
         const { draft } = fakeDraft();
         await catalogCallbacks[0](draft as never);
@@ -270,7 +270,7 @@ describe("catalog usableOnly gating", () => {
       const { tmpdir } = await import("node:os");
       const { join } = await import("node:path");
       const prevDataDir = process.env.OPENCODE_DATA_DIR;
-      process.env.OPENCODE_DATA_DIR = mkdtempSync(join(tmpdir(), "omniroute-toolsdrop-"));
+      process.env.OPENCODE_DATA_DIR = mkdtempSync(join(tmpdir(), "cheaprouter-toolsdrop-"));
       try {
         const plugin = (await import("../src/index.js")).default as unknown as {
           setup: (ctx: unknown) => Promise<void>;

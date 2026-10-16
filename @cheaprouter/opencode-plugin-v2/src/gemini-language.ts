@@ -29,7 +29,7 @@ export function sanitizeToolSchemasFor<T extends LanguageModelV3 | undefined>(
     const tools = sanitizeToolInputSchemas(options.tools);
     if (tools === undefined) return options;
     log.debug(
-      `[omniroute-v2] stripped Gemini-incompatible schema keywords from ${tools.length} tool declaration(s) for ${modelId}`
+      `[cheaprouter-v2] stripped Gemini-incompatible schema keywords from ${tools.length} tool declaration(s) for ${modelId}`
     );
     return { ...options, tools } as CallOptions;
   };

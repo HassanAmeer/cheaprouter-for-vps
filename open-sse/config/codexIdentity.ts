@@ -3,7 +3,7 @@ import { createHash, randomUUID } from "node:crypto";
 import { normalizeCodexSessionId } from "./codexClient.ts";
 import { isCrossAccountCodexTurnState, readCodexTurnStateHeader } from "./codexTurnState.ts";
 
-const CODEX_INSTALLATION_SALT = "omniroute-codex-installation";
+const CODEX_INSTALLATION_SALT = "cheaprouter-codex-installation";
 const CODEX_SESSION_SEED_PREFIX = "cheaproute:codex-session-id:v1:";
 const CODEX_THREAD_SEED_PREFIX = "cheaproute:codex-thread-id:v1:";
 // v2 derivations are keyed by the persisted per-connection random seed

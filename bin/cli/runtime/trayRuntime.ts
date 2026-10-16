@@ -83,7 +83,7 @@ function ensureRuntimeDir(): void {
   if (!existsSync(RUNTIME_DIR)) mkdirSync(RUNTIME_DIR, { recursive: true });
   const pkg = join(RUNTIME_DIR, "package.json");
   if (!existsSync(pkg)) {
-    writeFileSync(pkg, JSON.stringify({ name: "omniroute-runtime", private: true }), "utf-8");
+    writeFileSync(pkg, JSON.stringify({ name: "cheaprouter-runtime", private: true }), "utf-8");
   }
 }
 

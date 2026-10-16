@@ -4,7 +4,7 @@ import { collectCatalog, DECLARED_REFRESH_ROUTES, isDeclaredRefreshPath } from "
 import { autoComboModelId, AUTO_VARIANTS } from "../src/shared/naming.js";
 
 const baseOpts = {
-  providerId: "omniroute",
+  providerId: "cheaprouter",
   baseURL: "https://gw.example.com",
   apiKey: "k",
   timeoutMs: 1000,
@@ -51,7 +51,7 @@ describe("refresh route table (closed set)", () => {
     const keys = [...collected.entries.keys()];
     for (const id of virtualIds()) {
       assert.equal(
-        keys.some((k) => k === `omniroute/${id}`),
+        keys.some((k) => k === `cheaprouter/${id}`),
         false,
         `retired entry ${id} must stay unpublished, got ${JSON.stringify(keys)}`
       );
@@ -70,7 +70,7 @@ describe("refresh route table (closed set)", () => {
     const keys = [...collected.entries.keys()];
     for (const id of ["auto", "auto/coding"]) {
       assert.equal(
-        keys.some((k) => k === `omniroute/${id}`),
+        keys.some((k) => k === `cheaprouter/${id}`),
         false,
         `retired entry ${id} must stay unpublished, got ${JSON.stringify(keys)}`
       );
@@ -84,7 +84,7 @@ describe("refresh route table (closed set)", () => {
       providers: async () => [],
       enrichment: async () => new Map(),
     } as never);
-    const entry = collected.entries.get("omniroute/auto/coding");
+    const entry = collected.entries.get("cheaprouter/auto/coding");
     assert.ok(entry, "server-provided entry must stay published");
     assert.equal(entry?.limit.context, 64000);
     assert.equal(entry?.limit.output, 4000);
@@ -97,7 +97,7 @@ describe("refresh route table (closed set)", () => {
     const { readFileSync, writeFileSync, rmSync } = await import("node:fs");
     const { writeDiskSnapshot, readDiskSnapshot, diskSnapshotPath } =
       await import("../src/cache.js");
-    const dir = mkdtempSync(join(tmpdir(), "omniroute-retired-field-"));
+    const dir = mkdtempSync(join(tmpdir(), "cheaprouter-retired-field-"));
     const prev = process.env.OPENCODE_DATA_DIR;
     process.env.OPENCODE_DATA_DIR = dir;
     try {

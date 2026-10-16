@@ -5,21 +5,21 @@ import os from "node:os";
 import path from "node:path";
 
 import {
-  createOmniRouteAuthHook,
-  createOmniRouteConfigHook,
-  createOmniRouteProviderHook,
-  parseOmniRoutePluginOptions,
-  type OmniRouteCompressionMetaFetcher,
-  type OmniRouteEnrichmentFetcher,
-  type OmniRouteProvidersFetcher,
-  type OmniRouteRawModelEntry,
+  createCheapRouterAuthHook,
+  createCheapRouterConfigHook,
+  createCheapRouterProviderHook,
+  parseCheapRouterPluginOptions,
+  type CheapRouterCompressionMetaFetcher,
+  type CheapRouterEnrichmentFetcher,
+  type CheapRouterProvidersFetcher,
+  type CheapRouterRawModelEntry,
 } from "../src/index.js";
 
 const BASE_URL = "https://or.example.com/v1";
 const API_KEY = "sk-inference-only";
 const MANAGEMENT_READ_TOKEN = "sk-management-read-only";
 
-const RAW_MODELS: OmniRouteRawModelEntry[] = [
+const RAW_MODELS: CheapRouterRawModelEntry[] = [
   {
     id: "openai/gpt-test",
     context_length: 16_000,
@@ -41,26 +41,26 @@ function apiAuth(key: string) {
 }
 
 test("options: managementReadToken is accepted and preserved", () => {
-  const parsed = parseOmniRoutePluginOptions({ managementReadToken: MANAGEMENT_READ_TOKEN });
+  const parsed = parseCheapRouterPluginOptions({ managementReadToken: MANAGEMENT_READ_TOKEN });
   assert.equal(parsed.managementReadToken, MANAGEMENT_READ_TOKEN);
 });
 
 test("provider hook: management GET fetchers use managementReadToken while /v1 uses apiKey", async () => {
   const calls: Array<[string, string]> = [];
-  const enrichmentFetcher: OmniRouteEnrichmentFetcher = async (_baseURL, token) => {
+  const enrichmentFetcher: CheapRouterEnrichmentFetcher = async (_baseURL, token) => {
     calls.push(["pricing", token]);
     return new Map();
   };
-  const compressionMetaFetcher: OmniRouteCompressionMetaFetcher = async (_baseURL, token) => {
+  const compressionMetaFetcher: CheapRouterCompressionMetaFetcher = async (_baseURL, token) => {
     calls.push(["context", token]);
     return [];
   };
-  const providersFetcher: OmniRouteProvidersFetcher = async (_baseURL, token) => {
+  const providersFetcher: CheapRouterProvidersFetcher = async (_baseURL, token) => {
     calls.push(["providers", token]);
     return [];
   };
 
-  const hook = createOmniRouteProviderHook(
+  const hook = createCheapRouterProviderHook(
     {
       baseURL: BASE_URL,
       managementReadToken: MANAGEMENT_READ_TOKEN,
@@ -99,7 +99,7 @@ test("provider hook: management GET fetchers use managementReadToken while /v1 u
 
 test("provider hook: absent managementReadToken preserves apiKey fallback", async () => {
   const calls: Array<[string, string]> = [];
-  const hook = createOmniRouteProviderHook(
+  const hook = createCheapRouterProviderHook(
     { baseURL: BASE_URL, features: { enrichment: false, autoCombos: false } },
     {
       fetcher: async (_baseURL, token) => {
@@ -123,7 +123,7 @@ test("provider hook: absent managementReadToken preserves apiKey fallback", asyn
 
 test("config hook: managementReadToken stays out of provider inference and MCP config", async () => {
   const calls: Array<[string, string]> = [];
-  const hook = createOmniRouteConfigHook(
+  const hook = createCheapRouterConfigHook(
     {
       baseURL: BASE_URL,
       managementReadToken: MANAGEMENT_READ_TOKEN,
@@ -131,7 +131,7 @@ test("config hook: managementReadToken stays out of provider inference and MCP c
     },
     {
       readAuthJson: async () => ({
-        "opencode-omniroute": { type: "api" as const, key: API_KEY },
+        "opencode-cheaprouter": { type: "api" as const, key: API_KEY },
       }),
       fetcher: async (_baseURL, token) => {
         calls.push(["models", token]);
@@ -152,9 +152,9 @@ test("config hook: managementReadToken stays out of provider inference and MCP c
     ["models", API_KEY],
     ["combos", MANAGEMENT_READ_TOKEN],
   ]);
-  assert.equal(input.provider?.["opencode-omniroute"]?.options?.apiKey, API_KEY);
+  assert.equal(input.provider?.["opencode-cheaprouter"]?.options?.apiKey, API_KEY);
   assert.equal(
-    input.mcp?.["opencode-omniroute"]?.headers?.Authorization,
+    input.mcp?.["opencode-cheaprouter"]?.headers?.Authorization,
     `Bearer ${API_KEY}`,
     "mcpAutoEmit remains independent of managementReadToken"
   );
@@ -169,7 +169,7 @@ test("auth fetch: only intended same-origin inference paths receive apiKey", asy
   }) as typeof fetch;
 
   try {
-    const hook = createOmniRouteAuthHook({
+    const hook = createCheapRouterAuthHook({
       baseURL: `${BASE_URL}/`,
       managementReadToken: MANAGEMENT_READ_TOKEN,
     });
@@ -215,14 +215,14 @@ test("auth fetch: only intended same-origin inference paths receive apiKey", asy
 });
 
 test("disk cache: snapshot written under management token A is rejected under token B", async () => {
-  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "omniroute-token-snapshot-"));
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "cheaprouter-token-snapshot-"));
   const previousDataDir = process.env.OPENCODE_DATA_DIR;
   process.env.OPENCODE_DATA_DIR = tmp;
 
   try {
     const commonDeps = {
       readAuthJson: async () => ({
-        "opencode-omniroute": {
+        "opencode-cheaprouter": {
           type: "api" as const,
           key: API_KEY,
           baseURL: BASE_URL,
@@ -237,7 +237,7 @@ test("disk cache: snapshot written under management token A is rejected under to
       diskCache: true,
     } as const;
 
-    const tokenAHook = createOmniRouteConfigHook(
+    const tokenAHook = createCheapRouterConfigHook(
       { managementReadToken: "token-A", features },
       {
         ...commonDeps,
@@ -246,7 +246,7 @@ test("disk cache: snapshot written under management token A is rejected under to
     );
     await tokenAHook({} as never);
 
-    const tokenBHook = createOmniRouteConfigHook(
+    const tokenBHook = createCheapRouterConfigHook(
       { managementReadToken: "token-B", features },
       {
         ...commonDeps,
@@ -259,7 +259,7 @@ test("disk cache: snapshot written under management token A is rejected under to
     await tokenBHook(input as never);
 
     assert.deepEqual(
-      input.provider?.["opencode-omniroute"]?.models,
+      input.provider?.["opencode-cheaprouter"]?.models,
       {},
       "catalog from token A must not hydrate after switching to token B"
     );

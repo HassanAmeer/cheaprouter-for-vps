@@ -1,7 +1,7 @@
 /**
  * T-03 provider-hook contract tests.
  *
- * Covers `createOmniRouteProviderHook(opts, deps)`:
+ * Covers `createCheapRouterProviderHook(opts, deps)`:
  *   - hook.id binds to resolved providerId (single + multi-instance)
  *   - models() narrows ctx.auth, fetches via injected fetcher, caches per
  *     (baseURL, apiKey) tuple, refetches after TTL
@@ -16,13 +16,13 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {
-  createOmniRouteProviderHook,
+  createCheapRouterProviderHook,
   mapRawModelToModelV2,
-  type OmniRouteRawModelEntry,
-  type OmniRouteModelsFetcher,
+  type CheapRouterRawModelEntry,
+  type CheapRouterModelsFetcher,
 } from "../src/index.js";
 
-const FIXTURE: OmniRouteRawModelEntry[] = [
+const FIXTURE: CheapRouterRawModelEntry[] = [
   {
     id: "claude-primary",
     object: "model",
@@ -55,12 +55,12 @@ const FIXTURE: OmniRouteRawModelEntry[] = [
   },
 ];
 
-function stubFetcher(payload: OmniRouteRawModelEntry[]): OmniRouteModelsFetcher & {
+function stubFetcher(payload: CheapRouterRawModelEntry[]): CheapRouterModelsFetcher & {
   callCount: () => number;
   callsBy: () => Array<[string, string]>;
 } {
   let calls: Array<[string, string]> = [];
-  const f: OmniRouteModelsFetcher = async (baseURL, apiKey) => {
+  const f: CheapRouterModelsFetcher = async (baseURL, apiKey) => {
     calls.push([baseURL, apiKey]);
     return payload;
   };
@@ -73,27 +73,27 @@ function stubFetcher(payload: OmniRouteRawModelEntry[]): OmniRouteModelsFetcher 
 const apiAuth = (key: string, baseURL?: string): unknown =>
   baseURL ? { type: "api", key, baseURL } : { type: "api", key };
 
-test("createOmniRouteProviderHook: default providerId is 'omniroute'", () => {
-  const hook = createOmniRouteProviderHook(undefined, { combosFetcher: async () => [] });
-  assert.equal(hook.id, "opencode-omniroute");
+test("createCheapRouterProviderHook: default providerId is 'cheaprouter'", () => {
+  const hook = createCheapRouterProviderHook(undefined, { combosFetcher: async () => [] });
+  assert.equal(hook.id, "opencode-cheaprouter");
 });
 
-test("createOmniRouteProviderHook: custom providerId binds to hook.id (multi-instance)", () => {
-  const a = createOmniRouteProviderHook(
-    { providerId: "omniroute-preprod" },
+test("createCheapRouterProviderHook: custom providerId binds to hook.id (multi-instance)", () => {
+  const a = createCheapRouterProviderHook(
+    { providerId: "cheaprouter-preprod" },
     { combosFetcher: async () => [] }
   );
-  const b = createOmniRouteProviderHook(
-    { providerId: "omniroute-local" },
+  const b = createCheapRouterProviderHook(
+    { providerId: "cheaprouter-local" },
     { combosFetcher: async () => [] }
   );
-  assert.equal(a.id, "opencode-omniroute-preprod");
-  assert.equal(b.id, "opencode-omniroute-local");
+  assert.equal(a.id, "opencode-cheaprouter-preprod");
+  assert.equal(b.id, "opencode-cheaprouter-local");
 });
 
 test("models: extracts apiKey from ctx.auth (type=api) and calls fetcher with it", async () => {
   const fetcher = stubFetcher(FIXTURE);
-  const hook = createOmniRouteProviderHook(
+  const hook = createCheapRouterProviderHook(
     { baseURL: "https://or.example.com/v1" },
     { fetcher, combosFetcher: async () => [] }
   );
@@ -101,9 +101,9 @@ test("models: extracts apiKey from ctx.auth (type=api) and calls fetcher with it
   assert.equal(fetcher.callCount(), 1);
   assert.deepEqual(fetcher.callsBy()[0], ["https://or.example.com/v1", "sk-abc"]);
   assert.equal(Object.keys(out).length, 3);
-  // #6859: dynamic-hook catalog keys use the unprefixed omnirouteProviderId
-  // ("omniroute"), not the OC-gate-prefixed hook.id ("opencode-omniroute") —
-  // that prefix must never leak into anything OmniRoute's server parses.
+  // #6859: dynamic-hook catalog keys use the unprefixed cheaprouterProviderId
+  // ("cheaprouter"), not the OC-gate-prefixed hook.id ("opencode-cheaprouter") —
+  // that prefix must never leak into anything CheapRouter's server parses.
   // #10345/#10821: bare combo ids (owned_by: "combo") stay unprefixed —
   // OpenCode looks up `-m <plugin>/<combo>` as model id `<combo>` under the
   // plugin provider, so `claude-primary` here carries no provider prefix.
@@ -112,7 +112,7 @@ test("models: extracts apiKey from ctx.auth (type=api) and calls fetcher with it
 
 test("models: returns {} when ctx.auth is null/undefined/wrong-type/empty-key", async () => {
   const fetcher = stubFetcher(FIXTURE);
-  const hook = createOmniRouteProviderHook(
+  const hook = createCheapRouterProviderHook(
     { baseURL: "https://or.example.com/v1" },
     { fetcher, combosFetcher: async () => [] }
   );
@@ -134,7 +134,7 @@ test("models: returns {} when ctx.auth is null/undefined/wrong-type/empty-key", 
 
 test("models: returns {} when no baseURL resolvable (no opts.baseURL and no auth.baseURL)", async () => {
   const fetcher = stubFetcher(FIXTURE);
-  const hook = createOmniRouteProviderHook({}, { fetcher, combosFetcher: async () => [] });
+  const hook = createCheapRouterProviderHook({}, { fetcher, combosFetcher: async () => [] });
   // valid api auth but neither opts nor auth carries a baseURL
   assert.deepEqual(await hook.models!({} as never, { auth: apiAuth("sk-x") as never }), {});
   assert.equal(fetcher.callCount(), 0);
@@ -142,7 +142,7 @@ test("models: returns {} when no baseURL resolvable (no opts.baseURL and no auth
 
 test("models: baseURL falls back to auth.baseURL when opts.baseURL absent", async () => {
   const fetcher = stubFetcher(FIXTURE);
-  const hook = createOmniRouteProviderHook({}, { fetcher, combosFetcher: async () => [] });
+  const hook = createCheapRouterProviderHook({}, { fetcher, combosFetcher: async () => [] });
   const out = await hook.models!({} as never, {
     auth: apiAuth("sk-y", "https://or.creds-attached.example/v1") as never,
   });
@@ -153,15 +153,15 @@ test("models: baseURL falls back to auth.baseURL when opts.baseURL absent", asyn
 
 test("models: maps a sample /v1/models entry to ModelV2 (sanity)", async () => {
   const fetcher = stubFetcher(FIXTURE);
-  const hook = createOmniRouteProviderHook(
-    { providerId: "omniroute", baseURL: "https://or.example.com/v1" },
+  const hook = createCheapRouterProviderHook(
+    { providerId: "cheaprouter", baseURL: "https://or.example.com/v1" },
     { fetcher, combosFetcher: async () => [] }
   );
   const out = await hook.models!({} as never, { auth: apiAuth("sk-abc") as never });
   // #6859: dynamic-hook catalog keys/ids/providerID use the unprefixed
-  // omnirouteProviderId ("omniroute") — the OC-gate prefix ("opencode-")
+  // cheaprouterProviderId ("cheaprouter") — the OC-gate prefix ("opencode-")
   // must stay OC-internal (hook.id / AuthHook.provider) and never leak into
-  // anything OmniRoute's own server parses for credential lookup.
+  // anything CheapRouter's own server parses for credential lookup.
   // #10345/#10821: bare **combo** ids (owned_by: "combo", e.g.
   // "claude-primary") must also stay unprefixed — OpenCode looks up
   // `-m <plugin>/<combo>` as model id `<combo>` under the plugin provider.
@@ -172,7 +172,7 @@ test("models: maps a sample /v1/models entry to ModelV2 (sanity)", async () => {
   // resolves the combo id directly.
   assert.equal(claude.id, "claude-primary");
   assert.equal(claude.name, "claude-primary");
-  assert.equal(claude.providerID, "omniroute");
+  assert.equal(claude.providerID, "cheaprouter");
   assert.equal(claude.api.id, "openai-compatible");
   assert.equal(claude.api.url, "https://or.example.com/v1");
   assert.equal(claude.api.npm, "@ai-sdk/openai-compatible");
@@ -187,7 +187,7 @@ test("models: maps a sample /v1/models entry to ModelV2 (sanity)", async () => {
   assert.equal(claude.capabilities.input.audio, false);
   assert.equal(claude.capabilities.output.text, true);
   assert.equal(claude.capabilities.output.image, false);
-  // cost is zeroed (OmniRoute /v1/models has no pricing)
+  // cost is zeroed (CheapRouter /v1/models has no pricing)
   assert.deepEqual(claude.cost, { input: 0, output: 0, cache: { read: 0, write: 0 } });
   // limits
   assert.equal(claude.limit.context, 200000);
@@ -203,7 +203,7 @@ test("mapRawModelToModelV2: thinking-only model still surfaces reasoning=true", 
       context_length: 100000,
       max_output_tokens: 8192,
     },
-    { providerId: "omniroute", baseURL: "https://or.example.com/v1" }
+    { providerId: "cheaprouter", baseURL: "https://or.example.com/v1" }
   );
   assert.equal(m.capabilities.reasoning, true);
 });
@@ -211,7 +211,7 @@ test("mapRawModelToModelV2: thinking-only model still surfaces reasoning=true", 
 test("mapRawModelToModelV2: missing capabilities defaults to all-false (except temperature)", () => {
   const m = mapRawModelToModelV2(
     { id: "minimal" },
-    { providerId: "omniroute", baseURL: "https://or.example.com/v1" }
+    { providerId: "cheaprouter", baseURL: "https://or.example.com/v1" }
   );
   assert.equal(m.capabilities.temperature, true);
   assert.equal(m.capabilities.reasoning, false);
@@ -228,7 +228,7 @@ test("mapRawModelToModelV2: missing capabilities defaults to all-false (except t
 test("models: caches result for second call within TTL (fetcher called once)", async () => {
   const fetcher = stubFetcher(FIXTURE);
   let nowMs = 1_000_000;
-  const hook = createOmniRouteProviderHook(
+  const hook = createCheapRouterProviderHook(
     { baseURL: "https://or.example.com/v1", modelCacheTtl: 60_000 },
     { fetcher, now: () => nowMs, combosFetcher: async () => [] }
   );
@@ -244,7 +244,7 @@ test("models: caches result for second call within TTL (fetcher called once)", a
 test("models: refetches after TTL expires", async () => {
   const fetcher = stubFetcher(FIXTURE);
   let nowMs = 1_000_000;
-  const hook = createOmniRouteProviderHook(
+  const hook = createCheapRouterProviderHook(
     { baseURL: "https://or.example.com/v1", modelCacheTtl: 60_000 },
     { fetcher, now: () => nowMs, combosFetcher: async () => [] }
   );
@@ -257,7 +257,7 @@ test("models: refetches after TTL expires", async () => {
 
 test("models: caches per (baseURL, apiKey) tuple (different keys → independent fetches)", async () => {
   const fetcher = stubFetcher(FIXTURE);
-  const hook = createOmniRouteProviderHook(
+  const hook = createCheapRouterProviderHook(
     { baseURL: "https://or.example.com/v1", modelCacheTtl: 300_000 },
     { fetcher, combosFetcher: async () => [] }
   );
@@ -271,7 +271,7 @@ test("models: caches per (baseURL, apiKey) tuple (different keys → independent
 
 test("models: caches per (baseURL, apiKey) tuple (different baseURL → independent fetches)", async () => {
   const fetcher = stubFetcher(FIXTURE);
-  const hook = createOmniRouteProviderHook(
+  const hook = createCheapRouterProviderHook(
     { modelCacheTtl: 300_000 }, // no opts.baseURL → falls back to auth.baseURL
     { fetcher, combosFetcher: async () => [] }
   );

@@ -1,8 +1,8 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { defaultOmniRouteModelsFetcher } from "../src/index.js";
+import { defaultCheapRouterModelsFetcher } from "../src/index.js";
 
-test("defaultOmniRouteModelsFetcher attaches statusCode on HTTP 401", async () => {
+test("defaultCheapRouterModelsFetcher attaches statusCode on HTTP 401", async () => {
   const original = globalThis.fetch;
   globalThis.fetch = (async () =>
     new Response(JSON.stringify({ error: "authentication expired" }), {
@@ -11,7 +11,7 @@ test("defaultOmniRouteModelsFetcher attaches statusCode on HTTP 401", async () =
     })) as typeof fetch;
   try {
     await assert.rejects(
-      () => defaultOmniRouteModelsFetcher("https://gateway.example/v1", "test-key"),
+      () => defaultCheapRouterModelsFetcher("https://gateway.example/v1", "test-key"),
       (err: unknown) => {
         assert.ok(err instanceof Error);
         const rec = err as Error & { statusCode?: number; status?: number };
@@ -26,7 +26,7 @@ test("defaultOmniRouteModelsFetcher attaches statusCode on HTTP 401", async () =
   }
 });
 
-test("defaultOmniRouteModelsFetcher default timeout is 30s", async () => {
+test("defaultCheapRouterModelsFetcher default timeout is 30s", async () => {
   const original = globalThis.fetch;
   let signal: AbortSignal | undefined;
   globalThis.fetch = (async (_input, init) => {
@@ -37,7 +37,7 @@ test("defaultOmniRouteModelsFetcher default timeout is 30s", async () => {
     });
   }) as typeof fetch;
   try {
-    await defaultOmniRouteModelsFetcher("https://gateway.example/v1", "test-key");
+    await defaultCheapRouterModelsFetcher("https://gateway.example/v1", "test-key");
     assert.equal(signal instanceof AbortSignal, true);
   } finally {
     globalThis.fetch = original;

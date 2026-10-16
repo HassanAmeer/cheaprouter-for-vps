@@ -10,7 +10,7 @@ import plugin from "../src/index.js";
 // the setup (unhandled rejection). The guard must warn + resolve instead.
 describe("plugin-v2 publish guard (mapper/host throws)", () => {
   function isolateDisk(): () => void {
-    const dir = mkdtempSync(join(tmpdir(), "omniroute-guard-"));
+    const dir = mkdtempSync(join(tmpdir(), "cheaprouter-guard-"));
     const prev = process.env.OPENCODE_DATA_DIR;
     process.env.OPENCODE_DATA_DIR = dir;
     return () => {
@@ -22,7 +22,7 @@ describe("plugin-v2 publish guard (mapper/host throws)", () => {
     ctx: Record<string, unknown>;
   } {
     const ctx = {
-      options: { baseURL: "https://gw.example.com", providerId: "omniroute", apiKey: "k" },
+      options: { baseURL: "https://gw.example.com", providerId: "cheaprouter", apiKey: "k" },
       provider: {
         transform: (cb: (editor: { add: (input: unknown) => void }) => void) => {
           cb({ add });

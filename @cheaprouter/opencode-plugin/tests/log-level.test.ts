@@ -6,18 +6,18 @@ import test from "node:test";
 import type { Config } from "@opencode-ai/plugin";
 
 import {
-  createOmniRouteConfigHook,
-  createOmniRouteProviderHook,
-  defaultOmniRouteAutoCombosFetcher,
-  OmniRoutePlugin,
-  type OmniRouteRawModelEntry,
+  createCheapRouterConfigHook,
+  createCheapRouterProviderHook,
+  defaultCheapRouterAutoCombosFetcher,
+  CheapRouterPlugin,
+  type CheapRouterRawModelEntry,
 } from "../src/index.js";
 import { createLogger, getLogLevel, logger, setLogLevel, type LogLevel } from "../src/logger.js";
 
 type ConsoleMethod = "error" | "info" | "log" | "warn";
 type ConsoleEntries = Record<ConsoleMethod, unknown[][]>;
 
-const fakeInput = {} as Parameters<typeof OmniRoutePlugin>[0];
+const fakeInput = {} as Parameters<typeof CheapRouterPlugin>[0];
 const consoleMethods: ConsoleMethod[] = ["error", "info", "log", "warn"];
 
 async function captureConsole(run: () => Promise<void>): Promise<ConsoleEntries> {
@@ -54,12 +54,12 @@ async function capturePluginLifecycle(args: {
 }): Promise<string[]> {
   const previousDataDir = process.env.OPENCODE_DATA_DIR;
   const previousLevel = getLogLevel();
-  const dataDir = await mkdtemp(join(tmpdir(), "omniroute-log-level-"));
+  const dataDir = await mkdtemp(join(tmpdir(), "cheaprouter-log-level-"));
   process.env.OPENCODE_DATA_DIR = dataDir;
 
   try {
     const entries = await captureConsole(async () => {
-      const hooks = await OmniRoutePlugin(fakeInput, {
+      const hooks = await CheapRouterPlugin(fakeInput, {
         autoSyncIntervalMs: args.autoSyncIntervalMs,
         features: { logLevel: args.level },
       });
@@ -123,11 +123,11 @@ test("logLevel debug preserves startup and config-shim diagnostics", async () =>
 test("debug instance retains config diagnostics after an error instance is created", async () => {
   const lines = rendered(
     await captureConsole(async () => {
-      const debugHooks = await OmniRoutePlugin(fakeInput, {
+      const debugHooks = await CheapRouterPlugin(fakeInput, {
         autoSyncIntervalMs: 0,
         features: { logLevel: "debug" },
       });
-      await OmniRoutePlugin(fakeInput, {
+      await CheapRouterPlugin(fakeInput, {
         autoSyncIntervalMs: 0,
         features: { logLevel: "error" },
       });
@@ -141,11 +141,11 @@ test("debug instance retains config diagnostics after an error instance is creat
 test("error instance keeps config diagnostics suppressed after a debug instance is created", async () => {
   const lines = rendered(
     await captureConsole(async () => {
-      const errorHooks = await OmniRoutePlugin(fakeInput, {
+      const errorHooks = await CheapRouterPlugin(fakeInput, {
         autoSyncIntervalMs: 0,
         features: { logLevel: "error" },
       });
-      await OmniRoutePlugin(fakeInput, {
+      await CheapRouterPlugin(fakeInput, {
         autoSyncIntervalMs: 0,
         features: { logLevel: "debug" },
       });
@@ -158,9 +158,9 @@ test("error instance keeps config diagnostics suppressed after a debug instance 
 
 test("error-level config fetch failures remain visible as concise injected-logger messages", async () => {
   const entries: unknown[][] = [];
-  const hook = createOmniRouteConfigHook(
+  const hook = createCheapRouterConfigHook(
     {
-      baseURL: "https://omniroute.example/v1",
+      baseURL: "https://cheaprouter.example/v1",
       features: {
         autoCombos: false,
         diskCache: false,
@@ -170,7 +170,7 @@ test("error-level config fetch failures remain visible as concise injected-logge
     },
     {
       readAuthJson: async () => ({
-        "opencode-omniroute": { type: "api", key: "test-key" },
+        "opencode-cheaprouter": { type: "api", key: "test-key" },
       }),
       fetcher: async () => {
         throw new Error("models unavailable");
@@ -223,7 +223,7 @@ test("logger error output remains visible at error level", async () => {
   }
 });
 
-const MINIMAL_MODELS: OmniRouteRawModelEntry[] = [
+const MINIMAL_MODELS: CheapRouterRawModelEntry[] = [
   {
     id: "claude-primary",
     object: "model",
@@ -237,7 +237,7 @@ const MINIMAL_MODELS: OmniRouteRawModelEntry[] = [
 ];
 
 function providerHookWithLevel(level: LogLevel, baseURL?: string) {
-  return createOmniRouteProviderHook(
+  return createCheapRouterProviderHook(
     {
       baseURL,
       features: { autoCombos: false, enrichment: false, logLevel: level },
@@ -299,7 +299,7 @@ test("default auto-combos fetcher 404 warning respects the threaded logger level
   })) as typeof fetch;
   try {
     const silent = await captureConsole(async () => {
-      await defaultOmniRouteAutoCombosFetcher(
+      await defaultCheapRouterAutoCombosFetcher(
         "https://or.example.com/v1",
         "sk-x",
         5_000,
@@ -309,7 +309,7 @@ test("default auto-combos fetcher 404 warning respects the threaded logger level
     assert.equal(rendered(silent).length, 0, "404 warning suppressed at error level");
 
     const loud = await captureConsole(async () => {
-      await defaultOmniRouteAutoCombosFetcher(
+      await defaultCheapRouterAutoCombosFetcher(
         "https://or.example.com/v1",
         "sk-x",
         5_000,

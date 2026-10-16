@@ -30,7 +30,7 @@ function cachedMatchPattern(pattern: string, value: string): boolean {
 
 export interface RtkFilterLoadDiagnostic {
   source: "project" | "global" | "builtin";
-  format?: "omniroute-json" | "rtk-toml-v1";
+  format?: "cheaprouter-json" | "rtk-toml-v1";
   path?: string;
   level: "warning" | "error";
   message: string;
@@ -40,7 +40,7 @@ interface FilterSource {
   source: "project" | "global" | "builtin";
   path: string;
   trusted: boolean;
-  format: "omniroute-json" | "rtk-toml-v1";
+  format: "cheaprouter-json" | "rtk-toml-v1";
 }
 
 interface RtkFilterLoadOptions {
@@ -128,7 +128,7 @@ function collectFilterSources(options: RtkFilterLoadOptions = {}): FilterSource[
 function collectProjectFilterSources(sources: FilterSource[], options: RtkFilterLoadOptions): void {
   const projectCandidates = [
     { path: path.join(process.cwd(), ".rtk", "filters.toml"), format: "rtk-toml-v1" as const },
-    { path: path.join(process.cwd(), ".rtk", "filters.json"), format: "omniroute-json" as const },
+    { path: path.join(process.cwd(), ".rtk", "filters.json"), format: "cheaprouter-json" as const },
   ];
   for (const candidate of projectCandidates) {
     if (!fs.existsSync(candidate.path)) continue;
@@ -153,7 +153,7 @@ function collectProjectFilterSources(sources: FilterSource[], options: RtkFilter
 function collectGlobalFilterSources(sources: FilterSource[]): void {
   const globalCandidates = [
     { path: path.join(getDataDir(), "rtk", "filters.toml"), format: "rtk-toml-v1" as const },
-    { path: path.join(getDataDir(), "rtk", "filters.json"), format: "omniroute-json" as const },
+    { path: path.join(getDataDir(), "rtk", "filters.json"), format: "cheaprouter-json" as const },
   ];
   for (const candidate of globalCandidates) {
     if (fs.existsSync(candidate.path)) {
@@ -182,7 +182,7 @@ function collectBuiltinFilterSources(sources: FilterSource[]): void {
         source: "builtin",
         path: path.join(builtinDir, file),
         trusted: true,
-        format: "omniroute-json",
+        format: "cheaprouter-json",
       });
     }
   }
@@ -256,12 +256,12 @@ export function loadRtkFilters(options: RtkFilterLoadOptions = {}): RtkFilterDef
   }
 
   const sourceRank = { project: 3, global: 2, builtin: 1 } as const;
-  const formatRank = { "rtk-toml-v1": 2, "omniroute-json": 1 } as const;
+  const formatRank = { "rtk-toml-v1": 2, "cheaprouter-json": 1 } as const;
   const sorted = filters.sort(
     (a, b) =>
       sourceRank[b.source ?? "builtin"] - sourceRank[a.source ?? "builtin"] ||
-      formatRank[b.sourceFormat ?? "omniroute-json"] -
-        formatRank[a.sourceFormat ?? "omniroute-json"] ||
+      formatRank[b.sourceFormat ?? "cheaprouter-json"] -
+        formatRank[a.sourceFormat ?? "cheaprouter-json"] ||
       b.priority - a.priority ||
       a.id.localeCompare(b.id)
   );

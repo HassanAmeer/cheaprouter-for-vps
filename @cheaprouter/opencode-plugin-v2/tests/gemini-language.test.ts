@@ -22,7 +22,7 @@ function recordingModel(): { model: Record<string, unknown>; seen: unknown[] } {
   const model = {
     specificationVersion: "v3",
     modelId: "gemini-2.5-flash",
-    provider: "omniroute",
+    provider: "cheaprouter",
     doGenerate: async (options: unknown) => {
       seen.push(options);
       return { content: [], finishReason: "stop", usage: {}, warnings: [] };

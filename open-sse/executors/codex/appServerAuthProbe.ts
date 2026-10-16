@@ -62,7 +62,7 @@ export async function probeCodexAppServerAuth(
       await client.request(
         "initialize",
         {
-          clientInfo: { name: "omniroute-codex-app-server-health", title: null, version: "1.0" },
+          clientInfo: { name: "cheaprouter-codex-app-server-health", title: null, version: "1.0" },
           capabilities: null,
         },
         timeoutMs

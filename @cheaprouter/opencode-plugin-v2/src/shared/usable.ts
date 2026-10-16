@@ -1,8 +1,8 @@
-import type { OmniRouteEnrichmentMap } from "./enrich.js";
-import type { OmniRouteRawCombo } from "./combos-map.js";
+import type { CheapRouterEnrichmentMap } from "./enrich.js";
+import type { CheapRouterRawCombo } from "./combos-map.js";
 
 /** Subset of `/api/providers` connections read by the usableOnly filter. */
-export interface OmniRouteProviderConnection {
+export interface CheapRouterProviderConnection {
   /** Connection UUID. */
   id: string;
   /** Canonical provider id, e.g. `claude`, `gemini`, `kiro`. */
@@ -15,12 +15,12 @@ export interface OmniRouteProviderConnection {
   [k: string]: unknown;
 }
 
-export type OmniRouteProvidersFetcher = (
+export type CheapRouterProvidersFetcher = (
   baseURL: string,
   apiKey: string,
   timeoutMs?: number,
   onSourceError?: (endpoint: string, reason: string) => void
-) => Promise<OmniRouteProviderConnection[]>;
+) => Promise<CheapRouterProviderConnection[]>;
 
 export interface UsableProviderSet {
   aliases: Set<string>;
@@ -36,13 +36,13 @@ export interface UsableProviderSet {
  * last-known instead of silently disabling the filter; a 2xx with an empty
  * list is the only empty answer.
  */
-export const defaultOmniRouteProvidersFetcher: OmniRouteProvidersFetcher = async (
+export const defaultCheapRouterProvidersFetcher: CheapRouterProvidersFetcher = async (
   baseURL,
   apiKey,
   timeoutMs = 10_000,
   onSourceError
 ) => {
-  const empty: OmniRouteProviderConnection[] = [];
+  const empty: CheapRouterProviderConnection[] = [];
   if (!baseURL || !apiKey) return empty;
   const root = baseURL.replace(/\/v1\/?$/, "").replace(/\/$/, "");
   const url = `${root}/api/providers`;
@@ -72,7 +72,7 @@ export const defaultOmniRouteProvidersFetcher: OmniRouteProvidersFetcher = async
         : Array.isArray((body as { data?: unknown[] })?.data)
           ? (body as { data: unknown[] }).data
           : [];
-    const out: OmniRouteProviderConnection[] = [];
+    const out: CheapRouterProviderConnection[] = [];
     for (const raw of list) {
       if (!raw || typeof raw !== "object") continue;
       const provider = (raw as { provider?: unknown }).provider;
@@ -101,8 +101,8 @@ export const defaultOmniRouteProvidersFetcher: OmniRouteProvidersFetcher = async
  * Subtract-filter semantics: callers keep prefixes unknown to BOTH tables.
  */
 export function usableProviderAliasSet(
-  connections: OmniRouteProviderConnection[],
-  enrichment: OmniRouteEnrichmentMap | undefined
+  connections: CheapRouterProviderConnection[],
+  enrichment: CheapRouterEnrichmentMap | undefined
 ): UsableProviderSet {
   const usableCanonicals = new Set<string>();
   for (const c of connections) {
@@ -152,7 +152,7 @@ export function isUsableRawModelId(id: string, usable: UsableProviderSet): boole
  * LEAST ONE member maps to a usable provider; unknown prefixes keep (cannot
  * prove unroutable); combos with zero resolvable members keep.
  */
-export function isUsableCombo(combo: OmniRouteRawCombo, usable: UsableProviderSet): boolean {
+export function isUsableCombo(combo: CheapRouterRawCombo, usable: UsableProviderSet): boolean {
   const steps = Array.isArray(combo.models) ? combo.models : [];
   if (steps.length === 0) return true;
   let sawResolvableMember = false;

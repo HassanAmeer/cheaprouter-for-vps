@@ -75,7 +75,7 @@ describe("deprecated anthropicPrefixes", () => {
       const mapped = mapRawModelToModelV2(
         { id: "claude/openai-compatible-model" },
         {
-          providerId: "omniroute",
+          providerId: "cheaprouter",
           baseURL: GW,
           apiFormat: {
             allowAnthropic: true,
@@ -150,7 +150,7 @@ describe("deprecated anthropicPrefixes", () => {
       const { collectCatalog, buildProviderPayload } = await import("../src/catalog.js");
       const collected = await collectCatalog(
         {
-          providerId: "omniroute",
+          providerId: "cheaprouter",
           baseURL: GW,
           apiKey: "k",
           timeoutMs: 1000,
@@ -166,7 +166,7 @@ describe("deprecated anthropicPrefixes", () => {
       );
       assert.deepEqual(collected.counts, { models: 1, combos: 0 });
       const payload = buildProviderPayload(collected, {
-        providerId: "omniroute",
+        providerId: "cheaprouter",
         baseURL: GW,
         apiKey: "k",
         timeoutMs: 1000,

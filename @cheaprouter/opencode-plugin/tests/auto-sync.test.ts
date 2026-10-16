@@ -10,13 +10,13 @@ import {
   sanitizeAutoSyncIntervalMs,
   DEFAULT_AUTO_SYNC_INTERVAL_MS,
   MIN_AUTO_SYNC_INTERVAL_MS,
-  parseOmniRoutePluginOptions,
-  resolveOmniRoutePluginOptions,
-  invalidateOmniRouteFetchCache,
-  forceSyncOmniRouteModels,
+  parseCheapRouterPluginOptions,
+  resolveCheapRouterPluginOptions,
+  invalidateCheapRouterFetchCache,
+  forceSyncCheapRouterModels,
   diskSnapshotPath,
-  type OmniRouteFetchCache,
-  type OmniRouteFetchCacheEntry,
+  type CheapRouterFetchCache,
+  type CheapRouterFetchCacheEntry,
 } from "../src/index.js";
 import { getLogLevel, setLogLevel } from "../src/logger.js";
 
@@ -54,26 +54,26 @@ test("sanitizeAutoSyncIntervalMs: keeps valid values", () => {
   assert.equal(sanitizeAutoSyncIntervalMs(300_000), 300_000);
 });
 
-test("parseOmniRoutePluginOptions accepts autoSyncIntervalMs including 0", () => {
-  assert.equal(parseOmniRoutePluginOptions({ autoSyncIntervalMs: 0 }).autoSyncIntervalMs, 0);
+test("parseCheapRouterPluginOptions accepts autoSyncIntervalMs including 0", () => {
+  assert.equal(parseCheapRouterPluginOptions({ autoSyncIntervalMs: 0 }).autoSyncIntervalMs, 0);
   assert.equal(
-    parseOmniRoutePluginOptions({ autoSyncIntervalMs: 120_000 }).autoSyncIntervalMs,
+    parseCheapRouterPluginOptions({ autoSyncIntervalMs: 120_000 }).autoSyncIntervalMs,
     120_000
   );
 });
 
-test("resolveOmniRoutePluginOptions defaults autoSyncIntervalMs to 300000", () => {
-  const r = resolveOmniRoutePluginOptions({});
+test("resolveCheapRouterPluginOptions defaults autoSyncIntervalMs to 300000", () => {
+  const r = resolveCheapRouterPluginOptions({});
   assert.equal(r.autoSyncIntervalMs, DEFAULT_AUTO_SYNC_INTERVAL_MS);
 });
 
-test("resolveOmniRoutePluginOptions clamps low positive autoSyncIntervalMs", () => {
-  const r = resolveOmniRoutePluginOptions({ autoSyncIntervalMs: 5000 });
+test("resolveCheapRouterPluginOptions clamps low positive autoSyncIntervalMs", () => {
+  const r = resolveCheapRouterPluginOptions({ autoSyncIntervalMs: 5000 });
   assert.equal(r.autoSyncIntervalMs, MIN_AUTO_SYNC_INTERVAL_MS);
 });
 
-test("invalidateOmniRouteFetchCache clears by baseURL prefix", () => {
-  const cache: OmniRouteFetchCache = new Map();
+test("invalidateCheapRouterFetchCache clears by baseURL prefix", () => {
+  const cache: CheapRouterFetchCache = new Map();
   cache.set("https://a.example/v1::abc", {
     rawModels: [],
     rawCombos: [],
@@ -92,17 +92,17 @@ test("invalidateOmniRouteFetchCache clears by baseURL prefix", () => {
     rawConnections: [],
     expiresAt: Date.now() + 1000,
   });
-  const removed = invalidateOmniRouteFetchCache(cache, "https://a.example/v1");
+  const removed = invalidateCheapRouterFetchCache(cache, "https://a.example/v1");
   assert.equal(removed, 1);
   assert.equal(cache.size, 1);
   assert.equal(cache.has("https://b.example/v1::def"), true);
 });
 
-test("forceSyncOmniRouteModels: fetches, populates cache, returns count", async () => {
-  const cache: OmniRouteFetchCache = new Map();
-  const resolved = resolveOmniRoutePluginOptions({
-    providerId: "omniroute",
-    baseURL: "https://omniroute.example/v1",
+test("forceSyncCheapRouterModels: fetches, populates cache, returns count", async () => {
+  const cache: CheapRouterFetchCache = new Map();
+  const resolved = resolveCheapRouterPluginOptions({
+    providerId: "cheaprouter",
+    baseURL: "https://cheaprouter.example/v1",
     autoSyncIntervalMs: 0,
     features: {
       combos: false,
@@ -114,11 +114,11 @@ test("forceSyncOmniRouteModels: fetches, populates cache, returns count", async 
     },
   });
 
-  const result = await forceSyncOmniRouteModels({
+  const result = await forceSyncCheapRouterModels({
     resolved,
     cache,
     readAuthJson: async () => ({
-      omniroute: { type: "api", key: "test-key" },
+      cheaprouter: { type: "api", key: "test-key" },
     }),
     fetcher: async () => [
       { id: "model-a", object: "model" },
@@ -129,19 +129,19 @@ test("forceSyncOmniRouteModels: fetches, populates cache, returns count", async 
 
   assert.equal(result.ok, true);
   assert.equal(result.count, 2);
-  assert.equal(result.provider, "omniroute");
+  assert.equal(result.provider, "cheaprouter");
   assert.equal(cache.size, 1);
   const entry = [...cache.values()][0];
   assert.equal(entry.rawModels.length, 2);
   assert.equal(entry.expiresAt, 1_000_000 + resolved.modelCacheTtl);
 });
 
-test("forceSyncOmniRouteModels suppresses successful lifecycle output at error level", async () => {
+test("forceSyncCheapRouterModels suppresses successful lifecycle output at error level", async () => {
   const previousLevel = getLogLevel();
-  const cache: OmniRouteFetchCache = new Map();
-  const resolved = resolveOmniRoutePluginOptions({
-    providerId: "omniroute",
-    baseURL: "https://omniroute.example/v1",
+  const cache: CheapRouterFetchCache = new Map();
+  const resolved = resolveCheapRouterPluginOptions({
+    providerId: "cheaprouter",
+    baseURL: "https://cheaprouter.example/v1",
     features: {
       autoCombos: false,
       combos: false,
@@ -156,10 +156,10 @@ test("forceSyncOmniRouteModels suppresses successful lifecycle output at error l
   try {
     setLogLevel("error");
     const lines = await captureConsole(async () => {
-      const result = await forceSyncOmniRouteModels({
+      const result = await forceSyncCheapRouterModels({
         resolved,
         cache,
-        readAuthJson: async () => ({ omniroute: { type: "api", key: "test-key" } }),
+        readAuthJson: async () => ({ cheaprouter: { type: "api", key: "test-key" } }),
         fetcher: async () => [{ id: "model-a", object: "model" }],
       });
       assert.equal(result.ok, true);
@@ -171,12 +171,12 @@ test("forceSyncOmniRouteModels suppresses successful lifecycle output at error l
   }
 });
 
-test("forceSyncOmniRouteModels preserves successful lifecycle output at info level", async () => {
+test("forceSyncCheapRouterModels preserves successful lifecycle output at info level", async () => {
   const previousLevel = getLogLevel();
-  const cache: OmniRouteFetchCache = new Map();
-  const resolved = resolveOmniRoutePluginOptions({
-    providerId: "omniroute",
-    baseURL: "https://omniroute.example/v1",
+  const cache: CheapRouterFetchCache = new Map();
+  const resolved = resolveCheapRouterPluginOptions({
+    providerId: "cheaprouter",
+    baseURL: "https://cheaprouter.example/v1",
     features: {
       autoCombos: false,
       combos: false,
@@ -191,10 +191,10 @@ test("forceSyncOmniRouteModels preserves successful lifecycle output at info lev
   try {
     setLogLevel("info");
     const lines = await captureConsole(async () => {
-      const result = await forceSyncOmniRouteModels({
+      const result = await forceSyncCheapRouterModels({
         resolved,
         cache,
-        readAuthJson: async () => ({ omniroute: { type: "api", key: "test-key" } }),
+        readAuthJson: async () => ({ cheaprouter: { type: "api", key: "test-key" } }),
         fetcher: async () => [{ id: "model-a", object: "model" }],
       });
       assert.equal(result.ok, true);
@@ -206,15 +206,15 @@ test("forceSyncOmniRouteModels preserves successful lifecycle output at info lev
   }
 });
 
-test("forceSyncOmniRouteModels: missing auth returns error", async () => {
-  const cache: OmniRouteFetchCache = new Map();
-  const resolved = resolveOmniRoutePluginOptions({
-    providerId: "omniroute",
-    baseURL: "https://omniroute.example/v1",
+test("forceSyncCheapRouterModels: missing auth returns error", async () => {
+  const cache: CheapRouterFetchCache = new Map();
+  const resolved = resolveCheapRouterPluginOptions({
+    providerId: "cheaprouter",
+    baseURL: "https://cheaprouter.example/v1",
     autoSyncIntervalMs: 0,
     features: { diskCache: false },
   });
-  const result = await forceSyncOmniRouteModels({
+  const result = await forceSyncCheapRouterModels({
     resolved,
     cache,
     readAuthJson: async () => ({}),
@@ -229,7 +229,7 @@ test("forceSyncOmniRouteModels: missing auth returns error", async () => {
 // after a successful fetch.
 async function withTempDataDir(run: (dir: string) => Promise<void>): Promise<void> {
   const previous = process.env.OPENCODE_DATA_DIR;
-  const dir = await mkdtemp(join(tmpdir(), "omniroute-force-sync-"));
+  const dir = await mkdtemp(join(tmpdir(), "cheaprouter-force-sync-"));
   process.env.OPENCODE_DATA_DIR = dir;
   try {
     await run(dir);
@@ -241,9 +241,9 @@ async function withTempDataDir(run: (dir: string) => Promise<void>): Promise<voi
 }
 
 function diskCacheResolved() {
-  return resolveOmniRoutePluginOptions({
-    providerId: "omniroute",
-    baseURL: "https://omniroute.example/v1",
+  return resolveCheapRouterPluginOptions({
+    providerId: "cheaprouter",
+    baseURL: "https://cheaprouter.example/v1",
     autoSyncIntervalMs: 0,
     features: {
       combos: false,
@@ -257,7 +257,7 @@ function diskCacheResolved() {
   });
 }
 
-test("forceSyncOmniRouteModels: models fetch abort keeps memory and disk cache (#14926)", async () => {
+test("forceSyncCheapRouterModels: models fetch abort keeps memory and disk cache (#14926)", async () => {
   await withTempDataDir(async () => {
     const resolved = diskCacheResolved();
     const snapshotFile = diskSnapshotPath(resolved.providerId);
@@ -265,7 +265,7 @@ test("forceSyncOmniRouteModels: models fetch abort keeps memory and disk cache (
     const previousSnapshot = JSON.stringify({ v: 2, marker: "last-good-catalog" });
     await writeFile(snapshotFile, previousSnapshot, "utf8");
 
-    const cache: OmniRouteFetchCache = new Map();
+    const cache: CheapRouterFetchCache = new Map();
     const previousEntry = {
       rawModels: [{ id: "cached-model", object: "model" }],
       rawCombos: [],
@@ -274,13 +274,13 @@ test("forceSyncOmniRouteModels: models fetch abort keeps memory and disk cache (
       rawCompressionCombos: [],
       rawConnections: [],
       expiresAt: 1,
-    } as unknown as OmniRouteFetchCacheEntry;
-    cache.set("https://omniroute.example/v1::old-credentials", previousEntry);
+    } as unknown as CheapRouterFetchCacheEntry;
+    cache.set("https://cheaprouter.example/v1::old-credentials", previousEntry);
 
-    const result = await forceSyncOmniRouteModels({
+    const result = await forceSyncCheapRouterModels({
       resolved,
       cache,
-      readAuthJson: async () => ({ omniroute: { type: "api", key: "test-key" } }),
+      readAuthJson: async () => ({ cheaprouter: { type: "api", key: "test-key" } }),
       fetcher: async () => {
         throw new DOMException("The operation was aborted.", "AbortError");
       },
@@ -291,7 +291,7 @@ test("forceSyncOmniRouteModels: models fetch abort keeps memory and disk cache (
     assert.equal(result.clearedMemory, 0);
     assert.equal(result.clearedDisk, false);
     assert.equal(cache.size, 1, "in-memory cache must survive a failed fetch");
-    assert.equal(cache.get("https://omniroute.example/v1::old-credentials"), previousEntry);
+    assert.equal(cache.get("https://cheaprouter.example/v1::old-credentials"), previousEntry);
     assert.equal(
       await readFile(snapshotFile, "utf8"),
       previousSnapshot,
@@ -300,20 +300,20 @@ test("forceSyncOmniRouteModels: models fetch abort keeps memory and disk cache (
   });
 });
 
-test("forceSyncOmniRouteModels: successful fetch replaces memory and disk cache", async () => {
+test("forceSyncCheapRouterModels: successful fetch replaces memory and disk cache", async () => {
   await withTempDataDir(async () => {
     const resolved = diskCacheResolved();
     const snapshotFile = diskSnapshotPath(resolved.providerId);
     await mkdir(dirname(snapshotFile), { recursive: true });
     await writeFile(snapshotFile, JSON.stringify({ v: 2, marker: "old" }), "utf8");
 
-    const cache: OmniRouteFetchCache = new Map();
-    cache.set("https://stale.example/v1::old", {} as OmniRouteFetchCacheEntry);
+    const cache: CheapRouterFetchCache = new Map();
+    cache.set("https://stale.example/v1::old", {} as CheapRouterFetchCacheEntry);
 
-    const result = await forceSyncOmniRouteModels({
+    const result = await forceSyncCheapRouterModels({
       resolved,
       cache,
-      readAuthJson: async () => ({ omniroute: { type: "api", key: "test-key" } }),
+      readAuthJson: async () => ({ cheaprouter: { type: "api", key: "test-key" } }),
       fetcher: async () => [{ id: "fresh-model", object: "model" }],
     });
 

@@ -1,7 +1,7 @@
 /**
  * T-04 fetch-interceptor contract tests.
  *
- * Covers `createOmniRouteFetchInterceptor` (URL-prefix gating, header merge,
+ * Covers `createCheapRouterFetchInterceptor` (URL-prefix gating, header merge,
  * Content-Type defaulting, input-shape polymorphism) plus the loader
  * integration that wires it into the AuthHook return shape.
  *
@@ -13,7 +13,7 @@
  */
 import test from "node:test";
 import assert from "node:assert/strict";
-import { createOmniRouteAuthHook, createOmniRouteFetchInterceptor } from "../src/index.js";
+import { createCheapRouterAuthHook, createCheapRouterFetchInterceptor } from "../src/index.js";
 
 type FetchCall = { input: Parameters<typeof fetch>[0]; init?: RequestInit };
 
@@ -33,10 +33,10 @@ function installFetchRecorder(response: Response = new Response("ok")) {
 const BASE = "https://or.example.com/v1";
 const KEY = "sk-test-fetch";
 
-test("createOmniRouteFetchInterceptor: targets baseURL → Authorization header injected", async () => {
+test("createCheapRouterFetchInterceptor: targets baseURL → Authorization header injected", async () => {
   const { calls, restore } = installFetchRecorder();
   try {
-    const f = createOmniRouteFetchInterceptor({ apiKey: KEY, baseURL: BASE });
+    const f = createCheapRouterFetchInterceptor({ apiKey: KEY, baseURL: BASE });
     await f(`${BASE}/chat/completions`, {
       method: "POST",
       body: JSON.stringify({ x: 1 }),
@@ -50,11 +50,11 @@ test("createOmniRouteFetchInterceptor: targets baseURL → Authorization header 
   }
 });
 
-test("createOmniRouteFetchInterceptor: path-prefixed baseURL scopes auth to its normalized inference paths", async () => {
+test("createCheapRouterFetchInterceptor: path-prefixed baseURL scopes auth to its normalized inference paths", async () => {
   const { calls, restore } = installFetchRecorder();
   try {
     const prefixedBase = "https://or.example.com/tenant-a/v1";
-    const f = createOmniRouteFetchInterceptor({
+    const f = createCheapRouterFetchInterceptor({
       apiKey: KEY,
       baseURL: `${prefixedBase}///`,
     });
@@ -84,7 +84,7 @@ test("createOmniRouteFetchInterceptor: path-prefixed baseURL scopes auth to its 
     assert.equal(calls[0]?.init?.body, streamingBody);
     assert.equal(headers[0]?.get("Accept"), "text/event-stream");
 
-    const suffixingInterceptor = createOmniRouteFetchInterceptor({
+    const suffixingInterceptor = createCheapRouterFetchInterceptor({
       apiKey: KEY,
       baseURL: "https://or.example.com/tenant-a/",
     });
@@ -96,10 +96,10 @@ test("createOmniRouteFetchInterceptor: path-prefixed baseURL scopes auth to its 
   }
 });
 
-test("createOmniRouteFetchInterceptor: targets baseURL → Authorization OVERRIDES caller-supplied Bearer", async () => {
+test("createCheapRouterFetchInterceptor: targets baseURL → Authorization OVERRIDES caller-supplied Bearer", async () => {
   const { calls, restore } = installFetchRecorder();
   try {
-    const f = createOmniRouteFetchInterceptor({ apiKey: KEY, baseURL: BASE });
+    const f = createCheapRouterFetchInterceptor({ apiKey: KEY, baseURL: BASE });
     await f(`${BASE}/chat/completions`, {
       method: "POST",
       body: "{}",
@@ -114,10 +114,10 @@ test("createOmniRouteFetchInterceptor: targets baseURL → Authorization OVERRID
   }
 });
 
-test("createOmniRouteFetchInterceptor: targets baseURL + body → Content-Type defaults to application/json", async () => {
+test("createCheapRouterFetchInterceptor: targets baseURL + body → Content-Type defaults to application/json", async () => {
   const { calls, restore } = installFetchRecorder();
   try {
-    const f = createOmniRouteFetchInterceptor({ apiKey: KEY, baseURL: BASE });
+    const f = createCheapRouterFetchInterceptor({ apiKey: KEY, baseURL: BASE });
     await f(`${BASE}/chat/completions`, {
       method: "POST",
       body: JSON.stringify({ m: "x" }),
@@ -130,10 +130,10 @@ test("createOmniRouteFetchInterceptor: targets baseURL + body → Content-Type d
   }
 });
 
-test("createOmniRouteFetchInterceptor: caller-set Content-Type is NOT overwritten", async () => {
+test("createCheapRouterFetchInterceptor: caller-set Content-Type is NOT overwritten", async () => {
   const { calls, restore } = installFetchRecorder();
   try {
-    const f = createOmniRouteFetchInterceptor({ apiKey: KEY, baseURL: BASE });
+    const f = createCheapRouterFetchInterceptor({ apiKey: KEY, baseURL: BASE });
     await f(`${BASE}/v2/whatever`, {
       method: "POST",
       body: "raw",
@@ -147,10 +147,10 @@ test("createOmniRouteFetchInterceptor: caller-set Content-Type is NOT overwritte
   }
 });
 
-test("createOmniRouteFetchInterceptor: non-baseURL host → passthrough, no Authorization injected", async () => {
+test("createCheapRouterFetchInterceptor: non-baseURL host → passthrough, no Authorization injected", async () => {
   const { calls, restore } = installFetchRecorder();
   try {
-    const f = createOmniRouteFetchInterceptor({ apiKey: KEY, baseURL: BASE });
+    const f = createCheapRouterFetchInterceptor({ apiKey: KEY, baseURL: BASE });
     await f("https://third-party.example.org/v1/chat", {
       method: "POST",
       body: "{}",
@@ -166,10 +166,10 @@ test("createOmniRouteFetchInterceptor: non-baseURL host → passthrough, no Auth
   }
 });
 
-test("createOmniRouteFetchInterceptor: refuses suffix-spoof — `${base}-attacker.evil` does NOT match baseURL", async () => {
+test("createCheapRouterFetchInterceptor: refuses suffix-spoof — `${base}-attacker.evil` does NOT match baseURL", async () => {
   const { calls, restore } = installFetchRecorder();
   try {
-    const f = createOmniRouteFetchInterceptor({ apiKey: KEY, baseURL: BASE });
+    const f = createCheapRouterFetchInterceptor({ apiKey: KEY, baseURL: BASE });
     // baseURL is `https://or.example.com/v1`. A spoofed
     // `https://or.example.com/v1-attacker.evil/chat` shares the literal prefix
     // but is NOT under our origin path — must be treated as passthrough.
@@ -185,10 +185,10 @@ test("createOmniRouteFetchInterceptor: refuses suffix-spoof — `${base}-attacke
   }
 });
 
-test("createOmniRouteFetchInterceptor: URL object input is handled", async () => {
+test("createCheapRouterFetchInterceptor: URL object input is handled", async () => {
   const { calls, restore } = installFetchRecorder();
   try {
-    const f = createOmniRouteFetchInterceptor({ apiKey: KEY, baseURL: BASE });
+    const f = createCheapRouterFetchInterceptor({ apiKey: KEY, baseURL: BASE });
     await f(new URL(`${BASE}/models`), {});
     const sent = calls[0]!;
     const sentHeaders = new Headers((sent.init as RequestInit).headers);
@@ -198,10 +198,10 @@ test("createOmniRouteFetchInterceptor: URL object input is handled", async () =>
   }
 });
 
-test("createOmniRouteFetchInterceptor: Request input is handled (reads .url)", async () => {
+test("createCheapRouterFetchInterceptor: Request input is handled (reads .url)", async () => {
   const { calls, restore } = installFetchRecorder();
   try {
-    const f = createOmniRouteFetchInterceptor({ apiKey: KEY, baseURL: BASE });
+    const f = createCheapRouterFetchInterceptor({ apiKey: KEY, baseURL: BASE });
     const req = new Request(`${BASE}/chat/completions`, {
       method: "POST",
       body: JSON.stringify({ a: 1 }),
@@ -224,10 +224,10 @@ test("createOmniRouteFetchInterceptor: Request input is handled (reads .url)", a
   }
 });
 
-test("createOmniRouteFetchInterceptor: trailing slash in baseURL is normalized", async () => {
+test("createCheapRouterFetchInterceptor: trailing slash in baseURL is normalized", async () => {
   const { calls, restore } = installFetchRecorder();
   try {
-    const f = createOmniRouteFetchInterceptor({
+    const f = createCheapRouterFetchInterceptor({
       apiKey: KEY,
       baseURL: `${BASE}////`,
     });
@@ -240,10 +240,10 @@ test("createOmniRouteFetchInterceptor: trailing slash in baseURL is normalized",
   }
 });
 
-test("createOmniRouteFetchInterceptor: GET without body does NOT set Content-Type", async () => {
+test("createCheapRouterFetchInterceptor: GET without body does NOT set Content-Type", async () => {
   const { calls, restore } = installFetchRecorder();
   try {
-    const f = createOmniRouteFetchInterceptor({ apiKey: KEY, baseURL: BASE });
+    const f = createCheapRouterFetchInterceptor({ apiKey: KEY, baseURL: BASE });
     await f(`${BASE}/models`); // no init at all
     const sent = calls[0]!;
     const sentHeaders = new Headers((sent.init as RequestInit).headers);
@@ -263,7 +263,7 @@ test("createOmniRouteFetchInterceptor: GET without body does NOT set Content-Typ
 // ----------------------------------------------------------------------------
 
 test("loader: returns fetch fn when apiKey + baseURL both present (via opts)", async () => {
-  const hook = createOmniRouteAuthHook({ baseURL: BASE });
+  const hook = createCheapRouterAuthHook({ baseURL: BASE });
   const result = await hook.loader!(async () => ({ type: "api", key: KEY }) as never, {} as never);
   assert.equal((result as { apiKey: string }).apiKey, KEY);
   assert.equal((result as { baseURL: string }).baseURL, BASE);
@@ -277,7 +277,7 @@ test("loader: returns fetch fn when apiKey + baseURL both present (via opts)", a
 test("loader: returns fetch fn when baseURL is stashed on the auth credential", async () => {
   // Some auth backends attach baseURL alongside the key (post-/connect flow).
   // The loader should pick it up even when plugin opts.baseURL is unset.
-  const hook = createOmniRouteAuthHook();
+  const hook = createCheapRouterAuthHook();
   const result = await hook.loader!(
     async () => ({ type: "api", key: KEY, baseURL: BASE }) as never,
     {} as never
@@ -287,7 +287,7 @@ test("loader: returns fetch fn when baseURL is stashed on the auth credential", 
 });
 
 test("loader: omits fetch fn when baseURL missing (apiKey-only return)", async () => {
-  const hook = createOmniRouteAuthHook(); // no baseURL opt
+  const hook = createCheapRouterAuthHook(); // no baseURL opt
   const result = await hook.loader!(async () => ({ type: "api", key: KEY }) as never, {} as never);
   // Interceptor needs a baseURL to gate-keep; without one, fall back to
   // apiKey-only and let the SDK use its default fetch.
@@ -299,7 +299,7 @@ test("loader integration: wired interceptor actually injects Bearer when invoked
   // proving the wiring matches the standalone interceptor's contract.
   const { calls, restore } = installFetchRecorder();
   try {
-    const hook = createOmniRouteAuthHook({ baseURL: BASE });
+    const hook = createCheapRouterAuthHook({ baseURL: BASE });
     const result = await hook.loader!(
       async () => ({ type: "api", key: KEY }) as never,
       {} as never

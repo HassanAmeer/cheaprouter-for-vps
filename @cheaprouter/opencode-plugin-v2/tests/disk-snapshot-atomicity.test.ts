@@ -20,7 +20,7 @@ import {
 } from "../src/cache.js";
 
 function isolateDisk(): { dir: string; restore: () => void } {
-  const dir = mkdtempSync(join(tmpdir(), "omniroute-disk-atomic-"));
+  const dir = mkdtempSync(join(tmpdir(), "cheaprouter-disk-atomic-"));
   const prev = process.env.OPENCODE_DATA_DIR;
   process.env.OPENCODE_DATA_DIR = dir;
   return {

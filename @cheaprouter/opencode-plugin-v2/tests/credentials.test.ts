@@ -30,7 +30,7 @@ function ctxWith(stored: unknown, opts: { withConnectionApi?: boolean } = {}): P
   return { integration } as unknown as PluginContext;
 }
 
-const ENV = "OMNIROUTE_API_KEY";
+const ENV = "CHEAPROUTER_API_KEY";
 
 async function withEnv<T>(value: string | undefined, fn: () => Promise<T>): Promise<T> {
   const previous = process.env[ENV];
@@ -48,7 +48,7 @@ describe("gateway credential resolution", () => {
   it("prefers the credential the host stored over one written in config", async () => {
     const { log } = collectingLogger();
     const got = await withEnv("from-env", () =>
-      resolveApiKey(ctxWith({ type: "key", key: "from-host" }), "omniroute", "from-option", log)
+      resolveApiKey(ctxWith({ type: "key", key: "from-host" }), "cheaprouter", "from-option", log)
     );
     assert.deepEqual(got, { key: "from-host", origin: "connection" });
   });
@@ -56,11 +56,11 @@ describe("gateway credential resolution", () => {
   it("falls back to the configured option, then to the environment", async () => {
     const { log } = collectingLogger();
     const option = await withEnv("from-env", () =>
-      resolveApiKey(ctxWith(undefined), "omniroute", "from-option", log)
+      resolveApiKey(ctxWith(undefined), "cheaprouter", "from-option", log)
     );
     assert.deepEqual(option, { key: "from-option", origin: "option" });
     const env = await withEnv("from-env", () =>
-      resolveApiKey(ctxWith(undefined), "omniroute", undefined, log)
+      resolveApiKey(ctxWith(undefined), "cheaprouter", undefined, log)
     );
     assert.deepEqual(env, { key: "from-env", origin: "env" });
   });
@@ -68,10 +68,10 @@ describe("gateway credential resolution", () => {
   it("reports no key rather than pretending an empty one works", async () => {
     const { log, warnings } = collectingLogger();
     const got = await withEnv(undefined, () =>
-      resolveApiKey(ctxWith(undefined), "omniroute", undefined, log)
+      resolveApiKey(ctxWith(undefined), "cheaprouter", undefined, log)
     );
     assert.deepEqual(got, { key: "", origin: "missing" });
-    warnIfMissing(got, "omniroute", log);
+    warnIfMissing(got, "cheaprouter", log);
     assert.equal(warnings.length, 1);
     // The message must name every way out, or it sends the user hunting.
     assert.match(warnings[0] ?? "", /Connect the integration/);
@@ -84,7 +84,7 @@ describe("gateway credential resolution", () => {
     const got = await withEnv(undefined, () =>
       resolveApiKey(
         ctxWith({ type: "oauth", methodID: "m", refresh: "r", access: "a", expires: 0 }),
-        "omniroute",
+        "cheaprouter",
         undefined,
         log
       )
@@ -99,7 +99,7 @@ describe("gateway credential resolution", () => {
     const got = await withEnv(undefined, () =>
       resolveApiKey(
         ctxWith(undefined, { withConnectionApi: false }),
-        "omniroute",
+        "cheaprouter",
         "from-option",
         log
       )
@@ -120,7 +120,7 @@ describe("gateway credential resolution", () => {
         },
       },
     } as unknown as PluginContext;
-    const got = await withEnv(undefined, () => resolveApiKey(ctx, "omniroute", "from-option", log));
+    const got = await withEnv(undefined, () => resolveApiKey(ctx, "cheaprouter", "from-option", log));
     assert.deepEqual(got, { key: "from-option", origin: "option" });
     assert.equal(warnings.length, 1);
     assert.match(warnings[0] ?? "", /store unavailable/);

@@ -8,7 +8,7 @@
  * operators unsure whether combos / autoCombos / enrichment were enabled when
  * they omitted the block.
  *
- * `OMNIROUTE_FEATURE_DEFAULTS` declares those defaults explicitly and
+ * `CHEAPROUTER_FEATURE_DEFAULTS` declares those defaults explicitly and
  * `resolveEffectiveFeatureFlags(features)` derives the effective state for any
  * (possibly-undefined) features object, mirroring the read-site conventions
  * exactly. These are purely derived — runtime routing behaviour is unchanged.
@@ -18,7 +18,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 
 import {
-  OMNIROUTE_FEATURE_DEFAULTS,
+  CHEAPROUTER_FEATURE_DEFAULTS,
   resolveEffectiveFeatureFlags,
 } from "../src/index.js";
 
@@ -40,12 +40,12 @@ const DEFAULT_OFF = [
   "startupDebug",
 ] as const;
 
-test("OMNIROUTE_FEATURE_DEFAULTS: declares each flag with its documented default", () => {
+test("CHEAPROUTER_FEATURE_DEFAULTS: declares each flag with its documented default", () => {
   for (const key of DEFAULT_ON) {
-    assert.equal(OMNIROUTE_FEATURE_DEFAULTS[key], true, `${key} defaults ON`);
+    assert.equal(CHEAPROUTER_FEATURE_DEFAULTS[key], true, `${key} defaults ON`);
   }
   for (const key of DEFAULT_OFF) {
-    assert.equal(OMNIROUTE_FEATURE_DEFAULTS[key], false, `${key} defaults OFF`);
+    assert.equal(CHEAPROUTER_FEATURE_DEFAULTS[key], false, `${key} defaults OFF`);
   }
 });
 
@@ -89,7 +89,7 @@ test("resolveEffectiveFeatureFlags: non-boolean sibling keys do not leak into fl
     logLevel: "debug",
   });
   assert.equal(flags.mcpAutoEmit, true);
-  assert.equal(Object.keys(flags).length, Object.keys(OMNIROUTE_FEATURE_DEFAULTS).length);
+  assert.equal(Object.keys(flags).length, Object.keys(CHEAPROUTER_FEATURE_DEFAULTS).length);
   assert.equal("mcpToken" in flags, false);
   assert.equal("logLevel" in flags, false);
 });

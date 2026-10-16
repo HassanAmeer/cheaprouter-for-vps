@@ -39,7 +39,7 @@
     {
       "id": "good-combo",
       "object": "model",
-      "owned_by": "omniroute",
+      "owned_by": "cheaprouter",
       "context_length": 100000,
       "max_output_tokens": 8000,
       "capabilities": { "tool_calling": true }

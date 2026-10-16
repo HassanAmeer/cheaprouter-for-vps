@@ -45,7 +45,7 @@ export function buildClaudeEnv(baseEnv, baseUrlOrPort, authToken, opts = {}) {
   // from stopping at its local login gate before it ever contacts CheapRoute (an
   // open backend ignores the value). Mirrors free-claude-code. ANTHROPIC_API_KEY
   // stays stripped (above) so it can't shadow the Bearer token.
-  env.ANTHROPIC_AUTH_TOKEN = (authToken && String(authToken).trim()) || "omniroute-no-auth";
+  env.ANTHROPIC_AUTH_TOKEN = (authToken && String(authToken).trim()) || "cheaprouter-no-auth";
   env.CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY = "1";
   env.CLAUDE_CODE_AUTO_COMPACT_WINDOW = "190000";
   // Profile isolation (Claude Code has no native profiles — CLAUDE_CONFIG_DIR is

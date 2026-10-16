@@ -1,6 +1,6 @@
 /**
  * Magnitude-crossover regression for the free-budget suffix
- * (`formatFreeBudget` -> `fmtTokens` in @omniroute/opencode-plugin/src/naming.ts).
+ * (`formatFreeBudget` -> `fmtTokens` in @cheaprouter/opencode-plugin/src/naming.ts).
  *
  * `fmtTokens` picked its unit from the raw input and then rounded with
  * `toFixed(1)`. Rounding can carry a value into the next magnitude *after* that

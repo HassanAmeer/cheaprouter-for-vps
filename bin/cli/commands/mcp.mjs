@@ -147,7 +147,7 @@ async function mcpJsonRpcCall(tool, args, { stream = false, globalOpts = {} } = 
       params: {
         protocolVersion: "2024-11-05",
         capabilities: {},
-        clientInfo: { name: "omniroute-cli", version: "1.0" },
+        clientInfo: { name: "cheaprouter-cli", version: "1.0" },
       },
     }),
   });

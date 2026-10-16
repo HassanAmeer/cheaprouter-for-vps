@@ -3,11 +3,11 @@ import { homedir } from "node:os";
 import { mkdir, readFile, rename, unlink, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import type {
-  OmniRouteEnrichmentEntry,
-  OmniRouteEnrichmentMap,
-  OmniRouteProviderConnection,
-  OmniRouteRawCombo,
-  OmniRouteRawModelEntry,
+  CheapRouterEnrichmentEntry,
+  CheapRouterEnrichmentMap,
+  CheapRouterProviderConnection,
+  CheapRouterRawCombo,
+  CheapRouterRawModelEntry,
 } from "./shared/index.js";
 import { isHttpUrl } from "./shared/index.js";
 
@@ -22,10 +22,10 @@ export const DEFAULT_MODEL_CACHE_TTL_MS = 300_000 as const;
 export const UNREACHABLE_COOLDOWN_MS = 15_000 as const;
 
 export interface CatalogSnapshot {
-  models: OmniRouteRawModelEntry[];
-  combos: OmniRouteRawCombo[];
-  providers?: OmniRouteProviderConnection[];
-  enrichment?: OmniRouteEnrichmentMap;
+  models: CheapRouterRawModelEntry[];
+  combos: CheapRouterRawCombo[];
+  providers?: CheapRouterProviderConnection[];
+  enrichment?: CheapRouterEnrichmentMap;
   fetchedAt: number;
 }
 
@@ -57,16 +57,16 @@ export function isStaleSnapshotModel(entry: unknown): boolean {
 interface DiskSnapshotV2 {
   v: 2;
   identityFingerprint: string;
-  models: OmniRouteRawModelEntry[];
-  combos: OmniRouteRawCombo[];
-  providers?: OmniRouteProviderConnection[];
+  models: CheapRouterRawModelEntry[];
+  combos: CheapRouterRawCombo[];
+  providers?: CheapRouterProviderConnection[];
   /**
    * Display names, provider labels, pricing and free-tier budgets, as
    * `[key, entry]` pairs (a Map does not survive JSON). Persisted because a
    * cold start otherwise publishes raw model ids until the first refresh
    * completes — which is the moment the snapshot exists to cover.
    */
-  enrichment?: [string, OmniRouteEnrichmentEntry][];
+  enrichment?: [string, CheapRouterEnrichmentEntry][];
   writtenAt: number;
 }
 
@@ -122,7 +122,7 @@ export function diskSnapshotPath(providerId: string): string {
   // bounded by the options schema (letters, digits, '.', '_' and '-'; never
   // "." or ".."), keeping the file inside <dir>/plugins/.
   const dir = process.env.OPENCODE_DATA_DIR ?? join(homedir(), ".local", "share", "opencode");
-  return join(dir, "plugins", `omniroute-${providerId}.json`);
+  return join(dir, "plugins", `cheaprouter-${providerId}.json`);
 }
 
 export async function readDiskSnapshot(
@@ -155,26 +155,26 @@ export async function readDiskSnapshot(
       return undefined;
     }
     const stale = (parsed.models as unknown[]).filter(isStaleSnapshotModel).length;
-    const models = (parsed.models as OmniRouteRawModelEntry[]).filter(
+    const models = (parsed.models as CheapRouterRawModelEntry[]).filter(
       (entry) => !isStaleSnapshotModel(entry)
     );
     if (stale > 0) {
       logger?.warn(
-        `[omniroute-v2] dropping ${stale} stale snapshot entries with an unusable api block`
+        `[cheaprouter-v2] dropping ${stale} stale snapshot entries with an unusable api block`
       );
     }
     if (models.length === 0) return undefined;
     return {
       models,
-      combos: parsed.combos as OmniRouteRawCombo[],
+      combos: parsed.combos as CheapRouterRawCombo[],
       providers: Array.isArray(parsed.providers)
-        ? (parsed.providers as OmniRouteProviderConnection[])
+        ? (parsed.providers as CheapRouterProviderConnection[])
         : [],
       // A snapshot written before this field existed, or one whose overlay was
       // dropped for size, simply starts unenriched and recovers on the first
       // refresh — the same state as before it was persisted at all.
       enrichment: Array.isArray(parsed.enrichment)
-        ? new Map(parsed.enrichment as [string, OmniRouteEnrichmentEntry][])
+        ? new Map(parsed.enrichment as [string, CheapRouterEnrichmentEntry][])
         : undefined,
       fetchedAt: typeof parsed.writtenAt === "number" ? parsed.writtenAt : Date.now(),
     };
@@ -217,7 +217,7 @@ export async function writeDiskSnapshot(
     }
     if (Buffer.byteLength(payload, "utf8") > MAX_SNAPSHOT_BYTES) {
       logger?.warn(
-        `[omniroute-v2] snapshot for ${providerId} exceeds the size cap, skipping disk write`
+        `[cheaprouter-v2] snapshot for ${providerId} exceeds the size cap, skipping disk write`
       );
       return;
     }
@@ -227,7 +227,7 @@ export async function writeDiskSnapshot(
   } catch (err) {
     // Best-effort: callers already hold the in-memory entry.
     logger?.warn(
-      `[omniroute-v2] snapshot write failed for ${providerId}: ` +
+      `[cheaprouter-v2] snapshot write failed for ${providerId}: ` +
         `${err instanceof Error ? err.message : String(err)}, keeping the in-memory entry`
     );
     try {

@@ -1,7 +1,7 @@
 import type { LegacyModel as ModelV2 } from "../legacy-model.js";
 import { normaliseFreeLabel } from "./naming.js";
 
-export interface OmniRouteRawModelEntry {
+export interface CheapRouterRawModelEntry {
   id: string;
   object?: string;
   owned_by?: string;
@@ -30,34 +30,34 @@ export interface OmniRouteRawModelEntry {
 
 /**
  * Fetcher contract: returns the raw `/v1/models` entry list from a running
- * OmniRoute instance. Surfaced as a dependency so unit tests can inject a
+ * CheapRouter instance. Surfaced as a dependency so unit tests can inject a
  * stub without monkey-patching global `fetch`.
  *
- * Why we inline this instead of using `@omniroute/opencode-provider`'s
+ * Why we inline this instead of using `@cheaprouter/opencode-provider`'s
  * `fetchLiveModels`: the sibling helper returns a stripped `{id, name,
  * contextLength?}` shape that drops the `capabilities` / `*_modalities` /
  * `max_*_tokens` blocks the mapping needs for ModelV2 pass-through.
  */
-export type OmniRouteModelsFetcher = (
+export type CheapRouterModelsFetcher = (
   baseURL: string,
   apiKey: string,
   timeoutMs?: number
-) => Promise<OmniRouteRawModelEntry[]>;
+) => Promise<CheapRouterRawModelEntry[]>;
 
 /**
  * Default fetcher: `GET <baseURL>/v1/models` with bearer auth + AbortController
- * timeout. Accepts both the `{object:"list", data:[…]}` envelope OmniRoute
+ * timeout. Accepts both the `{object:"list", data:[…]}` envelope CheapRouter
  * emits today and a bare-array envelope (defensive — keeps the plugin
- * working if a future OmniRoute build trims the wrapper). Anything that
+ * working if a future CheapRouter build trims the wrapper). Anything that
  * isn't an object with a string `id` is filtered out silently.
  */
-export const defaultOmniRouteModelsFetcher: OmniRouteModelsFetcher = async (
+export const defaultCheapRouterModelsFetcher: CheapRouterModelsFetcher = async (
   baseURL,
   apiKey,
   timeoutMs = 10_000
 ) => {
-  if (!apiKey) throw new Error("[omniroute-v2] apiKey required to fetch /v1/models");
-  if (!baseURL) throw new Error("[omniroute-v2] baseURL required to fetch /v1/models");
+  if (!apiKey) throw new Error("[cheaprouter-v2] apiKey required to fetch /v1/models");
+  if (!baseURL) throw new Error("[cheaprouter-v2] baseURL required to fetch /v1/models");
 
   const trimmed = trimTrailingSlashes(baseURL);
   // Tolerate both `https://host` and `https://host/v1` forms — the gateway
@@ -76,7 +76,7 @@ export const defaultOmniRouteModelsFetcher: OmniRouteModelsFetcher = async (
       signal: controller.signal,
     });
     if (!res.ok) {
-      throw new Error(`[omniroute-v2] GET ${url} failed: ${res.status} ${res.statusText}`);
+      throw new Error(`[cheaprouter-v2] GET ${url} failed: ${res.status} ${res.statusText}`);
     }
     const body = (await res.json()) as unknown;
     const rawList: unknown[] = Array.isArray(body)
@@ -84,10 +84,10 @@ export const defaultOmniRouteModelsFetcher: OmniRouteModelsFetcher = async (
       : body && typeof body === "object" && Array.isArray((body as { data?: unknown }).data)
         ? ((body as { data: unknown[] }).data as unknown[])
         : [];
-    const out: OmniRouteRawModelEntry[] = [];
+    const out: CheapRouterRawModelEntry[] = [];
     for (const r of rawList) {
       if (r && typeof r === "object" && typeof (r as { id?: unknown }).id === "string") {
-        out.push(r as OmniRouteRawModelEntry);
+        out.push(r as CheapRouterRawModelEntry);
       }
     }
     return out;
@@ -154,7 +154,7 @@ function warnDeprecatedPrefixesOnce(prefixes: string[]): void {
   if (warnedPrefixLists.has(key)) return;
   warnedPrefixLists.add(key);
   console.warn(
-    "[omniroute-plugin] [WARN] apiFormat.anthropicPrefixes is deprecated; convert to anthropicModels (full IDs)"
+    "[cheaprouter-plugin] [WARN] apiFormat.anthropicPrefixes is deprecated; convert to anthropicModels (full IDs)"
   );
 }
 
@@ -227,29 +227,29 @@ export function resolveApiBlockV2(
  *   1. Flat `tool_call` / `reasoning` / `attachment` / `modalities`
  *      top-level fields don't exist in ModelV2 — folded into
  *      `capabilities.{toolcall, reasoning, attachment, input.*, output.*}`.
- *   2. `cost: undefined` is illegal (cost is required). OmniRoute doesn't
+ *   2. `cost: undefined` is illegal (cost is required). CheapRouter doesn't
  *      surface pricing on /v1/models, so we emit a zeroed cost block.
  *      Downstream opencode reads this for display only — the live pricing
- *      is OmniRoute's responsibility at routing time.
+ *      is CheapRouter's responsibility at routing time.
  *   3. `tool_call` → `toolcall` (ModelV2 field name; one word).
- *   4. `attachment` maps from `capabilities.vision` per OmniRoute
+ *   4. `attachment` maps from `capabilities.vision` per CheapRouter
  *      convention: vision = ability to receive image attachments. If the
  *      raw entry happens to expose an explicit `capabilities.attachment`,
  *      that wins.
- *   5. `thinking` from OmniRoute has no 1:1 ModelV2 slot. We OR it into
+ *   5. `thinking` from CheapRouter has no 1:1 ModelV2 slot. We OR it into
  *      `reasoning` so thinking-only models still surface a non-false
  *      reasoning flag.
- *   6. `last_updated` from OmniRoute has no ModelV2 slot — dropped.
+ *   6. `last_updated` from CheapRouter has no ModelV2 slot — dropped.
  *      `release_date` lands in ModelV2.release_date with `""` fallback
  *      (the field is required as `string`).
- *   7. `temperature: true` per OmniRoute convention (OpenAI-compat mode
+ *   7. `temperature: true` per CheapRouter convention (OpenAI-compat mode
  *      always supports the temperature knob). If a raw entry sets
  *      `capabilities.temperature` explicitly, that wins.
  *   8. Input/output modality arrays: each known modality flips its boolean.
- *      Unknown strings (future OmniRoute additions) are ignored — when the
+ *      Unknown strings (future CheapRouter additions) are ignored — when the
  *      server adds new modalities we can map them here without breaking
  *      existing entries.
- *   9. `status: "active"` — OmniRoute doesn't tier models alpha/beta on
+ *   9. `status: "active"` — CheapRouter doesn't tier models alpha/beta on
  *      /v1/models, and opencode needs a non-deprecated status to expose
  *      the model in the picker. If a future entry surfaces an explicit
  *      lifecycle hint we can map it then.
@@ -257,16 +257,16 @@ export function resolveApiBlockV2(
  *      for opencode users to attach per-model overrides; the provider
  *      plugin must not preempt them.
  *  11. `limit.input` is OPTIONAL on ModelV2 (the `?` modifier). We only
- *      emit it when OmniRoute supplies `max_input_tokens` — keeps the
+ *      emit it when CheapRouter supplies `max_input_tokens` — keeps the
  *      shape clean for combo entries that only carry context_length.
  */
 export function mapRawModelToModelV2(
-  raw: OmniRouteRawModelEntry,
+  raw: CheapRouterRawModelEntry,
   ctx: { providerId: string; baseURL: string; apiFormat?: ApiFormatV2 }
 ): ModelV2 {
   const caps = raw.capabilities ?? {};
   // effort_tiers loop: server-declared tiers become ModelV2 variants so the
-  // UI offers exactly the tiers OmniRoute vouches for (instead of opencode's
+  // UI offers exactly the tiers CheapRouter vouches for (instead of opencode's
   // invented [low, medium, high] fallback). Blind: filtering/exclusion rules
   // live server-side. Absent/empty/malformed => key omitted ENTIRELY (an
   // empty variants object would suppress opencode's fallback for this model).
@@ -289,7 +289,7 @@ export function mapRawModelToModelV2(
     // (`owned_by: "combo"`, e.g. `gpt-5.6-sol`) must also stay unprefixed:
     // OpenCode looks up `-m <plugin>/<combo>` as model id `<combo>` under
     // the plugin provider. Other bare ids still prefix with
-    // `providerId` so credentials resolve as `(omniroute, model)`.
+    // `providerId` so credentials resolve as `(cheaprouter, model)`.
     id: raw.id.includes("/") || raw.owned_by === "combo" ? raw.id : `${ctx.providerId}/${raw.id}`,
     /**
      * Display name. Falls back to raw.id when no enrichment is available;

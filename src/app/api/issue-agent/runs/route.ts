@@ -113,7 +113,7 @@ export async function POST(request: Request) {
     return NextResponse.json(
       {
         ...run,
-        runner: "omniroute-chat-completions",
+        runner: "cheaprouter-chat-completions",
         auditPath: audit.path,
         completion: completion.body,
       },

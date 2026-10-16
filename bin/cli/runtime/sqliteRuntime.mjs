@@ -121,7 +121,7 @@ function ensureRuntimeDir() {
   if (!existsSync(pkg)) {
     writeFileSync(
       pkg,
-      JSON.stringify({ name: "omniroute-runtime", private: true, type: "commonjs" }),
+      JSON.stringify({ name: "cheaprouter-runtime", private: true, type: "commonjs" }),
       "utf-8"
     );
   }

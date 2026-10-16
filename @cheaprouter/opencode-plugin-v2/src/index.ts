@@ -3,14 +3,14 @@ import {
   optionalTierFingerprint,
   catalogContentFingerprint,
   createLogger,
-  defaultOmniRouteCombosFetcher,
-  defaultOmniRouteEnrichmentFetcher,
-  defaultOmniRouteModelsFetcher,
-  defaultOmniRouteProvidersFetcher,
-  type OmniRouteEnrichmentMap,
-  type OmniRouteProviderConnection,
+  defaultCheapRouterCombosFetcher,
+  defaultCheapRouterEnrichmentFetcher,
+  defaultCheapRouterModelsFetcher,
+  defaultCheapRouterProvidersFetcher,
+  type CheapRouterEnrichmentMap,
+  type CheapRouterProviderConnection,
 } from "./shared/index.js";
-import type { OmniRouteRawCombo, OmniRouteRawModelEntry } from "./shared/index.js";
+import type { CheapRouterRawCombo, CheapRouterRawModelEntry } from "./shared/index.js";
 import { buildProviderPayload, collectCatalog } from "./catalog.js";
 import {
   UNREACHABLE_COOLDOWN_MS,
@@ -72,13 +72,13 @@ export default Plugin.define({
     resolved.logger = log;
     resolved.logLevel = parsed.logLevel;
     resolved.startupDebug = parsed.startupDebug;
-    log.info(`[omniroute-v2] init providerId=${X}`);
+    log.info(`[cheaprouter-v2] init providerId=${X}`);
     // The inference key stands in below when no management token is set, and
     // gateways usually reject that stand-in with 401/403. Say so once here,
     // before any fetch, instead of letting the refusal surface per endpoint.
     if (resolved.managementReadToken === undefined) {
       log.warn(
-        `[omniroute-v2] no management token configured: management endpoints (/api/*) will reuse the inference key, ` +
+        `[cheaprouter-v2] no management token configured: management endpoints (/api/*) will reuse the inference key, ` +
           `which gateways usually reject with 401/403. Set "managementReadToken" in the plugin options ` +
           `or export ${MANAGEMENT_TOKEN_ENV_VAR}.`
       );
@@ -90,7 +90,7 @@ export default Plugin.define({
     ) {
       warnedMemoryNoToken = true;
       log.warn(
-        "[omniroute-v2] usage history inactive without management token: statically dropped models stay unpublished."
+        "[cheaprouter-v2] usage history inactive without management token: statically dropped models stay unpublished."
       );
     }
 
@@ -140,20 +140,20 @@ export default Plugin.define({
       apiKeyOrigin = next.origin;
       if (moved) ({ cacheKey, identityFingerprint } = credentialsOf());
       if (!credentialChecked) warnIfMissing(next, X, log);
-      else if (moved) log.info(`[omniroute-v2] API key picked up from the ${next.origin} source`);
+      else if (moved) log.info(`[cheaprouter-v2] API key picked up from the ${next.origin} source`);
       credentialChecked = true;
     };
 
-    const fetchModelsSafe = async (): Promise<OmniRouteRawModelEntry[]> => {
+    const fetchModelsSafe = async (): Promise<CheapRouterRawModelEntry[]> => {
       try {
-        return await defaultOmniRouteModelsFetcher(
+        return await defaultCheapRouterModelsFetcher(
           resolved.baseURL,
           resolved.apiKey,
           timeouts.models
         );
       } catch (err) {
         log.warn(
-          `[omniroute-v2] models fetch failed, publishing empty catalog: ${err instanceof Error ? err.message : String(err)}`
+          `[cheaprouter-v2] models fetch failed, publishing empty catalog: ${err instanceof Error ? err.message : String(err)}`
         );
         return [];
       }
@@ -165,11 +165,11 @@ export default Plugin.define({
       log,
       resolved.managementReadToken === undefined
     );
-    const fetchCombosSafe = async (): Promise<SourceResult<OmniRouteRawCombo[]>> => {
+    const fetchCombosSafe = async (): Promise<SourceResult<CheapRouterRawCombo[]>> => {
       try {
         return {
           ok: true,
-          value: await defaultOmniRouteCombosFetcher(
+          value: await defaultCheapRouterCombosFetcher(
             resolved.baseURL,
             resolved.managementReadToken ?? resolved.apiKey,
             timeouts.combos
@@ -178,19 +178,19 @@ export default Plugin.define({
       } catch (err) {
         const reason = err instanceof Error ? err.message : String(err);
         reportSourceError("/api/combos", reason);
-        log.warn(`[omniroute-v2] combos fetch failed, keeping the last known combos: ${reason}`);
+        log.warn(`[cheaprouter-v2] combos fetch failed, keeping the last known combos: ${reason}`);
         return { ok: false };
       }
     };
     // Providers connections follow the same rule: gated on usableOnly (no
     // request when false, v1 parity), soft-fail to [] so the filter degrades
     // to keep-all instead of hiding the catalog.
-    const fetchProvidersSafe = async (): Promise<SourceResult<OmniRouteProviderConnection[]>> => {
+    const fetchProvidersSafe = async (): Promise<SourceResult<CheapRouterProviderConnection[]>> => {
       if (!resolved.usableOnly) return { ok: true, value: [] };
       try {
         return {
           ok: true,
-          value: await defaultOmniRouteProvidersFetcher(
+          value: await defaultCheapRouterProvidersFetcher(
             resolved.baseURL,
             resolved.managementReadToken ?? resolved.apiKey,
             timeouts.models,
@@ -199,7 +199,7 @@ export default Plugin.define({
         };
       } catch (err) {
         log.warn(
-          `[omniroute-v2] providers fetch failed, keeping the last known provider list: ${err instanceof Error ? err.message : String(err)}`
+          `[cheaprouter-v2] providers fetch failed, keeping the last known provider list: ${err instanceof Error ? err.message : String(err)}`
         );
         return { ok: false };
       }
@@ -207,12 +207,12 @@ export default Plugin.define({
     // Enrichment follows the same rule: gated on the option (default on,
     // v1 parity), soft-fail to an empty map so names/pricing degrade to
     // mapper defaults instead of hiding the catalog.
-    const fetchEnrichmentSafe = async (): Promise<SourceResult<OmniRouteEnrichmentMap>> => {
+    const fetchEnrichmentSafe = async (): Promise<SourceResult<CheapRouterEnrichmentMap>> => {
       if (resolved.enrichment === false) return { ok: true, value: new Map() };
       try {
         return {
           ok: true,
-          value: await defaultOmniRouteEnrichmentFetcher(
+          value: await defaultCheapRouterEnrichmentFetcher(
             resolved.baseURL,
             resolved.managementReadToken ?? resolved.apiKey,
             timeouts.enrichment,
@@ -221,7 +221,7 @@ export default Plugin.define({
         };
       } catch (err) {
         log.warn(
-          `[omniroute-v2] enrichment fetch failed, keeping the last known names/pricing: ${err instanceof Error ? err.message : String(err)}`
+          `[cheaprouter-v2] enrichment fetch failed, keeping the last known names/pricing: ${err instanceof Error ? err.message : String(err)}`
         );
         return { ok: false };
       }
@@ -282,7 +282,7 @@ export default Plugin.define({
           // The wrappers never reject; a throw here would be a bug in them, and
           // an unhandled rejection is a worse way to learn about it.
           log.warn(
-            `[omniroute-v2] optional catalog sources failed unexpectedly: ${err instanceof Error ? err.message : String(err)}`
+            `[cheaprouter-v2] optional catalog sources failed unexpectedly: ${err instanceof Error ? err.message : String(err)}`
           );
         }
       );
@@ -297,9 +297,9 @@ export default Plugin.define({
     async function upgradeWithOptional(
       base: CatalogSnapshot,
       [combos, providers, enrichment]: [
-        SourceResult<OmniRouteRawCombo[]>,
-        SourceResult<OmniRouteProviderConnection[]>,
-        SourceResult<OmniRouteEnrichmentMap>,
+        SourceResult<CheapRouterRawCombo[]>,
+        SourceResult<CheapRouterProviderConnection[]>,
+        SourceResult<CheapRouterEnrichmentMap>,
       ]
     ): Promise<void> {
       if (state.entries.get(cacheKey) !== base) return;
@@ -335,7 +335,7 @@ export default Plugin.define({
           await ctx.provider.reload();
         } catch (err) {
           log.warn(
-            `[omniroute-v2] provider reload after late sources failed, keeping current catalog: ${err instanceof Error ? err.message : String(err)}`
+            `[cheaprouter-v2] provider reload after late sources failed, keeping current catalog: ${err instanceof Error ? err.message : String(err)}`
           );
         }
       }
@@ -404,7 +404,7 @@ export default Plugin.define({
         const stale = state.entries.get(cacheKey);
         if (stale !== undefined && stale.models.length > 0) {
           log.warn(
-            `[omniroute-v2] models fetch returned empty, keeping last-known catalog (${stale.models.length} models, ${stale.combos.length} combos)`
+            `[cheaprouter-v2] models fetch returned empty, keeping last-known catalog (${stale.models.length} models, ${stale.combos.length} combos)`
           );
           effective = stale;
         }
@@ -427,7 +427,7 @@ export default Plugin.define({
           return collected.counts;
         } catch (err) {
           log.warn(
-            `[omniroute-v2] catalog publish failed, keeping current catalog: ${err instanceof Error ? err.message : String(err)}`
+            `[cheaprouter-v2] catalog publish failed, keeping current catalog: ${err instanceof Error ? err.message : String(err)}`
           );
           return { models: 0, combos: 0 };
         }
@@ -442,7 +442,7 @@ export default Plugin.define({
           await ctx.provider.reload();
         } catch (err) {
           log.warn(
-            `[omniroute-v2] provider reload failed, keeping current catalog: ${err instanceof Error ? err.message : String(err)}`
+            `[cheaprouter-v2] provider reload failed, keeping current catalog: ${err instanceof Error ? err.message : String(err)}`
           );
         }
       }
@@ -458,7 +458,7 @@ export default Plugin.define({
           editor.add(latest as never);
         } catch (err) {
           log.warn(
-            `[omniroute-v2] catalog publish failed, keeping current catalog: ${err instanceof Error ? err.message : String(err)}`
+            `[cheaprouter-v2] catalog publish failed, keeping current catalog: ${err instanceof Error ? err.message : String(err)}`
           );
         }
       }
@@ -481,17 +481,17 @@ export default Plugin.define({
           ) => unknown
         )((draft) => {
           draft.update(X, (integration) => {
-            integration.name = parsed.displayName ?? "OmniRoute";
+            integration.name = parsed.displayName ?? "CheapRouter";
           });
           draft.method.update({ integrationID: X, method: { type: "key", label: "API key" } });
           draft.method.update({
             integrationID: X,
-            method: { type: "env", names: ["OMNIROUTE_API_KEY"] },
+            method: { type: "env", names: ["CHEAPROUTER_API_KEY"] },
           });
         });
       } catch (err) {
         log.warn(
-          `[omniroute-v2] host refused the integration hook, the connect action will be missing: ${err instanceof Error ? err.message : String(err)}`
+          `[cheaprouter-v2] host refused the integration hook, the connect action will be missing: ${err instanceof Error ? err.message : String(err)}`
         );
         integrationRegistration = undefined;
       }
@@ -522,7 +522,7 @@ export default Plugin.define({
         });
       } catch (err) {
         log.warn(
-          `[omniroute-v2] host refused the language-model hook, Gemini tool schemas will not be cleaned: ${err instanceof Error ? err.message : String(err)}`
+          `[cheaprouter-v2] host refused the language-model hook, Gemini tool schemas will not be cleaned: ${err instanceof Error ? err.message : String(err)}`
         );
       }
     }
@@ -556,7 +556,7 @@ export default Plugin.define({
         });
       } catch (err) {
         log.warn(
-          `[omniroute-v2] host refused the sdk hook, inference telemetry will not be marked: ${err instanceof Error ? err.message : String(err)}`
+          `[cheaprouter-v2] host refused the sdk hook, inference telemetry will not be marked: ${err instanceof Error ? err.message : String(err)}`
         );
       }
     }
@@ -567,7 +567,7 @@ export default Plugin.define({
         await integrationRegistration;
       } catch (err) {
         log.warn(
-          `[omniroute-v2] host refused the integration hook, the connect action will be missing: ${err instanceof Error ? err.message : String(err)}`
+          `[cheaprouter-v2] host refused the integration hook, the connect action will be missing: ${err instanceof Error ? err.message : String(err)}`
         );
       }
     }
@@ -576,7 +576,7 @@ export default Plugin.define({
         await languageRegistration;
       } catch (err) {
         log.warn(
-          `[omniroute-v2] language-model hook registration failed, Gemini tool schemas will not be cleaned: ${err instanceof Error ? err.message : String(err)}`
+          `[cheaprouter-v2] language-model hook registration failed, Gemini tool schemas will not be cleaned: ${err instanceof Error ? err.message : String(err)}`
         );
       }
     }
@@ -585,7 +585,7 @@ export default Plugin.define({
         await sdkRegistration;
       } catch (err) {
         log.warn(
-          `[omniroute-v2] sdk hook registration failed, inference telemetry will not be marked: ${err instanceof Error ? err.message : String(err)}`
+          `[cheaprouter-v2] sdk hook registration failed, inference telemetry will not be marked: ${err instanceof Error ? err.message : String(err)}`
         );
       }
     }

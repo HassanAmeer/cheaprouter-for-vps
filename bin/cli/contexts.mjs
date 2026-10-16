@@ -4,7 +4,7 @@ import { resolveDataDir } from "./data-dir.mjs";
 import { writePrivateFileAtomic } from "./private-file.mjs";
 
 const CONFIG_VERSION = 1;
-const KEYCHAIN_SERVICE = "omniroute-cli";
+const KEYCHAIN_SERVICE = "cheaprouter-cli";
 const KEYCHAIN_DISABLED = /^(1|true|yes|on)$/i.test(
   String(process.env.CHEAPROUTE_CONTEXT_KEYCHAIN_DISABLED || "")
 );

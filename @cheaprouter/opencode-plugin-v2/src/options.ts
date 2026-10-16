@@ -31,7 +31,7 @@ const pluginOptionsSchema = z
       .string()
       .regex(/^[A-Za-z0-9._-]+$/, "providerId may only contain letters, digits, '.', '_' and '-'")
       .refine((v) => v !== "." && v !== "..", "providerId cannot be a path segment")
-      .default("omniroute"),
+      .default("cheaprouter"),
     baseURL: z
       .string()
       .trim()
@@ -81,7 +81,7 @@ const pluginOptionsSchema = z
 export type PluginOptions = z.infer<typeof pluginOptionsSchema>;
 
 /** Environment source for the management token (option wins over this). */
-export const MANAGEMENT_TOKEN_ENV_VAR = "OMNIROUTE_MANAGEMENT_API_KEY";
+export const MANAGEMENT_TOKEN_ENV_VAR = "CHEAPROUTER_MANAGEMENT_API_KEY";
 
 /**
  * Resolve the management token: a non-empty option wins, then a non-empty
@@ -133,7 +133,7 @@ export function parsePluginOptions(raw: unknown): PluginOptions {
     const unknown = issue.code === "unrecognized_keys" ? issue.keys.join(", ") : undefined;
     return unknown !== undefined ? `unknown option "${unknown}"` : `${at}: ${issue.message}`;
   });
-  throw new Error(`[omniroute-v2] invalid plugin options — ${problems.join("; ")}`);
+  throw new Error(`[cheaprouter-v2] invalid plugin options — ${problems.join("; ")}`);
 }
 
 /**
@@ -146,7 +146,7 @@ export function toResolvedOptions(parsed: PluginOptions): ResolvedOptions {
   return {
     providerId: parsed.providerId,
     baseURL: parsed.baseURL,
-    apiKey: parsed.apiKey ?? process.env.OMNIROUTE_API_KEY ?? "",
+    apiKey: parsed.apiKey ?? process.env.CHEAPROUTER_API_KEY ?? "",
     managementReadToken: resolveManagementReadToken(parsed.managementReadToken),
     timeoutMs: parsed.timeoutMs,
     timeouts: parsed.timeouts,
@@ -179,7 +179,7 @@ export function toResolvedOptions(parsed: PluginOptions): ResolvedOptions {
  * it cannot carry the configured provider id. Publishing two gateways from one
  * install is a `providerId` matter — that one does reach the catalog.
  */
-export const PLUGIN_ID = "omniroute-v2";
+export const PLUGIN_ID = "cheaprouter-v2";
 
 export function providerIdFor(providerId: string): string {
   return providerId;

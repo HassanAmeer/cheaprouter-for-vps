@@ -76,7 +76,7 @@ export const VNC_CONFIG = {
    * This feature uses Chromium CDP only. Build docker/vnc-browser/chromium and
    * tag it with this name, or override CHEAPROUTE_VNC_IMAGE.
    */
-  image: process.env.CHEAPROUTE_VNC_IMAGE || "omniroute-vnc-chromium:local",
+  image: process.env.CHEAPROUTE_VNC_IMAGE || "cheaprouter-vnc-chromium:local",
   containerVncPort: Number(process.env.CHEAPROUTE_VNC_CONTAINER_VNC_PORT || 3000),
   containerCdpPort: Number(process.env.CHEAPROUTE_VNC_CONTAINER_CDP_PORT || 9223),
   containerProfileDir: process.env.CHEAPROUTE_VNC_CONTAINER_PROFILE_DIR || "/config",
@@ -91,7 +91,7 @@ export const VNC_CONFIG = {
    * them off Docker's default bridge network so sibling containers can't
    * reach the CDP bridge port over the container-to-container path.
    */
-  network: process.env.CHEAPROUTE_VNC_NETWORK || "omniroute-vnc-browser-login",
+  network: process.env.CHEAPROUTE_VNC_NETWORK || "cheaprouter-vnc-browser-login",
   browserReadyTimeoutMs: Number(process.env.CHEAPROUTE_VNC_READY_MS || 45_000),
   harvestTimeoutMs: Number(process.env.CHEAPROUTE_VNC_HARVEST_MS || 20_000),
   chromiumArgs:

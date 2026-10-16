@@ -122,7 +122,7 @@ export async function install(version = "latest"): Promise<InstallResult> {
     fs.writeFileSync(
       hostPkgPath,
       JSON.stringify(
-        { name: "omniroute-dario-host", version: "0.0.0", private: true, dependencies: {} },
+        { name: "cheaprouter-dario-host", version: "0.0.0", private: true, dependencies: {} },
         null,
         2
       ),

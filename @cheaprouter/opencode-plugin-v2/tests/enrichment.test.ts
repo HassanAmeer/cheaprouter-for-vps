@@ -1,6 +1,6 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import type { OmniRouteEnrichmentMap } from "../src/shared/index.js";
+import type { CheapRouterEnrichmentMap } from "../src/shared/index.js";
 import { publishCatalog } from "../src/catalog.js";
 type BetaDraft = {
   provider: {
@@ -47,7 +47,7 @@ function fakeDraft(): { models: Map<string, Record<string, any>>; draft: BetaDra
 }
 
 const baseOpts = {
-  providerId: "omniroute",
+  providerId: "cheaprouter",
   baseURL: "https://gw.example.com",
   apiKey: "k",
   timeoutMs: 1000,
@@ -60,7 +60,7 @@ const stubModels = async () => [{ id: "cc/m1", context_length: 1000 }];
 describe("catalog enrichment source", () => {
   it("applies names and pricing from an injected enrichmentFetcher", async () => {
     const { models, draft } = fakeDraft();
-    const enrichment: OmniRouteEnrichmentMap = new Map([
+    const enrichment: CheapRouterEnrichmentMap = new Map([
       ["cc/m1", { name: "Model One", pricing: { input: 3, output: 15 } }],
       ["m1", { name: "Model One", pricing: { input: 3, output: 15 } }],
     ]);
@@ -70,7 +70,7 @@ describe("catalog enrichment source", () => {
       enrichmentFetcher: async () => enrichment,
     });
     assert.deepEqual(res, { models: 1, combos: 0 });
-    const m = models.get("omniroute/cc/m1");
+    const m = models.get("cheaprouter/cc/m1");
     assert.ok(m);
     assert.equal(m?.name, "Model One");
     assert.equal(m?.cost[0].input, 3);
@@ -93,7 +93,7 @@ describe("catalog enrichment source", () => {
         },
       });
       assert.deepEqual(res, { models: 1, combos: 0 });
-      assert.ok(models.get("omniroute/cc/m1"));
+      assert.ok(models.get("cheaprouter/cc/m1"));
     } finally {
       console.warn = origWarn;
     }

@@ -13,7 +13,7 @@ import {
 import { legacyApiToInfoApi } from "../src/catalog.js";
 
 function isolateDisk(): { dir: string; restore: () => void } {
-  const dir = mkdtempSync(join(tmpdir(), "omniroute-snapfix-"));
+  const dir = mkdtempSync(join(tmpdir(), "cheaprouter-snapfix-"));
   const prev = process.env.OPENCODE_DATA_DIR;
   process.env.OPENCODE_DATA_DIR = dir;
   return {

@@ -51,7 +51,7 @@ export const RadarIntelCatalogSchema = z
 
 export const RadarIntelFeedSchema = z
   .object({
-    feed: z.literal("omniroute-radar-intel"),
+    feed: z.literal("cheaprouter-radar-intel"),
     schemaVersion: z.literal(1),
     version: z.string().regex(/^\d{4}\.\d{2}\.\d{2}\.\d+$/),
     generatedAt: z.string().datetime(),

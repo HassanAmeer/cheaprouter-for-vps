@@ -185,7 +185,7 @@ async function buildCodexPlan(rawOpts, args = []) {
   };
 }
 
-const NO_AUTH_SENTINEL = "omniroute-no-auth";
+const NO_AUTH_SENTINEL = "cheaprouter-no-auth";
 
 function resolveGenericSpawn(command) {
   if (process.platform !== "win32") return { command, shell: undefined };
@@ -382,14 +382,14 @@ async function runGenericTarget(target, rawOpts, args) {
   const childEnv = genericEnv(process.env, target, baseUrl, authToken, model, rawOpts);
   let overlayHome;
   if (target === "qwen") {
-    overlayHome = mkdtempSync(join(os.tmpdir(), "omniroute-qwen-run-"));
+    overlayHome = mkdtempSync(join(os.tmpdir(), "cheaprouter-qwen-run-"));
     writeFileSync(join(overlayHome, "settings.json"), buildQwenSettings(baseUrl, model), {
       encoding: "utf8",
       mode: 0o600,
     });
     childEnv.QWEN_HOME = overlayHome;
   } else if (target === "gemini") {
-    overlayHome = mkdtempSync(join(os.tmpdir(), "omniroute-gemini-run-"));
+    overlayHome = mkdtempSync(join(os.tmpdir(), "cheaprouter-gemini-run-"));
     mkdirSync(join(overlayHome, ".gemini"), { recursive: true });
     writeFileSync(join(overlayHome, ".gemini", "settings.json"), buildGeminiSettings(), {
       encoding: "utf8",

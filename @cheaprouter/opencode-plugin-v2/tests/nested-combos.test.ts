@@ -65,7 +65,7 @@ function fakeDraft(): Captured {
 }
 
 const baseOpts = {
-  providerId: "omniroute",
+  providerId: "cheaprouter",
   baseURL: "https://gw.example.com",
   apiKey: "k",
   timeoutMs: 1000,
@@ -109,7 +109,7 @@ describe("catalog nested combo refs", () => {
         ],
       });
       assert.deepEqual(res, { models: 2, combos: 2 });
-      const parent = c.models.get("omniroute/Parent");
+      const parent = c.models.get("cheaprouter/Parent");
       assert.ok(parent);
       assert.equal(parent?.limit.context, 50000);
       assert.equal(parent?.limit.output, 2000);
@@ -133,7 +133,7 @@ describe("catalog nested combo refs", () => {
         ],
       });
       assert.deepEqual(res, { models: 1, combos: 0 });
-      assert.ok(!c.models.has("omniroute/Orphan"));
+      assert.ok(!c.models.has("cheaprouter/Orphan"));
       assert.ok(c.warns.some((w) => w.includes("could not resolve")));
     } finally {
       c.restore();
@@ -170,7 +170,7 @@ describe("catalog nested combo refs", () => {
           },
         ],
       });
-      const top = c.models.get("omniroute/Top");
+      const top = c.models.get("cheaprouter/Top");
       assert.ok(top);
       assert.equal(top?.limit.context, 80000);
     } finally {
@@ -193,12 +193,12 @@ describe("catalog collision dedupe", () => {
       await publishCatalog(c.draft, { ...baseOpts, collisionWarned }, args);
       await publishCatalog(c.draft, { ...baseOpts, collisionWarned }, args);
       const hits = c.warns.filter((w) => w.includes("collides with a model id"));
-      // Name-based keying: the combo publishes as `omniroute/Dupe Combo` and
-      // the raw model stays at `omniroute/dupe` — no collision, so no warn.
+      // Name-based keying: the combo publishes as `cheaprouter/Dupe Combo` and
+      // the raw model stays at `cheaprouter/dupe` — no collision, so no warn.
       assert.equal(hits.length, 0);
       // Both keys exist independently.
-      assert.ok(c.models.has("omniroute/dupe"), "raw model keeps its key");
-      assert.ok(c.models.has("omniroute/Dupe Combo"), "combo under its name");
+      assert.ok(c.models.has("cheaprouter/dupe"), "raw model keeps its key");
+      assert.ok(c.models.has("cheaprouter/Dupe Combo"), "combo under its name");
     } finally {
       c.restore();
     }
@@ -211,18 +211,18 @@ describe("catalog collision dedupe", () => {
       // NAME and the combo is keyed by that name, so the overwritten model
       // id equals the combo name exactly and the draft key collides.
       const res = await publishCatalog(c.draft, baseOpts, {
-        fetcher: async () => [{ id: "omniroute/Mirror Combo" }],
+        fetcher: async () => [{ id: "cheaprouter/Mirror Combo" }],
         combosFetcher: async () => [
           {
             id: "Mirror Combo",
             name: "Mirror Combo",
-            models: [{ kind: "model", model: "omniroute/Mirror Combo" } as never],
+            models: [{ kind: "model", model: "cheaprouter/Mirror Combo" } as never],
           },
         ],
       });
       assert.deepEqual(res, { models: 1, combos: 1 });
       assert.ok(!c.warns.some((w) => w.includes("collides")));
-      assert.equal(c.models.get("omniroute/Mirror Combo")?.name, "Mirror Combo");
+      assert.equal(c.models.get("cheaprouter/Mirror Combo")?.name, "Mirror Combo");
     } finally {
       c.restore();
     }
@@ -246,11 +246,11 @@ describe("catalog collision dedupe", () => {
       await publishCatalog(c.draft, { ...baseOpts, collisionWarned }, args);
       const hits = c.warns.filter((w) => w.includes("collides with a model id"));
       // Same shape as the test above: name-based keys mean the combo
-      // (`omniroute/Other Combo`) never collides with the raw model
-      // (`omniroute/other`), so no warn fires and the draft holds both.
+      // (`cheaprouter/Other Combo`) never collides with the raw model
+      // (`cheaprouter/other`), so no warn fires and the draft holds both.
       assert.equal(hits.length, 0);
-      assert.ok(c.models.has("omniroute/other"), "raw model keeps its key");
-      assert.ok(c.models.has("omniroute/Other Combo"), "combo under its name");
+      assert.ok(c.models.has("cheaprouter/other"), "raw model keeps its key");
+      assert.ok(c.models.has("cheaprouter/Other Combo"), "combo under its name");
     } finally {
       c.restore();
     }

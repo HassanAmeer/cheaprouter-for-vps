@@ -1,9 +1,9 @@
 /**
  * T-07 config-hook backward-compat shim tests.
  *
- * Covers `createOmniRouteConfigHook(opts, deps)`:
+ * Covers `createCheapRouterConfigHook(opts, deps)`:
  *   - happy path: valid auth.json → mutates input.provider[id] with the
- *     stripped per-model shape (mirroring `@omniroute/opencode-provider`).
+ *     stripped per-model shape (mirroring `@cheaprouter/opencode-provider`).
  *   - no-op paths: missing auth.json, malformed JSON, missing apiKey,
  *     missing baseURL, existing input.provider[id] (manual override).
  *   - fail-open: /v1/models error → stub `models: {}`; /api/combos error →
@@ -29,23 +29,23 @@ import type { Config } from "@opencode-ai/plugin";
 
 import {
   buildStaticProviderEntry,
-  createOmniRouteConfigHook,
-  createOmniRouteProviderHook,
-  OmniRoutePlugin,
-  resolveOmniRoutePluginOptions,
+  createCheapRouterConfigHook,
+  createCheapRouterProviderHook,
+  CheapRouterPlugin,
+  resolveCheapRouterPluginOptions,
   _resetInflightRefresh,
-  type OmniRouteCombosFetcher,
-  type OmniRouteEnrichmentEntry,
-  type OmniRouteEnrichmentFetcher,
-  type OmniRouteEnrichmentMap,
-  type OmniRouteFetchCache,
-  type OmniRouteModelsFetcher,
-  type OmniRouteProviderConnection,
-  type OmniRouteProvidersFetcher,
-  type OmniRouteRawCombo,
-  type OmniRouteRawModelEntry,
-  type OmniRouteReadAuthJson,
-  type OmniRouteStaticProviderEntry,
+  type CheapRouterCombosFetcher,
+  type CheapRouterEnrichmentEntry,
+  type CheapRouterEnrichmentFetcher,
+  type CheapRouterEnrichmentMap,
+  type CheapRouterFetchCache,
+  type CheapRouterModelsFetcher,
+  type CheapRouterProviderConnection,
+  type CheapRouterProvidersFetcher,
+  type CheapRouterRawCombo,
+  type CheapRouterRawModelEntry,
+  type CheapRouterReadAuthJson,
+  type CheapRouterStaticProviderEntry,
 } from "../src/index.js";
 
 // ────────────────────────────────────────────────────────────────────────────
@@ -62,7 +62,7 @@ test.beforeEach(() => {
 // Fixtures
 // ────────────────────────────────────────────────────────────────────────────
 
-const MODEL_CLAUDE: OmniRouteRawModelEntry = {
+const MODEL_CLAUDE: CheapRouterRawModelEntry = {
   id: "claude-sonnet-4-6",
   capabilities: {
     tool_calling: true,
@@ -78,7 +78,7 @@ const MODEL_CLAUDE: OmniRouteRawModelEntry = {
   output_modalities: ["text"],
 };
 
-const MODEL_GEMINI: OmniRouteRawModelEntry = {
+const MODEL_GEMINI: CheapRouterRawModelEntry = {
   id: "gemini-3-flash",
   capabilities: { tool_calling: true, reasoning: false, vision: true, thinking: false },
   context_length: 1_000_000,
@@ -87,7 +87,7 @@ const MODEL_GEMINI: OmniRouteRawModelEntry = {
   output_modalities: ["text"],
 };
 
-const COMBO_CLAUDE_TIER: OmniRouteRawCombo = {
+const COMBO_CLAUDE_TIER: CheapRouterRawCombo = {
   id: "combo-claude-tier",
   name: "Claude Tier",
   models: [
@@ -102,18 +102,18 @@ const COMBO_CLAUDE_TIER: OmniRouteRawCombo = {
 
 function stubReadAuthJson(
   value: Record<string, unknown> | undefined | null
-): OmniRouteReadAuthJson & { callCount: () => number } {
+): CheapRouterReadAuthJson & { callCount: () => number } {
   let n = 0;
-  const f: OmniRouteReadAuthJson = async () => {
+  const f: CheapRouterReadAuthJson = async () => {
     n++;
     return value as never;
   };
   return Object.assign(f, { callCount: () => n });
 }
 
-function throwingReadAuthJson(): OmniRouteReadAuthJson & { callCount: () => number } {
+function throwingReadAuthJson(): CheapRouterReadAuthJson & { callCount: () => number } {
   let n = 0;
-  const f: OmniRouteReadAuthJson = async () => {
+  const f: CheapRouterReadAuthJson = async () => {
     n++;
     throw new Error("EACCES");
   };
@@ -121,11 +121,11 @@ function throwingReadAuthJson(): OmniRouteReadAuthJson & { callCount: () => numb
 }
 
 function stubModelsFetcher(
-  payload: OmniRouteRawModelEntry[]
-): OmniRouteModelsFetcher & { callCount: () => number; callsBy: () => Array<[string, string]> } {
+  payload: CheapRouterRawModelEntry[]
+): CheapRouterModelsFetcher & { callCount: () => number; callsBy: () => Array<[string, string]> } {
   let n = 0;
   const calls: Array<[string, string]> = [];
-  const f: OmniRouteModelsFetcher = async (baseURL, apiKey) => {
+  const f: CheapRouterModelsFetcher = async (baseURL, apiKey) => {
     n++;
     calls.push([baseURL, apiKey]);
     return payload;
@@ -134,11 +134,11 @@ function stubModelsFetcher(
 }
 
 function stubCombosFetcher(
-  payload: OmniRouteRawCombo[]
-): OmniRouteCombosFetcher & { callCount: () => number; callsBy: () => Array<[string, string]> } {
+  payload: CheapRouterRawCombo[]
+): CheapRouterCombosFetcher & { callCount: () => number; callsBy: () => Array<[string, string]> } {
   let n = 0;
   const calls: Array<[string, string]> = [];
-  const f: OmniRouteCombosFetcher = async (baseURL, apiKey) => {
+  const f: CheapRouterCombosFetcher = async (baseURL, apiKey) => {
     n++;
     calls.push([baseURL, apiKey]);
     return payload;
@@ -146,31 +146,31 @@ function stubCombosFetcher(
   return Object.assign(f, { callCount: () => n, callsBy: () => calls });
 }
 
-function throwingModelsFetcher(): OmniRouteModelsFetcher & { callCount: () => number } {
+function throwingModelsFetcher(): CheapRouterModelsFetcher & { callCount: () => number } {
   let n = 0;
-  const f: OmniRouteModelsFetcher = async () => {
+  const f: CheapRouterModelsFetcher = async () => {
     n++;
     throw new Error("ECONNREFUSED");
   };
   return Object.assign(f, { callCount: () => n });
 }
 
-function throwingCombosFetcher(): OmniRouteCombosFetcher & { callCount: () => number } {
+function throwingCombosFetcher(): CheapRouterCombosFetcher & { callCount: () => number } {
   let n = 0;
-  const f: OmniRouteCombosFetcher = async () => {
+  const f: CheapRouterCombosFetcher = async () => {
     n++;
     throw new Error("403 Forbidden");
   };
   return Object.assign(f, { callCount: () => n });
 }
 
-function stubEnrichmentFetcher(payload: OmniRouteEnrichmentMap): OmniRouteEnrichmentFetcher & {
+function stubEnrichmentFetcher(payload: CheapRouterEnrichmentMap): CheapRouterEnrichmentFetcher & {
   callCount: () => number;
   callsBy: () => Array<[string, string]>;
 } {
   let n = 0;
   const calls: Array<[string, string]> = [];
-  const f: OmniRouteEnrichmentFetcher = async (baseURL, apiKey) => {
+  const f: CheapRouterEnrichmentFetcher = async (baseURL, apiKey) => {
     n++;
     calls.push([baseURL, apiKey]);
     return payload;
@@ -178,9 +178,9 @@ function stubEnrichmentFetcher(payload: OmniRouteEnrichmentMap): OmniRouteEnrich
   return Object.assign(f, { callCount: () => n, callsBy: () => calls });
 }
 
-function throwingEnrichmentFetcher(): OmniRouteEnrichmentFetcher & { callCount: () => number } {
+function throwingEnrichmentFetcher(): CheapRouterEnrichmentFetcher & { callCount: () => number } {
   let n = 0;
-  const f: OmniRouteEnrichmentFetcher = async () => {
+  const f: CheapRouterEnrichmentFetcher = async () => {
     n++;
     throw new Error("ETIMEDOUT");
   };
@@ -214,24 +214,24 @@ function makeInput(initialProvider: Record<string, unknown> = {}): Config {
 
 test("config: with valid auth.json + apiKey + baseURL → mutates input.provider[id] with stripped models block", async () => {
   const readAuthJson = stubReadAuthJson({
-    "opencode-omniroute": { type: "api", key: "sk-test-1", baseURL: "https://or.example.com/v1" },
+    "opencode-cheaprouter": { type: "api", key: "sk-test-1", baseURL: "https://or.example.com/v1" },
   });
   const fetcher = stubModelsFetcher([MODEL_CLAUDE, MODEL_GEMINI]);
   const combosFetcher = stubCombosFetcher([COMBO_CLAUDE_TIER]);
   const logger = captureWarn();
 
-  const hook = createOmniRouteConfigHook(
-    { providerId: "omniroute" },
+  const hook = createCheapRouterConfigHook(
+    { providerId: "cheaprouter" },
     { readAuthJson, fetcher, combosFetcher, logger }
   );
   const input = makeInput();
   await hook(input);
 
-  const provider = (input as { provider: Record<string, OmniRouteStaticProviderEntry> }).provider;
-  const entry = provider["opencode-omniroute"];
-  assert.ok(entry, "input.provider['opencode-omniroute'] set");
+  const provider = (input as { provider: Record<string, CheapRouterStaticProviderEntry> }).provider;
+  const entry = provider["opencode-cheaprouter"];
+  assert.ok(entry, "input.provider['opencode-cheaprouter'] set");
   assert.equal(entry.npm, "@ai-sdk/openai-compatible");
-  assert.equal(entry.name, "OmniRoute");
+  assert.equal(entry.name, "CheapRouter");
   assert.equal(entry.options.baseURL, "https://or.example.com/v1");
   assert.equal(entry.options.apiKey, "sk-test-1");
 
@@ -270,29 +270,29 @@ test("config: with valid auth.json + apiKey + baseURL → mutates input.provider
 // ────────────────────────────────────────────────────────────────────────────
 // 1b. Dual-key fallback (#5027) — auth.json stored under the BARE providerId
 //     (pre-auto-prefix login) must still resolve when the active providerId is
-//     prefixed (`opencode-omniroute`). Without the fallback the lookup misses
+//     prefixed (`opencode-cheaprouter`). Without the fallback the lookup misses
 //     the stored key and the user is forced to re-auth.
 // ────────────────────────────────────────────────────────────────────────────
 
 test("config: auth.json under bare key (pre-prefix login) resolves via dual-key fallback", async () => {
-  // Stored under bare `omniroute` (the key OC wrote before the auto-prefix fix),
-  // but the resolved providerId is now `opencode-omniroute`.
+  // Stored under bare `cheaprouter` (the key OC wrote before the auto-prefix fix),
+  // but the resolved providerId is now `opencode-cheaprouter`.
   const readAuthJson = stubReadAuthJson({
-    omniroute: { type: "api", key: "sk-bare-1", baseURL: "https://or.example.com/v1" },
+    cheaprouter: { type: "api", key: "sk-bare-1", baseURL: "https://or.example.com/v1" },
   });
   const fetcher = stubModelsFetcher([MODEL_CLAUDE]);
   const combosFetcher = stubCombosFetcher([]);
   const logger = captureWarn();
 
-  const hook = createOmniRouteConfigHook(
-    { providerId: "omniroute" }, // resolves to opencode-omniroute internally
+  const hook = createCheapRouterConfigHook(
+    { providerId: "cheaprouter" }, // resolves to opencode-cheaprouter internally
     { readAuthJson, fetcher, combosFetcher, logger }
   );
   const input = makeInput();
   await hook(input);
 
-  const provider = (input as { provider: Record<string, OmniRouteStaticProviderEntry> }).provider;
-  const entry = provider["opencode-omniroute"];
+  const provider = (input as { provider: Record<string, CheapRouterStaticProviderEntry> }).provider;
+  const entry = provider["opencode-cheaprouter"];
   assert.ok(entry, "provider entry published from bare-key apiKey");
   assert.equal(entry.options.apiKey, "sk-bare-1", "apiKey resolved from the bare auth.json key");
   assert.equal(entry.options.baseURL, "https://or.example.com/v1");
@@ -300,22 +300,22 @@ test("config: auth.json under bare key (pre-prefix login) resolves via dual-key 
 
 test("config: prefixed key wins over bare key when both present (dual-key precedence)", async () => {
   const readAuthJson = stubReadAuthJson({
-    "opencode-omniroute": { type: "api", key: "sk-prefixed", baseURL: "https://pref.example/v1" },
-    omniroute: { type: "api", key: "sk-bare", baseURL: "https://bare.example/v1" },
+    "opencode-cheaprouter": { type: "api", key: "sk-prefixed", baseURL: "https://pref.example/v1" },
+    cheaprouter: { type: "api", key: "sk-bare", baseURL: "https://bare.example/v1" },
   });
   const fetcher = stubModelsFetcher([MODEL_CLAUDE]);
   const combosFetcher = stubCombosFetcher([]);
   const logger = captureWarn();
 
-  const hook = createOmniRouteConfigHook(
-    { providerId: "omniroute" },
+  const hook = createCheapRouterConfigHook(
+    { providerId: "cheaprouter" },
     { readAuthJson, fetcher, combosFetcher, logger }
   );
   const input = makeInput();
   await hook(input);
 
-  const entry = (input as { provider: Record<string, OmniRouteStaticProviderEntry> }).provider[
-    "opencode-omniroute"
+  const entry = (input as { provider: Record<string, CheapRouterStaticProviderEntry> }).provider[
+    "opencode-cheaprouter"
   ];
   assert.ok(entry);
   assert.equal(
@@ -336,8 +336,8 @@ test("config: missing auth.json file → no-op, no throw, no input mutation", as
   const combosFetcher = stubCombosFetcher([]);
   const logger = captureWarn();
 
-  const hook = createOmniRouteConfigHook(
-    { providerId: "omniroute" },
+  const hook = createCheapRouterConfigHook(
+    { providerId: "cheaprouter" },
     { readAuthJson, fetcher, combosFetcher, logger }
   );
   const input = makeInput();
@@ -365,8 +365,8 @@ test("config: malformed auth.json → no-op + warn once", async () => {
   const combosFetcher = stubCombosFetcher([]);
   const logger = captureWarn();
 
-  const hook = createOmniRouteConfigHook(
-    { providerId: "omniroute" },
+  const hook = createCheapRouterConfigHook(
+    { providerId: "cheaprouter" },
     { readAuthJson, fetcher, combosFetcher, logger }
   );
   const input = makeInput();
@@ -388,26 +388,26 @@ test("config: malformed auth.json → no-op + warn once", async () => {
 test("config: existing input.provider[id] → no overwrite (respect manual override)", async () => {
   const manual = {
     npm: "@ai-sdk/openai-compatible",
-    name: "Manual OmniRoute",
+    name: "Manual CheapRouter",
     options: { baseURL: "http://manual/v1", apiKey: "manual-key" },
     models: { "manual-model": { name: "manual-model" } },
   };
   const readAuthJson = stubReadAuthJson({
-    "opencode-omniroute": { type: "api", key: "sk-test", baseURL: "https://or.example/v1" },
+    "opencode-cheaprouter": { type: "api", key: "sk-test", baseURL: "https://or.example/v1" },
   });
   const fetcher = stubModelsFetcher([MODEL_CLAUDE]);
   const combosFetcher = stubCombosFetcher([]);
   const logger = captureWarn();
 
-  const hook = createOmniRouteConfigHook(
-    { providerId: "omniroute" },
+  const hook = createCheapRouterConfigHook(
+    { providerId: "cheaprouter" },
     { readAuthJson, fetcher, combosFetcher, logger }
   );
-  const input = makeInput({ "opencode-omniroute": manual });
+  const input = makeInput({ "opencode-cheaprouter": manual });
   await hook(input);
 
   const provider = (input as { provider: Record<string, unknown> }).provider;
-  assert.equal(provider["opencode-omniroute"], manual, "manual override preserved by reference");
+  assert.equal(provider["opencode-cheaprouter"], manual, "manual override preserved by reference");
   assert.equal(fetcher.callCount(), 0, "no fetch — short-circuited before I/O");
   assert.equal(readAuthJson.callCount(), 0, "no auth.json read either");
   assert.ok(
@@ -422,7 +422,7 @@ test("config: existing input.provider[id] → no overwrite (respect manual overr
 
 test("config: fetchers throw → warn + emit stub entry with models: {}", async () => {
   const readAuthJson = stubReadAuthJson({
-    "opencode-omniroute": { type: "api", key: "sk-test", baseURL: "https://or.example/v1" },
+    "opencode-cheaprouter": { type: "api", key: "sk-test", baseURL: "https://or.example/v1" },
   });
   const fetcher = throwingModelsFetcher();
   const combosFetcher = throwingCombosFetcher();
@@ -431,15 +431,15 @@ test("config: fetchers throw → warn + emit stub entry with models: {}", async 
   // Opt-out of disk-cache fallback for this test — we want to assert the
   // pure stub path, not the disk-cache-recovery path (covered by its own
   // test below).
-  const hook = createOmniRouteConfigHook(
-    { providerId: "omniroute", features: { diskCache: false } },
+  const hook = createCheapRouterConfigHook(
+    { providerId: "cheaprouter", features: { diskCache: false } },
     { readAuthJson, fetcher, combosFetcher, logger }
   );
   const input = makeInput();
   await hook(input);
 
-  const entry = (input as { provider: Record<string, OmniRouteStaticProviderEntry> }).provider[
-    "opencode-omniroute"
+  const entry = (input as { provider: Record<string, CheapRouterStaticProviderEntry> }).provider[
+    "opencode-cheaprouter"
   ];
   assert.ok(entry, "stub provider entry published even when fetchers fail");
   assert.equal(entry.npm, "@ai-sdk/openai-compatible");
@@ -463,14 +463,14 @@ test("config: fetchers throw → warn + emit stub entry with models: {}", async 
 
 test("config: features.combos=false skips /api/combos fetch", async () => {
   const readAuthJson = stubReadAuthJson({
-    "opencode-omniroute": { type: "api", key: "sk-test", baseURL: "https://or.example/v1" },
+    "opencode-cheaprouter": { type: "api", key: "sk-test", baseURL: "https://or.example/v1" },
   });
   const fetcher = stubModelsFetcher([MODEL_CLAUDE]);
   const combosFetcher = stubCombosFetcher([COMBO_CLAUDE_TIER]);
   const logger = captureWarn();
 
-  const hook = createOmniRouteConfigHook(
-    { providerId: "omniroute", features: { combos: false } },
+  const hook = createCheapRouterConfigHook(
+    { providerId: "cheaprouter", features: { combos: false } },
     { readAuthJson, fetcher, combosFetcher, logger }
   );
   const input = makeInput();
@@ -478,8 +478,8 @@ test("config: features.combos=false skips /api/combos fetch", async () => {
 
   assert.equal(fetcher.callCount(), 1, "models fetch still runs");
   assert.equal(combosFetcher.callCount(), 0, "combos fetch suppressed by feature flag");
-  const entry = (input as { provider: Record<string, OmniRouteStaticProviderEntry> }).provider[
-    "opencode-omniroute"
+  const entry = (input as { provider: Record<string, CheapRouterStaticProviderEntry> }).provider[
+    "opencode-cheaprouter"
   ];
   assert.ok(entry);
   assert.equal(entry.models["claude-tier"], undefined, "no combo entry when combos are off");
@@ -488,21 +488,21 @@ test("config: features.combos=false skips /api/combos fetch", async () => {
 
 test("config: combos fetcher throws → emit models-only catalog (no combos in models block)", async () => {
   const readAuthJson = stubReadAuthJson({
-    "opencode-omniroute": { type: "api", key: "sk-test", baseURL: "https://or.example/v1" },
+    "opencode-cheaprouter": { type: "api", key: "sk-test", baseURL: "https://or.example/v1" },
   });
   const fetcher = stubModelsFetcher([MODEL_CLAUDE, MODEL_GEMINI]);
   const combosFetcher = throwingCombosFetcher();
   const logger = captureWarn();
 
-  const hook = createOmniRouteConfigHook(
-    { providerId: "omniroute" },
+  const hook = createCheapRouterConfigHook(
+    { providerId: "cheaprouter" },
     { readAuthJson, fetcher, combosFetcher, logger }
   );
   const input = makeInput();
   await hook(input);
 
-  const entry = (input as { provider: Record<string, OmniRouteStaticProviderEntry> }).provider[
-    "opencode-omniroute"
+  const entry = (input as { provider: Record<string, CheapRouterStaticProviderEntry> }).provider[
+    "opencode-cheaprouter"
   ];
   assert.ok(entry);
   const ids = Object.keys(entry.models).sort();
@@ -520,58 +520,58 @@ test("config: combos fetcher throws → emit models-only catalog (no combos in m
 
 test("config: baseURL from auth.json takes precedence when opts.baseURL absent", async () => {
   const readAuthJson = stubReadAuthJson({
-    "opencode-omniroute": { type: "api", key: "sk-test", baseURL: "https://creds.example/v1" },
+    "opencode-cheaprouter": { type: "api", key: "sk-test", baseURL: "https://creds.example/v1" },
   });
   const fetcher = stubModelsFetcher([MODEL_CLAUDE]);
   const combosFetcher = stubCombosFetcher([]);
   const logger = captureWarn();
 
-  const hook = createOmniRouteConfigHook(
-    { providerId: "omniroute" }, // NO opts.baseURL
+  const hook = createCheapRouterConfigHook(
+    { providerId: "cheaprouter" }, // NO opts.baseURL
     { readAuthJson, fetcher, combosFetcher, logger }
   );
   const input = makeInput();
   await hook(input);
 
   assert.equal(fetcher.callsBy()[0][0], "https://creds.example/v1");
-  const entry = (input as { provider: Record<string, OmniRouteStaticProviderEntry> }).provider[
-    "opencode-omniroute"
+  const entry = (input as { provider: Record<string, CheapRouterStaticProviderEntry> }).provider[
+    "opencode-cheaprouter"
   ];
   assert.equal(entry.options.baseURL, "https://creds.example/v1");
 });
 
 test("config: opts.baseURL wins over auth.json's stored baseURL", async () => {
   const readAuthJson = stubReadAuthJson({
-    "opencode-omniroute": { type: "api", key: "sk-test", baseURL: "https://creds.example/v1" },
+    "opencode-cheaprouter": { type: "api", key: "sk-test", baseURL: "https://creds.example/v1" },
   });
   const fetcher = stubModelsFetcher([MODEL_CLAUDE]);
   const combosFetcher = stubCombosFetcher([]);
   const logger = captureWarn();
 
-  const hook = createOmniRouteConfigHook(
-    { providerId: "omniroute", baseURL: "https://opts.example/v1" },
+  const hook = createCheapRouterConfigHook(
+    { providerId: "cheaprouter", baseURL: "https://opts.example/v1" },
     { readAuthJson, fetcher, combosFetcher, logger }
   );
   const input = makeInput();
   await hook(input);
 
   assert.equal(fetcher.callsBy()[0][0], "https://opts.example/v1");
-  const entry = (input as { provider: Record<string, OmniRouteStaticProviderEntry> }).provider[
-    "opencode-omniroute"
+  const entry = (input as { provider: Record<string, CheapRouterStaticProviderEntry> }).provider[
+    "opencode-cheaprouter"
   ];
   assert.equal(entry.options.baseURL, "https://opts.example/v1");
 });
 
 test("config: no baseURL resolvable (no opts, no auth.json baseURL) → no-op", async () => {
   const readAuthJson = stubReadAuthJson({
-    "opencode-omniroute": { type: "api", key: "sk-test" }, // NO baseURL on the credential
+    "opencode-cheaprouter": { type: "api", key: "sk-test" }, // NO baseURL on the credential
   });
   const fetcher = stubModelsFetcher([MODEL_CLAUDE]);
   const combosFetcher = stubCombosFetcher([]);
   const logger = captureWarn();
 
-  const hook = createOmniRouteConfigHook(
-    { providerId: "omniroute" }, // NO opts.baseURL
+  const hook = createCheapRouterConfigHook(
+    { providerId: "cheaprouter" }, // NO opts.baseURL
     { readAuthJson, fetcher, combosFetcher, logger }
   );
   const input = makeInput();
@@ -592,12 +592,12 @@ test("config: no baseURL resolvable (no opts, no auth.json baseURL) → no-op", 
 
 test("config: multi-instance — two plugins with different providerIds publish to their own keys without collision", async () => {
   const readAuthJson = stubReadAuthJson({
-    "opencode-omniroute-prod": {
+    "opencode-cheaprouter-prod": {
       type: "api",
       key: "sk-prod",
       baseURL: "https://prod.example/v1",
     },
-    "opencode-omniroute-preprod": {
+    "opencode-cheaprouter-preprod": {
       type: "api",
       key: "sk-preprod",
       baseURL: "https://preprod.example/v1",
@@ -607,12 +607,12 @@ test("config: multi-instance — two plugins with different providerIds publish 
   const combosFetcher = stubCombosFetcher([]);
   const logger = captureWarn();
 
-  const hookA = createOmniRouteConfigHook(
-    { providerId: "omniroute-prod" },
+  const hookA = createCheapRouterConfigHook(
+    { providerId: "cheaprouter-prod" },
     { readAuthJson, fetcher, combosFetcher, logger }
   );
-  const hookB = createOmniRouteConfigHook(
-    { providerId: "omniroute-preprod" },
+  const hookB = createCheapRouterConfigHook(
+    { providerId: "cheaprouter-preprod" },
     { readAuthJson, fetcher, combosFetcher, logger }
   );
 
@@ -620,19 +620,19 @@ test("config: multi-instance — two plugins with different providerIds publish 
   await hookA(input);
   await hookB(input);
 
-  const provider = (input as { provider: Record<string, OmniRouteStaticProviderEntry> }).provider;
-  assert.ok(provider["opencode-omniroute-prod"], "prod block present");
-  assert.ok(provider["opencode-omniroute-preprod"], "preprod block present");
-  assert.equal(provider["opencode-omniroute-prod"].options.apiKey, "sk-prod");
-  assert.equal(provider["opencode-omniroute-preprod"].options.apiKey, "sk-preprod");
-  assert.equal(provider["opencode-omniroute-prod"].options.baseURL, "https://prod.example/v1");
+  const provider = (input as { provider: Record<string, CheapRouterStaticProviderEntry> }).provider;
+  assert.ok(provider["opencode-cheaprouter-prod"], "prod block present");
+  assert.ok(provider["opencode-cheaprouter-preprod"], "preprod block present");
+  assert.equal(provider["opencode-cheaprouter-prod"].options.apiKey, "sk-prod");
+  assert.equal(provider["opencode-cheaprouter-preprod"].options.apiKey, "sk-preprod");
+  assert.equal(provider["opencode-cheaprouter-prod"].options.baseURL, "https://prod.example/v1");
   assert.equal(
-    provider["opencode-omniroute-preprod"].options.baseURL,
+    provider["opencode-cheaprouter-preprod"].options.baseURL,
     "https://preprod.example/v1"
   );
   assert.notEqual(
-    provider["opencode-omniroute-prod"],
-    provider["opencode-omniroute-preprod"],
+    provider["opencode-cheaprouter-prod"],
+    provider["opencode-cheaprouter-preprod"],
     "blocks are distinct references"
   );
 });
@@ -644,19 +644,19 @@ test("config: multi-instance — two plugins with different providerIds publish 
 
 test("config + provider share cache: second call uses cached fetch result (single fetch per TTL)", async () => {
   const readAuthJson = stubReadAuthJson({
-    "opencode-omniroute": { type: "api", key: "sk-shared", baseURL: "https://or.example/v1" },
+    "opencode-cheaprouter": { type: "api", key: "sk-shared", baseURL: "https://or.example/v1" },
   });
   const fetcher = stubModelsFetcher([MODEL_CLAUDE]);
   const combosFetcher = stubCombosFetcher([COMBO_CLAUDE_TIER]);
-  const sharedCache: OmniRouteFetchCache = new Map();
+  const sharedCache: CheapRouterFetchCache = new Map();
   const logger = captureWarn();
 
-  const configHook = createOmniRouteConfigHook(
-    { providerId: "omniroute", baseURL: "https://or.example/v1", modelCacheTtl: 60_000 },
+  const configHook = createCheapRouterConfigHook(
+    { providerId: "cheaprouter", baseURL: "https://or.example/v1", modelCacheTtl: 60_000 },
     { readAuthJson, fetcher, combosFetcher, cache: sharedCache, logger }
   );
-  const providerHook = createOmniRouteProviderHook(
-    { providerId: "omniroute", baseURL: "https://or.example/v1", modelCacheTtl: 60_000 },
+  const providerHook = createCheapRouterProviderHook(
+    { providerId: "cheaprouter", baseURL: "https://or.example/v1", modelCacheTtl: 60_000 },
     { fetcher, combosFetcher, cache: sharedCache }
   );
 
@@ -676,19 +676,19 @@ test("config + provider share cache: second call uses cached fetch result (singl
 
 test("provider → config order also dedupes (cache populated by provider, consumed by config)", async () => {
   const readAuthJson = stubReadAuthJson({
-    "opencode-omniroute": { type: "api", key: "sk-reverse", baseURL: "https://or.example/v1" },
+    "opencode-cheaprouter": { type: "api", key: "sk-reverse", baseURL: "https://or.example/v1" },
   });
   const fetcher = stubModelsFetcher([MODEL_CLAUDE]);
   const combosFetcher = stubCombosFetcher([]);
-  const sharedCache: OmniRouteFetchCache = new Map();
+  const sharedCache: CheapRouterFetchCache = new Map();
   const logger = captureWarn();
 
-  const configHook = createOmniRouteConfigHook(
-    { providerId: "omniroute", baseURL: "https://or.example/v1", modelCacheTtl: 60_000 },
+  const configHook = createCheapRouterConfigHook(
+    { providerId: "cheaprouter", baseURL: "https://or.example/v1", modelCacheTtl: 60_000 },
     { readAuthJson, fetcher, combosFetcher, cache: sharedCache, logger }
   );
-  const providerHook = createOmniRouteProviderHook(
-    { providerId: "omniroute", baseURL: "https://or.example/v1", modelCacheTtl: 60_000 },
+  const providerHook = createCheapRouterProviderHook(
+    { providerId: "cheaprouter", baseURL: "https://or.example/v1", modelCacheTtl: 60_000 },
     { fetcher, combosFetcher, cache: sharedCache }
   );
 
@@ -707,10 +707,10 @@ test("provider → config order also dedupes (cache populated by provider, consu
 //     (`{name, attachment, reasoning, tool_call, temperature, limit?}`).
 // ────────────────────────────────────────────────────────────────────────────
 
-test("buildStaticProviderEntry: stripped per-model shape matches sibling @omniroute/opencode-provider", () => {
-  const resolved = resolveOmniRoutePluginOptions({
-    providerId: "omniroute",
-    displayName: "OmniRoute",
+test("buildStaticProviderEntry: stripped per-model shape matches sibling @cheaprouter/opencode-provider", () => {
+  const resolved = resolveCheapRouterPluginOptions({
+    providerId: "cheaprouter",
+    displayName: "CheapRouter",
   });
   const block = buildStaticProviderEntry(
     [MODEL_CLAUDE, MODEL_GEMINI],
@@ -723,7 +723,7 @@ test("buildStaticProviderEntry: stripped per-model shape matches sibling @omniro
   // Top-level provider entry shape — ONLY these four keys.
   assert.deepEqual(Object.keys(block).sort(), ["models", "name", "npm", "options"]);
   assert.equal(block.npm, "@ai-sdk/openai-compatible");
-  assert.equal(block.name, "OmniRoute");
+  assert.equal(block.name, "CheapRouter");
   assert.deepEqual(Object.keys(block.options).sort(), ["apiKey", "baseURL"]);
 
   // Per-model entry shape — the keys OC's SDK static schema accepts
@@ -766,14 +766,14 @@ test("buildStaticProviderEntry: stripped per-model shape matches sibling @omniro
 });
 
 test("buildStaticProviderEntry: empty fetch results → stub block with models: {}", () => {
-  const resolved = resolveOmniRoutePluginOptions({ providerId: "omniroute" });
+  const resolved = resolveCheapRouterPluginOptions({ providerId: "cheaprouter" });
   const block = buildStaticProviderEntry([], [], resolved, "https://or.example/v1", "sk-test");
   assert.deepEqual(block.models, {});
   assert.equal(block.options.apiKey, "sk-test");
 });
 
 test("buildStaticProviderEntry: hidden combos are excluded", () => {
-  const resolved = resolveOmniRoutePluginOptions({ providerId: "omniroute" });
+  const resolved = resolveCheapRouterPluginOptions({ providerId: "cheaprouter" });
   const block = buildStaticProviderEntry(
     [MODEL_CLAUDE],
     [{ ...COMBO_CLAUDE_TIER, isHidden: true }],
@@ -786,12 +786,12 @@ test("buildStaticProviderEntry: hidden combos are excluded", () => {
 });
 
 test("buildStaticProviderEntry: expected raw auto twin does not warn and auto combo wins", () => {
-  const resolved = resolveOmniRoutePluginOptions({ providerId: "omniroute" });
+  const resolved = resolveCheapRouterPluginOptions({ providerId: "cheaprouter" });
   const warnings: string[] = [];
   const originalWarn = console.warn;
   console.warn = (...args: unknown[]) => warnings.push(args.map(String).join(" "));
 
-  let block: OmniRouteStaticProviderEntry;
+  let block: CheapRouterStaticProviderEntry;
   try {
     block = buildStaticProviderEntry(
       [{ id: "auto/coding" }],
@@ -821,7 +821,7 @@ test("buildStaticProviderEntry: expected raw auto twin does not warn and auto co
 // ────────────────────────────────────────────────────────────────────────────
 
 test("buildStaticProviderEntry: emits modalities.input from raw.input_modalities", () => {
-  const resolved = resolveOmniRoutePluginOptions({ providerId: "omniroute" });
+  const resolved = resolveCheapRouterPluginOptions({ providerId: "cheaprouter" });
   const block = buildStaticProviderEntry(
     [MODEL_CLAUDE, MODEL_GEMINI],
     [],
@@ -835,7 +835,7 @@ test("buildStaticProviderEntry: emits modalities.input from raw.input_modalities
 });
 
 test("buildStaticProviderEntry: never emits limit.input (OC SDK rejects it)", () => {
-  const resolved = resolveOmniRoutePluginOptions({ providerId: "omniroute" });
+  const resolved = resolveCheapRouterPluginOptions({ providerId: "cheaprouter" });
   const block = buildStaticProviderEntry(
     [MODEL_CLAUDE],
     [],
@@ -850,7 +850,7 @@ test("buildStaticProviderEntry: never emits limit.input (OC SDK rejects it)", ()
 });
 
 test("buildStaticProviderEntry: emits cost when enrichment carries pricing", () => {
-  const resolved = resolveOmniRoutePluginOptions({ providerId: "omniroute" });
+  const resolved = resolveCheapRouterPluginOptions({ providerId: "cheaprouter" });
   const enrichment = new Map([
     [
       "claude-sonnet-4-6",
@@ -879,8 +879,8 @@ test("buildStaticProviderEntry: emits cost when enrichment carries pricing", () 
 });
 
 test("buildStaticProviderEntry: emits release_date when raw carries it; omits when null", () => {
-  const resolved = resolveOmniRoutePluginOptions({ providerId: "omniroute" });
-  const withDate: OmniRouteRawModelEntry = {
+  const resolved = resolveCheapRouterPluginOptions({ providerId: "cheaprouter" });
+  const withDate: CheapRouterRawModelEntry = {
     ...MODEL_CLAUDE,
     id: "claude-with-date",
     release_date: "2026-02-19",
@@ -897,8 +897,8 @@ test("buildStaticProviderEntry: emits release_date when raw carries it; omits wh
 });
 
 test("buildStaticProviderEntry: combo modalities = intersection of members (LCD)", () => {
-  const resolved = resolveOmniRoutePluginOptions({ providerId: "omniroute" });
-  const TEXT_ONLY: OmniRouteRawModelEntry = {
+  const resolved = resolveCheapRouterPluginOptions({ providerId: "cheaprouter" });
+  const TEXT_ONLY: CheapRouterRawModelEntry = {
     id: "text-only",
     capabilities: { tool_calling: true, reasoning: false, vision: false, thinking: false },
     context_length: 100_000,
@@ -930,11 +930,11 @@ test("buildStaticProviderEntry: combo modalities = intersection of members (LCD)
 });
 
 // ────────────────────────────────────────────────────────────────────────────
-// Integration: OmniRoutePlugin factory now exposes config hook
+// Integration: CheapRouterPlugin factory now exposes config hook
 // ────────────────────────────────────────────────────────────────────────────
 
-test("OmniRoutePlugin factory exposes config hook alongside auth + provider", async () => {
-  const hooks = await OmniRoutePlugin({} as never, { providerId: "omniroute" });
+test("CheapRouterPlugin factory exposes config hook alongside auth + provider", async () => {
+  const hooks = await CheapRouterPlugin({} as never, { providerId: "cheaprouter" });
   assert.equal(typeof hooks.config, "function", "config hook present");
   assert.ok(hooks.auth, "auth hook present");
   assert.ok(hooks.provider, "provider hook present");
@@ -946,14 +946,14 @@ test("OmniRoutePlugin factory exposes config hook alongside auth + provider", as
 
 test("config: auth.json entry of wrong type (oauth) → no-op", async () => {
   const readAuthJson = stubReadAuthJson({
-    "opencode-omniroute": { type: "oauth", refresh: "r", access: "a", expires: 0 },
+    "opencode-cheaprouter": { type: "oauth", refresh: "r", access: "a", expires: 0 },
   });
   const fetcher = stubModelsFetcher([MODEL_CLAUDE]);
   const combosFetcher = stubCombosFetcher([]);
   const logger = captureWarn();
 
-  const hook = createOmniRouteConfigHook(
-    { providerId: "omniroute", baseURL: "https://or.example/v1" },
+  const hook = createCheapRouterConfigHook(
+    { providerId: "cheaprouter", baseURL: "https://or.example/v1" },
     { readAuthJson, fetcher, combosFetcher, logger }
   );
   const input = makeInput();
@@ -969,8 +969,8 @@ test("config: readAuthJson throws → treat as missing file (silent fallback)", 
   const combosFetcher = stubCombosFetcher([]);
   const logger = captureWarn();
 
-  const hook = createOmniRouteConfigHook(
-    { providerId: "omniroute", baseURL: "https://or.example/v1" },
+  const hook = createCheapRouterConfigHook(
+    { providerId: "cheaprouter", baseURL: "https://or.example/v1" },
     { readAuthJson, fetcher, combosFetcher, logger }
   );
   const input = makeInput();
@@ -983,14 +983,14 @@ test("config: readAuthJson throws → treat as missing file (silent fallback)", 
 
 test("config: initialises input.provider when undefined", async () => {
   const readAuthJson = stubReadAuthJson({
-    "opencode-omniroute": { type: "api", key: "sk", baseURL: "https://or.example/v1" },
+    "opencode-cheaprouter": { type: "api", key: "sk", baseURL: "https://or.example/v1" },
   });
   const fetcher = stubModelsFetcher([MODEL_CLAUDE]);
   const combosFetcher = stubCombosFetcher([]);
   const logger = captureWarn();
 
-  const hook = createOmniRouteConfigHook(
-    { providerId: "omniroute" },
+  const hook = createCheapRouterConfigHook(
+    { providerId: "cheaprouter" },
     { readAuthJson, fetcher, combosFetcher, logger }
   );
   // input with NO provider field at all
@@ -998,7 +998,7 @@ test("config: initialises input.provider when undefined", async () => {
   await hook(input);
   const provider = (input as { provider?: Record<string, unknown> }).provider;
   assert.ok(provider, "provider bag initialised");
-  assert.ok(provider!["opencode-omniroute"]);
+  assert.ok(provider!["opencode-cheaprouter"]);
 });
 
 // ────────────────────────────────────────────────────────────────────────────
@@ -1008,27 +1008,27 @@ test("config: initialises input.provider when undefined", async () => {
 
 test("config: enrichment fetched + name overlaid on raw-model entries", async () => {
   const readAuthJson = stubReadAuthJson({
-    "opencode-omniroute": { type: "api", key: "sk-test", baseURL: "https://or.example/v1" },
+    "opencode-cheaprouter": { type: "api", key: "sk-test", baseURL: "https://or.example/v1" },
   });
   const fetcher = stubModelsFetcher([MODEL_CLAUDE, MODEL_GEMINI]);
   const combosFetcher = stubCombosFetcher([COMBO_CLAUDE_TIER]);
   const enrichmentFetcher = stubEnrichmentFetcher(
-    new Map<string, OmniRouteEnrichmentEntry>([
+    new Map<string, CheapRouterEnrichmentEntry>([
       ["claude-sonnet-4-6", { name: "Claude Sonnet 4.6" }],
       ["gemini-3-flash", { name: "Gemini 3 Flash" }],
     ])
   );
   const logger = captureWarn();
 
-  const hook = createOmniRouteConfigHook(
-    { providerId: "omniroute" },
+  const hook = createCheapRouterConfigHook(
+    { providerId: "cheaprouter" },
     { readAuthJson, fetcher, combosFetcher, enrichmentFetcher, logger }
   );
   const input = makeInput();
   await hook(input);
 
-  const entry = (input as { provider: Record<string, OmniRouteStaticProviderEntry> }).provider[
-    "opencode-omniroute"
+  const entry = (input as { provider: Record<string, CheapRouterStaticProviderEntry> }).provider[
+    "opencode-cheaprouter"
   ];
   assert.ok(entry);
   assert.equal(entry.models["claude-sonnet-4-6"].name, "Claude Sonnet 4.6");
@@ -1040,26 +1040,26 @@ test("config: enrichment fetched + name overlaid on raw-model entries", async ()
 
 test("config: features.enrichment=false skips enrichment fetch + keeps raw-id names", async () => {
   const readAuthJson = stubReadAuthJson({
-    "opencode-omniroute": { type: "api", key: "sk-test", baseURL: "https://or.example/v1" },
+    "opencode-cheaprouter": { type: "api", key: "sk-test", baseURL: "https://or.example/v1" },
   });
   const fetcher = stubModelsFetcher([MODEL_CLAUDE]);
   const combosFetcher = stubCombosFetcher([]);
   const enrichmentFetcher = stubEnrichmentFetcher(
-    new Map<string, OmniRouteEnrichmentEntry>([
+    new Map<string, CheapRouterEnrichmentEntry>([
       ["claude-sonnet-4-6", { name: "Claude Sonnet 4.6" }],
     ])
   );
   const logger = captureWarn();
 
-  const hook = createOmniRouteConfigHook(
-    { providerId: "omniroute", features: { enrichment: false } },
+  const hook = createCheapRouterConfigHook(
+    { providerId: "cheaprouter", features: { enrichment: false } },
     { readAuthJson, fetcher, combosFetcher, enrichmentFetcher, logger }
   );
   const input = makeInput();
   await hook(input);
 
-  const entry = (input as { provider: Record<string, OmniRouteStaticProviderEntry> }).provider[
-    "opencode-omniroute"
+  const entry = (input as { provider: Record<string, CheapRouterStaticProviderEntry> }).provider[
+    "opencode-cheaprouter"
   ];
   assert.ok(entry);
   assert.equal(enrichmentFetcher.callCount(), 0, "enrichment fetch suppressed by feature flag");
@@ -1068,22 +1068,22 @@ test("config: features.enrichment=false skips enrichment fetch + keeps raw-id na
 
 test("config: enrichment fetcher throws → soft-fail (warn + raw-id static catalog)", async () => {
   const readAuthJson = stubReadAuthJson({
-    "opencode-omniroute": { type: "api", key: "sk-test", baseURL: "https://or.example/v1" },
+    "opencode-cheaprouter": { type: "api", key: "sk-test", baseURL: "https://or.example/v1" },
   });
   const fetcher = stubModelsFetcher([MODEL_CLAUDE]);
   const combosFetcher = stubCombosFetcher([]);
   const enrichmentFetcher = throwingEnrichmentFetcher();
   const logger = captureWarn();
 
-  const hook = createOmniRouteConfigHook(
-    { providerId: "omniroute" },
+  const hook = createCheapRouterConfigHook(
+    { providerId: "cheaprouter" },
     { readAuthJson, fetcher, combosFetcher, enrichmentFetcher, logger }
   );
   const input = makeInput();
   await hook(input);
 
-  const entry = (input as { provider: Record<string, OmniRouteStaticProviderEntry> }).provider[
-    "opencode-omniroute"
+  const entry = (input as { provider: Record<string, CheapRouterStaticProviderEntry> }).provider[
+    "opencode-cheaprouter"
   ];
   assert.ok(entry, "static block still published on enrichment failure");
   assert.equal(entry.models["claude-sonnet-4-6"].name, "claude-sonnet-4-6", "raw id retained");
@@ -1094,32 +1094,32 @@ test("config: enrichment fetcher throws → soft-fail (warn + raw-id static cata
   );
 });
 
-function stubProvidersFetcher(payload: OmniRouteProviderConnection[]): OmniRouteProvidersFetcher & {
+function stubProvidersFetcher(payload: CheapRouterProviderConnection[]): CheapRouterProvidersFetcher & {
   callCount: () => number;
 } {
   let n = 0;
-  const f: OmniRouteProvidersFetcher = async () => {
+  const f: CheapRouterProvidersFetcher = async () => {
     n++;
     return payload;
   };
   return Object.assign(f, { callCount: () => n });
 }
 
-function throwingProvidersFetcher(): OmniRouteProvidersFetcher & { callCount: () => number } {
+function throwingProvidersFetcher(): CheapRouterProvidersFetcher & { callCount: () => number } {
   let n = 0;
-  const f: OmniRouteProvidersFetcher = async () => {
+  const f: CheapRouterProvidersFetcher = async () => {
     n++;
     throw new Error("ETIMEDOUT");
   };
   return Object.assign(f, { callCount: () => n });
 }
 
-const MODEL_CC_OPUS: OmniRouteRawModelEntry = {
+const MODEL_CC_OPUS: CheapRouterRawModelEntry = {
   id: "cc/claude-opus-4-7",
   capabilities: { tool_calling: true, reasoning: true, temperature: true },
   context_length: 200_000,
 };
-const MODEL_NV_LLAMA: OmniRouteRawModelEntry = {
+const MODEL_NV_LLAMA: CheapRouterRawModelEntry = {
   id: "nvidia/llama-3-70b",
   capabilities: { tool_calling: true, temperature: true },
   context_length: 128_000,
@@ -1127,7 +1127,7 @@ const MODEL_NV_LLAMA: OmniRouteRawModelEntry = {
 
 test("config: usableOnly=false → no filter (existing behavior)", async () => {
   const readAuthJson = stubReadAuthJson({
-    "opencode-omniroute": { type: "api", key: "sk-test", baseURL: "https://or.example/v1" },
+    "opencode-cheaprouter": { type: "api", key: "sk-test", baseURL: "https://or.example/v1" },
   });
   const fetcher = stubModelsFetcher([MODEL_CC_OPUS, MODEL_NV_LLAMA]);
   const combosFetcher = stubCombosFetcher([]);
@@ -1135,22 +1135,22 @@ test("config: usableOnly=false → no filter (existing behavior)", async () => {
     { id: "c1", provider: "claude", isActive: true, testStatus: "active" },
   ]);
   const enrichmentFetcher = stubEnrichmentFetcher(
-    new Map<string, OmniRouteEnrichmentEntry>([
+    new Map<string, CheapRouterEnrichmentEntry>([
       ["cc/claude-opus-4-7", { name: "Claude Opus 4.7" }],
       ["nvidia/llama-3-70b", { name: "Llama 3 70B" }],
     ])
   );
 
-  const hook = createOmniRouteConfigHook(
-    { providerId: "omniroute", baseURL: "https://or.example/v1" },
+  const hook = createCheapRouterConfigHook(
+    { providerId: "cheaprouter", baseURL: "https://or.example/v1" },
     { readAuthJson, fetcher, combosFetcher, enrichmentFetcher, providersFetcher }
   );
 
   const input = makeInput();
   await hook(input);
 
-  const entry = (input as { provider: Record<string, OmniRouteStaticProviderEntry> }).provider[
-    "opencode-omniroute"
+  const entry = (input as { provider: Record<string, CheapRouterStaticProviderEntry> }).provider[
+    "opencode-cheaprouter"
   ];
   assert.ok(entry.models["cc/claude-opus-4-7"], "claude kept");
   assert.ok(entry.models["nvidia/llama-3-70b"], "nvidia kept (filter off)");
@@ -1159,7 +1159,7 @@ test("config: usableOnly=false → no filter (existing behavior)", async () => {
 
 test("config: usableOnly=true → drops models for non-usable providers, keeps usable + unknown", async () => {
   const readAuthJson = stubReadAuthJson({
-    "opencode-omniroute": { type: "api", key: "sk-test", baseURL: "https://or.example/v1" },
+    "opencode-cheaprouter": { type: "api", key: "sk-test", baseURL: "https://or.example/v1" },
   });
   const fetcher = stubModelsFetcher([
     MODEL_CC_OPUS,
@@ -1179,7 +1179,7 @@ test("config: usableOnly=true → drops models for non-usable providers, keeps u
     { id: "c2", provider: "nvidia", isActive: true, testStatus: "error" },
   ]);
   const enrichmentFetcher = stubEnrichmentFetcher(
-    new Map<string, OmniRouteEnrichmentEntry>([
+    new Map<string, CheapRouterEnrichmentEntry>([
       [
         "cc/claude-opus-4-7",
         { name: "Claude Opus 4.7", providerAlias: "cc", providerCanonical: "claude" },
@@ -1191,16 +1191,16 @@ test("config: usableOnly=true → drops models for non-usable providers, keeps u
     ])
   );
 
-  const hook = createOmniRouteConfigHook(
-    { providerId: "omniroute", baseURL: "https://or.example/v1", features: { usableOnly: true } },
+  const hook = createCheapRouterConfigHook(
+    { providerId: "cheaprouter", baseURL: "https://or.example/v1", features: { usableOnly: true } },
     { readAuthJson, fetcher, combosFetcher, enrichmentFetcher, providersFetcher }
   );
 
   const input = makeInput();
   await hook(input);
 
-  const entry = (input as { provider: Record<string, OmniRouteStaticProviderEntry> }).provider[
-    "opencode-omniroute"
+  const entry = (input as { provider: Record<string, CheapRouterStaticProviderEntry> }).provider[
+    "opencode-cheaprouter"
   ];
   assert.ok(entry.models["cc/claude-opus-4-7"], "claude kept (active)");
   assert.equal(entry.models["nvidia/llama-3-70b"], undefined, "nvidia dropped (error status)");
@@ -1210,29 +1210,29 @@ test("config: usableOnly=true → drops models for non-usable providers, keeps u
 
 test("config: usableOnly=true + providers fetch fails → soft-fail keeps everything", async () => {
   const readAuthJson = stubReadAuthJson({
-    "opencode-omniroute": { type: "api", key: "sk-test", baseURL: "https://or.example/v1" },
+    "opencode-cheaprouter": { type: "api", key: "sk-test", baseURL: "https://or.example/v1" },
   });
   const fetcher = stubModelsFetcher([MODEL_CC_OPUS, MODEL_NV_LLAMA]);
   const combosFetcher = stubCombosFetcher([]);
   const providersFetcher = throwingProvidersFetcher();
   const enrichmentFetcher = stubEnrichmentFetcher(
-    new Map<string, OmniRouteEnrichmentEntry>([
+    new Map<string, CheapRouterEnrichmentEntry>([
       ["cc/claude-opus-4-7", { name: "Claude Opus 4.7" }],
       ["nvidia/llama-3-70b", { name: "Llama 3 70B" }],
     ])
   );
   const logger = captureWarn();
 
-  const hook = createOmniRouteConfigHook(
-    { providerId: "omniroute", baseURL: "https://or.example/v1", features: { usableOnly: true } },
+  const hook = createCheapRouterConfigHook(
+    { providerId: "cheaprouter", baseURL: "https://or.example/v1", features: { usableOnly: true } },
     { readAuthJson, fetcher, combosFetcher, enrichmentFetcher, providersFetcher, logger }
   );
 
   const input = makeInput();
   await hook(input);
 
-  const entry = (input as { provider: Record<string, OmniRouteStaticProviderEntry> }).provider[
-    "opencode-omniroute"
+  const entry = (input as { provider: Record<string, CheapRouterStaticProviderEntry> }).provider[
+    "opencode-cheaprouter"
   ];
   assert.ok(entry.models["cc/claude-opus-4-7"]);
   assert.ok(entry.models["nvidia/llama-3-70b"], "soft-fail keeps both");
@@ -1244,7 +1244,7 @@ test("config: usableOnly=true + providers fetch fails → soft-fail keeps everyt
 
 test("config: diskCache hydrates stale snapshot when /v1/models throws", async () => {
   const readAuthJson = stubReadAuthJson({
-    "opencode-omniroute": { type: "api", key: "sk-test", baseURL: "https://or.example/v1" },
+    "opencode-cheaprouter": { type: "api", key: "sk-test", baseURL: "https://or.example/v1" },
   });
   const fetcher = throwingModelsFetcher();
   const combosFetcher = stubCombosFetcher([]);
@@ -1266,8 +1266,8 @@ test("config: diskCache hydrates stale snapshot when /v1/models throws", async (
       writes++;
     };
 
-  const hook = createOmniRouteConfigHook(
-    { providerId: "omniroute", features: { diskCache: true } },
+  const hook = createCheapRouterConfigHook(
+    { providerId: "cheaprouter", features: { diskCache: true } },
     {
       readAuthJson,
       fetcher,
@@ -1281,8 +1281,8 @@ test("config: diskCache hydrates stale snapshot when /v1/models throws", async (
   const input = makeInput();
   await hook(input);
 
-  const entry = (input as { provider: Record<string, OmniRouteStaticProviderEntry> }).provider[
-    "opencode-omniroute"
+  const entry = (input as { provider: Record<string, CheapRouterStaticProviderEntry> }).provider[
+    "opencode-cheaprouter"
   ];
   assert.ok(entry.models["claude-sonnet-4-6"], "stale snapshot hydrated into static block");
   assert.equal(
@@ -1321,7 +1321,7 @@ function emptyThenSnapshotReader(
 
 test("config: stale-fallback warning reports the disk snapshot age in hours", async () => {
   const readAuthJson = stubReadAuthJson({
-    "opencode-omniroute": { type: "api", key: "sk-test", baseURL: "https://or.example/v1" },
+    "opencode-cheaprouter": { type: "api", key: "sk-test", baseURL: "https://or.example/v1" },
   });
   const fetcher = throwingModelsFetcher();
   const combosFetcher = stubCombosFetcher([]);
@@ -1337,8 +1337,8 @@ test("config: stale-fallback warning reports the disk snapshot age in hours", as
     writtenAt,
   });
 
-  const hook = createOmniRouteConfigHook(
-    { providerId: "omniroute", features: { diskCache: true } },
+  const hook = createCheapRouterConfigHook(
+    { providerId: "cheaprouter", features: { diskCache: true } },
     { readAuthJson, fetcher, combosFetcher, diskSnapshotReader, logger }
   );
 
@@ -1352,7 +1352,7 @@ test("config: stale-fallback warning reports the disk snapshot age in hours", as
 
 test('config: stale-fallback warning falls back to "unknown" age without writtenAt', async () => {
   const readAuthJson = stubReadAuthJson({
-    "opencode-omniroute": { type: "api", key: "sk-test", baseURL: "https://or.example/v1" },
+    "opencode-cheaprouter": { type: "api", key: "sk-test", baseURL: "https://or.example/v1" },
   });
   const fetcher = throwingModelsFetcher();
   const combosFetcher = stubCombosFetcher([]);
@@ -1366,8 +1366,8 @@ test('config: stale-fallback warning falls back to "unknown" age without written
     rawConnections: [],
   });
 
-  const hook = createOmniRouteConfigHook(
-    { providerId: "omniroute", features: { diskCache: true } },
+  const hook = createCheapRouterConfigHook(
+    { providerId: "cheaprouter", features: { diskCache: true } },
     { readAuthJson, fetcher, combosFetcher, diskSnapshotReader, logger }
   );
 
@@ -1383,7 +1383,7 @@ test('config: stale-fallback warning falls back to "unknown" age without written
 
 test("config: diskCacheMaxAgeMs escalates the fallback log but still serves the snapshot", async () => {
   const readAuthJson = stubReadAuthJson({
-    "opencode-omniroute": { type: "api", key: "sk-test", baseURL: "https://or.example/v1" },
+    "opencode-cheaprouter": { type: "api", key: "sk-test", baseURL: "https://or.example/v1" },
   });
   const fetcher = throwingModelsFetcher();
   const combosFetcher = stubCombosFetcher([]);
@@ -1407,8 +1407,8 @@ test("config: diskCacheMaxAgeMs escalates the fallback log but still serves the 
     writtenAt,
   });
 
-  const hook = createOmniRouteConfigHook(
-    { providerId: "omniroute", features: { diskCache: true, diskCacheMaxAgeMs: maxAgeMs } },
+  const hook = createCheapRouterConfigHook(
+    { providerId: "cheaprouter", features: { diskCache: true, diskCacheMaxAgeMs: maxAgeMs } },
     {
       readAuthJson,
       fetcher,
@@ -1421,8 +1421,8 @@ test("config: diskCacheMaxAgeMs escalates the fallback log but still serves the 
   const input = makeInput();
   await hook(input);
 
-  const entry = (input as { provider: Record<string, OmniRouteStaticProviderEntry> }).provider[
-    "opencode-omniroute"
+  const entry = (input as { provider: Record<string, CheapRouterStaticProviderEntry> }).provider[
+    "opencode-cheaprouter"
   ];
   assert.ok(entry.models["claude-sonnet-4-6"], "snapshot past the bound is still served");
   assert.ok(
@@ -1440,24 +1440,24 @@ test("config: diskCacheMaxAgeMs escalates the fallback log but still serves the 
 
 test("config: cached rawEnrichment from earlier provider hook is reused (no refetch)", async () => {
   const readAuthJson = stubReadAuthJson({
-    "opencode-omniroute": { type: "api", key: "sk-shared", baseURL: "https://or.example/v1" },
+    "opencode-cheaprouter": { type: "api", key: "sk-shared", baseURL: "https://or.example/v1" },
   });
   const fetcher = stubModelsFetcher([MODEL_CLAUDE]);
   const combosFetcher = stubCombosFetcher([]);
   const enrichmentFetcher = stubEnrichmentFetcher(
-    new Map<string, OmniRouteEnrichmentEntry>([
+    new Map<string, CheapRouterEnrichmentEntry>([
       ["claude-sonnet-4-6", { name: "Claude Sonnet 4.6" }],
     ])
   );
-  const sharedCache: OmniRouteFetchCache = new Map();
+  const sharedCache: CheapRouterFetchCache = new Map();
   const logger = captureWarn();
 
-  const providerHook = createOmniRouteProviderHook(
-    { providerId: "omniroute", baseURL: "https://or.example/v1", modelCacheTtl: 60_000 },
+  const providerHook = createCheapRouterProviderHook(
+    { providerId: "cheaprouter", baseURL: "https://or.example/v1", modelCacheTtl: 60_000 },
     { fetcher, combosFetcher, enrichmentFetcher, cache: sharedCache }
   );
-  const configHook = createOmniRouteConfigHook(
-    { providerId: "omniroute", baseURL: "https://or.example/v1", modelCacheTtl: 60_000 },
+  const configHook = createCheapRouterConfigHook(
+    { providerId: "cheaprouter", baseURL: "https://or.example/v1", modelCacheTtl: 60_000 },
     { readAuthJson, fetcher, combosFetcher, enrichmentFetcher, cache: sharedCache, logger }
   );
 
@@ -1472,8 +1472,8 @@ test("config: cached rawEnrichment from earlier provider hook is reused (no refe
   await configHook(input);
   assert.equal(enrichmentFetcher.callCount(), 1, "config reused cached enrichment");
 
-  const entry = (input as { provider: Record<string, OmniRouteStaticProviderEntry> }).provider[
-    "opencode-omniroute"
+  const entry = (input as { provider: Record<string, CheapRouterStaticProviderEntry> }).provider[
+    "opencode-cheaprouter"
   ];
   assert.equal(entry.models["claude-sonnet-4-6"].name, "Claude Sonnet 4.6");
 });
@@ -1486,12 +1486,12 @@ test("config: cached rawEnrichment from earlier provider hook is reused (no refe
 
 test("config: providerTag (default-on) prepends '<provider> - ' to enriched raw-model names", async () => {
   const readAuthJson = stubReadAuthJson({
-    "opencode-omniroute": { type: "api", key: "sk-test", baseURL: "https://or.example/v1" },
+    "opencode-cheaprouter": { type: "api", key: "sk-test", baseURL: "https://or.example/v1" },
   });
   const fetcher = stubModelsFetcher([MODEL_CLAUDE, MODEL_GEMINI]);
   const combosFetcher = stubCombosFetcher([COMBO_CLAUDE_TIER]);
   const enrichmentFetcher = stubEnrichmentFetcher(
-    new Map<string, OmniRouteEnrichmentEntry>([
+    new Map<string, CheapRouterEnrichmentEntry>([
       [
         "claude-sonnet-4-6",
         {
@@ -1514,15 +1514,15 @@ test("config: providerTag (default-on) prepends '<provider> - ' to enriched raw-
   );
   const logger = captureWarn();
 
-  const hook = createOmniRouteConfigHook(
-    { providerId: "omniroute" },
+  const hook = createCheapRouterConfigHook(
+    { providerId: "cheaprouter" },
     { readAuthJson, fetcher, combosFetcher, enrichmentFetcher, logger }
   );
   const input = makeInput();
   await hook(input);
 
-  const entry = (input as { provider: Record<string, OmniRouteStaticProviderEntry> }).provider[
-    "opencode-omniroute"
+  const entry = (input as { provider: Record<string, CheapRouterStaticProviderEntry> }).provider[
+    "opencode-cheaprouter"
   ];
   assert.ok(entry);
   assert.equal(entry.models["claude-sonnet-4-6"].name, "Claude - Claude Sonnet 4.6");
@@ -1533,26 +1533,26 @@ test("config: providerTag (default-on) prepends '<provider> - ' to enriched raw-
 
 test("config: providerTag=false suppresses the suffix", async () => {
   const readAuthJson = stubReadAuthJson({
-    "opencode-omniroute": { type: "api", key: "sk-test", baseURL: "https://or.example/v1" },
+    "opencode-cheaprouter": { type: "api", key: "sk-test", baseURL: "https://or.example/v1" },
   });
   const fetcher = stubModelsFetcher([MODEL_CLAUDE]);
   const combosFetcher = stubCombosFetcher([]);
   const enrichmentFetcher = stubEnrichmentFetcher(
-    new Map<string, OmniRouteEnrichmentEntry>([
+    new Map<string, CheapRouterEnrichmentEntry>([
       ["claude-sonnet-4-6", { name: "Claude Sonnet 4.6", providerDisplayName: "Claude" }],
     ])
   );
   const logger = captureWarn();
 
-  const hook = createOmniRouteConfigHook(
-    { providerId: "omniroute", features: { providerTag: false } },
+  const hook = createCheapRouterConfigHook(
+    { providerId: "cheaprouter", features: { providerTag: false } },
     { readAuthJson, fetcher, combosFetcher, enrichmentFetcher, logger }
   );
   const input = makeInput();
   await hook(input);
 
-  const entry = (input as { provider: Record<string, OmniRouteStaticProviderEntry> }).provider[
-    "opencode-omniroute"
+  const entry = (input as { provider: Record<string, CheapRouterStaticProviderEntry> }).provider[
+    "opencode-cheaprouter"
   ];
   assert.equal(
     entry.models["claude-sonnet-4-6"].name,
@@ -1563,91 +1563,91 @@ test("config: providerTag=false suppresses the suffix", async () => {
 
 test("config: providerTag falls back to UPPER(alias) when providerDisplayName missing", async () => {
   const readAuthJson = stubReadAuthJson({
-    "opencode-omniroute": { type: "api", key: "sk-test", baseURL: "https://or.example/v1" },
+    "opencode-cheaprouter": { type: "api", key: "sk-test", baseURL: "https://or.example/v1" },
   });
   const fetcher = stubModelsFetcher([MODEL_CLAUDE]);
   const combosFetcher = stubCombosFetcher([]);
   // Enrichment has the friendly name but NO providerDisplayName — e.g.
-  // a slot OmniRoute hasn't curated a human label for yet. We still
+  // a slot CheapRouter hasn't curated a human label for yet. We still
   // have the alias though, so the prefix uses UPPER(alias) = "CC".
   const enrichmentFetcher = stubEnrichmentFetcher(
-    new Map<string, OmniRouteEnrichmentEntry>([
+    new Map<string, CheapRouterEnrichmentEntry>([
       ["claude-sonnet-4-6", { name: "Claude Sonnet 4.6", providerAlias: "cc" }],
     ])
   );
   const logger = captureWarn();
 
-  const hook = createOmniRouteConfigHook(
-    { providerId: "omniroute" },
+  const hook = createCheapRouterConfigHook(
+    { providerId: "cheaprouter" },
     { readAuthJson, fetcher, combosFetcher, enrichmentFetcher, logger }
   );
   const input = makeInput();
   await hook(input);
 
-  const entry = (input as { provider: Record<string, OmniRouteStaticProviderEntry> }).provider[
-    "opencode-omniroute"
+  const entry = (input as { provider: Record<string, CheapRouterStaticProviderEntry> }).provider[
+    "opencode-cheaprouter"
   ];
   assert.equal(entry.models["claude-sonnet-4-6"].name, "CC - Claude Sonnet 4.6");
 });
 
 test("config: providerTag skipped entirely when neither providerDisplayName nor providerAlias set", async () => {
   const readAuthJson = stubReadAuthJson({
-    "opencode-omniroute": { type: "api", key: "sk-test", baseURL: "https://or.example/v1" },
+    "opencode-cheaprouter": { type: "api", key: "sk-test", baseURL: "https://or.example/v1" },
   });
   const fetcher = stubModelsFetcher([MODEL_CLAUDE]);
   const combosFetcher = stubCombosFetcher([]);
   // No metadata at all — defensive case, e.g. legacy enrichment payload.
   const enrichmentFetcher = stubEnrichmentFetcher(
-    new Map<string, OmniRouteEnrichmentEntry>([
+    new Map<string, CheapRouterEnrichmentEntry>([
       ["claude-sonnet-4-6", { name: "Claude Sonnet 4.6" }],
     ])
   );
   const logger = captureWarn();
 
-  const hook = createOmniRouteConfigHook(
-    { providerId: "omniroute" },
+  const hook = createCheapRouterConfigHook(
+    { providerId: "cheaprouter" },
     { readAuthJson, fetcher, combosFetcher, enrichmentFetcher, logger }
   );
   const input = makeInput();
   await hook(input);
 
-  const entry = (input as { provider: Record<string, OmniRouteStaticProviderEntry> }).provider[
-    "opencode-omniroute"
+  const entry = (input as { provider: Record<string, CheapRouterStaticProviderEntry> }).provider[
+    "opencode-cheaprouter"
   ];
   assert.equal(entry.models["claude-sonnet-4-6"].name, "Claude Sonnet 4.6");
 });
 
 test("config: providerTag is idempotent — second hook call doesn't double-suffix", async () => {
   const readAuthJson = stubReadAuthJson({
-    "opencode-omniroute": { type: "api", key: "sk-test", baseURL: "https://or.example/v1" },
+    "opencode-cheaprouter": { type: "api", key: "sk-test", baseURL: "https://or.example/v1" },
   });
   const fetcher = stubModelsFetcher([MODEL_CLAUDE]);
   const combosFetcher = stubCombosFetcher([]);
   const enrichmentFetcher = stubEnrichmentFetcher(
-    new Map<string, OmniRouteEnrichmentEntry>([
+    new Map<string, CheapRouterEnrichmentEntry>([
       ["claude-sonnet-4-6", { name: "Claude Sonnet 4.6", providerDisplayName: "Claude" }],
     ])
   );
   const logger = captureWarn();
   const sharedCache = new Map();
 
-  const hook = createOmniRouteConfigHook(
-    { providerId: "omniroute", modelCacheTtl: 60_000 },
+  const hook = createCheapRouterConfigHook(
+    { providerId: "cheaprouter", modelCacheTtl: 60_000 },
     { readAuthJson, fetcher, combosFetcher, enrichmentFetcher, cache: sharedCache, logger }
   );
 
   const inputA = makeInput();
   await hook(inputA);
-  const entryA = (inputA as { provider: Record<string, OmniRouteStaticProviderEntry> }).provider[
-    "opencode-omniroute"
+  const entryA = (inputA as { provider: Record<string, CheapRouterStaticProviderEntry> }).provider[
+    "opencode-cheaprouter"
   ];
   assert.equal(entryA.models["claude-sonnet-4-6"].name, "Claude - Claude Sonnet 4.6");
 
   // Second invocation (cache hit) — name must still be single-suffixed.
   const inputB = makeInput();
   await hook(inputB);
-  const entryB = (inputB as { provider: Record<string, OmniRouteStaticProviderEntry> }).provider[
-    "opencode-omniroute"
+  const entryB = (inputB as { provider: Record<string, CheapRouterStaticProviderEntry> }).provider[
+    "opencode-cheaprouter"
   ];
   assert.equal(entryB.models["claude-sonnet-4-6"].name, "Claude - Claude Sonnet 4.6");
 });
@@ -1658,8 +1658,8 @@ test("config: providerTag is idempotent — second hook call doesn't double-suff
 // ────────────────────────────────────────────────────────────────────────────
 
 test("buildStaticProviderEntry: nested combo-ref context is the bottleneck across the graph", () => {
-  const resolved = resolveOmniRoutePluginOptions({ providerId: "omniroute" });
-  const rawModels: OmniRouteRawModelEntry[] = [
+  const resolved = resolveCheapRouterPluginOptions({ providerId: "cheaprouter" });
+  const rawModels: CheapRouterRawModelEntry[] = [
     {
       id: "raw-big",
       context_length: 200_000,
@@ -1677,7 +1677,7 @@ test("buildStaticProviderEntry: nested combo-ref context is the bottleneck acros
       output_modalities: ["text"],
     },
   ];
-  const rawCombos: OmniRouteRawCombo[] = [
+  const rawCombos: CheapRouterRawCombo[] = [
     {
       id: "tiny-combo",
       name: "TinyCombo",

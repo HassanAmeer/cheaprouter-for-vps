@@ -1,10 +1,10 @@
 /**
- * OpenCode provider plugin for OmniRoute AI Gateway.
+ * OpenCode provider plugin for CheapRouter AI Gateway.
  *
  * Generates an OpenCode-compatible provider object that points to a running
- * OmniRoute instance. The output follows the OpenCode config schema
+ * CheapRouter instance. The output follows the OpenCode config schema
  * (https://opencode.ai/config.json) and delegates the runtime to
- * `@ai-sdk/openai-compatible` so OpenCode can drive any OmniRoute-exposed
+ * `@ai-sdk/openai-compatible` so OpenCode can drive any CheapRouter-exposed
  * model through its standard OpenAI-compatible client.
  *
  * Two ways to consume the helper:
@@ -12,40 +12,40 @@
  *  1. As code, when you build your own opencode.json programmatically:
  *
  *     ```ts
- *     import { buildOmniRouteOpenCodeConfig } from "@omniroute/opencode-provider";
- *     const config = buildOmniRouteOpenCodeConfig({
+ *     import { buildCheapRouterOpenCodeConfig } from "@cheaprouter/opencode-provider";
+ *     const config = buildCheapRouterOpenCodeConfig({
  *       baseURL: "http://localhost:20128",
- *       apiKey: "sk_omniroute",
+ *       apiKey: "sk_cheaprouter",
  *     });
- *     // config -> { $schema, provider: { omniroute: { npm, name, options, models } } }
+ *     // config -> { $schema, provider: { cheaprouter: { npm, name, options, models } } }
  *     ```
  *
  *  2. As a single-provider entry to merge into an existing opencode.json:
  *
  *     ```ts
- *     import { createOmniRouteProvider } from "@omniroute/opencode-provider";
- *     const provider = createOmniRouteProvider({ baseURL, apiKey });
- *     // provider -> the value to place under provider.omniroute in opencode.json
+ *     import { createCheapRouterProvider } from "@cheaprouter/opencode-provider";
+ *     const provider = createCheapRouterProvider({ baseURL, apiKey });
+ *     // provider -> the value to place under provider.cheaprouter in opencode.json
  *     ```
  *
  * Note: `baseURL` accepts both `http://host:port` and `http://host:port/v1`.
  * The helper normalises trailing slashes / `/v1` so you never get `/v1/v1`.
  */
 
-export const OMNIROUTE_PROVIDER_KEY = "omniroute" as const;
-export const OMNIROUTE_PROVIDER_NPM = "@ai-sdk/openai-compatible" as const;
+export const CHEAPROUTER_PROVIDER_KEY = "cheaprouter" as const;
+export const CHEAPROUTER_PROVIDER_NPM = "@ai-sdk/openai-compatible" as const;
 export const OPENCODE_CONFIG_SCHEMA = "https://opencode.ai/config.json" as const;
 
 /**
  * Default catalog of models surfaced to OpenCode when the caller does not
  * supply an explicit `models` list.
  *
- * Curated set covering the most commonly deployed OmniRoute models. Synced
- * with the Alph4d0g/opencode-omniroute-auth OMNIROUTE_DEFAULT_MODELS constant
- * (https://github.com/Alph4d0g/opencode-omniroute-auth, MIT) and extended
+ * Curated set covering the most commonly deployed CheapRouter models. Synced
+ * with the Alph4d0g/opencode-cheaprouter-auth CHEAPROUTER_DEFAULT_MODELS constant
+ * (https://github.com/Alph4d0g/opencode-cheaprouter-auth, MIT) and extended
  * with Claude Code passthrough models (`cc/` prefix).
  */
-export const OMNIROUTE_DEFAULT_OPENCODE_MODELS = [
+export const CHEAPROUTER_DEFAULT_OPENCODE_MODELS = [
   "cc/claude-opus-4-8",
   "cc/claude-opus-4-7",
   "cc/claude-sonnet-4-6",
@@ -63,8 +63,8 @@ export const OMNIROUTE_DEFAULT_OPENCODE_MODELS = [
  * and to gate features such as image attachments, reasoning mode, temperature
  * controls and tool-calling. Omitted flags default to OpenCode's heuristics.
  *
- * Mirrors the capability shape used by Alph4d0g/opencode-omniroute-auth
- * (https://github.com/Alph4d0g/opencode-omniroute-auth, MIT).
+ * Mirrors the capability shape used by Alph4d0g/opencode-cheaprouter-auth
+ * (https://github.com/Alph4d0g/opencode-cheaprouter-auth, MIT).
  */
 export interface ModelCapabilities {
   /** Display label shown in the model picker. Falls back to the model id. */
@@ -81,9 +81,9 @@ export interface ModelCapabilities {
 
 /**
  * Default per-model context window sizes (tokens) for the curated default catalog.
- * Matches the context lengths used by OmniRoute's provider registry.
+ * Matches the context lengths used by CheapRouter's provider registry.
  */
-export const OMNIROUTE_DEFAULT_MODEL_CONTEXT_LENGTHS: Record<string, number> = {
+export const CHEAPROUTER_DEFAULT_MODEL_CONTEXT_LENGTHS: Record<string, number> = {
   "cc/claude-opus-4-8": 1_000_000,
   "cc/claude-opus-4-7": 1_000_000,
   "cc/claude-sonnet-4-6": 200_000,
@@ -99,9 +99,9 @@ export const OMNIROUTE_DEFAULT_MODEL_CONTEXT_LENGTHS: Record<string, number> = {
  *
  * Conservative defaults: every default model accepts attachments, tool calls
  * and temperature; `reasoning` is opt-in per model id. Callers override per
- * model via `OmniRouteProviderOptions.modelCapabilities`.
+ * model via `CheapRouterProviderOptions.modelCapabilities`.
  */
-export const OMNIROUTE_DEFAULT_MODEL_CAPABILITIES: Record<string, ModelCapabilities> = {
+export const CHEAPROUTER_DEFAULT_MODEL_CAPABILITIES: Record<string, ModelCapabilities> = {
   "cc/claude-opus-4-8": { attachment: true, reasoning: true, temperature: true, tool_call: true },
   "cc/claude-opus-4-7": { attachment: true, reasoning: true, temperature: true, tool_call: true },
   "cc/claude-sonnet-4-6": { attachment: true, reasoning: true, temperature: true, tool_call: true },
@@ -122,12 +122,12 @@ export const OMNIROUTE_DEFAULT_MODEL_CAPABILITIES: Record<string, ModelCapabilit
   "gemini-3-flash": { attachment: true, temperature: true, tool_call: true },
 };
 
-export interface OmniRouteProviderOptions {
-  /** OmniRoute base URL, with or without trailing `/v1`. Required. */
+export interface CheapRouterProviderOptions {
+  /** CheapRouter base URL, with or without trailing `/v1`. Required. */
   baseURL: string;
-  /** OmniRoute API key. Required. Use `sk_omniroute` for local instances without REQUIRE_API_KEY. */
+  /** CheapRouter API key. Required. Use `sk_cheaprouter` for local instances without REQUIRE_API_KEY. */
   apiKey: string;
-  /** Override the display name shown in OpenCode. Default: `"OmniRoute"`. */
+  /** Override the display name shown in OpenCode. Default: `"CheapRouter"`. */
   displayName?: string;
   /** Override the model catalog. Accepts model ids (strings) or live model entries from `fetchLiveModels`. When entries carry a `contextLength`, it is used directly — no hardcoded map needed. */
   models?: readonly (string | { id: string; contextLength?: number })[];
@@ -135,29 +135,29 @@ export interface OmniRouteProviderOptions {
   modelLabels?: Record<string, string>;
   /**
    * Optional capability overrides keyed by model id. Merged on top of
-   * `OMNIROUTE_DEFAULT_MODEL_CAPABILITIES` for ids in the default catalog;
+   * `CHEAPROUTER_DEFAULT_MODEL_CAPABILITIES` for ids in the default catalog;
    * for custom ids the override is used verbatim.
    */
   modelCapabilities?: Record<string, ModelCapabilities>;
   /**
    * Optional per-model context-length overrides (tokens). Takes precedence
-   * over the static `OMNIROUTE_DEFAULT_MODEL_CONTEXT_LENGTHS` map but is
+   * over the static `CHEAPROUTER_DEFAULT_MODEL_CONTEXT_LENGTHS` map but is
    * superseded by `contextLength` on live model entries passed via `models`.
    */
   modelContextLengths?: Record<string, string | number>;
   /**
    * Primary model for OpenCode (top-level `model` key).
-   * Emitted as `"omniroute/<id>"`. When omitted the key is not written.
+   * Emitted as `"cheaprouter/<id>"`. When omitted the key is not written.
    */
   model?: string;
   /**
    * Secondary / cheap model for OpenCode (top-level `small_model` key).
-   * Emitted as `"omniroute/<id>"`. When omitted the key is not written.
+   * Emitted as `"cheaprouter/<id>"`. When omitted the key is not written.
    */
   smallModel?: string;
 }
 
-/** Per-model entry written under `provider.omniroute.models[id]`. */
+/** Per-model entry written under `provider.cheaprouter.models[id]`. */
 export interface OpenCodeModelEntry {
   name: string;
   attachment?: boolean;
@@ -180,8 +180,8 @@ export interface OpenCodeModelEntry {
 }
 
 export interface OpenCodeProviderEntry {
-  /** Identifier of the OpenCode runtime package that will speak to OmniRoute. */
-  npm: typeof OMNIROUTE_PROVIDER_NPM;
+  /** Identifier of the OpenCode runtime package that will speak to CheapRouter. */
+  npm: typeof CHEAPROUTER_PROVIDER_NPM;
   /** Display name in the OpenCode UI. */
   name: string;
   /** Options forwarded to `@ai-sdk/openai-compatible`. */
@@ -195,22 +195,22 @@ export interface OpenCodeProviderEntry {
 
 export interface OpenCodeConfigDocument {
   $schema: typeof OPENCODE_CONFIG_SCHEMA;
-  /** Primary model for OpenCode, e.g. `"omniroute/claude-sonnet-4-5-thinking"`. */
+  /** Primary model for OpenCode, e.g. `"cheaprouter/claude-sonnet-4-5-thinking"`. */
   model?: string;
-  /** Secondary / cheap model for OpenCode, e.g. `"omniroute/gemini-3-flash"`. */
+  /** Secondary / cheap model for OpenCode, e.g. `"cheaprouter/gemini-3-flash"`. */
   small_model?: string;
   provider: {
-    [OMNIROUTE_PROVIDER_KEY]: OpenCodeProviderEntry;
+    [CHEAPROUTER_PROVIDER_KEY]: OpenCodeProviderEntry;
   };
 }
 
 function requireNonEmpty(value: unknown, field: string): string {
   if (typeof value !== "string") {
-    throw new TypeError(`@omniroute/opencode-provider: ${field} must be a string`);
+    throw new TypeError(`@cheaprouter/opencode-provider: ${field} must be a string`);
   }
   const trimmed = value.trim();
   if (!trimmed) {
-    throw new Error(`@omniroute/opencode-provider: ${field} is required and cannot be empty`);
+    throw new Error(`@cheaprouter/opencode-provider: ${field} is required and cannot be empty`);
   }
   return trimmed;
 }
@@ -225,7 +225,7 @@ export function normalizeBaseURL(rawBaseURL: string): string {
     new URL(trimmed);
   } catch {
     throw new Error(
-      `@omniroute/opencode-provider: baseURL is not a valid URL: ${JSON.stringify(rawBaseURL)}`
+      `@cheaprouter/opencode-provider: baseURL is not a valid URL: ${JSON.stringify(rawBaseURL)}`
     );
   }
   let base = trimmed;
@@ -237,17 +237,17 @@ export function normalizeBaseURL(rawBaseURL: string): string {
 }
 
 /**
- * Build the `provider.omniroute` entry for an OpenCode config document.
+ * Build the `provider.cheaprouter` entry for an OpenCode config document.
  * The returned object is JSON-serialisable and safe to embed verbatim.
  */
-export function createOmniRouteProvider(options: OmniRouteProviderOptions): OpenCodeProviderEntry {
+export function createCheapRouterProvider(options: CheapRouterProviderOptions): OpenCodeProviderEntry {
   const baseURL = normalizeBaseURL(options.baseURL);
   const apiKey = requireNonEmpty(options.apiKey, "apiKey");
 
   const modelList =
     options.models && options.models.length > 0
       ? [...options.models]
-      : [...OMNIROUTE_DEFAULT_OPENCODE_MODELS];
+      : [...CHEAPROUTER_DEFAULT_OPENCODE_MODELS];
 
   const labels = options.modelLabels ?? {};
   const overrides = options.modelCapabilities ?? {};
@@ -262,7 +262,7 @@ export function createOmniRouteProvider(options: OmniRouteProviderOptions): Open
           : "";
     if (!id || seen.has(id)) continue;
     seen.add(id);
-    const defaults = OMNIROUTE_DEFAULT_MODEL_CAPABILITIES[id] ?? {};
+    const defaults = CHEAPROUTER_DEFAULT_MODEL_CAPABILITIES[id] ?? {};
     const override = overrides[id] ?? {};
     const merged: ModelCapabilities = { ...defaults, ...override };
     const explicitLabel =
@@ -285,7 +285,7 @@ export function createOmniRouteProvider(options: OmniRouteProviderOptions): Open
     const rawContextLength =
       liveContext ??
       options.modelContextLengths?.[id] ??
-      OMNIROUTE_DEFAULT_MODEL_CONTEXT_LENGTHS[id];
+      CHEAPROUTER_DEFAULT_MODEL_CONTEXT_LENGTHS[id];
     const contextLength =
       typeof rawContextLength === "string" ? parseInt(rawContextLength, 10) : rawContextLength;
     if (typeof contextLength === "number" && !isNaN(contextLength) && contextLength > 0) {
@@ -296,51 +296,51 @@ export function createOmniRouteProvider(options: OmniRouteProviderOptions): Open
   }
 
   return {
-    npm: OMNIROUTE_PROVIDER_NPM,
-    name: options.displayName?.trim() || "OmniRoute",
+    npm: CHEAPROUTER_PROVIDER_NPM,
+    name: options.displayName?.trim() || "CheapRouter",
     options: { baseURL, apiKey },
     models,
   };
 }
 
 /**
- * Build a full OpenCode config document (with `$schema` + `provider.omniroute`).
+ * Build a full OpenCode config document (with `$schema` + `provider.cheaprouter`).
  * Useful when scaffolding a fresh `opencode.json`.
  *
  * When `options.model` / `options.smallModel` are supplied they are emitted as
- * top-level `model` / `small_model` keys prefixed with `"omniroute/"` so
+ * top-level `model` / `small_model` keys prefixed with `"cheaprouter/"` so
  * OpenCode resolves them through the configured provider.
  */
-export function buildOmniRouteOpenCodeConfig(
-  options: OmniRouteProviderOptions
+export function buildCheapRouterOpenCodeConfig(
+  options: CheapRouterProviderOptions
 ): OpenCodeConfigDocument {
   const doc: OpenCodeConfigDocument = {
     $schema: OPENCODE_CONFIG_SCHEMA,
     provider: {
-      [OMNIROUTE_PROVIDER_KEY]: createOmniRouteProvider(options),
+      [CHEAPROUTER_PROVIDER_KEY]: createCheapRouterProvider(options),
     },
   };
 
   if (options.model !== undefined) {
     const id = options.model.trim();
-    if (id) doc.model = `${OMNIROUTE_PROVIDER_KEY}/${id}`;
+    if (id) doc.model = `${CHEAPROUTER_PROVIDER_KEY}/${id}`;
   }
 
   if (options.smallModel !== undefined) {
     const id = options.smallModel.trim();
-    if (id) doc.small_model = `${OMNIROUTE_PROVIDER_KEY}/${id}`;
+    if (id) doc.small_model = `${CHEAPROUTER_PROVIDER_KEY}/${id}`;
   }
 
   return doc;
 }
 
 /**
- * Merge the OmniRoute provider entry (and optional `model` / `small_model`
+ * Merge the CheapRouter provider entry (and optional `model` / `small_model`
  * keys) into an already-existing OpenCode config object.
  *
  * Performs a non-destructive merge: all top-level keys in `existing` are
  * preserved. The `provider` map is shallow-merged so other providers already
- * present are not removed. If `existing.provider.omniroute` already exists it
+ * present are not removed. If `existing.provider.cheaprouter` already exists it
  * is overwritten by the newly built entry.
  *
  * `model` and `small_model` are only written when supplied in `options`.
@@ -350,7 +350,7 @@ export function buildOmniRouteOpenCodeConfig(
  * const existing = JSON.parse(readFileSync("opencode.json", "utf8"));
  * const updated = mergeIntoExistingConfig(existing, {
  *   baseURL: "http://localhost:20128",
- *   apiKey: "sk_omniroute",
+ *   apiKey: "sk_cheaprouter",
  *   model: "claude-sonnet-4-5-thinking",
  * });
  * writeFileSync("opencode.json", JSON.stringify(updated, null, 2));
@@ -358,9 +358,9 @@ export function buildOmniRouteOpenCodeConfig(
  */
 export function mergeIntoExistingConfig(
   existing: Record<string, unknown>,
-  options: OmniRouteProviderOptions
+  options: CheapRouterProviderOptions
 ): Record<string, unknown> {
-  const partial = buildOmniRouteOpenCodeConfig(options);
+  const partial = buildCheapRouterOpenCodeConfig(options);
 
   const merged: Record<string, unknown> = { ...existing };
 
@@ -374,7 +374,7 @@ export function mergeIntoExistingConfig(
 
   merged.provider = {
     ...existingProvider,
-    [OMNIROUTE_PROVIDER_KEY]: partial.provider[OMNIROUTE_PROVIDER_KEY],
+    [CHEAPROUTER_PROVIDER_KEY]: partial.provider[CHEAPROUTER_PROVIDER_KEY],
   };
 
   return merged;
@@ -384,7 +384,7 @@ export function mergeIntoExistingConfig(
  * The 7 read-only MCP scopes that allow inspection without any write access.
  * Suitable for shared / public environments.
  */
-export const OMNIROUTE_MCP_DEFAULT_SCOPES = [
+export const CHEAPROUTER_MCP_DEFAULT_SCOPES = [
   "read:health",
   "read:combos",
   "read:quota",
@@ -394,24 +394,24 @@ export const OMNIROUTE_MCP_DEFAULT_SCOPES = [
   "read:compression",
 ] as const;
 
-export type OmniRouteMCPScope = (typeof OMNIROUTE_MCP_DEFAULT_SCOPES)[number] | string;
+export type CheapRouterMCPScope = (typeof CHEAPROUTER_MCP_DEFAULT_SCOPES)[number] | string;
 
-export interface OmniRouteMCPOptions {
+export interface CheapRouterMCPOptions {
   /** Absolute path to the MCP server entry point (TypeScript or compiled JS). */
   serverPath: string;
-  /** OmniRoute API key forwarded to the MCP server as `OMNIROUTE_API_KEY`. */
+  /** CheapRouter API key forwarded to the MCP server as `CHEAPROUTER_API_KEY`. */
   apiKey: string;
   /**
    * Management API key used for management-scoped operations.
-   * When supplied it is forwarded as `OMNIROUTE_MANAGEMENT_API_KEY`.
+   * When supplied it is forwarded as `CHEAPROUTER_MANAGEMENT_API_KEY`.
    */
   managementApiKey?: string;
   /**
-   * Comma-separated scope list passed as `OMNIROUTE_MCP_SCOPES`.
-   * When omitted `OMNIROUTE_MCP_ENFORCE_SCOPES` is not set and all scopes are
+   * Comma-separated scope list passed as `CHEAPROUTER_MCP_SCOPES`.
+   * When omitted `CHEAPROUTER_MCP_ENFORCE_SCOPES` is not set and all scopes are
    * available (development default). Pass an explicit list to restrict access.
    */
-  scopes?: OmniRouteMCPScope[];
+  scopes?: CheapRouterMCPScope[];
   /**
    * Runtime used to execute the MCP server.
    *
@@ -428,20 +428,20 @@ export interface OpenCodeMCPServerEntry {
 }
 
 /**
- * Build the `mcp.servers.omniroute` entry for an OpenCode config document.
+ * Build the `mcp.servers.cheaprouter` entry for an OpenCode config document.
  *
  * @example
  * ```ts
- * const mcpEntry = createOmniRouteMCPEntry({
- *   serverPath: "/home/user/.local/share/omniroute/open-sse/mcp-server/server.ts",
- *   apiKey: "sk_omniroute",
+ * const mcpEntry = createCheapRouterMCPEntry({
+ *   serverPath: "/home/user/.local/share/cheaprouter/open-sse/mcp-server/server.ts",
+ *   apiKey: "sk_cheaprouter",
  *   managementApiKey: "sk_manage_...",
  *   scopes: ["read:health", "read:combos", "execute:completions"],
  * });
- * // Place at config.mcp.servers.omniroute
+ * // Place at config.mcp.servers.cheaprouter
  * ```
  */
-export function createOmniRouteMCPEntry(options: OmniRouteMCPOptions): OpenCodeMCPServerEntry {
+export function createCheapRouterMCPEntry(options: CheapRouterMCPOptions): OpenCodeMCPServerEntry {
   const serverPath = requireNonEmpty(options.serverPath, "serverPath");
   const apiKey = requireNonEmpty(options.apiKey, "apiKey");
 
@@ -451,17 +451,17 @@ export function createOmniRouteMCPEntry(options: OmniRouteMCPOptions): OpenCodeM
   const args = runtime === "tsx" ? ["tsx", serverPath] : [serverPath];
 
   const env: Record<string, string> = {
-    OMNIROUTE_API_KEY: apiKey,
+    CHEAPROUTER_API_KEY: apiKey,
   };
 
   if (options.managementApiKey !== undefined) {
     const mgmtKey = options.managementApiKey.trim();
-    if (mgmtKey) env.OMNIROUTE_MANAGEMENT_API_KEY = mgmtKey;
+    if (mgmtKey) env.CHEAPROUTER_MANAGEMENT_API_KEY = mgmtKey;
   }
 
   if (options.scopes !== undefined && options.scopes.length > 0) {
-    env.OMNIROUTE_MCP_ENFORCE_SCOPES = "true";
-    env.OMNIROUTE_MCP_SCOPES = options.scopes.join(",");
+    env.CHEAPROUTER_MCP_ENFORCE_SCOPES = "true";
+    env.CHEAPROUTER_MCP_SCOPES = options.scopes.join(",");
   }
 
   return { command, args, env };
@@ -484,7 +484,7 @@ async function fetchJSON<T>(url: string, apiKey: string, timeoutMs: number): Pro
     return (await response.json()) as T;
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
-    throw new Error(`@omniroute/opencode-provider: request to ${url} failed: ${message}`);
+    throw new Error(`@cheaprouter/opencode-provider: request to ${url} failed: ${message}`);
   } finally {
     clearTimeout(timer);
   }
@@ -492,14 +492,14 @@ async function fetchJSON<T>(url: string, apiKey: string, timeoutMs: number): Pro
 
 /**
  * Lightweight model descriptor returned by `fetchLiveModels`.
- * The shape mirrors the subset of fields that OmniRoute's `/v1/models`
+ * The shape mirrors the subset of fields that CheapRouter's `/v1/models`
  * endpoint reliably provides across versions, normalised from both
- * camelCase and snake_case variants used by different OmniRoute releases.
+ * camelCase and snake_case variants used by different CheapRouter releases.
  *
  * Attribution: field-variant normalisation logic adapted from
- * https://github.com/Alph4d0g/opencode-omniroute-auth (MIT).
+ * https://github.com/Alph4d0g/opencode-cheaprouter-auth (MIT).
  */
-export interface OmniRouteLiveModel {
+export interface CheapRouterLiveModel {
   id: string;
   name: string;
   /** Context window length in tokens (e.g. 200000 for Claude, 1000000 for Gemini). */
@@ -507,27 +507,27 @@ export interface OmniRouteLiveModel {
 }
 
 /**
- * Fetch the live model catalog from a running OmniRoute instance.
+ * Fetch the live model catalog from a running CheapRouter instance.
  *
  * Returns an array of `{ id, name }` objects from `GET /v1/models`. Handles
  * both the camelCase (`modelId`, `displayName`) and snake_case (`model_id`,
- * `display_name`) field variants across OmniRoute versions.
+ * `display_name`) field variants across CheapRouter versions.
  *
  * Useful for dynamically populating the `models` option of
- * `createOmniRouteProvider` / `buildOmniRouteOpenCodeConfig` instead of
- * relying on `OMNIROUTE_DEFAULT_OPENCODE_MODELS`.
+ * `createCheapRouterProvider` / `buildCheapRouterOpenCodeConfig` instead of
+ * relying on `CHEAPROUTER_DEFAULT_OPENCODE_MODELS`.
  *
- * @param baseURL   - OmniRoute base URL (with or without `/v1`).
- * @param apiKey    - OmniRoute API key.
+ * @param baseURL   - CheapRouter base URL (with or without `/v1`).
+ * @param apiKey    - CheapRouter API key.
  * @param timeoutMs - Request timeout in milliseconds (default 5000).
  *
  * @example
  * ```ts
- * const models = await fetchLiveModels("http://localhost:20128", "sk_omniroute");
- * const config = buildOmniRouteOpenCodeConfig({
+ * const models = await fetchLiveModels("http://localhost:20128", "sk_cheaprouter");
+ * const config = buildCheapRouterOpenCodeConfig({
  *   baseURL: "http://localhost:20128",
- *   apiKey: "sk_omniroute",
- *   models,                    // OmniRouteLiveModel[] — contextLength auto-extracted
+ *   apiKey: "sk_cheaprouter",
+ *   models,                    // CheapRouterLiveModel[] — contextLength auto-extracted
  *   modelLabels: Object.fromEntries(models.map((m) => [m.id, m.name])),
  * });
  * ```
@@ -536,7 +536,7 @@ export async function fetchLiveModels(
   baseURL: string,
   apiKey: string,
   timeoutMs = 5_000
-): Promise<OmniRouteLiveModel[]> {
+): Promise<CheapRouterLiveModel[]> {
   const key = requireNonEmpty(apiKey, "apiKey");
   const url = `${normalizeBaseURL(baseURL)}/models`;
 
@@ -548,7 +548,7 @@ export async function fetchLiveModels(
       ? ((body as { data: unknown[] }).data as unknown[])
       : [];
 
-  const models: OmniRouteLiveModel[] = [];
+  const models: CheapRouterLiveModel[] = [];
   for (const raw of rawList) {
     if (typeof raw !== "object" || raw === null) continue;
     const r = raw as Record<string, unknown>;
@@ -573,8 +573,8 @@ export async function fetchLiveModels(
             ? r.display_name.trim()
             : id;
 
-    // Extract context_length from OmniRoute's /v1/models response.
-    // OmniRoute returns context_length in snake_case for both synced
+    // Extract context_length from CheapRouter's /v1/models response.
+    // CheapRouter returns context_length in snake_case for both synced
     // models (with inputTokenLimit) and custom models; the catalog's
     // getDefaultContextFallback also injects it from registry defaults.
     const contextLength =
@@ -594,7 +594,7 @@ export async function fetchLiveModels(
  * Valid per-combo compression override values.
  * An empty string clears any existing override (inherits global setting).
  */
-export type OmniRouteCompressionOverride =
+export type CheapRouterCompressionOverride =
   | ""
   | "off"
   | "lite"
@@ -616,16 +616,16 @@ const VALID_COMPRESSION_OVERRIDES = new Set<string>([
 ]);
 
 /** Slim combo descriptor returned by `listCombos`. */
-export interface OmniRouteCombo {
+export interface CheapRouterCombo {
   id: string;
   name: string;
   strategy: string;
   active: boolean;
-  compressionOverride: OmniRouteCompressionOverride;
+  compressionOverride: CheapRouterCompressionOverride;
 }
 
 /**
- * Fetch the active routing combo list from a running OmniRoute instance.
+ * Fetch the active routing combo list from a running CheapRouter instance.
  *
  * Returns an array of combo descriptors from `GET /api/combos`. The
  * `compressionOverride` field reflects the per-combo compression strategy
@@ -634,7 +634,7 @@ export interface OmniRouteCombo {
  * Requires a management-scoped API key (Bearer `manage` scope) when the
  * instance has `REQUIRE_API_KEY` enabled.
  *
- * @param baseURL          - OmniRoute base URL (with or without `/v1`).
+ * @param baseURL          - CheapRouter base URL (with or without `/v1`).
  * @param managementApiKey - API key with `manage` scope.
  * @param timeoutMs        - Request timeout in milliseconds (default 5000).
  */
@@ -642,7 +642,7 @@ export async function listCombos(
   baseURL: string,
   managementApiKey: string,
   timeoutMs = 5_000
-): Promise<OmniRouteCombo[]> {
+): Promise<CheapRouterCombo[]> {
   const key = requireNonEmpty(managementApiKey, "managementApiKey");
   const base = normalizeBaseURL(baseURL).replace(/\/v1$/, "");
   const url = `${base}/api/combos`;
@@ -654,7 +654,7 @@ export async function listCombos(
       ? ((body as { combos: unknown[] }).combos as unknown[])
       : [];
 
-  const combos: OmniRouteCombo[] = [];
+  const combos: CheapRouterCombo[] = [];
   for (const raw of rawList) {
     if (typeof raw !== "object" || raw === null) continue;
     const r = raw as Record<string, unknown>;
@@ -668,7 +668,7 @@ export async function listCombos(
 
     const rawOverride = typeof r.compressionOverride === "string" ? r.compressionOverride : "";
     const compressionOverride = VALID_COMPRESSION_OVERRIDES.has(rawOverride)
-      ? (rawOverride as OmniRouteCompressionOverride)
+      ? (rawOverride as CheapRouterCompressionOverride)
       : "";
 
     combos.push({ id, name, strategy, active, compressionOverride });
@@ -678,11 +678,11 @@ export async function listCombos(
 }
 
 /**
- * Options for `createOmniRouteComboConfig`.
- * Mirrors the subset of combo fields exposed by the OmniRoute `/api/combos`
+ * Options for `createCheapRouterComboConfig`.
+ * Mirrors the subset of combo fields exposed by the CheapRouter `/api/combos`
  * PATCH / POST payload that are safe to set programmatically.
  */
-export interface OmniRouteComboConfigOptions {
+export interface CheapRouterComboConfigOptions {
   /** Human-readable combo name. */
   name: string;
   /** Routing strategy (e.g. `"priority"`, `"weighted"`, `"round-robin"`). */
@@ -691,7 +691,7 @@ export interface OmniRouteComboConfigOptions {
    * Per-combo compression override.
    * Empty string removes any override (inherits global setting).
    */
-  compressionOverride?: OmniRouteCompressionOverride;
+  compressionOverride?: CheapRouterCompressionOverride;
   /** Whether this combo is active for routing. Default: `true`. */
   active?: boolean;
   /**
@@ -702,14 +702,14 @@ export interface OmniRouteComboConfigOptions {
 }
 
 /**
- * Build a typed combo payload suitable for OmniRoute's management API.
+ * Build a typed combo payload suitable for CheapRouter's management API.
  *
  * The returned object is JSON-serialisable and safe to pass as the body of a
  * `POST /api/combos` (create) or `PATCH /api/combos/:id` (update) request.
  *
  * @example
  * ```ts
- * const payload = createOmniRouteComboConfig({
+ * const payload = createCheapRouterComboConfig({
  *   name: "claude-primary",
  *   strategy: "priority",
  *   compressionOverride: "standard",
@@ -722,8 +722,8 @@ export interface OmniRouteComboConfigOptions {
  * });
  * ```
  */
-export function createOmniRouteComboConfig(
-  options: OmniRouteComboConfigOptions
+export function createCheapRouterComboConfig(
+  options: CheapRouterComboConfigOptions
 ): Record<string, unknown> {
   const name = requireNonEmpty(options.name, "name");
   const strategy = requireNonEmpty(options.strategy, "strategy");
@@ -754,16 +754,16 @@ export function createOmniRouteComboConfig(
  * config generator. Only fields present in
  * https://opencode.ai/config.json#AgentConfig are exposed.
  */
-export interface OmniRouteRoleOverrides {
+export interface CheapRouterRoleOverrides {
   /** Forward to OpenCode's `temperature` field. */
   temperature?: number;
   /** Forward to OpenCode's `top_p` field. */
   top_p?: number;
 }
 
-/** Per-role binding used by `createOmniRouteAgentBlock`. */
-export interface OmniRouteAgentRole extends OmniRouteRoleOverrides {
-  /** OmniRoute model id, e.g. `"claude-sonnet-4-5-thinking"`. */
+/** Per-role binding used by `createCheapRouterAgentBlock`. */
+export interface CheapRouterAgentRole extends CheapRouterRoleOverrides {
+  /** CheapRouter model id, e.g. `"claude-sonnet-4-5-thinking"`. */
   modelId: string;
   /** Optional tools allow-list; per OpenCode schema, map of tool name → enabled. */
   tools?: Record<string, boolean>;
@@ -771,15 +771,15 @@ export interface OmniRouteAgentRole extends OmniRouteRoleOverrides {
   prompt?: string;
 }
 
-/** Options for `createOmniRouteAgentBlock`. */
-export interface OmniRouteAgentBlockOptions {
+/** Options for `createCheapRouterAgentBlock`. */
+export interface CheapRouterAgentBlockOptions {
   /** Per-role bindings. Keys become entries under OpenCode's `agent` block. */
-  roles: Record<string, OmniRouteAgentRole>;
+  roles: Record<string, CheapRouterAgentRole>;
 }
 
 /** Single entry inside the emitted OpenCode `agent` block. */
-export interface OpenCodeAgentEntry extends OmniRouteRoleOverrides {
-  /** Always emitted as `"omniroute/<modelId>"`. */
+export interface OpenCodeAgentEntry extends CheapRouterRoleOverrides {
+  /** Always emitted as `"cheaprouter/<modelId>"`. */
   model: string;
   /** Per OpenCode schema, `Record<string, boolean>`. */
   tools?: Record<string, boolean>;
@@ -787,11 +787,11 @@ export interface OpenCodeAgentEntry extends OmniRouteRoleOverrides {
   prompt?: string;
 }
 
-function buildAgentEntry(role: OmniRouteAgentRole): OpenCodeAgentEntry | undefined {
+function buildAgentEntry(role: CheapRouterAgentRole): OpenCodeAgentEntry | undefined {
   if (!role || typeof role.modelId !== "string") return undefined;
   const modelId = role.modelId.trim();
   if (!modelId) return undefined;
-  const entry: OpenCodeAgentEntry = { model: `${OMNIROUTE_PROVIDER_KEY}/${modelId}` };
+  const entry: OpenCodeAgentEntry = { model: `${CHEAPROUTER_PROVIDER_KEY}/${modelId}` };
   if (typeof role.temperature === "number") entry.temperature = role.temperature;
   if (typeof role.top_p === "number") entry.top_p = role.top_p;
   if (role.tools && typeof role.tools === "object" && !Array.isArray(role.tools)) {
@@ -811,7 +811,7 @@ function buildAgentEntry(role: OmniRouteAgentRole): OpenCodeAgentEntry | undefin
 
 /**
  * Build the OpenCode `agent` block, pre-wired so each agent role routes to a
- * specific OmniRoute model. Useful for `.opencode/agent/*.md` defaults and
+ * specific CheapRouter model. Useful for `.opencode/agent/*.md` defaults and
  * scaffolded `opencode.json` files.
  *
  * Emitted fields are limited to those declared in OpenCode's `AgentConfig`
@@ -822,18 +822,18 @@ function buildAgentEntry(role: OmniRouteAgentRole): OpenCodeAgentEntry | undefin
  *
  * @example
  * ```ts
- * const agentBlock = createOmniRouteAgentBlock({
+ * const agentBlock = createCheapRouterAgentBlock({
  *   roles: {
  *     build: { modelId: "claude-sonnet-4-5-thinking", temperature: 0.2 },
  *     plan: { modelId: "claude-opus-4-5-thinking", top_p: 0.95 },
  *     review: { modelId: "gemini-3-flash", tools: { edit: false, bash: false } },
  *   },
  * });
- * // -> { build: { model: "omniroute/claude-sonnet-4-5-thinking", temperature: 0.2 }, ... }
+ * // -> { build: { model: "cheaprouter/claude-sonnet-4-5-thinking", temperature: 0.2 }, ... }
  * ```
  */
-export function createOmniRouteAgentBlock(
-  options: OmniRouteAgentBlockOptions
+export function createCheapRouterAgentBlock(
+  options: CheapRouterAgentBlockOptions
 ): Record<string, OpenCodeAgentEntry> {
   const out: Record<string, OpenCodeAgentEntry> = {};
   const roles = options.roles ?? {};
@@ -845,46 +845,46 @@ export function createOmniRouteAgentBlock(
 }
 
 /**
- * Per-mode binding used by `createOmniRouteModesBlock`.
+ * Per-mode binding used by `createCheapRouterModesBlock`.
  *
  * @deprecated OpenCode's top-level `mode` block is deprecated in favour of
- * `agent`. Prefer `OmniRouteAgentRole` + `createOmniRouteAgentBlock`. This
+ * `agent`. Prefer `CheapRouterAgentRole` + `createCheapRouterAgentBlock`. This
  * type and the corresponding helper are kept for back-compat with configs
  * still using `mode:`.
  */
-export interface OmniRouteMode extends OmniRouteAgentRole {}
+export interface CheapRouterMode extends CheapRouterAgentRole {}
 
 /**
- * Options for `createOmniRouteModesBlock`.
+ * Options for `createCheapRouterModesBlock`.
  *
- * @deprecated See `OmniRouteMode`.
+ * @deprecated See `CheapRouterMode`.
  */
-export interface OmniRouteModesBlockOptions {
+export interface CheapRouterModesBlockOptions {
   /** Per-mode bindings. Keys become entries under OpenCode's deprecated top-level `mode` block. */
-  modes: Record<string, OmniRouteMode>;
+  modes: Record<string, CheapRouterMode>;
 }
 
 /**
  * Single entry inside the emitted OpenCode `mode` block.
  *
- * @deprecated See `OmniRouteMode`.
+ * @deprecated See `CheapRouterMode`.
  */
 export interface OpenCodeModeEntry extends OpenCodeAgentEntry {}
 
 /**
  * Build the OpenCode top-level `mode` block, pre-wired so each mode routes to
- * a specific OmniRoute model. Emits the same shape as the `agent` block since
+ * a specific CheapRouter model. Emits the same shape as the `agent` block since
  * OpenCode's schema treats them identically (both reference `AgentConfig`).
  *
  * Modes with empty / missing `modelId` are skipped.
  *
  * @deprecated OpenCode's top-level `mode` block is deprecated in favour of
- * `agent`. Prefer `createOmniRouteAgentBlock`. This helper is kept for
+ * `agent`. Prefer `createCheapRouterAgentBlock`. This helper is kept for
  * back-compat with configs still using `mode:`.
  *
  * @example
  * ```ts
- * const modesBlock = createOmniRouteModesBlock({
+ * const modesBlock = createCheapRouterModesBlock({
  *   modes: {
  *     build: { modelId: "claude-sonnet-4-5-thinking", tools: { edit: true, bash: true } },
  *     plan: { modelId: "claude-opus-4-5-thinking", prompt: "Plan first, code later." },
@@ -893,8 +893,8 @@ export interface OpenCodeModeEntry extends OpenCodeAgentEntry {}
  * });
  * ```
  */
-export function createOmniRouteModesBlock(
-  options: OmniRouteModesBlockOptions
+export function createCheapRouterModesBlock(
+  options: CheapRouterModesBlockOptions
 ): Record<string, OpenCodeModeEntry> {
   const out: Record<string, OpenCodeModeEntry> = {};
   const modes = options.modes ?? {};
@@ -905,4 +905,4 @@ export function createOmniRouteModesBlock(
   return out;
 }
 
-export default createOmniRouteProvider;
+export default createCheapRouterProvider;

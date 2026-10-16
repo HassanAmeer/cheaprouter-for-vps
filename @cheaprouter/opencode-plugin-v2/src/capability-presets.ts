@@ -1,5 +1,5 @@
 import type { LegacyModel } from "./legacy-model.js";
-import type { OmniRouteEnrichmentEntry } from "./shared/enrich.js";
+import type { CheapRouterEnrichmentEntry } from "./shared/enrich.js";
 
 export interface CapabilityPresetFlags {
   freeOnly?: boolean;
@@ -17,7 +17,7 @@ export interface CapabilityPresetFlags {
  */
 export function passesCapabilityPresets(
   mapped: LegacyModel,
-  enrichment: OmniRouteEnrichmentEntry | undefined,
+  enrichment: CheapRouterEnrichmentEntry | undefined,
   flags: CapabilityPresetFlags
 ): boolean {
   if (flags.freeOnly === true && enrichment?.freeType === undefined) return false;

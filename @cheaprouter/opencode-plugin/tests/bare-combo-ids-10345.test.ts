@@ -11,10 +11,10 @@ test("mapRawModelToModelV2: bare combo ids stay unprefixed (#10345)", () => {
       context_length: 272000,
       max_output_tokens: 8192,
     },
-    { providerId: "omniroute", baseURL: "https://or.example.com/v1" }
+    { providerId: "cheaprouter", baseURL: "https://or.example.com/v1" }
   );
   assert.equal(combo.id, "gpt-5.6-sol");
-  assert.equal(combo.providerID, "omniroute");
+  assert.equal(combo.providerID, "cheaprouter");
 
   const slashed = mapRawModelToModelV2(
     {
@@ -22,13 +22,13 @@ test("mapRawModelToModelV2: bare combo ids stay unprefixed (#10345)", () => {
       owned_by: "combo",
       context_length: 272000,
     },
-    { providerId: "omniroute", baseURL: "https://or.example.com/v1" }
+    { providerId: "cheaprouter", baseURL: "https://or.example.com/v1" }
   );
   assert.equal(slashed.id, "cx/gpt-5.6-sol");
 
   const ordinary = mapRawModelToModelV2(
     { id: "claude-primary", context_length: 200000 },
-    { providerId: "omniroute", baseURL: "https://or.example.com/v1" }
+    { providerId: "cheaprouter", baseURL: "https://or.example.com/v1" }
   );
-  assert.equal(ordinary.id, "omniroute/claude-primary");
+  assert.equal(ordinary.id, "cheaprouter/claude-primary");
 });

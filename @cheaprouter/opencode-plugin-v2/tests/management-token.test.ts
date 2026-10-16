@@ -80,7 +80,7 @@ describe("plugin-v2 managementReadToken wiring (F1)", () => {
     try {
       const { added, ctx } = setup({
         baseURL: "https://gw.example.com",
-        providerId: "omniroute",
+        providerId: "cheaprouter",
         apiKey: "chat-key",
         managementReadToken: "mgmt-key",
       });
@@ -117,7 +117,7 @@ describe("plugin-v2 managementReadToken wiring (F1)", () => {
     try {
       const { ctx } = setup({
         baseURL: "https://gw.example.com",
-        providerId: "omniroute",
+        providerId: "cheaprouter",
         apiKey: "chat-key",
       });
       await (plugin as unknown as { setup: (ctx: unknown) => Promise<void> }).setup(ctx);
@@ -132,7 +132,7 @@ describe("plugin-v2 managementReadToken wiring (F1)", () => {
     const calls: Array<[string, string]> = [];
     const collected = await collectCatalog(
       {
-        providerId: "omniroute",
+        providerId: "cheaprouter",
         baseURL: "https://gw.example.com",
         apiKey: "chat-key",
         managementReadToken: "mgmt-key",
@@ -165,7 +165,7 @@ describe("plugin-v2 fail-closed models (F2)", () => {
     const { mkdtempSync } = await import("node:fs");
     const { tmpdir } = await import("node:os");
     const { join } = await import("node:path");
-    const dir = mkdtempSync(join(tmpdir(), "omniroute-f2-"));
+    const dir = mkdtempSync(join(tmpdir(), "cheaprouter-f2-"));
     const prevDataDir = process.env.OPENCODE_DATA_DIR;
     process.env.OPENCODE_DATA_DIR = dir;
     let modelsCall = 0;

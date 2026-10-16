@@ -172,7 +172,7 @@ export async function install(version = "latest"): Promise<InstallResult> {
       hostPkgPath,
       JSON.stringify(
         {
-          name: "omniroute-llmlingua-host",
+          name: "cheaprouter-llmlingua-host",
           version: "0.0.0",
           private: true,
           type: "module",

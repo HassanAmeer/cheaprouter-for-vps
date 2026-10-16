@@ -86,7 +86,7 @@ export function resolveGeminiTarget(opts = {}) {
     context?.accessToken ??
     context?.apiKey ??
     process.env.CHEAPROUTE_API_KEY ??
-    "omniroute-no-auth";
+    "cheaprouter-no-auth";
   return { baseUrl: validateGeminiEndpoint(baseUrl), apiKey };
 }
 

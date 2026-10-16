@@ -31,7 +31,7 @@ export interface RecordedTriageContextSummary {
 export interface RecordedTriageRun {
   accepted: true;
   mode: "recorded-triage";
-  runner: "deterministic-recorded-triage" | "omniroute-chat-completions";
+  runner: "deterministic-recorded-triage" | "cheaprouter-chat-completions";
   runId: string;
   issueUrl: string;
   repository: string;

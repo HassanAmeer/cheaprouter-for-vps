@@ -1,12 +1,12 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import {
-  defaultOmniRouteProvidersFetcher,
+  defaultCheapRouterProvidersFetcher,
   isUsableCombo,
   isUsableRawModelId,
   usableProviderAliasSet,
 } from "../src/shared/usable.js";
-import type { OmniRouteEnrichmentMap } from "../src/shared/enrich.js";
+import type { CheapRouterEnrichmentMap } from "../src/shared/enrich.js";
 
 function entry(
   alias: string,
@@ -15,7 +15,7 @@ function entry(
   return [`${alias}/model-x`, { providerAlias: alias, providerCanonical: canonical }];
 }
 
-function enrichmentOf(...pairs: Array<[string, string]>): OmniRouteEnrichmentMap {
+function enrichmentOf(...pairs: Array<[string, string]>): CheapRouterEnrichmentMap {
   return new Map(pairs.map(([alias, canonical]) => entry(alias, canonical)));
 }
 
@@ -23,7 +23,7 @@ function stubFetch(handler: (url: unknown) => unknown): typeof fetch {
   return (async (url: unknown) => handler(url)) as unknown as typeof fetch;
 }
 
-describe("defaultOmniRouteProvidersFetcher envelopes", () => {
+describe("defaultCheapRouterProvidersFetcher envelopes", () => {
   it("reads the { connections: [...] } envelope", async () => {
     const origFetch = globalThis.fetch;
     const seen: string[] = [];
@@ -39,7 +39,7 @@ describe("defaultOmniRouteProvidersFetcher envelopes", () => {
       };
     });
     try {
-      const out = await defaultOmniRouteProvidersFetcher("https://gw.example.com/v1/", "k");
+      const out = await defaultCheapRouterProvidersFetcher("https://gw.example.com/v1/", "k");
       assert.equal(seen[0], "https://gw.example.com/api/providers");
       assert.deepEqual(
         out.map((c) => c.provider),
@@ -59,7 +59,7 @@ describe("defaultOmniRouteProvidersFetcher envelopes", () => {
       json: async () => [{ id: "c1", provider: "gemini", isActive: true, testStatus: "active" }],
     }));
     try {
-      const out = await defaultOmniRouteProvidersFetcher("https://gw.example.com", "k");
+      const out = await defaultCheapRouterProvidersFetcher("https://gw.example.com", "k");
       assert.deepEqual(
         out.map((c) => c.provider),
         ["gemini"]
@@ -80,7 +80,7 @@ describe("defaultOmniRouteProvidersFetcher envelopes", () => {
       }),
     }));
     try {
-      const out = await defaultOmniRouteProvidersFetcher("https://gw.example.com", "k");
+      const out = await defaultCheapRouterProvidersFetcher("https://gw.example.com", "k");
       assert.deepEqual(
         out.map((c) => c.provider),
         ["kiro"]
@@ -100,7 +100,7 @@ describe("defaultOmniRouteProvidersFetcher envelopes", () => {
     }));
     try {
       await assert.rejects(
-        defaultOmniRouteProvidersFetcher("https://gw.example.com", "k"),
+        defaultCheapRouterProvidersFetcher("https://gw.example.com", "k"),
         /HTTP 500/
       );
     } finally {
@@ -114,15 +114,15 @@ describe("defaultOmniRouteProvidersFetcher envelopes", () => {
       throw new Error("down");
     });
     try {
-      await assert.rejects(defaultOmniRouteProvidersFetcher("https://gw.example.com", "k"), /down/);
+      await assert.rejects(defaultCheapRouterProvidersFetcher("https://gw.example.com", "k"), /down/);
     } finally {
       globalThis.fetch = origFetch;
     }
   });
 
   it("soft-fails to [] without baseURL or apiKey", async () => {
-    assert.deepEqual(await defaultOmniRouteProvidersFetcher("", "k"), []);
-    assert.deepEqual(await defaultOmniRouteProvidersFetcher("https://gw.example.com", ""), []);
+    assert.deepEqual(await defaultCheapRouterProvidersFetcher("", "k"), []);
+    assert.deepEqual(await defaultCheapRouterProvidersFetcher("https://gw.example.com", ""), []);
   });
 });
 

@@ -17,20 +17,20 @@ import {
   type ApiFormatV2,
   type LogLevel,
   type Logger,
-  type OmniRouteCombosFetcher,
-  type OmniRouteEnrichmentFetcher,
-  type OmniRouteEnrichmentMap,
-  type OmniRouteModelsFetcher,
-  type OmniRouteProviderConnection,
-  type OmniRouteProvidersFetcher,
-  type OmniRouteRawCombo,
-  type OmniRouteRawModelEntry,
+  type CheapRouterCombosFetcher,
+  type CheapRouterEnrichmentFetcher,
+  type CheapRouterEnrichmentMap,
+  type CheapRouterModelsFetcher,
+  type CheapRouterProviderConnection,
+  type CheapRouterProvidersFetcher,
+  type CheapRouterRawCombo,
+  type CheapRouterRawModelEntry,
   applyEnrichment,
   buildCanonicalToAliasMap,
   canonicalDedupSet,
   createLogger,
-  defaultOmniRouteEnrichmentFetcher,
-  defaultOmniRouteProvidersFetcher,
+  defaultCheapRouterEnrichmentFetcher,
+  defaultCheapRouterProvidersFetcher,
   ensureV1Suffix,
   isUsableCombo,
   isUsableRawModelId,
@@ -72,10 +72,10 @@ export {
 export type { ModelListFilter } from "./catalog-freshness.js";
 import type { ModelListFilter } from "./catalog-freshness.js";
 
-export type ModelsFetcher = OmniRouteModelsFetcher;
-export type CombosFetcher = OmniRouteCombosFetcher;
-export type ProvidersFetcher = OmniRouteProvidersFetcher;
-export type EnrichmentFetcher = OmniRouteEnrichmentFetcher;
+export type ModelsFetcher = CheapRouterModelsFetcher;
+export type CombosFetcher = CheapRouterCombosFetcher;
+export type ProvidersFetcher = CheapRouterProvidersFetcher;
+export type EnrichmentFetcher = CheapRouterEnrichmentFetcher;
 
 export interface EndpointTimeouts {
   models?: number;
@@ -105,7 +105,7 @@ export interface ResolvedOptions {
   freeOnly?: boolean;
   toolsOnly?: boolean;
   visionOnly?: boolean;
-  enrichment?: OmniRouteEnrichmentMap | boolean;
+  enrichment?: CheapRouterEnrichmentMap | boolean;
   /**
    * Per-provider showcase size. Absent means the catalog default
    * (`SHOWCASE_PER_OWNER`); direct callers keep working without it.
@@ -149,9 +149,9 @@ export interface CatalogFetchers {
    * usage analytics. Injected so unit tests can stub it; defaults to
    * a single `GET <root>/api/usage/analytics?range=30d` call.
    */
-  usageFetcher?: OmniRouteUsageFetcher;
+  usageFetcher?: CheapRouterUsageFetcher;
   /** Alias of `usageFetcher`, same shape as the other fetcher pairs. */
-  usage?: OmniRouteUsageFetcher;
+  usage?: CheapRouterUsageFetcher;
   /**
    * Called when a gateway source cannot be read. Without it this function
    * degrades silently — the catalog publishes with raw ids and no combos and
@@ -161,7 +161,7 @@ export interface CatalogFetchers {
 }
 
 /** Contract for the 30-day usage memory: model ids only, never payloads. */
-export type OmniRouteUsageFetcher = (
+export type CheapRouterUsageFetcher = (
   rootBaseURL: string,
   managementToken: string,
   timeoutMs?: number,
@@ -182,14 +182,14 @@ function trimUsageSlashes(value: string): string {
  * the statically dropped entries; only a 2xx array (even empty)
  * narrows the catalog.
  */
-export const defaultOmniRouteUsageFetcher: OmniRouteUsageFetcher = async (
+export const defaultCheapRouterUsageFetcher: CheapRouterUsageFetcher = async (
   rootBaseURL,
   managementToken,
   timeoutMs = 10_000,
   onSourceError
 ) => {
-  if (!rootBaseURL) throw new Error("[omniroute-v2] baseURL required to fetch usage analytics");
-  if (!managementToken) throw new Error("[omniroute-v2] management token required");
+  if (!rootBaseURL) throw new Error("[cheaprouter-v2] baseURL required to fetch usage analytics");
+  if (!managementToken) throw new Error("[cheaprouter-v2] management token required");
   const trimmed = trimUsageSlashes(rootBaseURL);
   const root = trimmed.replace(/\/v\d+$/, "");
   const url = `${root}/api/usage/analytics?range=30d`;
@@ -206,13 +206,13 @@ export const defaultOmniRouteUsageFetcher: OmniRouteUsageFetcher = async (
     });
     if (!res.ok) {
       onSourceError?.("/api/usage/analytics", `HTTP ${res.status}`);
-      throw new Error(`[omniroute-v2] GET ${url} failed: ${res.status} ${res.statusText}`);
+      throw new Error(`[cheaprouter-v2] GET ${url} failed: ${res.status} ${res.statusText}`);
     }
     const body = (await res.json()) as unknown;
     const table = (body as { byModel?: unknown } | null | undefined)?.byModel;
     if (!Array.isArray(table)) {
       onSourceError?.("/api/usage/analytics", "missing byModel table");
-      throw new Error("[omniroute-v2] usage analytics response has no byModel table");
+      throw new Error("[cheaprouter-v2] usage analytics response has no byModel table");
     }
     const rows = table as unknown[];
     const out: string[] = [];
@@ -240,14 +240,14 @@ export const defaultOmniRouteUsageFetcher: OmniRouteUsageFetcher = async (
  * returns an empty set, so a down gateway never reopens the picker.
  */
 async function resolveUsageIds(
-  dropped: readonly OmniRouteRawModelEntry[],
+  dropped: readonly CheapRouterRawModelEntry[],
   opts: ResolvedOptions,
   fetchers: CatalogFetchers | undefined,
   log: Logger
 ): Promise<Set<string>> {
   if (dropped.length === 0) return new Set();
   if (!opts.managementReadToken) return new Set();
-  const fetchUsage = fetchers?.usageFetcher ?? fetchers?.usage ?? defaultOmniRouteUsageFetcher;
+  const fetchUsage = fetchers?.usageFetcher ?? fetchers?.usage ?? defaultCheapRouterUsageFetcher;
   let used: string[];
   try {
     used = await fetchUsage(
@@ -258,7 +258,7 @@ async function resolveUsageIds(
     );
   } catch (err) {
     log.warn(
-      `[omniroute-v2] usage fetch failed, no dropped models restored: ${err instanceof Error ? err.message : String(err)}`
+      `[cheaprouter-v2] usage fetch failed, no dropped models restored: ${err instanceof Error ? err.message : String(err)}`
     );
     return new Set();
   }
@@ -346,12 +346,12 @@ export function legacyToStable(
 ): StableModelInfo {
   if (!m.api || typeof m.api.npm !== "string" || m.api.npm.length === 0) {
     throw new Error(
-      "[omniroute-v2] refusing to publish a model without an api block (missing api.npm)"
+      "[cheaprouter-v2] refusing to publish a model without an api block (missing api.npm)"
     );
   }
   if (!isHttpUrl(m.api.url)) {
     throw new Error(
-      "[omniroute-v2] refusing to publish a model whose api block carries no http(s) url"
+      "[cheaprouter-v2] refusing to publish a model whose api block carries no http(s) url"
     );
   }
   const stablePackage =
@@ -413,7 +413,7 @@ export function legacyApiToInfoApi(api: LegacyModel["api"]): {
 } {
   if (!api || typeof api.npm !== "string" || api.npm.length === 0) {
     throw new Error(
-      "[omniroute-v2] refusing to publish a model without an api block (missing api.npm)"
+      "[cheaprouter-v2] refusing to publish a model without an api block (missing api.npm)"
     );
   }
   // The host reads `api.url` in `prepareOptions` and never falls back to the
@@ -422,7 +422,7 @@ export function legacyApiToInfoApi(api: LegacyModel["api"]): {
   // wire, nothing in the gateway logs, no model named.
   if (!isHttpUrl(api.url)) {
     throw new Error(
-      "[omniroute-v2] refusing to publish a model whose api block carries no http(s) url"
+      "[cheaprouter-v2] refusing to publish a model whose api block carries no http(s) url"
     );
   }
   return { id: api.id, type: "aisdk", package: api.npm, url: api.url };
@@ -510,7 +510,7 @@ export function passesModelAllowlist(
   return true;
 }
 
-export function passesComboAllowlist(combo: OmniRouteRawCombo, visible?: ModelListFilter): boolean {
+export function passesComboAllowlist(combo: CheapRouterRawCombo, visible?: ModelListFilter): boolean {
   if (!visible) return true;
   const steps = Array.isArray(combo.models) ? combo.models : [];
   if (steps.length === 0) return true;
@@ -586,11 +586,11 @@ async function resolveEnrichmentOverlay(
   opts: ResolvedOptions,
   fetchers: CatalogFetchers | undefined,
   log: Logger
-): Promise<OmniRouteEnrichmentMap> {
+): Promise<CheapRouterEnrichmentMap> {
   if (opts.enrichment instanceof Map) return opts.enrichment;
   if (opts.enrichment === false) return new Map();
   const fetchEnrichment =
-    fetchers?.enrichmentFetcher ?? fetchers?.enrichment ?? defaultOmniRouteEnrichmentFetcher;
+    fetchers?.enrichmentFetcher ?? fetchers?.enrichment ?? defaultCheapRouterEnrichmentFetcher;
   try {
     return await fetchEnrichment(
       opts.baseURL,
@@ -600,7 +600,7 @@ async function resolveEnrichmentOverlay(
     );
   } catch (err) {
     log.warn(
-      `[omniroute-v2] enrichment fetch failed, continuing without names/pricing: ${err instanceof Error ? err.message : String(err)}`
+      `[cheaprouter-v2] enrichment fetch failed, continuing without names/pricing: ${err instanceof Error ? err.message : String(err)}`
     );
     return new Map();
   }
@@ -615,16 +615,16 @@ async function resolveEnrichmentOverlay(
  */
 async function resolveUsableAliases(
   opts: ResolvedOptions,
-  providersFetcher: OmniRouteProvidersFetcher | undefined,
+  providersFetcher: CheapRouterProvidersFetcher | undefined,
   onSourceError: ((endpoint: string, reason: string) => void) | undefined,
-  enrichment: OmniRouteEnrichmentMap,
+  enrichment: CheapRouterEnrichmentMap,
   timeoutMs: number,
   log: Logger
 ): Promise<ReturnType<typeof usableProviderAliasSet> | undefined> {
   if (!opts.usableOnly) return undefined;
-  let rawConnections: OmniRouteProviderConnection[];
+  let rawConnections: CheapRouterProviderConnection[];
   try {
-    const fetchProviders = providersFetcher ?? defaultOmniRouteProvidersFetcher;
+    const fetchProviders = providersFetcher ?? defaultCheapRouterProvidersFetcher;
     rawConnections = await fetchProviders(
       opts.baseURL,
       opts.managementReadToken ?? opts.apiKey,
@@ -633,7 +633,7 @@ async function resolveUsableAliases(
     );
   } catch (err) {
     log.warn(
-      `[omniroute-v2] providers fetch failed, usableOnly filter disabled for this refresh: ${err instanceof Error ? err.message : String(err)}`
+      `[cheaprouter-v2] providers fetch failed, usableOnly filter disabled for this refresh: ${err instanceof Error ? err.message : String(err)}`
     );
     rawConnections = [];
   }
@@ -645,8 +645,8 @@ interface PublishContext {
   opts: ResolvedOptions;
   log: Logger;
   providerId: string;
-  enrichment: OmniRouteEnrichmentMap;
-  rawModelById: Map<string, OmniRouteRawModelEntry>;
+  enrichment: CheapRouterEnrichmentMap;
+  rawModelById: Map<string, CheapRouterRawModelEntry>;
   collected: Map<string, LegacyModel>;
   publishedKeys: Set<string>;
   publishedModelIds: Map<string, string>;
@@ -700,14 +700,14 @@ async function publishCombos(
     warnedCombos,
     cacheKey,
   } = ctx;
-  let rawCombos: OmniRouteRawCombo[];
+  let rawCombos: CheapRouterRawCombo[];
   try {
     rawCombos = combosFetcher
       ? await combosFetcher(opts.baseURL, opts.managementReadToken ?? opts.apiKey, combosTimeout)
       : [];
   } catch (err) {
     log.warn(
-      `[omniroute-v2] combos fetch failed, falling back to models-only catalog: ${err instanceof Error ? err.message : String(err)}`
+      `[cheaprouter-v2] combos fetch failed, falling back to models-only catalog: ${err instanceof Error ? err.message : String(err)}`
     );
     return undefined;
   }
@@ -740,7 +740,7 @@ async function publishCombos(
     const stillPending: typeof pending = [];
     for (const combo of pending) {
       const memberSteps = Array.isArray(combo.models) ? combo.models : [];
-      const memberEntries: OmniRouteRawModelEntry[] = [];
+      const memberEntries: CheapRouterRawModelEntry[] = [];
       let deferred = false;
       for (const step of memberSteps) {
         const kind = readStepField(step, "kind");
@@ -798,7 +798,7 @@ async function publishCombos(
           const dedupeKey = `${cacheKey}::${key}`;
           if (!warnedCombos.has(dedupeKey)) {
             warnedCombos.add(dedupeKey);
-            log.warn(`[omniroute-v2] combo key "${key}" collides with a model id; combo wins.`);
+            log.warn(`[cheaprouter-v2] combo key "${key}" collides with a model id; combo wins.`);
           }
         }
       }
@@ -823,7 +823,7 @@ async function publishCombos(
 
   if (unresolved.length > 0) {
     log.warn(
-      `[omniroute-v2] ${unresolved.length} combo(s) could not resolve all nested combo-refs after ${MAX_COMBO_PASSES} passes; dropped to avoid over-claiming.`
+      `[cheaprouter-v2] ${unresolved.length} combo(s) could not resolve all nested combo-refs after ${MAX_COMBO_PASSES} passes; dropped to avoid over-claiming.`
     );
   }
   return { published: comboCount, providerDropped };
@@ -835,7 +835,7 @@ async function publishCombos(
  * output, modalities, capabilities) instead of only direct raw members.
  * v1 parity (combo member synthesis at nested resolution time).
  */
-function synthesizeNestedMember(name: string, nested: LegacyModel): OmniRouteRawModelEntry {
+function synthesizeNestedMember(name: string, nested: LegacyModel): CheapRouterRawModelEntry {
   const inputModalities: string[] = [];
   if (nested.capabilities.input.text) inputModalities.push("text");
   if (nested.capabilities.input.audio) inputModalities.push("audio");
@@ -899,12 +899,12 @@ export async function collectCatalog(
     entries: new Map(),
     counts: { models: 0, combos: 0 },
   };
-  let rawModels: OmniRouteRawModelEntry[];
+  let rawModels: CheapRouterRawModelEntry[];
   try {
     rawModels = modelsFetcher ? await modelsFetcher(opts.baseURL, opts.apiKey, modelsTimeout) : [];
   } catch (err) {
     log.warn(
-      `[omniroute-v2] models fetch failed, publishing empty catalog: ${err instanceof Error ? err.message : String(err)}`
+      `[cheaprouter-v2] models fetch failed, publishing empty catalog: ${err instanceof Error ? err.message : String(err)}`
     );
     return empty;
   }
@@ -929,7 +929,7 @@ export async function collectCatalog(
     }
     if (!hasFreeEntry) {
       log.warn(
-        `[omniroute-v2] freeOnly is on but the enrichment overlay has no free-tier entries (no management token, enrichment disabled, or free-tier fetch failed); publishing an empty catalog. Disable freeOnly or configure the management token.`
+        `[cheaprouter-v2] freeOnly is on but the enrichment overlay has no free-tier entries (no management token, enrichment disabled, or free-tier fetch failed); publishing an empty catalog. Disable freeOnly or configure the management token.`
       );
     }
   }
@@ -966,7 +966,7 @@ export async function collectCatalog(
     else warnUnknownProviders(providerFilter, providerResolve.known, warnedCombos, log);
   }
 
-  const rawModelById = new Map<string, OmniRouteRawModelEntry>();
+  const rawModelById = new Map<string, CheapRouterRawModelEntry>();
   for (const entry of rawModels) {
     if (entry.id) rawModelById.set(entry.id, entry);
   }
@@ -1007,7 +1007,7 @@ export async function collectCatalog(
         visibleFilter,
         windowMs
       );
-  const staticallyDropped: OmniRouteRawModelEntry[] = [];
+  const staticallyDropped: CheapRouterRawModelEntry[] = [];
   for (const entry of rawModels) {
     if (!entry.id) continue;
     if (canonicalDedup.has(entry.id)) continue;
@@ -1130,7 +1130,7 @@ function warnProviderMatchedNothing(
   if (warnedCombos.has(key)) return;
   warnedCombos.add(key);
   log.warn(
-    `[omniroute-v2] providersAllow [${providerFilter.originals.join(", ")}] matched nothing, publishing empty catalog.`
+    `[cheaprouter-v2] providersAllow [${providerFilter.originals.join(", ")}] matched nothing, publishing empty catalog.`
   );
 }
 
@@ -1148,7 +1148,7 @@ export function buildProviderPayload(
   const X = opts.providerId;
   const info = {
     id: X,
-    name: opts.displayName ?? "OmniRoute",
+    name: opts.displayName ?? "CheapRouter",
     activation: "enabled",
     package: NPM_OPENAI_COMPAT,
     settings: { baseURL: ensureV1Suffix(opts.baseURL), apiKey: opts.apiKey },

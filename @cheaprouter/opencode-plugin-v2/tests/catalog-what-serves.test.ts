@@ -3,11 +3,11 @@ import assert from "node:assert/strict";
 import http from "node:http";
 import type { AddressInfo } from "node:net";
 import { collectCatalog } from "../src/catalog.js";
-import { defaultOmniRouteModelsFetcher } from "../src/shared/models-map.js";
-import type { OmniRouteRawModelEntry } from "../src/shared/models-map.js";
+import { defaultCheapRouterModelsFetcher } from "../src/shared/models-map.js";
+import type { CheapRouterRawModelEntry } from "../src/shared/models-map.js";
 
 const baseOpts = {
-  providerId: "omniroute",
+  providerId: "cheaprouter",
   baseURL: "https://gw.example.com",
   apiKey: "k",
   timeoutMs: 1000,
@@ -27,7 +27,7 @@ afterEach(async () => {
 async function entriesThroughReader(
   data: Array<Record<string, unknown>>,
   envelope: "list" | "bare" = "list"
-): Promise<OmniRouteRawModelEntry[]> {
+): Promise<CheapRouterRawModelEntry[]> {
   const body = envelope === "list" ? { object: "list", data } : data;
   const server = http.createServer((_req, res) => {
     res.writeHead(200, { "content-type": "application/json" });
@@ -36,7 +36,7 @@ async function entriesThroughReader(
   await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", () => resolve()));
   servers.push(server);
   const port = (server.address() as AddressInfo).port;
-  return defaultOmniRouteModelsFetcher(`http://127.0.0.1:${port}`, "k", 2000);
+  return defaultCheapRouterModelsFetcher(`http://127.0.0.1:${port}`, "k", 2000);
 }
 
 function dated(daysAgo: number, nowMs: number): string {
@@ -114,7 +114,7 @@ describe("publish what serves by default", () => {
           usageFetcher: async () => [],
         }
       );
-      assert.ok(collected.entries.has("omniroute/fresh/new-model"));
+      assert.ok(collected.entries.has("cheaprouter/fresh/new-model"));
     });
   });
 
@@ -133,12 +133,12 @@ describe("publish what serves by default", () => {
         ...fetchers,
         usageFetcher: async () => [],
       });
-      assert.ok(!unpublished.entries.has("omniroute/tooled/tool-only"));
+      assert.ok(!unpublished.entries.has("cheaprouter/tooled/tool-only"));
       const unrelated = await collectCatalog(opts, {
         ...fetchers,
         usageFetcher: async () => ["unrelated-id"],
       });
-      assert.ok(!unrelated.entries.has("omniroute/tooled/tool-only"));
+      assert.ok(!unrelated.entries.has("cheaprouter/tooled/tool-only"));
     });
   });
 
@@ -153,7 +153,7 @@ describe("publish what serves by default", () => {
           usageFetcher: async () => [],
         }
       );
-      assert.ok(!collected.entries.has("omniroute/plain/undated"));
+      assert.ok(!collected.entries.has("cheaprouter/plain/undated"));
     });
   });
 
@@ -172,9 +172,9 @@ describe("publish what serves by default", () => {
           usageFetcher: async () => ["zzz/old-one"],
         }
       );
-      assert.ok(collected.entries.has("omniroute/fresh/new-model"));
-      assert.ok(collected.entries.has("omniroute/zzz/old-one"));
-      assert.ok(!collected.entries.has("omniroute/never/never-used"));
+      assert.ok(collected.entries.has("cheaprouter/fresh/new-model"));
+      assert.ok(collected.entries.has("cheaprouter/zzz/old-one"));
+      assert.ok(!collected.entries.has("cheaprouter/never/never-used"));
     });
   });
 
@@ -183,15 +183,15 @@ describe("publish what serves by default", () => {
       { ...baseOpts, visibleModels: ["*"], hiddenModels: ["gone/dead"] },
       {
         fetcher: async () =>
-          [staleEntry("gone/dead"), staleEntry("zzz/kept")] as unknown as OmniRouteRawModelEntry[],
+          [staleEntry("gone/dead"), staleEntry("zzz/kept")] as unknown as CheapRouterRawModelEntry[],
         combosFetcher: async () => [
           { id: "all-combo", models: [{ kind: "model", model: "zzz/kept" }] },
         ],
       }
     );
-    assert.ok(collected.entries.has("omniroute/zzz/kept"));
-    assert.ok(!collected.entries.has("omniroute/gone/dead"));
-    assert.ok(collected.entries.has("omniroute/all-combo"));
+    assert.ok(collected.entries.has("cheaprouter/zzz/kept"));
+    assert.ok(!collected.entries.has("cheaprouter/gone/dead"));
+    assert.ok(collected.entries.has("cheaprouter/all-combo"));
   });
 
   it("short pinned id keeps the prefixed model", async () => {
@@ -202,12 +202,12 @@ describe("publish what serves by default", () => {
           [
             staleEntry("cc/keep-me"),
             staleEntry("cc/drop-me"),
-          ] as unknown as OmniRouteRawModelEntry[],
+          ] as unknown as CheapRouterRawModelEntry[],
         combosFetcher: async () => [],
       }
     );
-    assert.ok(collected.entries.has("omniroute/cc/keep-me"));
-    assert.ok(!collected.entries.has("omniroute/cc/drop-me"));
+    assert.ok(collected.entries.has("cheaprouter/cc/keep-me"));
+    assert.ok(!collected.entries.has("cheaprouter/cc/drop-me"));
   });
 
   it("empty usage keeps the restricted fallback", async () => {
@@ -224,8 +224,8 @@ describe("publish what serves by default", () => {
           usageFetcher: async () => [],
         }
       );
-      assert.ok(collected.entries.has("omniroute/fresh/new-model"));
-      assert.ok(!collected.entries.has("omniroute/zzz/old-one"));
+      assert.ok(collected.entries.has("cheaprouter/fresh/new-model"));
+      assert.ok(!collected.entries.has("cheaprouter/zzz/old-one"));
     });
   });
 
@@ -239,14 +239,14 @@ describe("publish what serves by default", () => {
       const collected = await collectCatalog(
         { ...baseOpts, managementReadToken: "m" },
         {
-          fetcher: async () => crowd("zzz", "zzz/old-one") as unknown as OmniRouteRawModelEntry[],
+          fetcher: async () => crowd("zzz", "zzz/old-one") as unknown as CheapRouterRawModelEntry[],
           combosFetcher: async () => [],
           usageFetcher: async () => {
             throw new Error("boom 500");
           },
         }
       );
-      assert.ok(!collected.entries.has("omniroute/zzz/old-one"));
+      assert.ok(!collected.entries.has("cheaprouter/zzz/old-one"));
     } finally {
       console.warn = origWarn;
     }
@@ -256,7 +256,7 @@ describe("publish what serves by default", () => {
   it("missing token never calls the usage endpoint", async () => {
     let calls = 0;
     const collected = await collectCatalog(baseOpts, {
-      fetcher: async () => crowd("zzz", "zzz/old-one") as unknown as OmniRouteRawModelEntry[],
+      fetcher: async () => crowd("zzz", "zzz/old-one") as unknown as CheapRouterRawModelEntry[],
       combosFetcher: async () => [],
       usageFetcher: async () => {
         calls += 1;
@@ -264,7 +264,7 @@ describe("publish what serves by default", () => {
       },
     });
     assert.equal(calls, 0);
-    assert.ok(!collected.entries.has("omniroute/zzz/old-one"));
+    assert.ok(!collected.entries.has("cheaprouter/zzz/old-one"));
   });
 
   it("repeated refresh keeps a stable fingerprint", async () => {
@@ -293,13 +293,13 @@ describe("publish what serves by default", () => {
           [
             ...crowd("zzz", "zzz/used-59"),
             ...crowd("never", "never/never"),
-          ] as unknown as OmniRouteRawModelEntry[],
+          ] as unknown as CheapRouterRawModelEntry[],
         combosFetcher: async () => [],
         usageFetcher: async () => used,
       }
     );
-    assert.ok(!collected.entries.has("omniroute/zzz/used-59"));
-    assert.ok(!collected.entries.has("omniroute/never/never"));
+    assert.ok(!collected.entries.has("cheaprouter/zzz/used-59"));
+    assert.ok(!collected.entries.has("cheaprouter/never/never"));
   });
 });
 
@@ -320,7 +320,7 @@ describe("usage memory option", () => {
         }
       );
       assert.equal(calls, 1);
-      assert.ok(collected.entries.has("omniroute/zzz/old-one"));
+      assert.ok(collected.entries.has("cheaprouter/zzz/old-one"));
     });
   });
 
@@ -340,7 +340,7 @@ describe("usage memory option", () => {
         }
       );
       assert.equal(calls, 1);
-      assert.ok(collected.entries.has("omniroute/zzz/old-one"));
+      assert.ok(collected.entries.has("cheaprouter/zzz/old-one"));
     });
   });
 
@@ -360,7 +360,7 @@ describe("usage memory option", () => {
         }
       );
       assert.equal(calls, 0);
-      assert.ok(!collected.entries.has("omniroute/zzz/old-one"));
+      assert.ok(!collected.entries.has("cheaprouter/zzz/old-one"));
     });
   });
 
@@ -377,7 +377,7 @@ describe("usage memory option", () => {
         },
       });
       assert.equal(calls, 0);
-      assert.ok(!collected.entries.has("omniroute/zzz/old-one"));
+      assert.ok(!collected.entries.has("cheaprouter/zzz/old-one"));
     });
   });
 
@@ -397,7 +397,7 @@ describe("usage memory option", () => {
         }
       );
       assert.equal(calls, 0);
-      assert.ok(!collected.entries.has("omniroute/zzz/old-one"));
+      assert.ok(!collected.entries.has("cheaprouter/zzz/old-one"));
     });
   });
 
@@ -420,7 +420,7 @@ describe("usage memory option", () => {
             },
           }
         );
-        assert.ok(!collected.entries.has("omniroute/zzz/old-one"));
+        assert.ok(!collected.entries.has("cheaprouter/zzz/old-one"));
       });
     } finally {
       console.warn = origWarn;
@@ -439,7 +439,7 @@ describe("usage memory option", () => {
           usageFetcher: async () => ["old-one"],
         }
       );
-      assert.ok(!collected.entries.has("omniroute/zzz/old-one"));
+      assert.ok(!collected.entries.has("cheaprouter/zzz/old-one"));
     });
   });
 
@@ -462,8 +462,8 @@ describe("usage memory option", () => {
           usageFetcher: async () => ["base/vivid-high"],
         }
       );
-      assert.ok(collected.entries.has("omniroute/base/vivid"));
-      assert.ok(!collected.entries.has("omniroute/base/vivid-high"));
+      assert.ok(collected.entries.has("cheaprouter/base/vivid"));
+      assert.ok(!collected.entries.has("cheaprouter/base/vivid-high"));
     });
   });
 });
@@ -488,7 +488,7 @@ describe("retired entries stay out of the default view", () => {
           usageFetcher: async () => ["old/gone"],
         }
       );
-      assert.ok(!collected.entries.has("omniroute/old/gone"));
+      assert.ok(!collected.entries.has("cheaprouter/old/gone"));
     });
   });
 
@@ -513,7 +513,7 @@ describe("retired entries stay out of the default view", () => {
           },
         }
       );
-      assert.ok(!collected.entries.has("omniroute/old/gone"));
+      assert.ok(!collected.entries.has("cheaprouter/old/gone"));
     });
   });
 
@@ -535,7 +535,7 @@ describe("retired entries stay out of the default view", () => {
           combosFetcher: async () => [],
         }
       );
-      assert.ok(collected.entries.has("omniroute/old/gone"));
+      assert.ok(collected.entries.has("cheaprouter/old/gone"));
     });
   });
 });
@@ -566,8 +566,8 @@ describe("flat effort-variant ids stay out of the default view", () => {
             usageFetcher: async () => [],
           }
         );
-        assert.ok(collected.entries.has("omniroute/o/m"), `base kept for -${tier}`);
-        assert.ok(!collected.entries.has(`omniroute/o/m-${tier}`), `flat dropped for -${tier}`);
+        assert.ok(collected.entries.has("cheaprouter/o/m"), `base kept for -${tier}`);
+        assert.ok(!collected.entries.has(`cheaprouter/o/m-${tier}`), `flat dropped for -${tier}`);
       }
     });
   });
@@ -596,7 +596,7 @@ describe("flat effort-variant ids stay out of the default view", () => {
           usageFetcher: async () => ["o/m-high"],
         }
       );
-      assert.ok(!collected.entries.has("omniroute/o/m-high"));
+      assert.ok(!collected.entries.has("cheaprouter/o/m-high"));
     });
   });
 
@@ -617,7 +617,7 @@ describe("flat effort-variant ids stay out of the default view", () => {
           combosFetcher: async () => [],
         }
       );
-      assert.ok(collected.entries.has("omniroute/o/m-medium"));
+      assert.ok(collected.entries.has("cheaprouter/o/m-medium"));
     });
   });
 
@@ -639,7 +639,7 @@ describe("flat effort-variant ids stay out of the default view", () => {
           usageFetcher: async () => [],
         }
       );
-      assert.ok(collected.entries.has("omniroute/o/model-turbo"));
+      assert.ok(collected.entries.has("cheaprouter/o/model-turbo"));
     });
   });
 });
@@ -667,8 +667,8 @@ describe("fresh cap per owner", () => {
           usageFetcher: async () => [],
         }
       );
-      for (let i = 0; i < 10; i++) assert.ok(collected.entries.has(`omniroute/cap/m-${i}`));
-      assert.ok(!collected.entries.has("omniroute/cap/m-10"));
+      for (let i = 0; i < 10; i++) assert.ok(collected.entries.has(`cheaprouter/cap/m-${i}`));
+      assert.ok(!collected.entries.has("cheaprouter/cap/m-10"));
     });
   });
 
@@ -683,8 +683,8 @@ describe("fresh cap per owner", () => {
           usageFetcher: async () => [],
         }
       );
-      for (let i = 0; i < 3; i++) assert.ok(collected.entries.has(`omniroute/cap/m-${i}`));
-      assert.ok(!collected.entries.has("omniroute/cap/m-3"));
+      for (let i = 0; i < 3; i++) assert.ok(collected.entries.has(`cheaprouter/cap/m-${i}`));
+      assert.ok(!collected.entries.has("cheaprouter/cap/m-3"));
     });
   });
 
@@ -699,8 +699,8 @@ describe("fresh cap per owner", () => {
           usageFetcher: async () => [],
         }
       );
-      for (let i = 0; i < 10; i++) assert.ok(collected.entries.has(`omniroute/plain/filler-${i}`));
-      assert.ok(!collected.entries.has("omniroute/plain/undated"));
+      for (let i = 0; i < 10; i++) assert.ok(collected.entries.has(`cheaprouter/plain/filler-${i}`));
+      assert.ok(!collected.entries.has("cheaprouter/plain/undated"));
     });
   });
 
@@ -714,7 +714,7 @@ describe("fresh cap per owner", () => {
           combosFetcher: async () => [],
         }
       );
-      for (let i = 0; i < 11; i++) assert.ok(collected.entries.has(`omniroute/cap/m-${i}`));
+      for (let i = 0; i < 11; i++) assert.ok(collected.entries.has(`cheaprouter/cap/m-${i}`));
     });
   });
 });
@@ -735,9 +735,9 @@ describe("showcase size option", () => {
     );
     for (const owner of ["aaa", "bbb"]) {
       for (let i = 0; i < 3; i++)
-        assert.ok(collected.entries.has(`omniroute/${owner}/filler-${i}`));
-      assert.ok(!collected.entries.has(`omniroute/${owner}/filler-3`));
-      assert.ok(!collected.entries.has(`omniroute/${owner}/target`));
+        assert.ok(collected.entries.has(`cheaprouter/${owner}/filler-${i}`));
+      assert.ok(!collected.entries.has(`cheaprouter/${owner}/filler-3`));
+      assert.ok(!collected.entries.has(`cheaprouter/${owner}/target`));
     }
   });
 
@@ -751,8 +751,8 @@ describe("showcase size option", () => {
         usageFetcher: async () => [],
       }
     );
-    for (let i = 0; i < 10; i++) assert.ok(collected.entries.has(`omniroute/aaa/filler-${i}`));
-    assert.ok(!collected.entries.has("omniroute/aaa/target"));
+    for (let i = 0; i < 10; i++) assert.ok(collected.entries.has(`cheaprouter/aaa/filler-${i}`));
+    assert.ok(!collected.entries.has("cheaprouter/aaa/target"));
   });
 
   it("zero on a direct call publishes the same set as unset", async () => {
@@ -773,12 +773,12 @@ describe("showcase size option", () => {
     const collected = await collectCatalog(
       { ...baseOpts, visibleModels: ["*"], showcasePerOwner: 3 },
       {
-        fetcher: async () => crowd("aaa", "aaa/target") as unknown as OmniRouteRawModelEntry[],
+        fetcher: async () => crowd("aaa", "aaa/target") as unknown as CheapRouterRawModelEntry[],
         combosFetcher: async () => [],
       }
     );
-    for (let i = 0; i < 10; i++) assert.ok(collected.entries.has(`omniroute/aaa/filler-${i}`));
-    assert.ok(collected.entries.has("omniroute/aaa/target"));
+    for (let i = 0; i < 10; i++) assert.ok(collected.entries.has(`cheaprouter/aaa/filler-${i}`));
+    assert.ok(collected.entries.has("cheaprouter/aaa/target"));
   });
 });
 
@@ -810,8 +810,8 @@ describe("freshness window in days", () => {
           usageFetcher: async () => [],
         }
       );
-      assert.ok(collected.entries.has("omniroute/win/filler-0"));
-      assert.ok(!collected.entries.has("omniroute/win/thirty-day"));
+      assert.ok(collected.entries.has("cheaprouter/win/filler-0"));
+      assert.ok(!collected.entries.has("cheaprouter/win/thirty-day"));
     });
   });
 
@@ -842,7 +842,7 @@ describe("freshness window in days", () => {
           usageFetcher: async () => [],
         }
       );
-      assert.ok(collected.entries.has("omniroute/win/thirty-day"));
+      assert.ok(collected.entries.has("cheaprouter/win/thirty-day"));
     });
   });
 
@@ -873,7 +873,7 @@ describe("freshness window in days", () => {
           usageFetcher: async () => [],
         }
       );
-      assert.ok(collected.entries.has("omniroute/win/thirty-day"));
+      assert.ok(collected.entries.has("cheaprouter/win/thirty-day"));
     });
   });
 
@@ -911,7 +911,7 @@ describe("freshness window in days", () => {
           usageFetcher: async () => [],
         }
       );
-      assert.ok(collected.entries.has("omniroute/win/thirty-day"));
+      assert.ok(collected.entries.has("cheaprouter/win/thirty-day"));
     });
   });
 
@@ -938,8 +938,8 @@ describe("freshness window in days", () => {
           combosFetcher: async () => [],
         }
       );
-      assert.ok(collected.entries.has("omniroute/win/old"));
-      assert.ok(collected.entries.has("omniroute/win/older"));
+      assert.ok(collected.entries.has("cheaprouter/win/old"));
+      assert.ok(collected.entries.has("cheaprouter/win/older"));
     });
   });
 });

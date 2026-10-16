@@ -1,5 +1,5 @@
 /**
- * Structured logger for the OmniRoute plugin.
+ * Structured logger for the CheapRouter plugin.
  *
  * Levels: error < warn < info < debug
  * Default: warn (matches current console.warn behavior)
@@ -15,7 +15,7 @@ const LEVEL_ORDER: Record<LogLevel, number> = {
   debug: 3,
 };
 
-const TAG = "[omniroute-plugin]";
+const TAG = "[cheaprouter-plugin]";
 
 function shouldLog(current: LogLevel, target: LogLevel): boolean {
   return LEVEL_ORDER[current] >= LEVEL_ORDER[target];

@@ -2,7 +2,7 @@ import type { LegacyModel as ModelV2 } from "../legacy-model.js";
 import { buildModelDisplayName } from "./naming.js";
 import type { FreeModelFreeType } from "./naming.js";
 
-export interface OmniRouteEnrichmentEntry {
+export interface CheapRouterEnrichmentEntry {
   /** Human-readable display name. Replaces ModelV2.name when present. */
   name?: string;
   /** Per-million-token cost overlay onto ModelV2.cost. */
@@ -14,7 +14,7 @@ export interface OmniRouteEnrichmentEntry {
   };
   /**
    * Provider alias prefix seen in `/v1/models` ids (e.g. `cc`, `gemini`).
-   * Populated by `defaultOmniRouteEnrichmentFetcher` from
+   * Populated by `defaultCheapRouterEnrichmentFetcher` from
    * `/api/pricing/models` keys. Drives the `usableOnly` alias↔canonical
    * resolution.
    */
@@ -43,12 +43,12 @@ export interface OmniRouteEnrichmentEntry {
 }
 
 /** Map keyed by full model id (possibly namespaced, e.g. `cc/claude-sonnet-4-6`). */
-export type OmniRouteEnrichmentMap = Map<string, OmniRouteEnrichmentEntry>;
+export type CheapRouterEnrichmentMap = Map<string, CheapRouterEnrichmentEntry>;
 
 /**
  * Reverse-index the enrichment map from `providerCanonical → providerAlias`.
  *
- * OmniRoute's `/api/pricing/models` is keyed by short ALIAS (`cc`, `cx`,
+ * CheapRouter's `/api/pricing/models` is keyed by short ALIAS (`cc`, `cx`,
  * `pol`). But `/v1/models` exposes some models a SECOND time under their
  * CANONICAL name (`claude/claude-opus-4-7`, `codex/gpt-5.5`,
  * `pollinations/midjourney`). Without a reverse map, those canonical
@@ -60,7 +60,7 @@ export type OmniRouteEnrichmentMap = Map<string, OmniRouteEnrichmentEntry>;
  * like `kiro`).
  */
 export function buildCanonicalToAliasMap(
-  enrichment: OmniRouteEnrichmentMap | undefined
+  enrichment: CheapRouterEnrichmentMap | undefined
 ): Map<string, string> {
   const out = new Map<string, string>();
   if (!enrichment) return out;
@@ -93,9 +93,9 @@ export function buildCanonicalToAliasMap(
  */
 export function lookupEnrichment(
   rawId: string,
-  enrichment: OmniRouteEnrichmentMap | undefined,
+  enrichment: CheapRouterEnrichmentMap | undefined,
   canonicalToAlias: Map<string, string>
-): OmniRouteEnrichmentEntry | undefined {
+): CheapRouterEnrichmentEntry | undefined {
   if (!enrichment) return undefined;
   const direct = enrichment.get(rawId);
   if (direct) return direct;
@@ -158,7 +158,7 @@ export function canonicalDedupSet(
  * provider prefix even for raw models that don't have their own
  * curated `/api/pricing/models` entry.
  *
- * Real example: OmniRoute's `pricing['cohere']` slot lists 10 curated
+ * Real example: CheapRouter's `pricing['cohere']` slot lists 10 curated
  * models but `/v1/models` also returns `cohere/rerank-multilingual-v3.0`
  * and `cohere/rerank-v4.0-fast` (not in the curated 10). Without this
  * index, those rows surface in the picker as `cohere/...` with no
@@ -166,16 +166,16 @@ export function canonicalDedupSet(
  *
  * This index records the first non-empty `providerDisplayName` seen
  * for each alias, plus the alias itself. Callers use it to synthesize
- * a minimal `OmniRouteEnrichmentEntry` whenever the direct lookup
+ * a minimal `CheapRouterEnrichmentEntry` whenever the direct lookup
  * misses but the raw id's prefix matches a known alias.
  *
  * Built once per refresh; first-wins on duplicate alias (matches
  * `buildCanonicalToAliasMap` semantics).
  */
 export function buildAliasIndex(
-  enrichment: OmniRouteEnrichmentMap | undefined
-): Map<string, OmniRouteEnrichmentEntry> {
-  const out = new Map<string, OmniRouteEnrichmentEntry>();
+  enrichment: CheapRouterEnrichmentMap | undefined
+): Map<string, CheapRouterEnrichmentEntry> {
+  const out = new Map<string, CheapRouterEnrichmentEntry>();
   if (!enrichment) return out;
   for (const entry of enrichment.values()) {
     const alias = typeof entry.providerAlias === "string" ? entry.providerAlias.trim() : "";
@@ -223,10 +223,10 @@ export function buildAliasIndex(
  */
 export function resolveProviderTagEntry(
   rawId: string,
-  direct: OmniRouteEnrichmentEntry | undefined,
-  aliasIndex: Map<string, OmniRouteEnrichmentEntry>,
+  direct: CheapRouterEnrichmentEntry | undefined,
+  aliasIndex: Map<string, CheapRouterEnrichmentEntry>,
   canonicalToAlias?: Map<string, string>
-): OmniRouteEnrichmentEntry | undefined {
+): CheapRouterEnrichmentEntry | undefined {
   if (direct) {
     const alias = typeof direct.providerAlias === "string" ? direct.providerAlias.trim() : "";
     const display =
@@ -254,21 +254,21 @@ export function resolveProviderTagEntry(
 
 /**
  * Fetcher contract: resolves the enrichment overlay (display names +
- * pricing + free-tier budgets) from a running OmniRoute instance.
+ * pricing + free-tier budgets) from a running CheapRouter instance.
  */
 /**
  * Reports a source that could not be read. Enrichment stays best-effort, but
  * a caller that swallows this loses display names, provider tags, canonical
  * dedupe and pricing with no way to tell why.
  */
-export type OmniRouteEnrichmentSourceError = (endpoint: string, reason: string) => void;
+export type CheapRouterEnrichmentSourceError = (endpoint: string, reason: string) => void;
 
-export type OmniRouteEnrichmentFetcher = (
+export type CheapRouterEnrichmentFetcher = (
   baseURL: string,
   apiKey: string,
   timeoutMs?: number,
-  onSourceError?: OmniRouteEnrichmentSourceError
-) => Promise<OmniRouteEnrichmentMap>;
+  onSourceError?: CheapRouterEnrichmentSourceError
+) => Promise<CheapRouterEnrichmentMap>;
 
 function trimTrailingSlashes(value: string): string {
   let i = value.length;
@@ -301,7 +301,7 @@ function trimTrailingSlashes(value: string): string {
  * Ported from the v1 plugin (`index.ts:1906-2106`); the shared logger is
  * the only intentional difference (no plugin-contract dependency here).
  */
-export const defaultOmniRouteEnrichmentFetcher: OmniRouteEnrichmentFetcher = async (
+export const defaultCheapRouterEnrichmentFetcher: CheapRouterEnrichmentFetcher = async (
   baseURL,
   apiKey,
   timeoutMs = 10_000,
@@ -310,7 +310,7 @@ export const defaultOmniRouteEnrichmentFetcher: OmniRouteEnrichmentFetcher = asy
   const report = (endpoint: string, reason: unknown): void => {
     onSourceError?.(endpoint, reason instanceof Error ? reason.message : String(reason));
   };
-  const out: OmniRouteEnrichmentMap = new Map();
+  const out: CheapRouterEnrichmentMap = new Map();
   if (!baseURL || !apiKey) return out;
   const root = trimTrailingSlashes(baseURL.replace(/\/v1\/?$/, ""));
   const headers = {
@@ -354,7 +354,7 @@ export const defaultOmniRouteEnrichmentFetcher: OmniRouteEnrichmentFetcher = asy
             const id = (m as { id?: unknown }).id;
             if (typeof id !== "string" || id.length === 0) continue;
             const name = (m as { name?: unknown }).name;
-            const entry: OmniRouteEnrichmentEntry = {
+            const entry: CheapRouterEnrichmentEntry = {
               providerAlias,
               providerCanonical,
             };
@@ -407,7 +407,7 @@ export const defaultOmniRouteEnrichmentFetcher: OmniRouteEnrichmentFetcher = asy
           for (const [modelId, raw] of Object.entries(slot as Record<string, unknown>)) {
             if (!raw || typeof raw !== "object") continue;
             const p = raw as Record<string, unknown>;
-            const parsed: NonNullable<OmniRouteEnrichmentEntry["pricing"]> = {};
+            const parsed: NonNullable<CheapRouterEnrichmentEntry["pricing"]> = {};
             if (typeof p.input === "number") parsed.input = p.input;
             if (typeof p.output === "number") parsed.output = p.output;
             const cacheRead =
@@ -569,7 +569,7 @@ export interface EnrichmentDisplayContext {
  */
 export function applyEnrichment(
   model: ModelV2,
-  enrichment: OmniRouteEnrichmentEntry | undefined,
+  enrichment: CheapRouterEnrichmentEntry | undefined,
   context: EnrichmentDisplayContext = {}
 ): ModelV2 {
   if (!enrichment) return model;

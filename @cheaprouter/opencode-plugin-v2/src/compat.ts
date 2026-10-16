@@ -6,16 +6,16 @@
  */
 export function assertContext(ctx: unknown): void {
   if (!isObject(ctx)) {
-    throw new Error("[omniroute-v2] contract breach: ctx must be an object");
+    throw new Error("[cheaprouter-v2] contract breach: ctx must be an object");
   }
   if (!isTransformHolder(ctx.provider) || typeof ctx.provider.transform !== "function") {
-    throw new Error("[omniroute-v2] contract breach: ctx.provider.transform must be a function");
+    throw new Error("[cheaprouter-v2] contract breach: ctx.provider.transform must be a function");
   }
   if (!isTransformHolder(ctx.model) || typeof ctx.model.transform !== "function") {
-    throw new Error("[omniroute-v2] contract breach: ctx.model.transform must be a function");
+    throw new Error("[cheaprouter-v2] contract breach: ctx.model.transform must be a function");
   }
   if (!isObject(ctx.options)) {
-    throw new Error("[omniroute-v2] contract breach: ctx.options must be an object");
+    throw new Error("[cheaprouter-v2] contract breach: ctx.options must be an object");
   }
 }
 

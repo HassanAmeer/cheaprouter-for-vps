@@ -34,7 +34,7 @@ describe("mapComboToModelV2", () => {
           capabilities: { tool_calling: false },
         },
       ],
-      "omniroute",
+      "cheaprouter",
       "https://gw.example.com"
     );
     assert.equal(m.limit.context, 50000);
@@ -43,7 +43,7 @@ describe("mapComboToModelV2", () => {
     assert.equal(m.api.id, "openai-compatible");
   });
   it("empty members short-circuit to all-false capabilities", () => {
-    const m = mapComboToModelV2({ id: "combo-empty" }, [], "omniroute", "https://gw.example.com");
+    const m = mapComboToModelV2({ id: "combo-empty" }, [], "cheaprouter", "https://gw.example.com");
     assert.equal(m.capabilities.toolcall, false);
     assert.equal(m.capabilities.reasoning, false);
   });
@@ -51,7 +51,7 @@ describe("mapComboToModelV2", () => {
     const m = mapComboToModelV2(
       { id: "combo-a", models: [{ kind: "model", model: "a" }] },
       [{ ...member("a") }],
-      "omniroute",
+      "cheaprouter",
       "https://gw.example.com"
     );
     assert.deepEqual(m.api, {
@@ -64,7 +64,7 @@ describe("mapComboToModelV2", () => {
     const m = mapComboToModelV2(
       { id: "combo-a", models: [{ kind: "model", model: "gpt-x" }] },
       [{ ...member("gpt-x") }],
-      "omniroute",
+      "cheaprouter",
       "https://gw.example.com",
       { allowAnthropic: true, anthropicModels: ["combo-a"] }
     );
@@ -85,7 +85,7 @@ describe("mapComboToModelV2", () => {
     const m = mapComboToModelV2(
       { id: "uuid-1234", name: "static-best-free", models: [{ kind: "model", model: "a" }] },
       [{ ...member("a") }],
-      "omniroute",
+      "cheaprouter",
       "https://gw.example.com"
     );
     assert.equal(m.id, "static-best-free");
@@ -95,18 +95,18 @@ describe("mapComboToModelV2", () => {
     const m = mapComboToModelV2(
       { id: "uuid-5678", name: "Kimi Coding", models: [{ kind: "model", model: "a" }] },
       [{ ...member("a") }],
-      "omniroute",
+      "cheaprouter",
       "https://gw.example.com"
     );
     assert.equal(m.id, "Kimi Coding");
   });
   it("falls back to the combo id when the name is missing or blank", () => {
-    const noName = mapComboToModelV2({ id: "combo-a" }, [], "omniroute", "https://gw.example.com");
+    const noName = mapComboToModelV2({ id: "combo-a" }, [], "cheaprouter", "https://gw.example.com");
     assert.equal(noName.id, "combo-a");
     const blankName = mapComboToModelV2(
       { id: "combo-b", name: "   " },
       [],
-      "omniroute",
+      "cheaprouter",
       "https://gw.example.com"
     );
     assert.equal(blankName.id, "combo-b");
@@ -115,7 +115,7 @@ describe("mapComboToModelV2", () => {
     const m = mapComboToModelV2(
       { id: "uuid-9", name: "  auto/best-coding  ", models: [{ kind: "model", model: "a" }] },
       [{ ...member("a") }],
-      "omniroute",
+      "cheaprouter",
       "https://gw.example.com"
     );
     assert.equal(m.id, "auto/best-coding");

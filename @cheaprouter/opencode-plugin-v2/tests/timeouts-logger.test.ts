@@ -94,7 +94,7 @@ describe("plugin-v2 P2 parity: per-endpoint timeouts", () => {
       const res = await publishCatalog(
         draft,
         {
-          providerId: "omniroute",
+          providerId: "cheaprouter",
           baseURL: BER,
           apiKey: "k",
           // A per-endpoint value must win over the global one: the 20ms

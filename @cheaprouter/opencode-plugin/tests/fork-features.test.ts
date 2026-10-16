@@ -1,5 +1,5 @@
 /**
- * Tests for the 3 mrmm-fork features backported to @omniroute/opencode-plugin:
+ * Tests for the 3 mrmm-fork features backported to @cheaprouter/opencode-plugin:
  *
  *   1. `normaliseFreeLabel` — free-tier model display names get a consistent
  *      `[Free] ` prefix instead of trailing "(Free)" or ad-hoc "free" words.

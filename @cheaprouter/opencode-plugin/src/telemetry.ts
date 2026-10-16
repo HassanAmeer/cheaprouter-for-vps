@@ -1,9 +1,9 @@
 /**
- * Map gateway-reported OmniRoute inference telemetry onto the JSON/SSE
+ * Map gateway-reported CheapRouter inference telemetry onto the JSON/SSE
  * payload OpenCode already consumes. Prefer headers / usage fields from the
  * gateway. Never invent tok/s from tokens / latency (that includes TTFT).
  */
-export type OmniRouteInferenceTelemetry = {
+export type CheapRouterInferenceTelemetry = {
   costUsd?: number;
   tokensIn?: number;
   tokensOut?: number;
@@ -15,14 +15,14 @@ export type OmniRouteInferenceTelemetry = {
 };
 
 const HEADER = {
-  cost: "x-omniroute-response-cost",
-  tokensIn: "x-omniroute-tokens-in",
-  tokensOut: "x-omniroute-tokens-out",
-  tokensPerSecond: "x-omniroute-tokens-per-second",
-  ttftMs: "x-omniroute-ttft-ms",
-  latencyMs: "x-omniroute-latency-ms",
-  model: "x-omniroute-model",
-  provider: "x-omniroute-provider",
+  cost: "x-cheaprouter-response-cost",
+  tokensIn: "x-cheaprouter-tokens-in",
+  tokensOut: "x-cheaprouter-tokens-out",
+  tokensPerSecond: "x-cheaprouter-tokens-per-second",
+  ttftMs: "x-cheaprouter-ttft-ms",
+  latencyMs: "x-cheaprouter-latency-ms",
+  model: "x-cheaprouter-model",
+  provider: "x-cheaprouter-provider",
 } as const;
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -55,8 +55,8 @@ function readToken(raw: string | null): string | undefined {
   return trimmed === "" ? undefined : trimmed;
 }
 
-export function parseOmniRouteInferenceTelemetry(headers: Headers): OmniRouteInferenceTelemetry {
-  const out: OmniRouteInferenceTelemetry = {};
+export function parseCheapRouterInferenceTelemetry(headers: Headers): CheapRouterInferenceTelemetry {
+  const out: CheapRouterInferenceTelemetry = {};
   const cost = readFiniteNumber(headers.get(HEADER.cost));
   if (cost !== undefined && cost >= 0) out.costUsd = cost;
   const tokensIn = readNonNegativeInt(headers.get(HEADER.tokensIn));
@@ -76,8 +76,8 @@ export function parseOmniRouteInferenceTelemetry(headers: Headers): OmniRouteInf
   return out;
 }
 
-function telemetryFromUsage(usage: Record<string, unknown>): OmniRouteInferenceTelemetry {
-  const out: OmniRouteInferenceTelemetry = {};
+function telemetryFromUsage(usage: Record<string, unknown>): CheapRouterInferenceTelemetry {
+  const out: CheapRouterInferenceTelemetry = {};
   const tps = usage.tokens_per_second;
   if (typeof tps === "number" && Number.isFinite(tps) && tps > 0) {
     out.tokensPerSecond = tps;
@@ -90,9 +90,9 @@ function telemetryFromUsage(usage: Record<string, unknown>): OmniRouteInferenceT
 }
 
 function mergeTelemetry(
-  base: OmniRouteInferenceTelemetry,
-  extra: OmniRouteInferenceTelemetry,
-): OmniRouteInferenceTelemetry {
+  base: CheapRouterInferenceTelemetry,
+  extra: CheapRouterInferenceTelemetry,
+): CheapRouterInferenceTelemetry {
   return {
     ...base,
     ...Object.fromEntries(Object.entries(extra).filter(([, value]) => value !== undefined)),
@@ -112,7 +112,7 @@ function isInferencePayload(payload: Record<string, unknown>): boolean {
 
 function attachToUsage(
   usage: Record<string, unknown>,
-  telemetry: OmniRouteInferenceTelemetry,
+  telemetry: CheapRouterInferenceTelemetry,
 ): Record<string, unknown> {
   const next = { ...usage };
   if (
@@ -130,9 +130,9 @@ function attachToUsage(
   return next;
 }
 
-export function attachOmniRouteTelemetryToPayload(
+export function attachCheapRouterTelemetryToPayload(
   payload: unknown,
-  telemetry: OmniRouteInferenceTelemetry,
+  telemetry: CheapRouterInferenceTelemetry,
 ): unknown {
   if (!isRecord(payload) || !isInferencePayload(payload)) {
     return payload;
@@ -156,9 +156,9 @@ export function attachOmniRouteTelemetryToPayload(
   return next;
 }
 
-export function attachOmniRouteTelemetryToSseLine(
+export function attachCheapRouterTelemetryToSseLine(
   line: string,
-  telemetry: OmniRouteInferenceTelemetry,
+  telemetry: CheapRouterInferenceTelemetry,
 ): string {
   const trimmed = line.trim();
   if (!trimmed.startsWith("data:")) {
@@ -170,7 +170,7 @@ export function attachOmniRouteTelemetryToSseLine(
   }
   try {
     const parsed = JSON.parse(jsonText) as unknown;
-    const updated = attachOmniRouteTelemetryToPayload(parsed, telemetry);
+    const updated = attachCheapRouterTelemetryToPayload(parsed, telemetry);
     if (updated === parsed) {
       return line;
     }
@@ -182,8 +182,8 @@ export function attachOmniRouteTelemetryToSseLine(
   }
 }
 
-export async function applyOmniRouteInferenceTelemetry(response: Response): Promise<Response> {
-  const telemetry = parseOmniRouteInferenceTelemetry(response.headers);
+export async function applyCheapRouterInferenceTelemetry(response: Response): Promise<Response> {
+  const telemetry = parseCheapRouterInferenceTelemetry(response.headers);
   const contentType = response.headers.get("content-type") ?? "";
   if (contentType.includes("text/event-stream") && response.body) {
     return new Response(mapSseBody(response.body, telemetry), {
@@ -206,7 +206,7 @@ export async function applyOmniRouteInferenceTelemetry(response: Response): Prom
       headers: response.headers,
     });
   }
-  const next = attachOmniRouteTelemetryToPayload(parsed, telemetry);
+  const next = attachCheapRouterTelemetryToPayload(parsed, telemetry);
   if (next === parsed) {
     return new Response(text, {
       status: response.status,
@@ -223,7 +223,7 @@ export async function applyOmniRouteInferenceTelemetry(response: Response): Prom
 
 function mapSseBody(
   body: ReadableStream<Uint8Array>,
-  telemetry: OmniRouteInferenceTelemetry,
+  telemetry: CheapRouterInferenceTelemetry,
 ): ReadableStream<Uint8Array> {
   const decoder = new TextDecoder();
   const encoder = new TextEncoder();
@@ -236,12 +236,12 @@ function mapSseBody(
         const lines = pending.split("\n");
         pending = lines.pop() ?? "";
         for (const line of lines) {
-          controller.enqueue(encoder.encode(`${attachOmniRouteTelemetryToSseLine(line, live)}\n`));
+          controller.enqueue(encoder.encode(`${attachCheapRouterTelemetryToSseLine(line, live)}\n`));
         }
       },
       flush(controller) {
         if (pending.length > 0) {
-          controller.enqueue(encoder.encode(attachOmniRouteTelemetryToSseLine(pending, live)));
+          controller.enqueue(encoder.encode(attachCheapRouterTelemetryToSseLine(pending, live)));
         }
       },
     }),

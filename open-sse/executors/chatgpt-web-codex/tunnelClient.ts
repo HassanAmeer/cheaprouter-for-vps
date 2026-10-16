@@ -316,7 +316,7 @@ function validateRuntimeConfig(config: TunnelRuntimeConfig) {
     throw new Error("Tunnel Runtime-Key is missing or too large");
   }
   for (const value of [
-    config.alias ?? "omniroute-chatgpt-web-codex",
+    config.alias ?? "cheaprouter-chatgpt-web-codex",
     config.profile ?? "cheaproute",
   ]) {
     if (!/^[A-Za-z0-9._-]+$/.test(value)) throw new Error("Tunnel alias/profile is invalid");
@@ -334,7 +334,7 @@ export async function startTunnelRuntime(config: TunnelRuntimeConfig): Promise<C
   );
   atomicWriteFile(runtimeKeyFile, config.runtimeKey.trim());
   runtimeKeyFiles.add(runtimeKeyFile);
-  const alias = config.alias ?? "omniroute-chatgpt-web-codex";
+  const alias = config.alias ?? "cheaprouter-chatgpt-web-codex";
   const profile = config.profile ?? "cheaproute";
   const mcpCommand = [
     process.execPath,
@@ -427,7 +427,7 @@ export async function getTunnelRuntimeStatus(
   config: Pick<TunnelRuntimeConfig, "alias" | "profile">
 ): Promise<TunnelRuntimeStatus> {
   const binary = await ensureTunnelClientInstalled();
-  const alias = config.alias ?? "omniroute-chatgpt-web-codex";
+  const alias = config.alias ?? "cheaprouter-chatgpt-web-codex";
   const result = spawnSync(binary, buildTunnelRuntimeStatusArgs(alias), {
     encoding: "utf8",
     timeout: 5_000,
@@ -443,7 +443,7 @@ function runtimeIdentity(config: TunnelRuntimeConfig): string {
     .update(
       JSON.stringify({
         tunnelId: config.tunnelId,
-        alias: config.alias ?? "omniroute-chatgpt-web-codex",
+        alias: config.alias ?? "cheaprouter-chatgpt-web-codex",
         profile: config.profile ?? "cheaproute",
         brokerSocketPath: config.brokerSocketPath,
       })
@@ -498,7 +498,7 @@ export function ensureTunnelRuntimeReady(
 export async function stopChatGptWebCodexTunnelRuntime(): Promise<void> {
   const paths = tunnelClientPaths();
   if (ownsSupervisorLease && existsSync(paths.binary)) {
-    spawnSync(paths.binary, buildTunnelRuntimeStopArgs("omniroute-chatgpt-web-codex"), {
+    spawnSync(paths.binary, buildTunnelRuntimeStopArgs("cheaprouter-chatgpt-web-codex"), {
       encoding: "utf8",
       timeout: 10_000,
     });

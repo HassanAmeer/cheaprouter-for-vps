@@ -15,11 +15,11 @@ import {
   compileModelListFilter,
   passesModelAllowlist,
   passesComboAllowlist,
-  parseOmniRoutePluginOptions,
+  parseCheapRouterPluginOptions,
   buildStaticProviderEntry,
-  resolveOmniRoutePluginOptions,
-  type OmniRouteRawCombo,
-  type OmniRouteRawModelEntry,
+  resolveCheapRouterPluginOptions,
+  type CheapRouterRawCombo,
+  type CheapRouterRawModelEntry,
 } from "../src/index.js";
 
 // ─────────────────────────────────────────────────────────────────────────
@@ -137,7 +137,7 @@ test("passesModelAllowlist: no-slash id, visible set has no match → drop", () 
 // passesComboAllowlist
 // ─────────────────────────────────────────────────────────────────────────
 
-function combo(models: OmniRouteRawCombo["models"]): OmniRouteRawCombo {
+function combo(models: CheapRouterRawCombo["models"]): CheapRouterRawCombo {
   return { id: "c1", name: "Test Combo", models };
 }
 
@@ -186,22 +186,22 @@ test("passesComboAllowlist: only combo-ref steps → keep", () => {
 // Schema — visibleModels / hiddenModels
 // ─────────────────────────────────────────────────────────────────────────
 
-test("parseOmniRoutePluginOptions: visibleModels string[] → preserved", () => {
-  const r = parseOmniRoutePluginOptions({
+test("parseCheapRouterPluginOptions: visibleModels string[] → preserved", () => {
+  const r = parseCheapRouterPluginOptions({
     features: { visibleModels: ["cc/claude-opus-4-7", "gpt-5"] },
   });
   assert.deepEqual(r.features?.visibleModels, ["cc/claude-opus-4-7", "gpt-5"]);
 });
 
-test("parseOmniRoutePluginOptions: hiddenModels string[] → preserved", () => {
-  const r = parseOmniRoutePluginOptions({
+test("parseCheapRouterPluginOptions: hiddenModels string[] → preserved", () => {
+  const r = parseCheapRouterPluginOptions({
     features: { hiddenModels: ["glm/gpt-5"] },
   });
   assert.deepEqual(r.features?.hiddenModels, ["glm/gpt-5"]);
 });
 
-test("parseOmniRoutePluginOptions: both lists together → preserved", () => {
-  const r = parseOmniRoutePluginOptions({
+test("parseCheapRouterPluginOptions: both lists together → preserved", () => {
+  const r = parseCheapRouterPluginOptions({
     features: {
       visibleModels: ["cc/claude-opus-4-7"],
       hiddenModels: ["glm/gpt-5"],
@@ -211,33 +211,33 @@ test("parseOmniRoutePluginOptions: both lists together → preserved", () => {
   assert.deepEqual(r.features?.hiddenModels, ["glm/gpt-5"]);
 });
 
-test("parseOmniRoutePluginOptions: empty string in visibleModels → rejects", () => {
+test("parseCheapRouterPluginOptions: empty string in visibleModels → rejects", () => {
   assert.throws(
     () =>
-      parseOmniRoutePluginOptions({
+      parseCheapRouterPluginOptions({
         features: { visibleModels: [""] },
       }),
-    /Invalid @omniroute\/opencode-plugin options/
+    /Invalid @cheaprouter\/opencode-plugin options/
   );
 });
 
-test("parseOmniRoutePluginOptions: empty string in hiddenModels → rejects", () => {
+test("parseCheapRouterPluginOptions: empty string in hiddenModels → rejects", () => {
   assert.throws(
     () =>
-      parseOmniRoutePluginOptions({
+      parseCheapRouterPluginOptions({
         features: { hiddenModels: [""] },
       }),
-    /Invalid @omniroute\/opencode-plugin options/
+    /Invalid @cheaprouter\/opencode-plugin options/
   );
 });
 
-test("parseOmniRoutePluginOptions: unknown features key still rejects (strict invariant)", () => {
+test("parseCheapRouterPluginOptions: unknown features key still rejects (strict invariant)", () => {
   assert.throws(
     () =>
-      parseOmniRoutePluginOptions({
+      parseCheapRouterPluginOptions({
         features: { visibleModels: ["x"], unknownKey: true },
       }),
-    /Invalid @omniroute\/opencode-plugin options/
+    /Invalid @cheaprouter\/opencode-plugin options/
   );
 });
 
@@ -245,7 +245,7 @@ test("parseOmniRoutePluginOptions: unknown features key still rejects (strict in
 // buildStaticProviderEntry — allowlist/blocklist integration
 // ─────────────────────────────────────────────────────────────────────────
 
-const FAKE_RAW_MODELS: OmniRouteRawModelEntry[] = [
+const FAKE_RAW_MODELS: CheapRouterRawModelEntry[] = [
   { id: "cc/claude-opus-4-7", owned_by: "anthropic" },
   { id: "glm/gpt-5", owned_by: "openai" },
   { id: "kr/claude-opus-4-7", owned_by: "anthropic" },
@@ -253,7 +253,7 @@ const FAKE_RAW_MODELS: OmniRouteRawModelEntry[] = [
 ];
 
 test("buildStaticProviderEntry: no allowlist → all models emitted", () => {
-  const opts = resolveOmniRoutePluginOptions({ features: {} });
+  const opts = resolveCheapRouterPluginOptions({ features: {} });
   const entry = buildStaticProviderEntry(FAKE_RAW_MODELS, [], opts, "http://localhost:20128/v1", "sk-test");
   const ids = Object.keys(entry.models);
   assert.ok(ids.includes("cc/claude-opus-4-7"), "cc/claude-opus-4-7 should be present");
@@ -262,7 +262,7 @@ test("buildStaticProviderEntry: no allowlist → all models emitted", () => {
 });
 
 test("buildStaticProviderEntry: visibleModels filters to only listed IDs", () => {
-  const opts = resolveOmniRoutePluginOptions({
+  const opts = resolveCheapRouterPluginOptions({
     features: { visibleModels: ["cc/claude-opus-4-7"] },
   });
   const entry = buildStaticProviderEntry(FAKE_RAW_MODELS, [], opts, "http://localhost:20128/v1", "sk-test");
@@ -273,7 +273,7 @@ test("buildStaticProviderEntry: visibleModels filters to only listed IDs", () =>
 });
 
 test("buildStaticProviderEntry: hiddenModels drops listed IDs", () => {
-  const opts = resolveOmniRoutePluginOptions({
+  const opts = resolveCheapRouterPluginOptions({
     features: { hiddenModels: ["glm/gpt-5"] },
   });
   const entry = buildStaticProviderEntry(FAKE_RAW_MODELS, [], opts, "http://localhost:20128/v1", "sk-test");
@@ -284,7 +284,7 @@ test("buildStaticProviderEntry: hiddenModels drops listed IDs", () => {
 });
 
 test("buildStaticProviderEntry: bare-suffix visibleModels matches any prefix", () => {
-  const opts = resolveOmniRoutePluginOptions({
+  const opts = resolveCheapRouterPluginOptions({
     features: { visibleModels: ["claude-opus-4-7"] },
   });
   const entry = buildStaticProviderEntry(FAKE_RAW_MODELS, [], opts, "http://localhost:20128/v1", "sk-test");
@@ -295,7 +295,7 @@ test("buildStaticProviderEntry: bare-suffix visibleModels matches any prefix", (
 });
 
 test("buildStaticProviderEntry: id in both visible and hidden → hidden wins", () => {
-  const opts = resolveOmniRoutePluginOptions({
+  const opts = resolveCheapRouterPluginOptions({
     features: {
       visibleModels: ["cc/claude-opus-4-7"],
       hiddenModels: ["cc/claude-opus-4-7"],
@@ -307,7 +307,7 @@ test("buildStaticProviderEntry: id in both visible and hidden → hidden wins", 
 });
 
 test("buildStaticProviderEntry: empty visibleModels → no filter (passthrough)", () => {
-  const opts = resolveOmniRoutePluginOptions({
+  const opts = resolveCheapRouterPluginOptions({
     features: { visibleModels: [] },
   });
   const entry = buildStaticProviderEntry(FAKE_RAW_MODELS, [], opts, "http://localhost:20128/v1", "sk-test");

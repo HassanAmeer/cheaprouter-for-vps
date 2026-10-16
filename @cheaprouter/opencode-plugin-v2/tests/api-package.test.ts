@@ -48,7 +48,7 @@ function fakeDraft(): { models: Map<string, Record<string, any>>; draft: BetaDra
 }
 
 const baseOpts = {
-  providerId: "omniroute",
+  providerId: "cheaprouter",
   baseURL: "https://gw.example.com",
   apiKey: "k",
   timeoutMs: 1000,
@@ -73,7 +73,7 @@ describe("catalog api package (models + combos)", () => {
       ],
     });
     assert.deepEqual(res, { models: 1, combos: 1 });
-    for (const key of ["omniroute/gpt-x", "omniroute/Combo A"]) {
+    for (const key of ["cheaprouter/gpt-x", "cheaprouter/Combo A"]) {
       const pkg = apiPackageOf(models.get(key));
       assert.ok(pkg.length > 0, `${key} api.package must be non-empty`);
       assert.ok(SUPPORTED_PACKAGES.has(pkg), `${key} api.package must be supported, got ${pkg}`);
@@ -94,7 +94,7 @@ describe("catalog api package (models + combos)", () => {
       }
     );
     assert.deepEqual(res, { models: 2, combos: 0 });
-    assert.equal(apiPackageOf(models.get("omniroute/anthropic/claude-x")), "@ai-sdk/anthropic");
-    assert.ok(models.has("omniroute/auto/coding"), "gateway entries publish under their own id");
+    assert.equal(apiPackageOf(models.get("cheaprouter/anthropic/claude-x")), "@ai-sdk/anthropic");
+    assert.ok(models.has("cheaprouter/auto/coding"), "gateway entries publish under their own id");
   });
 });

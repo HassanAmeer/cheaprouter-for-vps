@@ -15,7 +15,7 @@ describe("plugin-v2 staged refresh: optional sources never gate the publish", ()
     const { tmpdir } = await import("node:os");
     const { join } = await import("node:path");
     seq += 1;
-    const dir = mkdtempSync(join(tmpdir(), `omniroute-staged-${seq}-`));
+    const dir = mkdtempSync(join(tmpdir(), `cheaprouter-staged-${seq}-`));
     const prev = process.env.OPENCODE_DATA_DIR;
     process.env.OPENCODE_DATA_DIR = dir;
     return () => {

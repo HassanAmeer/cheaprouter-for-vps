@@ -38,7 +38,7 @@ describe("MCP audit shutdown", () => {
   beforeEach(() => {
     vi.resetModules();
     globalThis.__cheaprouteMcpAuditDb = undefined;
-    dataDir = fs.mkdtempSync(path.join(os.tmpdir(), "omniroute-mcp-audit-"));
+    dataDir = fs.mkdtempSync(path.join(os.tmpdir(), "cheaprouter-mcp-audit-"));
     dbFile = path.join(dataDir, "storage.sqlite");
     fs.writeFileSync(dbFile, "");
     process.env.DATA_DIR = dataDir;

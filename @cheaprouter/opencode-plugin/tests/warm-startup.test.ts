@@ -1,7 +1,7 @@
 /**
  * Warm-startup + parallel-refresh tests for the opencode-plugin config shim.
  *
- * Covers `createOmniRouteConfigHook(opts, deps)`:
+ * Covers `createCheapRouterConfigHook(opts, deps)`:
  *   - (a) Warm startup: cache miss + matching snapshot → provider block
  *     populated from snapshot data (not live fetch data).
  *   - (b) Fingerprint mismatch: reader returns undefined → no warm publish,
@@ -26,27 +26,27 @@ import assert from "node:assert/strict";
 import type { Config } from "@opencode-ai/plugin";
 
 import {
-  createOmniRouteConfigHook,
-  resolveOmniRoutePluginOptions,
+  createCheapRouterConfigHook,
+  resolveCheapRouterPluginOptions,
   _resetInflightRefresh,
-  type OmniRouteAutoCombosFetcher,
-  type OmniRouteCombosFetcher,
-  type OmniRouteCompressionMetaFetcher,
-  type OmniRouteEnrichmentEntry,
-  type OmniRouteEnrichmentFetcher,
-  type OmniRouteEnrichmentMap,
-  type OmniRouteFetchCache,
-  type OmniRouteModelsFetcher,
-  type OmniRouteProviderConnection,
-  type OmniRouteProvidersFetcher,
-  type OmniRouteRawAutoCombo,
-  type OmniRouteRawCombo,
-  type OmniRouteRawModelEntry,
-  type OmniRouteReadAuthJson,
-  type OmniRouteStaticProviderEntry,
-  type OmniRouteDiskSnapshotReader,
-  type OmniRouteDiskSnapshotWriter,
-  type OmniRouteCompressionCombo,
+  type CheapRouterAutoCombosFetcher,
+  type CheapRouterCombosFetcher,
+  type CheapRouterCompressionMetaFetcher,
+  type CheapRouterEnrichmentEntry,
+  type CheapRouterEnrichmentFetcher,
+  type CheapRouterEnrichmentMap,
+  type CheapRouterFetchCache,
+  type CheapRouterModelsFetcher,
+  type CheapRouterProviderConnection,
+  type CheapRouterProvidersFetcher,
+  type CheapRouterRawAutoCombo,
+  type CheapRouterRawCombo,
+  type CheapRouterRawModelEntry,
+  type CheapRouterReadAuthJson,
+  type CheapRouterStaticProviderEntry,
+  type CheapRouterDiskSnapshotReader,
+  type CheapRouterDiskSnapshotWriter,
+  type CheapRouterCompressionCombo,
 } from "../src/index.js";
 
 // ────────────────────────────────────────────────────────────────────────────
@@ -63,7 +63,7 @@ test.beforeEach(() => {
 // Fixtures
 // ────────────────────────────────────────────────────────────────────────────
 
-const MODEL_CLAUDE: OmniRouteRawModelEntry = {
+const MODEL_CLAUDE: CheapRouterRawModelEntry = {
   id: "claude-sonnet-4-6",
   capabilities: {
     tool_calling: true,
@@ -79,7 +79,7 @@ const MODEL_CLAUDE: OmniRouteRawModelEntry = {
   output_modalities: ["text"],
 };
 
-const MODEL_GEMINI: OmniRouteRawModelEntry = {
+const MODEL_GEMINI: CheapRouterRawModelEntry = {
   id: "gemini-3-flash",
   capabilities: { tool_calling: true, reasoning: false, vision: true, thinking: false },
   context_length: 1_000_000,
@@ -88,7 +88,7 @@ const MODEL_GEMINI: OmniRouteRawModelEntry = {
   output_modalities: ["text"],
 };
 
-const COMBO_CLAUDE_TIER: OmniRouteRawCombo = {
+const COMBO_CLAUDE_TIER: CheapRouterRawCombo = {
   id: "combo-claude-tier",
   name: "Claude Tier",
   models: [
@@ -97,18 +97,18 @@ const COMBO_CLAUDE_TIER: OmniRouteRawCombo = {
   ],
 };
 
-const AUTO_COMBO: OmniRouteRawAutoCombo = {
+const AUTO_COMBO: CheapRouterRawAutoCombo = {
   id: "auto",
   name: "Auto",
 };
 
-const COMPRESSION_COMBO: OmniRouteCompressionCombo = {
+const COMPRESSION_COMBO: CheapRouterCompressionCombo = {
   id: "ctx-combo-1",
   name: "Context Combo",
   pipeline: "gzip",
 };
 
-const CONNECTION_CLAUDE: OmniRouteProviderConnection = {
+const CONNECTION_CLAUDE: CheapRouterProviderConnection = {
   id: "c1",
   provider: "claude",
   isActive: true,
@@ -121,7 +121,7 @@ const CONNECTION_CLAUDE: OmniRouteProviderConnection = {
 
 function stubReadAuthJson(
   value: Record<string, unknown> | undefined | null
-): OmniRouteReadAuthJson {
+): CheapRouterReadAuthJson {
   return async () => value as never;
 }
 
@@ -171,7 +171,7 @@ function makeInput(initialProvider: Record<string, unknown> = {}): Config {
 /** Build a valid auth.json stub for the default providerId. */
 function authStub() {
   return stubReadAuthJson({
-    "opencode-omniroute": {
+    "opencode-cheaprouter": {
       type: "api",
       key: "sk-test",
       baseURL: "https://or.example.com/v1",
@@ -187,15 +187,15 @@ function authStub() {
 test("warm-startup: snapshot data used when snapshot is present", async () => {
   // Live fetch returns MODEL_CLAUDE, but snapshot has MODEL_GEMINI.
   // With warm startup, the block should contain the snapshot data.
-  const fetcher = immediateFetcher<OmniRouteModelsFetcher>([MODEL_CLAUDE]);
-  const combosFetcher = immediateFetcher<OmniRouteCombosFetcher>([]);
-  const autoCombosFetcher = immediateFetcher<OmniRouteAutoCombosFetcher>([]);
-  const enrichmentFetcher = immediateFetcher<OmniRouteEnrichmentFetcher>(new Map());
-  const compressionMetaFetcher = immediateFetcher<OmniRouteCompressionMetaFetcher>([]);
-  const providersFetcher = immediateFetcher<OmniRouteProvidersFetcher>([]);
+  const fetcher = immediateFetcher<CheapRouterModelsFetcher>([MODEL_CLAUDE]);
+  const combosFetcher = immediateFetcher<CheapRouterCombosFetcher>([]);
+  const autoCombosFetcher = immediateFetcher<CheapRouterAutoCombosFetcher>([]);
+  const enrichmentFetcher = immediateFetcher<CheapRouterEnrichmentFetcher>(new Map());
+  const compressionMetaFetcher = immediateFetcher<CheapRouterCompressionMetaFetcher>([]);
+  const providersFetcher = immediateFetcher<CheapRouterProvidersFetcher>([]);
   const logger = captureWarn();
 
-  const snapshot: Omit<import("../src/index.js").OmniRouteFetchCacheEntry, "expiresAt"> = {
+  const snapshot: Omit<import("../src/index.js").CheapRouterFetchCacheEntry, "expiresAt"> = {
     rawModels: [MODEL_GEMINI],
     rawCombos: [],
     rawAutoCombos: [],
@@ -204,11 +204,11 @@ test("warm-startup: snapshot data used when snapshot is present", async () => {
     rawConnections: [],
   };
 
-  const diskSnapshotReader: OmniRouteDiskSnapshotReader = async () => snapshot;
-  const diskSnapshotWriter: OmniRouteDiskSnapshotWriter = async () => {};
+  const diskSnapshotReader: CheapRouterDiskSnapshotReader = async () => snapshot;
+  const diskSnapshotWriter: CheapRouterDiskSnapshotWriter = async () => {};
 
-  const hook = createOmniRouteConfigHook(
-    { providerId: "omniroute" },
+  const hook = createCheapRouterConfigHook(
+    { providerId: "cheaprouter" },
     {
       readAuthJson: authStub(),
       fetcher,
@@ -226,16 +226,16 @@ test("warm-startup: snapshot data used when snapshot is present", async () => {
   const input = makeInput();
   await hook(input);
 
-  const provider = (input as { provider: Record<string, OmniRouteStaticProviderEntry> }).provider;
-  const entry = provider["opencode-omniroute"];
+  const provider = (input as { provider: Record<string, CheapRouterStaticProviderEntry> }).provider;
+  const entry = provider["opencode-cheaprouter"];
   assert.ok(entry, "provider entry published");
 
   // With warm startup, the block should contain the snapshot data (GEMINI),
   // not the live fetch data (CLAUDE). This is the key assertion: the warm
   // snapshot is served first, and the live refresh updates the cache in the
   // background. On the next hook invocation, the cache will have the fresh data.
-  const hasGemini = entry.models["opencode-omniroute/gemini-3-flash"] !== undefined;
-  const hasClaude = entry.models["opencode-omniroute/claude-sonnet-4-6"] !== undefined;
+  const hasGemini = entry.models["opencode-cheaprouter/gemini-3-flash"] !== undefined;
+  const hasClaude = entry.models["opencode-cheaprouter/claude-sonnet-4-6"] !== undefined;
   assert.ok(
     hasGemini || hasClaude,
     "provider block has at least one model"
@@ -256,16 +256,16 @@ test("warm-startup: snapshot data used when snapshot is present", async () => {
 // ────────────────────────────────────────────────────────────────────────────
 
 test("warm-startup: fingerprint mismatch → no warm publish, awaited fetch", async () => {
-  const fetcher = immediateFetcher<OmniRouteModelsFetcher>([MODEL_CLAUDE]);
-  const combosFetcher = immediateFetcher<OmniRouteCombosFetcher>([]);
+  const fetcher = immediateFetcher<CheapRouterModelsFetcher>([MODEL_CLAUDE]);
+  const combosFetcher = immediateFetcher<CheapRouterCombosFetcher>([]);
   const logger = captureWarn();
 
   // Reader returns undefined → fingerprint mismatch or missing snapshot.
-  const diskSnapshotReader: OmniRouteDiskSnapshotReader = async () => undefined;
-  const diskSnapshotWriter: OmniRouteDiskSnapshotWriter = async () => {};
+  const diskSnapshotReader: CheapRouterDiskSnapshotReader = async () => undefined;
+  const diskSnapshotWriter: CheapRouterDiskSnapshotWriter = async () => {};
 
-  const hook = createOmniRouteConfigHook(
-    { providerId: "omniroute" },
+  const hook = createCheapRouterConfigHook(
+    { providerId: "cheaprouter" },
     {
       readAuthJson: authStub(),
       fetcher,
@@ -279,13 +279,13 @@ test("warm-startup: fingerprint mismatch → no warm publish, awaited fetch", as
   const input = makeInput();
   await hook(input);
 
-  const entry = (input as { provider: Record<string, OmniRouteStaticProviderEntry> }).provider[
-    "opencode-omniroute"
+  const entry = (input as { provider: Record<string, CheapRouterStaticProviderEntry> }).provider[
+    "opencode-cheaprouter"
   ];
   assert.ok(entry, "provider entry published from live fetch");
   // Live fetch data, not snapshot data.
   assert.ok(
-    entry.models["opencode-omniroute/claude-sonnet-4-6"],
+    entry.models["opencode-cheaprouter/claude-sonnet-4-6"],
     "live fetch model present"
   );
   assert.equal(fetcher.callCount(), 1, "fetcher was called (awaited cold path)");
@@ -304,21 +304,21 @@ test("warm-startup: fingerprint mismatch → no warm publish, awaited fetch", as
 // ────────────────────────────────────────────────────────────────────────────
 
 test("warm-startup: parallel refresh updates cache + writes snapshot", async () => {
-  const fetcher = immediateFetcher<OmniRouteModelsFetcher>([MODEL_CLAUDE]);
-  const combosFetcher = immediateFetcher<OmniRouteCombosFetcher>([COMBO_CLAUDE_TIER]);
-  const autoCombosFetcher = immediateFetcher<OmniRouteAutoCombosFetcher>([AUTO_COMBO]);
-  const enrichmentFetcher = immediateFetcher<OmniRouteEnrichmentFetcher>(
-    new Map<string, OmniRouteEnrichmentEntry>([
+  const fetcher = immediateFetcher<CheapRouterModelsFetcher>([MODEL_CLAUDE]);
+  const combosFetcher = immediateFetcher<CheapRouterCombosFetcher>([COMBO_CLAUDE_TIER]);
+  const autoCombosFetcher = immediateFetcher<CheapRouterAutoCombosFetcher>([AUTO_COMBO]);
+  const enrichmentFetcher = immediateFetcher<CheapRouterEnrichmentFetcher>(
+    new Map<string, CheapRouterEnrichmentEntry>([
       ["claude-sonnet-4-6", { name: "Claude Sonnet 4.6" }],
     ])
   );
-  const compressionMetaFetcher = immediateFetcher<OmniRouteCompressionMetaFetcher>([
+  const compressionMetaFetcher = immediateFetcher<CheapRouterCompressionMetaFetcher>([
     COMPRESSION_COMBO,
   ]);
-  const providersFetcher = immediateFetcher<OmniRouteProvidersFetcher>([CONNECTION_CLAUDE]);
+  const providersFetcher = immediateFetcher<CheapRouterProvidersFetcher>([CONNECTION_CLAUDE]);
   const logger = captureWarn();
 
-  const snapshot: Omit<import("../src/index.js").OmniRouteFetchCacheEntry, "expiresAt"> = {
+  const snapshot: Omit<import("../src/index.js").CheapRouterFetchCacheEntry, "expiresAt"> = {
     rawModels: [MODEL_GEMINI],
     rawCombos: [],
     rawAutoCombos: [],
@@ -327,16 +327,16 @@ test("warm-startup: parallel refresh updates cache + writes snapshot", async () 
     rawConnections: [],
   };
 
-  const diskSnapshotReader: OmniRouteDiskSnapshotReader = async () => snapshot;
+  const diskSnapshotReader: CheapRouterDiskSnapshotReader = async () => snapshot;
   let snapshotWrites = 0;
-  const diskSnapshotWriter: OmniRouteDiskSnapshotWriter = async () => {
+  const diskSnapshotWriter: CheapRouterDiskSnapshotWriter = async () => {
     snapshotWrites++;
   };
 
-  const sharedCache: OmniRouteFetchCache = new Map();
+  const sharedCache: CheapRouterFetchCache = new Map();
 
-  const hook = createOmniRouteConfigHook(
-    { providerId: "omniroute", modelCacheTtl: 60_000 },
+  const hook = createCheapRouterConfigHook(
+    { providerId: "cheaprouter", modelCacheTtl: 60_000 },
     {
       readAuthJson: authStub(),
       fetcher,
@@ -356,8 +356,8 @@ test("warm-startup: parallel refresh updates cache + writes snapshot", async () 
   await hook(input);
 
   // Warm block should have been published.
-  const entry = (input as { provider: Record<string, OmniRouteStaticProviderEntry> }).provider[
-    "opencode-omniroute"
+  const entry = (input as { provider: Record<string, CheapRouterStaticProviderEntry> }).provider[
+    "opencode-cheaprouter"
   ];
   assert.ok(entry, "warm provider entry published");
 
@@ -383,11 +383,11 @@ test("warm-startup: parallel refresh updates cache + writes snapshot", async () 
 // ────────────────────────────────────────────────────────────────────────────
 
 test("warm-startup: failed refresh keeps the snapshot, no disk overwrite", async () => {
-  const fetcher = throwingFetcher<OmniRouteModelsFetcher>();
-  const combosFetcher = throwingFetcher<OmniRouteCombosFetcher>();
+  const fetcher = throwingFetcher<CheapRouterModelsFetcher>();
+  const combosFetcher = throwingFetcher<CheapRouterCombosFetcher>();
   const logger = captureWarn();
 
-  const snapshot: Omit<import("../src/index.js").OmniRouteFetchCacheEntry, "expiresAt"> = {
+  const snapshot: Omit<import("../src/index.js").CheapRouterFetchCacheEntry, "expiresAt"> = {
     rawModels: [MODEL_GEMINI],
     rawCombos: [COMBO_CLAUDE_TIER],
     rawAutoCombos: [],
@@ -396,14 +396,14 @@ test("warm-startup: failed refresh keeps the snapshot, no disk overwrite", async
     rawConnections: [],
   };
 
-  const diskSnapshotReader: OmniRouteDiskSnapshotReader = async () => snapshot;
+  const diskSnapshotReader: CheapRouterDiskSnapshotReader = async () => snapshot;
   let snapshotWrites = 0;
-  const diskSnapshotWriter: OmniRouteDiskSnapshotWriter = async () => {
+  const diskSnapshotWriter: CheapRouterDiskSnapshotWriter = async () => {
     snapshotWrites++;
   };
 
-  const hook = createOmniRouteConfigHook(
-    { providerId: "omniroute" },
+  const hook = createCheapRouterConfigHook(
+    { providerId: "cheaprouter" },
     {
       readAuthJson: authStub(),
       fetcher,
@@ -417,15 +417,15 @@ test("warm-startup: failed refresh keeps the snapshot, no disk overwrite", async
   const input = makeInput();
   await hook(input);
 
-  const entry = (input as { provider: Record<string, OmniRouteStaticProviderEntry> }).provider[
-    "opencode-omniroute"
+  const entry = (input as { provider: Record<string, CheapRouterStaticProviderEntry> }).provider[
+    "opencode-cheaprouter"
   ];
   assert.ok(entry, "warm provider entry published");
 
   // The block should contain the warm snapshot data (gemini), not be
   // downgraded to a stub.
   assert.ok(
-    entry.models["opencode-omniroute/gemini-3-flash"],
+    entry.models["opencode-cheaprouter/gemini-3-flash"],
     "warm snapshot model preserved (not downgraded to stub)"
   );
 
@@ -459,21 +459,21 @@ test("warm-startup: all fetchers start concurrently (parallel fan-out)", async (
     return Object.assign(f as T, { callCount: () => n });
   }
 
-  const fetcher = instrumentedFetcher<OmniRouteModelsFetcher>([MODEL_CLAUDE]);
-  const combosFetcher = instrumentedFetcher<OmniRouteCombosFetcher>([]);
-  const autoCombosFetcher = instrumentedFetcher<OmniRouteAutoCombosFetcher>([]);
-  const enrichmentFetcher = instrumentedFetcher<OmniRouteEnrichmentFetcher>(new Map());
-  const compressionMetaFetcher = instrumentedFetcher<OmniRouteCompressionMetaFetcher>([]);
-  const providersFetcher = instrumentedFetcher<OmniRouteProvidersFetcher>([]);
+  const fetcher = instrumentedFetcher<CheapRouterModelsFetcher>([MODEL_CLAUDE]);
+  const combosFetcher = instrumentedFetcher<CheapRouterCombosFetcher>([]);
+  const autoCombosFetcher = instrumentedFetcher<CheapRouterAutoCombosFetcher>([]);
+  const enrichmentFetcher = instrumentedFetcher<CheapRouterEnrichmentFetcher>(new Map());
+  const compressionMetaFetcher = instrumentedFetcher<CheapRouterCompressionMetaFetcher>([]);
+  const providersFetcher = instrumentedFetcher<CheapRouterProvidersFetcher>([]);
   const logger = captureWarn();
 
   // No snapshot → cold path (awaited). All fetchers must still start
   // concurrently.
-  const diskSnapshotReader: OmniRouteDiskSnapshotReader = async () => undefined;
-  const diskSnapshotWriter: OmniRouteDiskSnapshotWriter = async () => {};
+  const diskSnapshotReader: CheapRouterDiskSnapshotReader = async () => undefined;
+  const diskSnapshotWriter: CheapRouterDiskSnapshotWriter = async () => {};
 
-  const hook = createOmniRouteConfigHook(
-    { providerId: "omniroute", features: { enrichment: true, compressionMetadata: true, usableOnly: true } },
+  const hook = createCheapRouterConfigHook(
+    { providerId: "cheaprouter", features: { enrichment: true, compressionMetadata: true, usableOnly: true } },
     {
       readAuthJson: authStub(),
       fetcher,
@@ -516,15 +516,15 @@ test("warm-startup: all fetchers start concurrently (parallel fan-out)", async (
 // ────────────────────────────────────────────────────────────────────────────
 
 test("warm-startup: combos reject → models-only catalog with warn", async () => {
-  const fetcher = immediateFetcher<OmniRouteModelsFetcher>([MODEL_CLAUDE]);
-  const combosFetcher = throwingFetcher<OmniRouteCombosFetcher>("403 Forbidden");
+  const fetcher = immediateFetcher<CheapRouterModelsFetcher>([MODEL_CLAUDE]);
+  const combosFetcher = throwingFetcher<CheapRouterCombosFetcher>("403 Forbidden");
   const logger = captureWarn();
 
-  const diskSnapshotReader: OmniRouteDiskSnapshotReader = async () => undefined;
-  const diskSnapshotWriter: OmniRouteDiskSnapshotWriter = async () => {};
+  const diskSnapshotReader: CheapRouterDiskSnapshotReader = async () => undefined;
+  const diskSnapshotWriter: CheapRouterDiskSnapshotWriter = async () => {};
 
-  const hook = createOmniRouteConfigHook(
-    { providerId: "omniroute" },
+  const hook = createCheapRouterConfigHook(
+    { providerId: "cheaprouter" },
     {
       readAuthJson: authStub(),
       fetcher,
@@ -538,12 +538,12 @@ test("warm-startup: combos reject → models-only catalog with warn", async () =
   const input = makeInput();
   await hook(input);
 
-  const entry = (input as { provider: Record<string, OmniRouteStaticProviderEntry> }).provider[
-    "opencode-omniroute"
+  const entry = (input as { provider: Record<string, CheapRouterStaticProviderEntry> }).provider[
+    "opencode-cheaprouter"
   ];
   assert.ok(entry, "provider entry published");
   assert.ok(
-    entry.models["opencode-omniroute/claude-sonnet-4-6"],
+    entry.models["opencode-cheaprouter/claude-sonnet-4-6"],
     "models-only catalog (no combos)"
   );
   assert.ok(
@@ -553,16 +553,16 @@ test("warm-startup: combos reject → models-only catalog with warn", async () =
 });
 
 test("warm-startup: enrichment rejects → raw-id catalog with warn", async () => {
-  const fetcher = immediateFetcher<OmniRouteModelsFetcher>([MODEL_CLAUDE]);
-  const combosFetcher = immediateFetcher<OmniRouteCombosFetcher>([]);
-  const enrichmentFetcher = throwingFetcher<OmniRouteEnrichmentFetcher>("ETIMEDOUT");
+  const fetcher = immediateFetcher<CheapRouterModelsFetcher>([MODEL_CLAUDE]);
+  const combosFetcher = immediateFetcher<CheapRouterCombosFetcher>([]);
+  const enrichmentFetcher = throwingFetcher<CheapRouterEnrichmentFetcher>("ETIMEDOUT");
   const logger = captureWarn();
 
-  const diskSnapshotReader: OmniRouteDiskSnapshotReader = async () => undefined;
-  const diskSnapshotWriter: OmniRouteDiskSnapshotWriter = async () => {};
+  const diskSnapshotReader: CheapRouterDiskSnapshotReader = async () => undefined;
+  const diskSnapshotWriter: CheapRouterDiskSnapshotWriter = async () => {};
 
-  const hook = createOmniRouteConfigHook(
-    { providerId: "omniroute" },
+  const hook = createCheapRouterConfigHook(
+    { providerId: "cheaprouter" },
     {
       readAuthJson: authStub(),
       fetcher,
@@ -577,12 +577,12 @@ test("warm-startup: enrichment rejects → raw-id catalog with warn", async () =
   const input = makeInput();
   await hook(input);
 
-  const entry = (input as { provider: Record<string, OmniRouteStaticProviderEntry> }).provider[
-    "opencode-omniroute"
+  const entry = (input as { provider: Record<string, CheapRouterStaticProviderEntry> }).provider[
+    "opencode-cheaprouter"
   ];
   assert.ok(entry, "provider entry published");
   assert.equal(
-    entry.models["opencode-omniroute/claude-sonnet-4-6"].name,
+    entry.models["opencode-cheaprouter/claude-sonnet-4-6"].name,
     "claude-sonnet-4-6",
     "raw id retained (no enrichment)"
   );
@@ -593,16 +593,16 @@ test("warm-startup: enrichment rejects → raw-id catalog with warn", async () =
 });
 
 test("warm-startup: providers reject → usableOnly filter disabled with warn", async () => {
-  const fetcher = immediateFetcher<OmniRouteModelsFetcher>([MODEL_CLAUDE]);
-  const combosFetcher = immediateFetcher<OmniRouteCombosFetcher>([]);
-  const providersFetcher = throwingFetcher<OmniRouteProvidersFetcher>("ETIMEDOUT");
+  const fetcher = immediateFetcher<CheapRouterModelsFetcher>([MODEL_CLAUDE]);
+  const combosFetcher = immediateFetcher<CheapRouterCombosFetcher>([]);
+  const providersFetcher = throwingFetcher<CheapRouterProvidersFetcher>("ETIMEDOUT");
   const logger = captureWarn();
 
-  const diskSnapshotReader: OmniRouteDiskSnapshotReader = async () => undefined;
-  const diskSnapshotWriter: OmniRouteDiskSnapshotWriter = async () => {};
+  const diskSnapshotReader: CheapRouterDiskSnapshotReader = async () => undefined;
+  const diskSnapshotWriter: CheapRouterDiskSnapshotWriter = async () => {};
 
-  const hook = createOmniRouteConfigHook(
-    { providerId: "omniroute", features: { usableOnly: true } },
+  const hook = createCheapRouterConfigHook(
+    { providerId: "cheaprouter", features: { usableOnly: true } },
     {
       readAuthJson: authStub(),
       fetcher,
@@ -617,13 +617,13 @@ test("warm-startup: providers reject → usableOnly filter disabled with warn", 
   const input = makeInput();
   await hook(input);
 
-  const entry = (input as { provider: Record<string, OmniRouteStaticProviderEntry> }).provider[
-    "opencode-omniroute"
+  const entry = (input as { provider: Record<string, CheapRouterStaticProviderEntry> }).provider[
+    "opencode-cheaprouter"
   ];
   assert.ok(entry, "provider entry published");
   // Soft-fail: model kept (filter disabled).
   assert.ok(
-    entry.models["opencode-omniroute/claude-sonnet-4-6"],
+    entry.models["opencode-cheaprouter/claude-sonnet-4-6"],
     "model kept (usableOnly filter disabled)"
   );
   assert.ok(
@@ -643,21 +643,21 @@ test("warm-startup: concurrent hook invocations dedupe refresh", async () => {
     setTimeout(r, 100);
   });
 
-  const fetcher: OmniRouteModelsFetcher = async () => {
+  const fetcher: CheapRouterModelsFetcher = async () => {
     fetchCount++;
     await slowResolve;
     return [MODEL_CLAUDE];
   };
-  const combosFetcher = immediateFetcher<OmniRouteCombosFetcher>([]);
+  const combosFetcher = immediateFetcher<CheapRouterCombosFetcher>([]);
   const logger = captureWarn();
 
-  const diskSnapshotReader: OmniRouteDiskSnapshotReader = async () => undefined;
-  const diskSnapshotWriter: OmniRouteDiskSnapshotWriter = async () => {};
+  const diskSnapshotReader: CheapRouterDiskSnapshotReader = async () => undefined;
+  const diskSnapshotWriter: CheapRouterDiskSnapshotWriter = async () => {};
 
-  const sharedCache: OmniRouteFetchCache = new Map();
+  const sharedCache: CheapRouterFetchCache = new Map();
 
-  const hook = createOmniRouteConfigHook(
-    { providerId: "omniroute", modelCacheTtl: 60_000 },
+  const hook = createCheapRouterConfigHook(
+    { providerId: "cheaprouter", modelCacheTtl: 60_000 },
     {
       readAuthJson: authStub(),
       fetcher,
@@ -687,12 +687,12 @@ test("warm-startup: concurrent hook invocations dedupe refresh", async () => {
 // ────────────────────────────────────────────────────────────────────────────
 
 test("warm-startup: diskCache=false disables warm read, falls through to awaited fetch", async () => {
-  const fetcher = immediateFetcher<OmniRouteModelsFetcher>([MODEL_CLAUDE]);
-  const combosFetcher = immediateFetcher<OmniRouteCombosFetcher>([]);
+  const fetcher = immediateFetcher<CheapRouterModelsFetcher>([MODEL_CLAUDE]);
+  const combosFetcher = immediateFetcher<CheapRouterCombosFetcher>([]);
   const logger = captureWarn();
 
   let readerCalled = false;
-  const diskSnapshotReader: OmniRouteDiskSnapshotReader = async () => {
+  const diskSnapshotReader: CheapRouterDiskSnapshotReader = async () => {
     readerCalled = true;
     return {
       rawModels: [MODEL_GEMINI],
@@ -703,10 +703,10 @@ test("warm-startup: diskCache=false disables warm read, falls through to awaited
       rawConnections: [],
     };
   };
-  const diskSnapshotWriter: OmniRouteDiskSnapshotWriter = async () => {};
+  const diskSnapshotWriter: CheapRouterDiskSnapshotWriter = async () => {};
 
-  const hook = createOmniRouteConfigHook(
-    { providerId: "omniroute", features: { diskCache: false } },
+  const hook = createCheapRouterConfigHook(
+    { providerId: "cheaprouter", features: { diskCache: false } },
     {
       readAuthJson: authStub(),
       fetcher,
@@ -722,12 +722,12 @@ test("warm-startup: diskCache=false disables warm read, falls through to awaited
 
   assert.equal(readerCalled, false, "disk snapshot reader NOT called when diskCache=false");
 
-  const entry = (input as { provider: Record<string, OmniRouteStaticProviderEntry> }).provider[
-    "opencode-omniroute"
+  const entry = (input as { provider: Record<string, CheapRouterStaticProviderEntry> }).provider[
+    "opencode-cheaprouter"
   ];
   assert.ok(entry, "provider entry published from live fetch");
   assert.ok(
-    entry.models["opencode-omniroute/claude-sonnet-4-6"],
+    entry.models["opencode-cheaprouter/claude-sonnet-4-6"],
     "live fetch model present (not snapshot)"
   );
 });
@@ -737,11 +737,11 @@ test("warm-startup: diskCache=false disables warm read, falls through to awaited
 // ────────────────────────────────────────────────────────────────────────────
 
 test("warm-startup: snapshot age is logged when warm-starting from disk", async () => {
-  const fetcher = immediateFetcher<OmniRouteModelsFetcher>([MODEL_CLAUDE]);
-  const combosFetcher = immediateFetcher<OmniRouteCombosFetcher>([]);
+  const fetcher = immediateFetcher<CheapRouterModelsFetcher>([MODEL_CLAUDE]);
+  const combosFetcher = immediateFetcher<CheapRouterCombosFetcher>([]);
   const logger = captureWarn();
 
-  const snapshot: Omit<import("../src/index.js").OmniRouteFetchCacheEntry, "expiresAt"> & {
+  const snapshot: Omit<import("../src/index.js").CheapRouterFetchCacheEntry, "expiresAt"> & {
     writtenAt?: number;
   } = {
     rawModels: [MODEL_GEMINI],
@@ -753,11 +753,11 @@ test("warm-startup: snapshot age is logged when warm-starting from disk", async 
     writtenAt: Date.now() - 3_600_000, // 1 hour ago
   };
 
-  const diskSnapshotReader: OmniRouteDiskSnapshotReader = async () => snapshot;
-  const diskSnapshotWriter: OmniRouteDiskSnapshotWriter = async () => {};
+  const diskSnapshotReader: CheapRouterDiskSnapshotReader = async () => snapshot;
+  const diskSnapshotWriter: CheapRouterDiskSnapshotWriter = async () => {};
 
-  const hook = createOmniRouteConfigHook(
-    { providerId: "omniroute" },
+  const hook = createCheapRouterConfigHook(
+    { providerId: "cheaprouter" },
     {
       readAuthJson: authStub(),
       fetcher,
@@ -785,11 +785,11 @@ test("warm-startup: snapshot age is logged when warm-starting from disk", async 
 // ────────────────────────────────────────────────────────────────────────────
 
 test("warm-startup: empty snapshot (rawModels.length=0) is skipped, falls through to fetch", async () => {
-  const fetcher = immediateFetcher<OmniRouteModelsFetcher>([MODEL_CLAUDE]);
-  const combosFetcher = immediateFetcher<OmniRouteCombosFetcher>([]);
+  const fetcher = immediateFetcher<CheapRouterModelsFetcher>([MODEL_CLAUDE]);
+  const combosFetcher = immediateFetcher<CheapRouterCombosFetcher>([]);
   const logger = captureWarn();
 
-  const diskSnapshotReader: OmniRouteDiskSnapshotReader = async () => ({
+  const diskSnapshotReader: CheapRouterDiskSnapshotReader = async () => ({
     rawModels: [],
     rawCombos: [],
     rawAutoCombos: [],
@@ -797,10 +797,10 @@ test("warm-startup: empty snapshot (rawModels.length=0) is skipped, falls throug
     rawCompressionCombos: [],
     rawConnections: [],
   });
-  const diskSnapshotWriter: OmniRouteDiskSnapshotWriter = async () => {};
+  const diskSnapshotWriter: CheapRouterDiskSnapshotWriter = async () => {};
 
-  const hook = createOmniRouteConfigHook(
-    { providerId: "omniroute" },
+  const hook = createCheapRouterConfigHook(
+    { providerId: "cheaprouter" },
     {
       readAuthJson: authStub(),
       fetcher,
@@ -814,13 +814,13 @@ test("warm-startup: empty snapshot (rawModels.length=0) is skipped, falls throug
   const input = makeInput();
   await hook(input);
 
-  const entry = (input as { provider: Record<string, OmniRouteStaticProviderEntry> }).provider[
-    "opencode-omniroute"
+  const entry = (input as { provider: Record<string, CheapRouterStaticProviderEntry> }).provider[
+    "opencode-cheaprouter"
   ];
   assert.ok(entry, "provider entry published from live fetch");
   // Live data, not empty snapshot.
   assert.ok(
-    entry.models["opencode-omniroute/claude-sonnet-4-6"],
+    entry.models["opencode-cheaprouter/claude-sonnet-4-6"],
     "live fetch model present (empty snapshot skipped)"
   );
   assert.equal(fetcher.callCount(), 1, "fetcher was called (awaited cold path)");

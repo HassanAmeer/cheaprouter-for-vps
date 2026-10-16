@@ -1,35 +1,35 @@
-# @omniroute/opencode-provider
+# @cheaprouter/opencode-provider
 
-> ## ⚠️ Deprecated — use [`@omniroute/opencode-plugin`](https://www.npmjs.com/package/@omniroute/opencode-plugin) instead
+> ## ⚠️ Deprecated — use [`@cheaprouter/opencode-plugin`](https://www.npmjs.com/package/@cheaprouter/opencode-plugin) instead
 >
-> This package writes a **static** `provider.omniroute` block to `opencode.json` from a hardcoded default model list, so it **drifts behind your live OmniRoute catalog** — adding a model in OmniRoute won't show up in OpenCode until you re-run the generator, and OpenCode Desktop/Web only surfaces a subset of the static models.
+> This package writes a **static** `provider.cheaprouter` block to `opencode.json` from a hardcoded default model list, so it **drifts behind your live CheapRouter catalog** — adding a model in CheapRouter won't show up in OpenCode until you re-run the generator, and OpenCode Desktop/Web only surfaces a subset of the static models.
 >
-> **`@omniroute/opencode-plugin`** solves this by fetching `GET /v1/models` from your OmniRoute instance at OpenCode startup, so the model list is always live (see [#3419](https://github.com/diegosouzapw/OmniRoute/issues/3419)). It is now the recommended path.
+> **`@cheaprouter/opencode-plugin`** solves this by fetching `GET /v1/models` from your CheapRouter instance at OpenCode startup, so the model list is always live (see [#3419](https://github.com/diegosouzapw/CheapRouter/issues/3419)). It is now the recommended path.
 >
-> **One-line migration** — replace the static `provider.omniroute` block in `opencode.json` with a single plugin entry:
+> **One-line migration** — replace the static `provider.cheaprouter` block in `opencode.json` with a single plugin entry:
 >
 > ```jsonc
 > // opencode.json
 > {
 >   "$schema": "https://opencode.ai/config.json",
->   "plugin": ["@omniroute/opencode-plugin"],
+>   "plugin": ["@cheaprouter/opencode-plugin"],
 > }
 > ```
 >
 > This package is **not removed** and still works for static/offline config generation, but it is no longer actively recommended and won't track new models automatically.
 
-Helper for connecting [OpenCode](https://opencode.ai) to a running [OmniRoute](https://github.com/diegosouzapw/OmniRoute) AI gateway.
+Helper for connecting [OpenCode](https://opencode.ai) to a running [CheapRouter](https://github.com/diegosouzapw/CheapRouter) AI gateway.
 
-The package emits a **schema-valid entry** for `opencode.json` (`https://opencode.ai/config.json`) that delegates the actual runtime to [`@ai-sdk/openai-compatible`](https://www.npmjs.com/package/@ai-sdk/openai-compatible). It does not ship any new HTTP client — OmniRoute already exposes an OpenAI-compatible surface, and OpenCode already speaks it through the AI SDK.
+The package emits a **schema-valid entry** for `opencode.json` (`https://opencode.ai/config.json`) that delegates the actual runtime to [`@ai-sdk/openai-compatible`](https://www.npmjs.com/package/@ai-sdk/openai-compatible). It does not ship any new HTTP client — CheapRouter already exposes an OpenAI-compatible surface, and OpenCode already speaks it through the AI SDK.
 
-> Pre-1.0. The API may still change. See `CHANGELOG` in the OmniRoute repo for breaking notes.
+> Pre-1.0. The API may still change. See `CHANGELOG` in the CheapRouter repo for breaking notes.
 
 ## Installation
 
 ```bash
-npm install --save-dev @omniroute/opencode-provider
+npm install --save-dev @cheaprouter/opencode-provider
 # or
-pnpm add -D @omniroute/opencode-provider
+pnpm add -D @cheaprouter/opencode-provider
 ```
 
 You also need OpenCode's own runtime dep, but that's a transitive concern — OpenCode itself ships with `@ai-sdk/openai-compatible`. This package only **generates configuration**.
@@ -40,11 +40,11 @@ You also need OpenCode's own runtime dep, but that's a transitive concern — Op
 
 ```ts
 import { writeFileSync } from "node:fs";
-import { buildOmniRouteOpenCodeConfig } from "@omniroute/opencode-provider";
+import { buildCheapRouterOpenCodeConfig } from "@cheaprouter/opencode-provider";
 
-const config = buildOmniRouteOpenCodeConfig({
-  baseURL: "http://localhost:20128", // or your OmniRoute deployment URL
-  apiKey: process.env.OMNIROUTE_API_KEY ?? "sk_omniroute",
+const config = buildCheapRouterOpenCodeConfig({
+  baseURL: "http://localhost:20128", // or your CheapRouter deployment URL
+  apiKey: process.env.CHEAPROUTER_API_KEY ?? "sk_cheaprouter",
 });
 
 writeFileSync("opencode.json", JSON.stringify(config, null, 2));
@@ -56,12 +56,12 @@ The resulting `opencode.json`:
 {
   "$schema": "https://opencode.ai/config.json",
   "provider": {
-    "omniroute": {
+    "cheaprouter": {
       "npm": "@ai-sdk/openai-compatible",
-      "name": "OmniRoute",
+      "name": "CheapRouter",
       "options": {
         "baseURL": "http://localhost:20128/v1",
-        "apiKey": "sk_omniroute",
+        "apiKey": "sk_cheaprouter",
       },
       "models": {
         "claude-opus-4-5-thinking": { "name": "claude-opus-4-5-thinking" },
@@ -77,37 +77,37 @@ The resulting `opencode.json`:
 ### 2. Merge into an existing `opencode.json`
 
 ```ts
-import { createOmniRouteProvider } from "@omniroute/opencode-provider";
+import { createCheapRouterProvider } from "@cheaprouter/opencode-provider";
 
-const provider = createOmniRouteProvider({
+const provider = createCheapRouterProvider({
   baseURL: "http://localhost:20128",
-  apiKey: process.env.OMNIROUTE_API_KEY!,
+  apiKey: process.env.CHEAPROUTER_API_KEY!,
 });
 
-// Place `provider` under provider.omniroute in your opencode.json
+// Place `provider` under provider.cheaprouter in your opencode.json
 ```
 
-If you already have an `opencode.json` on disk and want a non-destructive merge from the OmniRoute side, use `omniroute config opencode` from the CLI (ships with the main OmniRoute install) — it preserves comments and unrelated keys.
+If you already have an `opencode.json` on disk and want a non-destructive merge from the CheapRouter side, use `cheaprouter config opencode` from the CLI (ships with the main CheapRouter install) — it preserves comments and unrelated keys.
 
 ## API
 
-### `createOmniRouteProvider(options): OpenCodeProviderEntry`
+### `createCheapRouterProvider(options): OpenCodeProviderEntry`
 
-Returns the value to place under `provider.omniroute` inside `opencode.json`.
+Returns the value to place under `provider.cheaprouter` inside `opencode.json`.
 
 | Option        | Type                    | Required | Description                                                                                                  |
 | ------------- | ----------------------- | -------- | ------------------------------------------------------------------------------------------------------------ |
-| `baseURL`     | `string`                | Yes      | OmniRoute base URL. Accepts `http://host:port` **or** `http://host:port/v1`. Trailing slashes are tolerated. |
-| `apiKey`      | `string`                | Yes      | OmniRoute API key. Use `sk_omniroute` for local installs that have `REQUIRE_API_KEY=false`.                  |
-| `displayName` | `string`                | No       | Custom name shown in the OpenCode UI. Default: `"OmniRoute"`.                                                |
-| `models`      | `string[]`              | No       | Override the surfaced model catalog. Default: 8 curated models — see `OMNIROUTE_DEFAULT_OPENCODE_MODELS`.    |
+| `baseURL`     | `string`                | Yes      | CheapRouter base URL. Accepts `http://host:port` **or** `http://host:port/v1`. Trailing slashes are tolerated. |
+| `apiKey`      | `string`                | Yes      | CheapRouter API key. Use `sk_cheaprouter` for local installs that have `REQUIRE_API_KEY=false`.                  |
+| `displayName` | `string`                | No       | Custom name shown in the OpenCode UI. Default: `"CheapRouter"`.                                                |
+| `models`      | `string[]`              | No       | Override the surfaced model catalog. Default: 8 curated models — see `CHEAPROUTER_DEFAULT_OPENCODE_MODELS`.    |
 | `modelLabels` | `Record<string,string>` | No       | Human-readable labels keyed by model id.                                                                     |
 
 Throws on empty/invalid input — `baseURL` must be a real URL, `apiKey` must be a non-empty string.
 
-### `buildOmniRouteOpenCodeConfig(options): OpenCodeConfigDocument`
+### `buildCheapRouterOpenCodeConfig(options): OpenCodeConfigDocument`
 
-Same options as above, but returns a full document with `$schema` and the `provider.omniroute` wrapper, ready to write to `opencode.json`.
+Same options as above, but returns a full document with `$schema` and the `provider.cheaprouter` wrapper, ready to write to `opencode.json`.
 
 ### `normalizeBaseURL(input): string`
 
@@ -115,19 +115,19 @@ Exported for completeness. Strips trailing `/`, deduplicates a trailing `/v1`, a
 
 ### Constants
 
-- `OMNIROUTE_PROVIDER_KEY` — `"omniroute"` (the key used under `provider.*`).
-- `OMNIROUTE_PROVIDER_NPM` — `"@ai-sdk/openai-compatible"` (the runtime delegate).
+- `CHEAPROUTER_PROVIDER_KEY` — `"cheaprouter"` (the key used under `provider.*`).
+- `CHEAPROUTER_PROVIDER_NPM` — `"@ai-sdk/openai-compatible"` (the runtime delegate).
 - `OPENCODE_CONFIG_SCHEMA` — `"https://opencode.ai/config.json"`.
-- `OMNIROUTE_DEFAULT_OPENCODE_MODELS` — readonly list of default model ids.
+- `CHEAPROUTER_DEFAULT_OPENCODE_MODELS` — readonly list of default model ids.
 
 ## Custom model catalog
 
 ```ts
-import { createOmniRouteProvider } from "@omniroute/opencode-provider";
+import { createCheapRouterProvider } from "@cheaprouter/opencode-provider";
 
-createOmniRouteProvider({
+createCheapRouterProvider({
   baseURL: "http://localhost:20128",
-  apiKey: "sk_omniroute",
+  apiKey: "sk_cheaprouter",
   models: ["auto", "claude-opus-4-8", "gpt-5.5"],
   modelLabels: {
     auto: "Auto-Combo (recommended)",
@@ -142,12 +142,12 @@ Duplicates and empty strings are dropped automatically, and order is preserved.
 ## Troubleshooting
 
 - **Requests 404 with `/v1/v1/...`** — you're on an old version (≤1.0.0). Update to `≥0.1.0` of this re-released package. The new build normalises `baseURL` automatically.
-- **`401 Invalid API key`** — your OmniRoute instance has `REQUIRE_API_KEY=true` but the key you supplied doesn't exist there. Create one via the dashboard or set `REQUIRE_API_KEY=false` and use `sk_omniroute`.
+- **`401 Invalid API key`** — your CheapRouter instance has `REQUIRE_API_KEY=true` but the key you supplied doesn't exist there. Create one via the dashboard or set `REQUIRE_API_KEY=false` and use `sk_cheaprouter`.
 - **OpenCode complains the provider has no models** — supply an explicit `models` list; the default 8 may be hidden by your provider visibility settings.
 
 ## Related
 
-- [OmniRoute](https://github.com/diegosouzapw/OmniRoute) — the AI gateway this plugin targets.
+- [CheapRouter](https://github.com/diegosouzapw/CheapRouter) — the AI gateway this plugin targets.
 - [OpenCode](https://opencode.ai) — the agentic CLI consumer.
 - [`@ai-sdk/openai-compatible`](https://www.npmjs.com/package/@ai-sdk/openai-compatible) — the runtime delegate that actually speaks HTTP.
 

@@ -1,26 +1,26 @@
 /**
- * OpenCode plugin for the OmniRoute AI Gateway.
+ * OpenCode plugin for the CheapRouter AI Gateway.
  *
  * Implements the official `@opencode-ai/plugin` Plugin contract (auth +
- * provider + config hooks) to drive a running OmniRoute instance from
+ * provider + config hooks) to drive a running CheapRouter instance from
  * OpenCode without hand-curated `provider.<id>.models` blocks in
  * opencode.json[c]:
  *
  *   - `auth`     — registers `/connect <providerId>` flow (API key prompt)
  *   - `provider` — dynamic `/v1/models` fetch with TTL cache, capabilities
- *                  pass-through (OmniRoute is the source of truth — no
+ *                  pass-through (CheapRouter is the source of truth — no
  *                  client-side variant synthesis)
  *   - `config`   — backward-compat shim for OC versions that predate the
  *                  `provider.models` hook (≤ 1.14.48)
  *
  * Two ways to consume the plugin:
  *
- *  1. Single-instance (default `providerId: "omniroute"`):
+ *  1. Single-instance (default `providerId: "cheaprouter"`):
  *
  *     ```json
  *     {
  *       "$schema": "https://opencode.ai/config.json",
- *       "plugin": ["@omniroute/opencode-plugin"]
+ *       "plugin": ["@cheaprouter/opencode-plugin"]
  *     }
  *     ```
  *
@@ -30,19 +30,19 @@
  *     {
  *       "$schema": "https://opencode.ai/config.json",
  *       "plugin": [
- *         ["@omniroute/opencode-plugin", { "providerId": "omniroute" }],
- *         ["@omniroute/opencode-plugin", { "providerId": "omniroute-preprod" }]
+ *         ["@cheaprouter/opencode-plugin", { "providerId": "cheaprouter" }],
+ *         ["@cheaprouter/opencode-plugin", { "providerId": "cheaprouter-preprod" }]
  *       ]
  *     }
  *     ```
  *
  * Then `opencode connect <providerId>` to provision the API key per instance.
  *
- * Companion library: `@omniroute/opencode-provider` (build-time config generator)
+ * Companion library: `@cheaprouter/opencode-provider` (build-time config generator)
  * remains supported for users who can't run plugins (CI, scripted scaffolding).
  *
  * @see https://opencode.ai/docs/plugins for the OpenCode plugin contract.
- * @see https://github.com/diegosouzapw/OmniRoute for the AI Gateway.
+ * @see https://github.com/diegosouzapw/CheapRouter for the AI Gateway.
  */
 
 import { createHash } from "node:crypto";
@@ -75,14 +75,14 @@ import {
   AUTO_VARIANT_DESCRIPTIONS,
   type FreeModelFreeType,
 } from "./naming.js";
-import { applyOmniRouteInferenceTelemetry } from "./telemetry.js";
+import { applyCheapRouterInferenceTelemetry } from "./telemetry.js";
 
 /**
  * Minimal leveled logger sink accepted by the default fetchers and the static
  * catalog builder. A full `Logger` satisfies it structurally; the config hook
- * injects the same partial shape (see `createOmniRouteConfigHook` deps).
+ * injects the same partial shape (see `createCheapRouterConfigHook` deps).
  */
-type OmniRouteLoggerSink = {
+type CheapRouterLoggerSink = {
   error?: (message: string, ...args: unknown[]) => void;
   warn: (message: string, ...args: unknown[]) => void;
   debug?: (message: string, ...args: unknown[]) => void;
@@ -98,10 +98,10 @@ type OmniRouteLoggerSink = {
  *
  *  - `providerId`     OpenCode provider id this plugin instance binds to.
  *                     Multiple plugin instances coexist by giving each a
- *                     different `providerId` ("omniroute", "omniroute-preprod",
- *                     "omniroute-local"). Maps to `ProviderHook.id` and
+ *                     different `providerId` ("cheaprouter", "cheaprouter-preprod",
+ *                     "cheaprouter-local"). Maps to `ProviderHook.id` and
  *                     `AuthHook.provider` in the @opencode-ai/plugin contract.
- *                     Default: "omniroute".
+ *                     Default: "cheaprouter".
  *  - `displayName`    Label rendered in the OpenCode UI. Default derives
  *                     from providerId.
  *  - `modelCacheTtl`  `/v1/models` TTL cache duration in milliseconds.
@@ -110,7 +110,7 @@ type OmniRouteLoggerSink = {
  *                     running. Default: 300_000 (5 min). Minimum: 60_000.
  *                     Set `0` to disable background auto-sync (TTL on-demand
  *                     discovery still applies via `modelCacheTtl`).
- *  - `baseURL`        Override base URL for this OmniRoute instance. When
+ *  - `baseURL`        Override base URL for this CheapRouter instance. When
  *                     absent, the loader falls back to a credential-attached
  *                     baseURL set by `/connect`.
  *  - `managementReadToken` Optional read-only management-plane bearer token.
@@ -153,7 +153,7 @@ type OmniRouteLoggerSink = {
  *                           `/v1/models` requests. Default true.
  *  - `debugLog`             Capture every outbound request + response to a
  *                           JSONL file at
- *                           `~/.local/share/opencode/plugins/omniroute-debug-{providerId}.jsonl`.
+ *                           `~/.local/share/opencode/plugins/cheaprouter-debug-{providerId}.jsonl`.
  *                           Each line: `{ reqId, ts, url, method, reqBody,
  *                           resStatus, resBody, durationMs }`.
  *                           Default false. Opt-in.
@@ -166,7 +166,7 @@ type OmniRouteLoggerSink = {
  *
  *                           Default `anthropicPrefixes`:
  *                             ["cc", "claude", "anthropic", "kiro", "kr"]
- *                           (covers OmniRoute's canonical Anthropic aliases).
+ *                           (covers CheapRouter's canonical Anthropic aliases).
  *
  *                           Set `anthropicPrefixes: []` to disable and force
  *                           everything through OpenAI-compat.
@@ -241,10 +241,10 @@ const optionsSchema = z
  * Plugin options shape — inferred directly from the Zod schema so the
  * validator and the static type can never drift. Replaces the standalone
  * interface previously declared here (T-02). Every consumer continues to
- * import `OmniRoutePluginOptions` as before; only the source of truth
+ * import `CheapRouterPluginOptions` as before; only the source of truth
  * shifted from a hand-written interface to `z.infer<typeof optionsSchema>`.
  */
-export type OmniRoutePluginOptions = z.infer<typeof optionsSchema>;
+export type CheapRouterPluginOptions = z.infer<typeof optionsSchema>;
 
 /**
  * Explicit default state for every boolean `features.*` toggle.
@@ -259,7 +259,7 @@ export type OmniRoutePluginOptions = z.infer<typeof optionsSchema>;
  * (mirroring the read-site conventions exactly, so runtime behaviour is
  * unchanged) makes the effective flags introspectable and self-documenting.
  */
-export const OMNIROUTE_FEATURE_DEFAULTS = {
+export const CHEAPROUTER_FEATURE_DEFAULTS = {
   // default-ON (read sites use `features.X !== false`)
   combos: true,
   autoCombos: true,
@@ -281,8 +281,8 @@ export const OMNIROUTE_FEATURE_DEFAULTS = {
   startupDebug: false,
 } as const;
 
-/** Union of the boolean feature-flag keys declared in `OMNIROUTE_FEATURE_DEFAULTS`. */
-export type OmniRouteFeatureFlag = keyof typeof OMNIROUTE_FEATURE_DEFAULTS;
+/** Union of the boolean feature-flag keys declared in `CHEAPROUTER_FEATURE_DEFAULTS`. */
+export type CheapRouterFeatureFlag = keyof typeof CHEAPROUTER_FEATURE_DEFAULTS;
 
 /**
  * Resolve the EFFECTIVE boolean state of every feature toggle, applying the
@@ -293,18 +293,18 @@ export type OmniRouteFeatureFlag = keyof typeof OMNIROUTE_FEATURE_DEFAULTS;
  * derived: it does not mutate options nor change any read-site behaviour.
  */
 export function resolveEffectiveFeatureFlags(
-  features?: OmniRoutePluginOptions["features"]
-): Record<OmniRouteFeatureFlag, boolean> {
-  const f: Partial<Record<OmniRouteFeatureFlag, boolean>> = features ?? {};
-  const out = {} as Record<OmniRouteFeatureFlag, boolean>;
-  for (const key of Object.keys(OMNIROUTE_FEATURE_DEFAULTS) as OmniRouteFeatureFlag[]) {
+  features?: CheapRouterPluginOptions["features"]
+): Record<CheapRouterFeatureFlag, boolean> {
+  const f: Partial<Record<CheapRouterFeatureFlag, boolean>> = features ?? {};
+  const out = {} as Record<CheapRouterFeatureFlag, boolean>;
+  for (const key of Object.keys(CHEAPROUTER_FEATURE_DEFAULTS) as CheapRouterFeatureFlag[]) {
     const val = f[key];
-    out[key] = typeof val === "boolean" ? val : OMNIROUTE_FEATURE_DEFAULTS[key];
+    out[key] = typeof val === "boolean" ? val : CHEAPROUTER_FEATURE_DEFAULTS[key];
   }
   return out;
 }
 
-export const OMNIROUTE_PROVIDER_KEY = "omniroute" as const;
+export const CHEAPROUTER_PROVIDER_KEY = "cheaprouter" as const;
 
 /** Deployed plugin version (injected at build time by tsup define). */
 export const PLUGIN_VERSION: string =
@@ -364,40 +364,40 @@ function trimLeadingDashes(value: string): string {
  * applying defaults. Centralises the providerId fallback so every hook
  * sees a consistent identifier.
  */
-export function resolveOmniRoutePluginOptions(opts?: OmniRoutePluginOptions): Required<
+export function resolveCheapRouterPluginOptions(opts?: CheapRouterPluginOptions): Required<
   Pick<
-    OmniRoutePluginOptions,
+    CheapRouterPluginOptions,
     "providerId" | "displayName" | "modelCacheTtl" | "autoSyncIntervalMs"
   >
 > & {
   /**
-   * #6859: the UNPREFIXED provider id ("omniroute", "omniroute-preprod", …).
+   * #6859: the UNPREFIXED provider id ("cheaprouter", "cheaprouter-preprod", …).
    * `providerId` above is auto-prefixed with "opencode-" ONLY to satisfy OC
    * 1.17.8+'s native-adapter gate ({openai, anthropic, opencode*}) — that
    * prefixed value is OC-internal and must be used ONLY for AuthHook.provider
    * and provider-registration keys (the OC config-hook top-level
-   * `provider.<id>` block). `omnirouteProviderId` MUST be used everywhere an
-   * identifier reaches or represents something OmniRoute's own server parses
+   * `provider.<id>` block). `cheaprouterProviderId` MUST be used everywhere an
+   * identifier reaches or represents something CheapRouter's own server parses
    * (model `id` prefix, `ModelV2.providerID`, combo catalog keys in the
-   * dynamic provider hook) — OmniRoute's `parseModel()` has no alias for
+   * dynamic provider hook) — CheapRouter's `parseModel()` has no alias for
    * "opencode-<x>", so a prefixed id there is unrecoverable and credential
    * lookup fails with "No credentials for opencode-<x>".
    */
-  omnirouteProviderId: string;
-} & Pick<OmniRoutePluginOptions, "baseURL" | "managementReadToken" | "features"> {
-  const rawProviderId = opts?.providerId ?? OMNIROUTE_PROVIDER_KEY;
-  const omnirouteProviderId = trimLeadingOpencodePrefix(rawProviderId);
+  cheaprouterProviderId: string;
+} & Pick<CheapRouterPluginOptions, "baseURL" | "managementReadToken" | "features"> {
+  const rawProviderId = opts?.providerId ?? CHEAPROUTER_PROVIDER_KEY;
+  const cheaprouterProviderId = trimLeadingOpencodePrefix(rawProviderId);
   // OC 1.17.8+ native-adapter gate rejects providerID not in
   // {openai, anthropic, opencode*}. Silently prefix so existing
-  // configs (providerId: "omniroute") keep working.
+  // configs (providerId: "cheaprouter") keep working.
   const providerId = rawProviderId.startsWith("opencode-")
     ? rawProviderId
     : `opencode-${rawProviderId}`;
   const displayName =
     opts?.displayName ??
-    (providerId === `opencode-${OMNIROUTE_PROVIDER_KEY}`
-      ? "OmniRoute"
-      : `OmniRoute (${providerId})`);
+    (providerId === `opencode-${CHEAPROUTER_PROVIDER_KEY}`
+      ? "CheapRouter"
+      : `CheapRouter (${providerId})`);
   const modelCacheTtl =
     typeof opts?.modelCacheTtl === "number" && opts.modelCacheTtl > 0
       ? opts.modelCacheTtl
@@ -405,7 +405,7 @@ export function resolveOmniRoutePluginOptions(opts?: OmniRoutePluginOptions): Re
   const autoSyncIntervalMs = sanitizeAutoSyncIntervalMs(opts?.autoSyncIntervalMs);
   return {
     providerId,
-    omnirouteProviderId,
+    cheaprouterProviderId,
     displayName,
     modelCacheTtl,
     autoSyncIntervalMs,
@@ -416,14 +416,14 @@ export function resolveOmniRoutePluginOptions(opts?: OmniRoutePluginOptions): Re
 }
 
 /** Fully resolved plugin options (defaults applied). */
-export type ResolvedOmniRoutePluginOptions = ReturnType<typeof resolveOmniRoutePluginOptions>;
+export type ResolvedCheapRouterPluginOptions = ReturnType<typeof resolveCheapRouterPluginOptions>;
 
 /**
  * Strip a leading "opencode-" prefix (added only for the OC native-adapter
- * gate — see `resolveOmniRoutePluginOptions`) so the returned id is safe to
- * embed in anything OmniRoute's own server parses. A user-supplied
- * `providerId: "opencode-omniroute"` (already prefixed) resolves to the same
- * unprefixed "omniroute" as the default, matching `providerId`'s own
+ * gate — see `resolveCheapRouterPluginOptions`) so the returned id is safe to
+ * embed in anything CheapRouter's own server parses. A user-supplied
+ * `providerId: "opencode-cheaprouter"` (already prefixed) resolves to the same
+ * unprefixed "cheaprouter" as the default, matching `providerId`'s own
  * idempotent-prefix handling above.
  */
 function trimLeadingOpencodePrefix(rawProviderId: string): string {
@@ -434,14 +434,14 @@ function trimLeadingOpencodePrefix(rawProviderId: string): string {
 
 /**
  * Strict parse of raw plugin options (as received from opencode.json or a
- * direct factory call) into the validated `OmniRoutePluginOptions` shape.
+ * direct factory call) into the validated `CheapRouterPluginOptions` shape.
  *
  *   - `null` / `undefined` → `{}` (no opts is valid, defaults take over).
  *   - Unknown keys → throws (strict schema catches typos in opencode.json).
  *   - Empty / malformed values (e.g. empty providerId, non-URL baseURL,
  *     negative modelCacheTtl) → throws.
  *
- * Validation happens at plugin invocation time (inside `OmniRoutePlugin`),
+ * Validation happens at plugin invocation time (inside `CheapRouterPlugin`),
  * NOT at module import — so a bad opencode.json fails the affected plugin
  * instance with an actionable message instead of crashing the whole TUI on
  * startup.
@@ -449,7 +449,7 @@ function trimLeadingOpencodePrefix(rawProviderId: string): string {
  * Exported so callers and tests can validate options independent of the
  * full plugin factory invocation.
  */
-export function parseOmniRoutePluginOptions(opts: unknown): OmniRoutePluginOptions {
+export function parseCheapRouterPluginOptions(opts: unknown): CheapRouterPluginOptions {
   if (opts === null || opts === undefined) return {};
   const result = optionsSchema.safeParse(opts);
   if (!result.success) {
@@ -459,20 +459,20 @@ export function parseOmniRoutePluginOptions(opts: unknown): OmniRoutePluginOptio
         return `${path}: ${i.message}`;
       })
       .join("; ");
-    throw new Error(`Invalid @omniroute/opencode-plugin options: ${errs}`);
+    throw new Error(`Invalid @cheaprouter/opencode-plugin options: ${errs}`);
   }
   return result.data;
 }
 
 /**
- * Internal coercion shim. Delegates to `parseOmniRoutePluginOptions` to keep
+ * Internal coercion shim. Delegates to `parseCheapRouterPluginOptions` to keep
  * the public surface stable while routing all validation through the Zod
  * schema. Always returns an object (never undefined) so downstream hooks see
  * the same shape regardless of whether opencode.json passed `null`,
  * `undefined`, or an empty bag.
  */
-function coercePluginOptions(opts?: PluginOptions): OmniRoutePluginOptions {
-  return parseOmniRoutePluginOptions(opts);
+function coercePluginOptions(opts?: PluginOptions): CheapRouterPluginOptions {
+  return parseCheapRouterPluginOptions(opts);
 }
 
 // ────────────────────────────────────────────────────────────────────────────
@@ -481,14 +481,14 @@ function coercePluginOptions(opts?: PluginOptions): OmniRoutePluginOptions {
 
 /**
  * Default provider-prefix list that triggers the Anthropic SDK format.
- * Covers OmniRoute's canonical Anthropic aliases: `cc/`, `claude/`,
+ * Covers CheapRouter's canonical Anthropic aliases: `cc/`, `claude/`,
  * `anthropic/`, plus the user-configured `kiro/` and `kr/` upstream
  * connections that proxy Anthropic models.
  */
 export const DEFAULT_ANTHROPIC_PREFIXES = ["cc", "claude", "anthropic", "kiro", "kr"];
 
 /**
- * First-class OmniRoute catalog suffixes (`GET /v1/models`). The Anthropic
+ * First-class CheapRouter catalog suffixes (`GET /v1/models`). The Anthropic
  * Messages translator looks these up as `claude-<model>` on provider
  * `claude` and 404s. Keep them on openai-compatible `/v1` so the full
  * catalog id (`cc/claude-haiku-4-5-20251001-low`) is sent unchanged.
@@ -539,7 +539,7 @@ export function ensureV1Suffix(url: string): string {
  * Resolve the API block (id + url + npm package) for a given model id.
  *
  * Decision matrix:
- * - If the model id ends with a first-class OmniRoute effort-tier suffix
+ * - If the model id ends with a first-class CheapRouter effort-tier suffix
  *   (`-low` / `-medium` / `-high` / `-xhigh` / `-thinking` / `-minimal` /
  *   `-max`), return the OpenAI-compat block even when the prefix is
  *   Anthropic. Those ids exist only in `GET /v1/models`; the Anthropic
@@ -584,9 +584,9 @@ export function resolveApiBlock(
  *
  * Contract notes:
  *   - `provider` binds to `providerId` (NOT a hardcoded module constant — fixes
- *     the multi-instance bug in opencode-omniroute-auth@1.2.1 which pinned
- *     `OMNIROUTE_PROVIDER_ID = "omniroute"` at module scope).
- *   - `methods[0]` is the `api` flavor (no OAuth flow; OmniRoute issues bearer
+ *     the multi-instance bug in opencode-cheaprouter-auth@1.2.1 which pinned
+ *     `CHEAPROUTER_PROVIDER_ID = "cheaprouter"` at module scope).
+ *   - `methods[0]` is the `api` flavor (no OAuth flow; CheapRouter issues bearer
  *     keys directly). Label includes the resolved displayName so multi-instance
  *     setups stay distinguishable in the OC TUI.
  *   - `methods[0].prompts` uses the official `{type:"text", key, message}`
@@ -601,8 +601,8 @@ export function resolveApiBlock(
  *     keys by returning `{}` — OC then surfaces the `/connect` flow to the
  *     user instead of dispatching a request with bogus credentials.
  */
-export function createOmniRouteAuthHook(opts?: OmniRoutePluginOptions): AuthHook {
-  const { providerId, displayName, baseURL, features } = resolveOmniRoutePluginOptions(opts);
+export function createCheapRouterAuthHook(opts?: CheapRouterPluginOptions): AuthHook {
+  const { providerId, displayName, baseURL, features } = resolveCheapRouterPluginOptions(opts);
   // Both fetch-layer features default ON (parity with the rest of the plugin's
   // `features.X !== false` convention). Honoring them here lets users disable
   // the interceptor/sanitizer from opencode.json — previously these flags were
@@ -621,7 +621,7 @@ export function createOmniRouteAuthHook(opts?: OmniRoutePluginOptions): AuthHook
           {
             type: "text",
             key: "apiKey",
-            message: `OmniRoute API key (${providerId})`,
+            message: `CheapRouter API key (${providerId})`,
           },
         ],
       },
@@ -662,7 +662,7 @@ export function createOmniRouteAuthHook(opts?: OmniRoutePluginOptions): AuthHook
         // are disabled we fall back to the SDK's default fetch (apiKey only).
         let composedFetch: typeof fetch | undefined;
         if (wantFetchInterceptor) {
-          composedFetch = createOmniRouteFetchInterceptor({
+          composedFetch = createCheapRouterFetchInterceptor({
             apiKey,
             baseURL: resolvedBaseURL,
           });
@@ -699,8 +699,8 @@ export function createOmniRouteAuthHook(opts?: OmniRoutePluginOptions): AuthHook
  * Invalidate in-memory fetch cache entries for a baseURL (all credential keys).
  * Returns number of entries removed.
  */
-export function invalidateOmniRouteFetchCache(
-  cache: OmniRouteFetchCache,
+export function invalidateCheapRouterFetchCache(
+  cache: CheapRouterFetchCache,
   baseURL?: string
 ): number {
   if (!baseURL) {
@@ -723,9 +723,9 @@ export function invalidateOmniRouteFetchCache(
  * Resolve API credentials for force-sync / background refresh without
  * depending on the provider.models auth context.
  */
-export async function resolveOmniRouteRuntimeAuth(
-  resolved: ResolvedOmniRoutePluginOptions,
-  readAuthJson?: OmniRouteReadAuthJson
+export async function resolveCheapRouterRuntimeAuth(
+  resolved: ResolvedCheapRouterPluginOptions,
+  readAuthJson?: CheapRouterReadAuthJson
 ): Promise<{ apiKey: string; baseURL: string; managementReadToken: string } | null> {
   const reader = readAuthJson ?? defaultReadAuthJson;
   let authJson: AuthJsonShape | undefined | null;
@@ -741,8 +741,8 @@ export async function resolveOmniRouteRuntimeAuth(
     : resolved.providerId;
   const lookupKeys = [resolved.providerId];
   if (bareKey !== resolved.providerId) lookupKeys.push(bareKey);
-  if (resolved.omnirouteProviderId && !lookupKeys.includes(resolved.omnirouteProviderId)) {
-    lookupKeys.push(resolved.omnirouteProviderId);
+  if (resolved.cheaprouterProviderId && !lookupKeys.includes(resolved.cheaprouterProviderId)) {
+    lookupKeys.push(resolved.cheaprouterProviderId);
   }
 
   let entry: AuthJsonApiEntry | undefined;
@@ -772,21 +772,21 @@ export async function resolveOmniRouteRuntimeAuth(
 }
 
 /**
- * Force-refresh OmniRoute catalog: re-fetch /v1/models (and optional management
+ * Force-refresh CheapRouter catalog: re-fetch /v1/models (and optional management
  * endpoints) and, only once the models fetch succeeds, replace the memory and
  * disk caches. A failed models fetch leaves both caches untouched (#14926).
  * OpenCode equivalent of Pi `/omni sync`.
  */
-export async function forceSyncOmniRouteModels(args: {
-  resolved: ResolvedOmniRoutePluginOptions;
-  cache: OmniRouteFetchCache;
-  readAuthJson?: OmniRouteReadAuthJson;
-  fetcher?: OmniRouteModelsFetcher;
-  combosFetcher?: OmniRouteCombosFetcher;
-  autoCombosFetcher?: OmniRouteAutoCombosFetcher;
-  enrichmentFetcher?: OmniRouteEnrichmentFetcher;
-  compressionMetaFetcher?: OmniRouteCompressionMetaFetcher;
-  providersFetcher?: OmniRouteProvidersFetcher;
+export async function forceSyncCheapRouterModels(args: {
+  resolved: ResolvedCheapRouterPluginOptions;
+  cache: CheapRouterFetchCache;
+  readAuthJson?: CheapRouterReadAuthJson;
+  fetcher?: CheapRouterModelsFetcher;
+  combosFetcher?: CheapRouterCombosFetcher;
+  autoCombosFetcher?: CheapRouterAutoCombosFetcher;
+  enrichmentFetcher?: CheapRouterEnrichmentFetcher;
+  compressionMetaFetcher?: CheapRouterCompressionMetaFetcher;
+  providersFetcher?: CheapRouterProvidersFetcher;
   now?: () => number;
   logger?: _Logger;
 }): Promise<{
@@ -802,13 +802,13 @@ export async function forceSyncOmniRouteModels(args: {
   const resolved = args.resolved;
   const cache = args.cache;
   const now = args.now ?? Date.now;
-  const fetcher = args.fetcher ?? defaultOmniRouteModelsFetcher;
-  const combosFetcher = args.combosFetcher ?? defaultOmniRouteCombosFetcher;
-  const autoCombosFetcher = args.autoCombosFetcher ?? defaultOmniRouteAutoCombosFetcher;
-  const enrichmentFetcher = args.enrichmentFetcher ?? defaultOmniRouteEnrichmentFetcher;
+  const fetcher = args.fetcher ?? defaultCheapRouterModelsFetcher;
+  const combosFetcher = args.combosFetcher ?? defaultCheapRouterCombosFetcher;
+  const autoCombosFetcher = args.autoCombosFetcher ?? defaultCheapRouterAutoCombosFetcher;
+  const enrichmentFetcher = args.enrichmentFetcher ?? defaultCheapRouterEnrichmentFetcher;
   const compressionMetaFetcher =
-    args.compressionMetaFetcher ?? defaultOmniRouteCompressionMetaFetcher;
-  const providersFetcher = args.providersFetcher ?? defaultOmniRouteProvidersFetcher;
+    args.compressionMetaFetcher ?? defaultCheapRouterCompressionMetaFetcher;
+  const providersFetcher = args.providersFetcher ?? defaultCheapRouterProvidersFetcher;
   const logger =
     args.logger ??
     createLogger(
@@ -822,7 +822,7 @@ export async function forceSyncOmniRouteModels(args: {
   const wantUsableOnly = features.usableOnly === true;
   const wantDiskCache = features.diskCache !== false;
 
-  const auth = await resolveOmniRouteRuntimeAuth(
+  const auth = await resolveCheapRouterRuntimeAuth(
     resolved,
     args.readAuthJson ?? defaultReadAuthJson
   );
@@ -831,11 +831,11 @@ export async function forceSyncOmniRouteModels(args: {
       ok: false,
       count: 0,
       combos: 0,
-      provider: resolved.omnirouteProviderId,
+      provider: resolved.cheaprouterProviderId,
       clearedMemory: 0,
       clearedDisk: false,
       error:
-        "No OmniRoute credentials/baseURL available. Run `opencode connect omniroute` or set plugin baseURL.",
+        "No CheapRouter credentials/baseURL available. Run `opencode connect cheaprouter` or set plugin baseURL.",
     };
   }
 
@@ -844,7 +844,7 @@ export async function forceSyncOmniRouteModels(args: {
   // single transient failure (e.g. the 10s abort) destroyed the last good
   // catalog and left every later read hitting a server that was already
   // slow (#14926). On failure both caches stay exactly as they were.
-  let rawModels: OmniRouteRawModelEntry[];
+  let rawModels: CheapRouterRawModelEntry[];
   try {
     rawModels = await fetcher(auth.baseURL, auth.apiKey, 10_000);
   } catch (err) {
@@ -857,7 +857,7 @@ export async function forceSyncOmniRouteModels(args: {
       ok: false,
       count: 0,
       combos: 0,
-      provider: resolved.omnirouteProviderId,
+      provider: resolved.cheaprouterProviderId,
       baseURL: auth.baseURL,
       clearedMemory: 0,
       clearedDisk: false,
@@ -869,7 +869,7 @@ export async function forceSyncOmniRouteModels(args: {
   let clearedAll = 0;
   let clearedDisk = false;
   try {
-    let rawCombos: OmniRouteRawCombo[] = [];
+    let rawCombos: CheapRouterRawCombo[] = [];
     if (wantCombos) {
       try {
         rawCombos = await combosFetcher(auth.baseURL, auth.managementReadToken, 10_000);
@@ -877,7 +877,7 @@ export async function forceSyncOmniRouteModels(args: {
         logger.warn("force sync: combos fetch failed", err);
       }
     }
-    let rawAutoCombos: OmniRouteRawAutoCombo[] = [];
+    let rawAutoCombos: CheapRouterRawAutoCombo[] = [];
     if (wantAutoCombos) {
       try {
         rawAutoCombos = await autoCombosFetcher(
@@ -890,7 +890,7 @@ export async function forceSyncOmniRouteModels(args: {
         /* soft-fail */
       }
     }
-    let rawEnrichment: OmniRouteEnrichmentMap = new Map();
+    let rawEnrichment: CheapRouterEnrichmentMap = new Map();
     if (wantEnrichment) {
       try {
         rawEnrichment = await enrichmentFetcher(auth.baseURL, auth.managementReadToken, 10_000);
@@ -898,7 +898,7 @@ export async function forceSyncOmniRouteModels(args: {
         rawEnrichment = new Map();
       }
     }
-    let rawCompressionCombos: OmniRouteCompressionCombo[] = [];
+    let rawCompressionCombos: CheapRouterCompressionCombo[] = [];
     if (wantCompressionMeta) {
       try {
         rawCompressionCombos = await compressionMetaFetcher(
@@ -910,7 +910,7 @@ export async function forceSyncOmniRouteModels(args: {
         rawCompressionCombos = [];
       }
     }
-    let rawConnections: OmniRouteProviderConnection[] = [];
+    let rawConnections: CheapRouterProviderConnection[] = [];
     if (wantUsableOnly) {
       try {
         rawConnections = await providersFetcher(auth.baseURL, auth.managementReadToken, 10_000);
@@ -931,9 +931,9 @@ export async function forceSyncOmniRouteModels(args: {
     };
     const cacheKey = modelsCacheKey(auth.baseURL, `${auth.apiKey}\0${auth.managementReadToken}`);
     // Only now, with a fresh catalog in hand, drop the old entries.
-    clearedMemory = invalidateOmniRouteFetchCache(cache, auth.baseURL);
+    clearedMemory = invalidateCheapRouterFetchCache(cache, auth.baseURL);
     // Clear residual entries from prior baseURL history as well.
-    clearedAll = invalidateOmniRouteFetchCache(cache);
+    clearedAll = invalidateCheapRouterFetchCache(cache);
     cache.set(cacheKey, entry);
 
     if (wantDiskCache) {
@@ -951,8 +951,8 @@ export async function forceSyncOmniRouteModels(args: {
       } catch {
         /* soft-fail disk write */
       }
-      if (resolved.omnirouteProviderId !== resolved.providerId) {
-        clearedDisk = (await clearDiskSnapshot(resolved.omnirouteProviderId)) || clearedDisk;
+      if (resolved.cheaprouterProviderId !== resolved.providerId) {
+        clearedDisk = (await clearDiskSnapshot(resolved.cheaprouterProviderId)) || clearedDisk;
       }
     }
 
@@ -966,7 +966,7 @@ export async function forceSyncOmniRouteModels(args: {
       ok: true,
       count: rawModels.length,
       combos: rawCombos.length,
-      provider: resolved.omnirouteProviderId,
+      provider: resolved.cheaprouterProviderId,
       baseURL: auth.baseURL,
       clearedMemory: clearedMemory + clearedAll,
       clearedDisk,
@@ -977,7 +977,7 @@ export async function forceSyncOmniRouteModels(args: {
       ok: false,
       count: 0,
       combos: 0,
-      provider: resolved.omnirouteProviderId,
+      provider: resolved.cheaprouterProviderId,
       baseURL: auth.baseURL,
       clearedMemory: clearedMemory + clearedAll,
       clearedDisk,
@@ -986,15 +986,15 @@ export async function forceSyncOmniRouteModels(args: {
   }
 }
 
-export function createOmniRouteSyncModelsTool(args: {
-  resolved: ResolvedOmniRoutePluginOptions;
-  cache: OmniRouteFetchCache;
+export function createCheapRouterSyncModelsTool(args: {
+  resolved: ResolvedCheapRouterPluginOptions;
+  cache: CheapRouterFetchCache;
   logger?: _Logger;
 }): ReturnType<typeof tool> {
   const { resolved, cache } = args;
   return tool({
     description:
-      "Force-refresh the OmniRoute model catalog (OpenCode equivalent of Pi `/omni sync`). " +
+      "Force-refresh the CheapRouter model catalog (OpenCode equivalent of Pi `/omni sync`). " +
       "Re-fetches GET /v1/models (and combos when enabled), then replaces the in-memory and disk " +
       "caches; a failed fetch keeps the existing caches.",
     args: {
@@ -1004,21 +1004,21 @@ export function createOmniRouteSyncModelsTool(args: {
         .describe("Optional reason for the sync (logging only)"),
     },
     async execute(toolArgs) {
-      const result = await forceSyncOmniRouteModels({ resolved, cache, logger: args.logger });
+      const result = await forceSyncCheapRouterModels({ resolved, cache, logger: args.logger });
       const reason = toolArgs.reason ? ` reason=${toolArgs.reason}` : "";
       if (!result.ok) {
         return {
-          title: "OmniRoute sync failed",
+          title: "CheapRouter sync failed",
           output:
-            `OmniRoute model sync failed for provider=${result.provider}.${reason}\n` +
+            `CheapRouter model sync failed for provider=${result.provider}.${reason}\n` +
             `${result.error ?? "unknown error"}`,
           metadata: result,
         };
       }
       return {
-        title: `OmniRoute sync: ${result.count} models`,
+        title: `CheapRouter sync: ${result.count} models`,
         output:
-          `OmniRoute models synced.` +
+          `CheapRouter models synced.` +
           `\nprovider: ${result.provider}` +
           `\nbaseURL: ${result.baseURL}` +
           `\nmodels: ${result.count}` +
@@ -1039,9 +1039,9 @@ export function createOmniRouteSyncModelsTool(args: {
  * Quiet: only logs when the model count changes or on errors.
  * Returns a stop function.
  */
-export function startOmniRouteAutoSync(args: {
-  resolved: ResolvedOmniRoutePluginOptions;
-  cache: OmniRouteFetchCache;
+export function startCheapRouterAutoSync(args: {
+  resolved: ResolvedCheapRouterPluginOptions;
+  cache: CheapRouterFetchCache;
   intervalMs?: number;
   logger?: _Logger;
 }): () => void {
@@ -1065,7 +1065,7 @@ export function startOmniRouteAutoSync(args: {
     if (stopped) return;
     if (inFlight) return;
     inFlight = (async () => {
-      const result = await forceSyncOmniRouteModels({ resolved, cache, logger });
+      const result = await forceSyncCheapRouterModels({ resolved, cache, logger });
       if (!result.ok) {
         logger.error(`auto-sync failed providerId=${resolved.providerId}: ${result.error}`);
         return;
@@ -1105,8 +1105,8 @@ export function startOmniRouteAutoSync(args: {
   };
 }
 
-export const OmniRoutePlugin: Plugin = async (_input, options) => {
-  const resolved = resolveOmniRoutePluginOptions(coercePluginOptions(options));
+export const CheapRouterPlugin: Plugin = async (_input, options) => {
+  const resolved = resolveCheapRouterPluginOptions(coercePluginOptions(options));
   const logger = createLogger(
     resolved.features?.startupDebug ? "debug" : (resolved.features?.logLevel ?? "warn")
   );
@@ -1116,9 +1116,9 @@ export const OmniRoutePlugin: Plugin = async (_input, options) => {
   // /v1/models + /api/combos at exactly one round-trip per TTL refresh
   // instead of two. On OC ≤1.14.48 only the config hook runs; the cache
   // still works (single producer + single consumer through the same map).
-  // Each `OmniRoutePlugin(...)` invocation gets its OWN cache via closure,
+  // Each `CheapRouterPlugin(...)` invocation gets its OWN cache via closure,
   // so prod + preprod side-by-side instances do NOT collide.
-  const sharedCache: OmniRouteFetchCache = new Map();
+  const sharedCache: CheapRouterFetchCache = new Map();
   // Debug breadcrumb: confirm server() invocation + resolved options.
   // Useful when diagnosing "is the plugin even running" from OC logs.
   const _ver: string =
@@ -1138,15 +1138,15 @@ export const OmniRoutePlugin: Plugin = async (_input, options) => {
 
   // Background auto-discovery while the harness is running (Pi parity).
   // Interval 0 disables. TTL on-demand discovery still works via modelCacheTtl.
-  startOmniRouteAutoSync({ resolved, cache: sharedCache, logger });
+  startCheapRouterAutoSync({ resolved, cache: sharedCache, logger });
 
-  const syncTool = createOmniRouteSyncModelsTool({ resolved, cache: sharedCache, logger });
-  const bareProviderId = resolved.omnirouteProviderId;
+  const syncTool = createCheapRouterSyncModelsTool({ resolved, cache: sharedCache, logger });
+  const bareProviderId = resolved.cheaprouterProviderId;
 
   // Config hook: keep existing catalog shim, and register slash command
   // templates that ask the agent to call the force-sync tool (OpenCode has no
   // Pi-style registerCommand API; tools + command templates are the native path).
-  const baseConfigHook = createOmniRouteConfigHook(resolved, {
+  const baseConfigHook = createCheapRouterConfigHook(resolved, {
     cache: sharedCache,
     logger,
     diskSnapshotReader: defaultDiskSnapshotReader,
@@ -1169,29 +1169,29 @@ export const OmniRoutePlugin: Plugin = async (_input, options) => {
     if (!cfg.command) cfg.command = {};
     if (!cfg.command["omni-sync"]) {
       cfg.command["omni-sync"] = {
-        description: "Force-refresh OmniRoute model catalog (like Pi /omni sync)",
+        description: "Force-refresh CheapRouter model catalog (like Pi /omni sync)",
         template:
-          `Force-refresh the OmniRoute model catalog now using the omniroute_sync_models tool ` +
+          `Force-refresh the CheapRouter model catalog now using the cheaprouter_sync_models tool ` +
           `(provider ${bareProviderId}). After the tool returns, briefly report model count and whether the sync succeeded.`,
       };
     }
     if (!cfg.command["omni-autosync"]) {
       cfg.command["omni-autosync"] = {
-        description: "Show OmniRoute auto-sync / cache status",
+        description: "Show CheapRouter auto-sync / cache status",
         template:
-          `Report OmniRoute discovery status for provider ${bareProviderId}: ` +
+          `Report CheapRouter discovery status for provider ${bareProviderId}: ` +
           `autoSyncIntervalMs=${resolved.autoSyncIntervalMs}, modelCacheTtl=${resolved.modelCacheTtl}. ` +
-          `If the user asked to refresh now, call omniroute_sync_models.`,
+          `If the user asked to refresh now, call cheaprouter_sync_models.`,
       };
     }
   };
 
   return {
-    auth: createOmniRouteAuthHook(resolved),
-    provider: createOmniRouteProviderHook(resolved, { cache: sharedCache, logger }),
+    auth: createCheapRouterAuthHook(resolved),
+    provider: createCheapRouterProviderHook(resolved, { cache: sharedCache, logger }),
     config: configWithSyncCommand,
     tool: {
-      omniroute_sync_models: syncTool,
+      cheaprouter_sync_models: syncTool,
     },
   };
 };
@@ -1201,31 +1201,31 @@ export const OmniRoutePlugin: Plugin = async (_input, options) => {
  * OC checks the default export for an object with `{id, server}` shape FIRST.
  * If that fails it falls back to legacy `getLegacyPlugins` which walks every
  * named export and rejects any non-function value — our package has
- * constants (OMNIROUTE_PROVIDER_KEY, DEFAULT_MODEL_CACHE_TTL_MS) + types +
+ * constants (CHEAPROUTER_PROVIDER_KEY, DEFAULT_MODEL_CACHE_TTL_MS) + types +
  * schemas as named exports, so the legacy path always fails for us.
  *
  * Using v1 shape skips the legacy walk entirely. The `id` field is the
  * plugin MODULE identifier (one per published package); per-instance
  * `providerId` still flows through `options.providerId` as before.
  */
-const OmniRouteV1Plugin = {
-  id: "@omniroute/opencode-plugin",
-  server: OmniRoutePlugin,
+const CheapRouterV1Plugin = {
+  id: "@cheaprouter/opencode-plugin",
+  server: CheapRouterPlugin,
 };
 
-export default OmniRouteV1Plugin;
+export default CheapRouterV1Plugin;
 
 // ────────────────────────────────────────────────────────────────────────────
 // Provider hook (T-03) — /v1/models pass-through with TTL cache
 // ────────────────────────────────────────────────────────────────────────────
 
 /**
- * Raw shape of a `/v1/models` entry from OmniRoute. Captured verbatim from
+ * Raw shape of a `/v1/models` entry from CheapRouter. Captured verbatim from
  * the prod gateway response (sample at /tmp/prod-v1-models.json: 455 entries).
  * STRICT source-of-truth (OQ-3): every field that lands in ModelV2 traces
  * back to this shape — no client-side variant synthesis.
  */
-export interface OmniRouteRawModelEntry {
+export interface CheapRouterRawModelEntry {
   id: string;
   object?: string;
   owned_by?: string;
@@ -1254,10 +1254,10 @@ export interface OmniRouteRawModelEntry {
 
 /**
  * Fetcher contract: returns the raw `/v1/models` entry list from a running
- * OmniRoute instance. Surfaced as a dependency so unit tests can inject a
+ * CheapRouter instance. Surfaced as a dependency so unit tests can inject a
  * stub without monkey-patching global `fetch`.
  *
- * Why we inline this instead of using `@omniroute/opencode-provider`'s
+ * Why we inline this instead of using `@cheaprouter/opencode-provider`'s
  * `fetchLiveModels`: the sibling helper returns a stripped `{id, name,
  * contextLength?}` shape (see opencode-provider/src/index.ts:480-569) that
  * drops the `capabilities` / `*_modalities` / `max_*_tokens` blocks T-03
@@ -1266,26 +1266,26 @@ export interface OmniRouteRawModelEntry {
  * in OQ-3. A 30-line raw fetcher is cheaper than mutating the sibling's
  * stable v0.1.0 contract.
  */
-export type OmniRouteModelsFetcher = (
+export type CheapRouterModelsFetcher = (
   baseURL: string,
   apiKey: string,
   timeoutMs?: number
-) => Promise<OmniRouteRawModelEntry[]>;
+) => Promise<CheapRouterRawModelEntry[]>;
 
 /**
  * Default fetcher: `GET <baseURL>/v1/models` with bearer auth + AbortController
- * timeout. Accepts both the `{object:"list", data:[…]}` envelope OmniRoute
+ * timeout. Accepts both the `{object:"list", data:[…]}` envelope CheapRouter
  * emits today and a bare-array envelope (defensive — keeps the plugin
- * working if a future OmniRoute build trims the wrapper). Anything that
+ * working if a future CheapRouter build trims the wrapper). Anything that
  * isn't an object with a string `id` is filtered out silently.
  */
-export const defaultOmniRouteModelsFetcher: OmniRouteModelsFetcher = async (
+export const defaultCheapRouterModelsFetcher: CheapRouterModelsFetcher = async (
   baseURL,
   apiKey,
   timeoutMs = 30_000
 ) => {
-  if (!apiKey) throw new Error("@omniroute/opencode-plugin: apiKey required to fetch /v1/models");
-  if (!baseURL) throw new Error("@omniroute/opencode-plugin: baseURL required to fetch /v1/models");
+  if (!apiKey) throw new Error("@cheaprouter/opencode-plugin: apiKey required to fetch /v1/models");
+  if (!baseURL) throw new Error("@cheaprouter/opencode-plugin: baseURL required to fetch /v1/models");
 
   const trimmed = trimTrailingSlashes(baseURL);
   // Tolerate both `https://host` and `https://host/v1` forms — the gateway
@@ -1305,7 +1305,7 @@ export const defaultOmniRouteModelsFetcher: OmniRouteModelsFetcher = async (
     });
     if (!res.ok) {
       const err = new Error(
-        `@omniroute/opencode-plugin: GET ${url} failed: ${res.status} ${res.statusText}`
+        `@cheaprouter/opencode-plugin: GET ${url} failed: ${res.status} ${res.statusText}`
       ) as Error & { statusCode: number; status: number };
       err.statusCode = res.status;
       err.status = res.status;
@@ -1317,10 +1317,10 @@ export const defaultOmniRouteModelsFetcher: OmniRouteModelsFetcher = async (
       : body && typeof body === "object" && Array.isArray((body as { data?: unknown }).data)
         ? ((body as { data: unknown[] }).data as unknown[])
         : [];
-    const out: OmniRouteRawModelEntry[] = [];
+    const out: CheapRouterRawModelEntry[] = [];
     for (const r of rawList) {
       if (r && typeof r === "object" && typeof (r as { id?: unknown }).id === "string") {
-        out.push(r as OmniRouteRawModelEntry);
+        out.push(r as CheapRouterRawModelEntry);
       }
     }
     return out;
@@ -1350,30 +1350,30 @@ export const defaultOmniRouteModelsFetcher: OmniRouteModelsFetcher = async (
  *   1. Spec's flat `tool_call` / `reasoning` / `attachment` / `modalities`
  *      top-level fields don't exist in ModelV2 — folded into
  *      `capabilities.{toolcall, reasoning, attachment, input.*, output.*}`.
- *   2. `cost: undefined` is illegal (cost is required). OmniRoute doesn't
+ *   2. `cost: undefined` is illegal (cost is required). CheapRouter doesn't
  *      surface pricing on /v1/models, so we emit a zeroed cost block.
  *      Downstream OC reads this for display only — the live pricing is
- *      OmniRoute's responsibility at routing time.
+ *      CheapRouter's responsibility at routing time.
  *   3. `tool_call` (spec) → `toolcall` (ModelV2 field name; one word).
- *   4. `attachment` (spec) maps from `capabilities.vision` per OmniRoute
+ *   4. `attachment` (spec) maps from `capabilities.vision` per CheapRouter
  *      convention: vision = ability to receive image attachments. If the
  *      raw entry happens to expose an explicit `capabilities.attachment`
  *      (some combo entries do), that wins.
- *   5. `thinking` from OmniRoute has no 1:1 ModelV2 slot. We OR it into
+ *   5. `thinking` from CheapRouter has no 1:1 ModelV2 slot. We OR it into
  *      `reasoning` so thinking-only models still surface a non-false
  *      reasoning flag.
- *   6. `last_updated` from OmniRoute has no ModelV2 slot — dropped (the
+ *   6. `last_updated` from CheapRouter has no ModelV2 slot — dropped (the
  *      spec also flagged this as "may not exist", and the prod sample
  *      confirms it's optional). `release_date` lands in ModelV2.release_date
  *      with `""` fallback (the field is required as `string`).
- *   7. `temperature: true` per OmniRoute convention (OpenAI-compat mode
+ *   7. `temperature: true` per CheapRouter convention (OpenAI-compat mode
  *      always supports the temperature knob). If a raw entry sets
  *      `capabilities.temperature` explicitly, that wins.
  *   8. Input/output modality arrays: each known modality flips its boolean.
- *      Unknown strings (future OmniRoute additions) are ignored — when the
+ *      Unknown strings (future CheapRouter additions) are ignored — when the
  *      server adds new modalities we can map them here without breaking
  *      existing entries.
- *   9. `status: "active"` — OmniRoute doesn't tier models alpha/beta on
+ *   9. `status: "active"` — CheapRouter doesn't tier models alpha/beta on
  *      /v1/models, and OC needs a non-deprecated status to expose the
  *      model in the picker. If a future entry surfaces an explicit
  *      lifecycle hint we can map it then.
@@ -1381,17 +1381,17 @@ export const defaultOmniRouteModelsFetcher: OmniRouteModelsFetcher = async (
  *      for OC users to attach per-model overrides; the provider plugin
  *      must not preempt them.
  *  11. `limit.input` is OPTIONAL on ModelV2 (the `?` modifier). We only
- *      emit it when OmniRoute supplies `max_input_tokens` — keeps the
+ *      emit it when CheapRouter supplies `max_input_tokens` — keeps the
  *      shape clean for combo entries that only carry context_length.
  */
 
 export function mapRawModelToModelV2(
-  raw: OmniRouteRawModelEntry,
+  raw: CheapRouterRawModelEntry,
   ctx: { providerId: string; baseURL: string; apiFormat?: { anthropicPrefixes?: string[] } }
 ): ModelV2 {
   const caps = raw.capabilities ?? {};
   // effort_tiers loop: server-declared tiers become ModelV2 variants so the
-  // UI offers exactly the tiers OmniRoute vouches for (instead of opencode's
+  // UI offers exactly the tiers CheapRouter vouches for (instead of opencode's
   // invented [low, medium, high] fallback). Blind: filtering/exclusion rules
   // live server-side. Absent/empty/malformed => key omitted ENTIRELY (an
   // empty variants object would suppress opencode's fallback for this model).
@@ -1414,11 +1414,11 @@ export function mapRawModelToModelV2(
     // (`owned_by: "combo"`, e.g. `gpt-5.6-sol`) must also stay unprefixed:
     // OpenCode looks up `-m <plugin>/<combo>` as model id `<combo>` under
     // the plugin provider (#10345). Other bare ids still prefix with
-    // `providerId` so credentials resolve as `(omniroute, model)`.
+    // `providerId` so credentials resolve as `(cheaprouter, model)`.
     id: raw.id.includes("/") || raw.owned_by === "combo" ? raw.id : `${ctx.providerId}/${raw.id}`,
     /**
      * Display name. Falls back to raw.id when no enrichment is available;
-     * the caller (`createOmniRouteProviderHook`) overlays
+     * the caller (`createCheapRouterProviderHook`) overlays
      * `/api/pricing/models` data via `applyEnrichment` when
      * `features.enrichment` is true.
      */
@@ -1469,10 +1469,10 @@ export function mapRawModelToModelV2(
 // ────────────────────────────────────────────────────────────────────────────
 
 /**
- * Raw shape of a single combo entry as returned by OmniRoute's `/api/combos`.
+ * Raw shape of a single combo entry as returned by CheapRouter's `/api/combos`.
  *
  * Schema established via a live probe against
- * an OmniRoute `/api/combos` endpoint with a management-scoped key
+ * an CheapRouter `/api/combos` endpoint with a management-scoped key
  * (response saved at /tmp/t05-combos.json) cross-referenced against the
  * source-of-truth in this repo:
  *
@@ -1486,15 +1486,15 @@ export function mapRawModelToModelV2(
  *
  * Note: the preprod gateway returned `{combos: []}` at probe time (no combos
  * provisioned). The defensive parser accepts both `{combos:[...]}` and a
- * bare array envelope so the plugin keeps working if a future OmniRoute
+ * bare array envelope so the plugin keeps working if a future CheapRouter
  * build trims the wrapper (mirrors the same pattern in the sibling
- * `@omniroute/opencode-provider#listCombos`).
+ * `@cheaprouter/opencode-provider#listCombos`).
  *
  * STRICT source-of-truth (OQ-3, per T-03): every ModelV2 field a combo
  * surfaces traces back to either (a) this raw combo entry or (b) the LCD
  * roll-up across its raw member models. No client-side variant synthesis.
  */
-export interface OmniRouteRawComboMemberRef {
+export interface CheapRouterRawComboMemberRef {
   /** Step kind: "model" references a raw model id; "combo-ref" nests another combo. */
   kind?: "model" | "combo-ref";
   /** Full model id referenced by this step (when kind === "model"). */
@@ -1507,16 +1507,16 @@ export interface OmniRouteRawComboMemberRef {
   label?: string;
 }
 
-export interface OmniRouteRawCombo {
+export interface CheapRouterRawCombo {
   id: string;
   name?: string;
   /** Routing strategy. Surfaced for forward-compat but not consumed by LCD. */
   strategy?: string;
   /** Member step list. Only `kind: "model"` steps participate in LCD. */
-  models?: OmniRouteRawComboMemberRef[];
+  models?: CheapRouterRawComboMemberRef[];
   /** Hidden combos are excluded from the OC model picker. */
   isHidden?: boolean;
-  /** When OmniRoute attaches a lifecycle hint we forward it; today it doesn't. */
+  /** When CheapRouter attaches a lifecycle hint we forward it; today it doesn't. */
   release_date?: string;
   /**
    * Server-computed context window for this combo (aggregated from member
@@ -1530,22 +1530,22 @@ export interface OmniRouteRawCombo {
 
 /**
  * Fetcher contract for `/api/combos`. Same DI shape as
- * `OmniRouteModelsFetcher` so unit tests can inject a stub instead of
+ * `CheapRouterModelsFetcher` so unit tests can inject a stub instead of
  * monkey-patching global `fetch`.
  */
-export type OmniRouteCombosFetcher = (
+export type CheapRouterCombosFetcher = (
   baseURL: string,
   apiKey: string,
   timeoutMs?: number
-) => Promise<OmniRouteRawCombo[]>;
+) => Promise<CheapRouterRawCombo[]>;
 
 /**
  * Default fetcher: `GET <baseURL>/api/combos` with bearer auth +
  * AbortController timeout. Accepts both the `{combos: [...]}` envelope the
  * gateway emits today and a bare-array envelope (defensive — keeps the
- * plugin working if a future OmniRoute build trims the wrapper).
+ * plugin working if a future CheapRouter build trims the wrapper).
  *
- * Differences from `defaultOmniRouteModelsFetcher`:
+ * Differences from `defaultCheapRouterModelsFetcher`:
  *   - URL is `/api/combos`, NOT `/v1/combos`. The `/v1/...` namespace is the
  *     OpenAI-compatible surface (chat completions, models); combo discovery
  *     lives on the management plane under `/api/...`. We tolerate both
@@ -1557,14 +1557,14 @@ export type OmniRouteCombosFetcher = (
  *
  * Anything that isn't an object with a string `id` is filtered out silently.
  */
-export const defaultOmniRouteCombosFetcher: OmniRouteCombosFetcher = async (
+export const defaultCheapRouterCombosFetcher: CheapRouterCombosFetcher = async (
   baseURL,
   apiKey,
   timeoutMs = 10_000
 ) => {
-  if (!apiKey) throw new Error("@omniroute/opencode-plugin: apiKey required to fetch /api/combos");
+  if (!apiKey) throw new Error("@cheaprouter/opencode-plugin: apiKey required to fetch /api/combos");
   if (!baseURL)
-    throw new Error("@omniroute/opencode-plugin: baseURL required to fetch /api/combos");
+    throw new Error("@cheaprouter/opencode-plugin: baseURL required to fetch /api/combos");
 
   // Strip trailing slashes, then strip a trailing `/v1` so we land on the
   // management plane. Models live under `/v1/models`; combos live under
@@ -1586,7 +1586,7 @@ export const defaultOmniRouteCombosFetcher: OmniRouteCombosFetcher = async (
     });
     if (!res.ok) {
       throw new Error(
-        `@omniroute/opencode-plugin: GET ${url} failed: ${res.status} ${res.statusText}`
+        `@cheaprouter/opencode-plugin: GET ${url} failed: ${res.status} ${res.statusText}`
       );
     }
     const body = (await res.json()) as unknown;
@@ -1595,10 +1595,10 @@ export const defaultOmniRouteCombosFetcher: OmniRouteCombosFetcher = async (
       : body && typeof body === "object" && Array.isArray((body as { combos?: unknown }).combos)
         ? ((body as { combos: unknown[] }).combos as unknown[])
         : [];
-    const out: OmniRouteRawCombo[] = [];
+    const out: CheapRouterRawCombo[] = [];
     for (const r of rawList) {
       if (r && typeof r === "object" && typeof (r as { id?: unknown }).id === "string") {
-        out.push(r as OmniRouteRawCombo);
+        out.push(r as CheapRouterRawCombo);
       }
     }
     return out;
@@ -1646,8 +1646,8 @@ export const defaultOmniRouteCombosFetcher: OmniRouteCombosFetcher = async (
  * @param baseURL Resolved gateway base URL for ModelV2.api.url.
  */
 export function mapComboToModelV2(
-  combo: OmniRouteRawCombo,
-  members: OmniRouteRawModelEntry[],
+  combo: CheapRouterRawCombo,
+  members: CheapRouterRawModelEntry[],
   providerId: string,
   baseURL: string,
   apiFormat?: { anthropicPrefixes?: string[] }
@@ -1751,11 +1751,11 @@ export function mapComboToModelV2(
 // ─────────────────────────────────────────────────────────────────────────
 
 /**
- * Raw shape of an auto combo entry as returned by OmniRoute's
+ * Raw shape of an auto combo entry as returned by CheapRouter's
  * `/api/combos/auto` endpoint. Auto combos are virtual — they self-manage
  * provider selection via scoring/bandit exploration at runtime.
  */
-export interface OmniRouteRawAutoCombo {
+export interface CheapRouterRawAutoCombo {
   /** Stable id (e.g. "auto", "auto/coding"). */
   id: string;
   /** Human-readable name (e.g. "Auto", "Auto Coding"). */
@@ -1766,7 +1766,7 @@ export interface OmniRouteRawAutoCombo {
   candidatePool?: string[];
   /** Number of candidates resolved at fetch time. */
   candidateCount?: number;
-  /** MAX of candidates' context windows, served by newer OmniRoute builds.
+  /** MAX of candidates' context windows, served by newer CheapRouter builds.
    * Absent on older servers — mapper falls back to a safe positive default. */
   context_length?: number;
   /** MAX of candidates' max output tokens (same provenance as context_length). */
@@ -1787,12 +1787,12 @@ export interface OmniRouteRawAutoCombo {
  * Fetcher contract for `/api/combos/auto`. Returns the list of virtual
  * auto combos the server can create. Same DI pattern as other fetchers.
  */
-export type OmniRouteAutoCombosFetcher = (
+export type CheapRouterAutoCombosFetcher = (
   baseURL: string,
   apiKey: string,
   timeoutMs?: number,
-  logger?: OmniRouteLoggerSink
-) => Promise<OmniRouteRawAutoCombo[]>;
+  logger?: CheapRouterLoggerSink
+) => Promise<CheapRouterRawAutoCombo[]>;
 
 /**
  * Default auto combos fetcher: `GET <baseURL>/api/combos/auto`.
@@ -1800,11 +1800,11 @@ export type OmniRouteAutoCombosFetcher = (
  * Fault-tolerant: returns empty array on 404 (endpoint doesn't exist yet)
  * or any non-2xx / network error. Logs a warning in those cases.
  */
-export const defaultOmniRouteAutoCombosFetcher: OmniRouteAutoCombosFetcher = async (
+export const defaultCheapRouterAutoCombosFetcher: CheapRouterAutoCombosFetcher = async (
   baseURL,
   apiKey,
   timeoutMs = 5_000,
-  logger?: OmniRouteLoggerSink
+  logger?: CheapRouterLoggerSink
 ) => {
   if (!apiKey || !baseURL) return [];
   const log = logger ?? _logger;
@@ -1839,10 +1839,10 @@ export const defaultOmniRouteAutoCombosFetcher: OmniRouteAutoCombosFetcher = asy
       : body && typeof body === "object" && Array.isArray((body as { combos?: unknown }).combos)
         ? ((body as { combos: unknown[] }).combos as unknown[])
         : [];
-    const out: OmniRouteRawAutoCombo[] = [];
+    const out: CheapRouterRawAutoCombo[] = [];
     for (const r of rawList) {
       if (r && typeof r === "object" && typeof (r as { id?: unknown }).id === "string") {
-        out.push(r as OmniRouteRawAutoCombo);
+        out.push(r as CheapRouterRawAutoCombo);
       }
     }
     return out;
@@ -1858,7 +1858,7 @@ export const defaultOmniRouteAutoCombosFetcher: OmniRouteAutoCombosFetcher = asy
 };
 
 /** Fallbacks when the server does not advertise auto-combo limits (older
- * OmniRoute builds). MUST be positive: OpenCode's overflow guard treats
+ * CheapRouter builds). MUST be positive: OpenCode's overflow guard treats
  * `limit.context === 0` as "never overflow" and silently DISABLES smart
  * auto-compaction, letting the session grow until the gateway's destructive
  * history purge kicks in (the "agent keeps forgetting things" bug). */
@@ -1874,8 +1874,8 @@ const AUTO_COMBO_FALLBACK_OUTPUT = 8_192;
  * applies when the server omits them. Never 0.
  */
 export function mapAutoComboToStaticEntry(
-  autoCombo: OmniRouteRawAutoCombo
-): OmniRouteStaticModelEntry {
+  autoCombo: CheapRouterRawAutoCombo
+): CheapRouterStaticModelEntry {
   const variant = autoCombo.variant;
   const name = formatAutoComboName(variant, autoCombo.candidateCount);
   const context =
@@ -1911,7 +1911,7 @@ export function mapAutoComboToStaticEntry(
 // ─────────────────────────────────────────────────────────────────────────
 
 /**
- * Per-model enrichment overlay derived from OmniRoute's
+ * Per-model enrichment overlay derived from CheapRouter's
  * `/api/pricing/models` endpoint. The endpoint returns a per-provider
  * catalog with curated `name` strings (e.g. `Claude 4.7 Opus`,
  * `GPT 5.5 Pro`, `Gemini 3.1 Pro`) and per-million-token pricing
@@ -1919,7 +1919,7 @@ export function mapAutoComboToStaticEntry(
  * `pricing.cacheWrite`). These overlay the ModelV2 entries produced by
  * `mapRawModelToModelV2`.
  */
-export interface OmniRouteEnrichmentEntry {
+export interface CheapRouterEnrichmentEntry {
   /** Human-readable display name. Replaces ModelV2.name when present. */
   name?: string;
   /** Per-million-token cost overlay onto ModelV2.cost. */
@@ -1931,7 +1931,7 @@ export interface OmniRouteEnrichmentEntry {
   };
   /**
    * Provider alias prefix seen in `/v1/models` ids (e.g. `cc`, `gemini`).
-   * Populated by `defaultOmniRouteEnrichmentFetcher` from
+   * Populated by `defaultCheapRouterEnrichmentFetcher` from
    * `/api/pricing/models` keys. Drives the `usableOnly` alias↔canonical
    * resolution.
    */
@@ -1960,13 +1960,13 @@ export interface OmniRouteEnrichmentEntry {
 }
 
 /** Map keyed by full model id (possibly namespaced, e.g. `cc/claude-sonnet-4-6`). */
-export type OmniRouteEnrichmentMap = Map<string, OmniRouteEnrichmentEntry>;
+export type CheapRouterEnrichmentMap = Map<string, CheapRouterEnrichmentEntry>;
 
-export type OmniRouteEnrichmentFetcher = (
+export type CheapRouterEnrichmentFetcher = (
   baseURL: string,
   apiKey: string,
   timeoutMs?: number
-) => Promise<OmniRouteEnrichmentMap>;
+) => Promise<CheapRouterEnrichmentMap>;
 
 /**
  * Default enrichment fetcher — pulls nice display names from
@@ -1989,12 +1989,12 @@ export type OmniRouteEnrichmentFetcher = (
  * the two fetches are independent so one missing source still surfaces the
  * other.
  */
-export const defaultOmniRouteEnrichmentFetcher: OmniRouteEnrichmentFetcher = async (
+export const defaultCheapRouterEnrichmentFetcher: CheapRouterEnrichmentFetcher = async (
   baseURL,
   apiKey,
   timeoutMs = 10_000
 ) => {
-  const out: OmniRouteEnrichmentMap = new Map();
+  const out: CheapRouterEnrichmentMap = new Map();
   if (!baseURL || !apiKey) return out;
   const root = baseURL.replace(/\/v1\/?$/, "").replace(/\/$/, "");
   const headers = {
@@ -2031,7 +2031,7 @@ export const defaultOmniRouteEnrichmentFetcher: OmniRouteEnrichmentFetcher = asy
               : providerAlias;
           // Upstream provider human label (e.g. `Claude`, `Kiro`,
           // `GitHub Models`). Optional — falls back to undefined when
-          // OmniRoute hasn't curated a label for this slot.
+          // CheapRouter hasn't curated a label for this slot.
           const slotNameRaw = (slot as { name?: unknown }).name;
           const providerDisplayName =
             typeof slotNameRaw === "string" && slotNameRaw.trim().length > 0
@@ -2042,7 +2042,7 @@ export const defaultOmniRouteEnrichmentFetcher: OmniRouteEnrichmentFetcher = asy
             const id = (m as { id?: unknown }).id;
             if (typeof id !== "string" || id.length === 0) continue;
             const name = (m as { name?: unknown }).name;
-            const entry: OmniRouteEnrichmentEntry = {
+            const entry: CheapRouterEnrichmentEntry = {
               providerAlias,
               providerCanonical,
             };
@@ -2078,8 +2078,8 @@ export const defaultOmniRouteEnrichmentFetcher: OmniRouteEnrichmentFetcher = asy
           for (const [modelId, raw] of Object.entries(slot as Record<string, unknown>)) {
             if (!raw || typeof raw !== "object") continue;
             const p = raw as Record<string, unknown>;
-            const parsed: NonNullable<OmniRouteEnrichmentEntry["pricing"]> = {};
-            // OmniRoute `/api/pricing` keys:
+            const parsed: NonNullable<CheapRouterEnrichmentEntry["pricing"]> = {};
+            // CheapRouter `/api/pricing` keys:
             //   input         → cost.input
             //   output        → cost.output
             //   cached        → cost.cache.read   (alias: cacheRead)
@@ -2201,9 +2201,9 @@ async function writeStartupDiagnostics(params: {
   comboCount: number;
   enrichmentSize: number;
   autoComboCount: number;
-  enrichment: OmniRouteEnrichmentMap;
-  autoCombos: OmniRouteRawAutoCombo[];
-  features?: OmniRoutePluginOptions["features"];
+  enrichment: CheapRouterEnrichmentMap;
+  autoCombos: CheapRouterRawAutoCombo[];
+  features?: CheapRouterPluginOptions["features"];
 }): Promise<void> {
   const {
     providerId,
@@ -2233,7 +2233,7 @@ async function writeStartupDiagnostics(params: {
   const effectiveFlags = resolveEffectiveFeatureFlags(features);
   lines.push(
     `features(effective): ` +
-      (Object.keys(effectiveFlags) as OmniRouteFeatureFlag[])
+      (Object.keys(effectiveFlags) as CheapRouterFeatureFlag[])
         .map((k) => `${k}=${effectiveFlags[k] ? "on" : "off"}`)
         .join(" ")
   );
@@ -2276,7 +2276,7 @@ async function writeStartupDiagnostics(params: {
   try {
     const diagDir =
       process.env.OPENCODE_DATA_DIR ?? path.join(os.homedir(), ".local/share/opencode");
-    const diagPath = path.join(diagDir, "plugins", "omniroute-startup-diagnostics.log");
+    const diagPath = path.join(diagDir, "plugins", "cheaprouter-startup-diagnostics.log");
     let existing = "";
     try {
       existing = await readFile(diagPath, "utf8");
@@ -2304,9 +2304,9 @@ async function writeStartupDiagnostics(params: {
  */
 export const PROVIDER_TAG_SEPARATOR = _PROVIDER_TAG_SEPARATOR;
 
-// Re-export from naming.ts — thin wrapper preserving OmniRouteEnrichmentEntry signature
+// Re-export from naming.ts — thin wrapper preserving CheapRouterEnrichmentEntry signature
 export function shortProviderLabel(
-  enrichment: OmniRouteEnrichmentEntry | undefined
+  enrichment: CheapRouterEnrichmentEntry | undefined
 ): string | undefined {
   return _shortProviderLabel(enrichment);
 }
@@ -2338,7 +2338,7 @@ export function shortProviderLabel(
  */
 export function applyProviderTag(
   model: ModelV2,
-  enrichment: OmniRouteEnrichmentEntry | undefined
+  enrichment: CheapRouterEnrichmentEntry | undefined
 ): ModelV2 {
   const label = shortProviderLabel(enrichment);
   if (!label) return model;
@@ -2357,7 +2357,7 @@ export function applyProviderTag(
 /**
  * Reverse-index the enrichment map from `providerCanonical → providerAlias`.
  *
- * OmniRoute's `/api/pricing/models` is keyed by short ALIAS (`cc`, `cx`,
+ * CheapRouter's `/api/pricing/models` is keyed by short ALIAS (`cc`, `cx`,
  * `pol`). But `/v1/models` exposes some models a SECOND time under their
  * CANONICAL name (`claude/claude-opus-4-7`, `codex/gpt-5.5`,
  * `pollinations/midjourney`). Without a reverse map, those canonical
@@ -2369,7 +2369,7 @@ export function applyProviderTag(
  * like `kiro`).
  */
 export function buildCanonicalToAliasMap(
-  enrichment: OmniRouteEnrichmentMap | undefined
+  enrichment: CheapRouterEnrichmentMap | undefined
 ): Map<string, string> {
   const out = new Map<string, string>();
   if (!enrichment) return out;
@@ -2402,9 +2402,9 @@ export function buildCanonicalToAliasMap(
  */
 export function lookupEnrichment(
   rawId: string,
-  enrichment: OmniRouteEnrichmentMap | undefined,
+  enrichment: CheapRouterEnrichmentMap | undefined,
   canonicalToAlias: Map<string, string>
-): OmniRouteEnrichmentEntry | undefined {
+): CheapRouterEnrichmentEntry | undefined {
   if (!enrichment) return undefined;
   const direct = enrichment.get(rawId);
   if (direct) return direct;
@@ -2437,7 +2437,7 @@ export function lookupEnrichment(
  * Built once per refresh. Cheap — O(M) where M = raw model count.
  */
 export function canonicalDedupSet(
-  rawModels: ReadonlyArray<OmniRouteRawModelEntry>,
+  rawModels: ReadonlyArray<CheapRouterRawModelEntry>,
   canonicalToAlias: Map<string, string>
 ): Set<string> {
   const drop = new Set<string>();
@@ -2467,7 +2467,7 @@ export function canonicalDedupSet(
  * provider prefix even for raw models that don't have their own
  * curated `/api/pricing/models` entry.
  *
- * Real example: OmniRoute's `pricing['cohere']` slot lists 10 curated
+ * Real example: CheapRouter's `pricing['cohere']` slot lists 10 curated
  * models but `/v1/models` also returns `cohere/rerank-multilingual-v3.0`
  * and `cohere/rerank-v4.0-fast` (not in the curated 10). Without this
  * index, those rows surface in the picker as `cohere/...` with no
@@ -2475,16 +2475,16 @@ export function canonicalDedupSet(
  *
  * This index records the first non-empty `providerDisplayName` seen
  * for each alias, plus the alias itself. Callers use it to synthesize
- * a minimal `OmniRouteEnrichmentEntry` whenever the direct lookup
+ * a minimal `CheapRouterEnrichmentEntry` whenever the direct lookup
  * misses but the raw id's prefix matches a known alias.
  *
  * Built once per refresh; first-wins on duplicate alias (matches
  * `buildCanonicalToAliasMap` semantics).
  */
 export function buildAliasIndex(
-  enrichment: OmniRouteEnrichmentMap | undefined
-): Map<string, OmniRouteEnrichmentEntry> {
-  const out = new Map<string, OmniRouteEnrichmentEntry>();
+  enrichment: CheapRouterEnrichmentMap | undefined
+): Map<string, CheapRouterEnrichmentEntry> {
+  const out = new Map<string, CheapRouterEnrichmentEntry>();
   if (!enrichment) return out;
   for (const entry of enrichment.values()) {
     const alias = typeof entry.providerAlias === "string" ? entry.providerAlias.trim() : "";
@@ -2532,10 +2532,10 @@ export function buildAliasIndex(
  */
 export function resolveProviderTagEntry(
   rawId: string,
-  direct: OmniRouteEnrichmentEntry | undefined,
-  aliasIndex: Map<string, OmniRouteEnrichmentEntry>,
+  direct: CheapRouterEnrichmentEntry | undefined,
+  aliasIndex: Map<string, CheapRouterEnrichmentEntry>,
   canonicalToAlias?: Map<string, string>
-): OmniRouteEnrichmentEntry | undefined {
+): CheapRouterEnrichmentEntry | undefined {
   if (direct) {
     const alias = typeof direct.providerAlias === "string" ? direct.providerAlias.trim() : "";
     const display =
@@ -2579,7 +2579,7 @@ export { _normaliseFreeLabel as normaliseFreeLabel };
 
 export function applyEnrichment(
   model: ModelV2,
-  enrichment: OmniRouteEnrichmentEntry | undefined
+  enrichment: CheapRouterEnrichmentEntry | undefined
 ): ModelV2 {
   if (!enrichment) return model;
   if (enrichment.name && enrichment.name.trim().length > 0) {
@@ -2609,37 +2609,37 @@ export function applyEnrichment(
 // ─────────────────────────────────────────────────────────────────────────
 
 /** Single step in a compression combo's pipeline. */
-export interface OmniRouteCompressionStep {
+export interface CheapRouterCompressionStep {
   engine: string; // "rtk" | "caveman" | "aggressive" | ...
   intensity?: string; // "minimal" | "lite" | "standard" | "full" | "ultra" | "aggressive"
 }
 
 /** Compression combo as returned by /api/context/combos. */
-export interface OmniRouteCompressionCombo {
+export interface CheapRouterCompressionCombo {
   id: string;
   name?: string;
   description?: string;
-  pipeline: OmniRouteCompressionStep[];
+  pipeline: CheapRouterCompressionStep[];
   isDefault?: boolean;
 }
 
-export type OmniRouteCompressionMetaFetcher = (
+export type CheapRouterCompressionMetaFetcher = (
   baseURL: string,
   apiKey: string,
   timeoutMs?: number
-) => Promise<OmniRouteCompressionCombo[]>;
+) => Promise<CheapRouterCompressionCombo[]>;
 
 /**
  * Default compression-metadata fetcher — calls `GET /api/context/combos`.
  * Tolerates envelope shapes `{ combos: [...] }`, `[...]`, or
  * `{ data: [...] }`. Soft-fails (returns []) on non-2xx or parse errors.
  */
-export const defaultOmniRouteCompressionMetaFetcher: OmniRouteCompressionMetaFetcher = async (
+export const defaultCheapRouterCompressionMetaFetcher: CheapRouterCompressionMetaFetcher = async (
   baseURL,
   apiKey,
   timeoutMs = 10_000
 ) => {
-  const empty: OmniRouteCompressionCombo[] = [];
+  const empty: CheapRouterCompressionCombo[] = [];
   if (!baseURL || !apiKey) return empty;
   const root = baseURL.replace(/\/v1\/?$/, "").replace(/\/$/, "");
   const url = `${root}/api/context/combos`;
@@ -2663,26 +2663,26 @@ export const defaultOmniRouteCompressionMetaFetcher: OmniRouteCompressionMetaFet
         : Array.isArray((body as { data?: unknown[] })?.data)
           ? (body as { data: unknown[] }).data
           : [];
-    const out: OmniRouteCompressionCombo[] = [];
+    const out: CheapRouterCompressionCombo[] = [];
     for (const raw of list) {
       if (!raw || typeof raw !== "object") continue;
       const id = (raw as { id?: unknown }).id;
       const pipeline = (raw as { pipeline?: unknown }).pipeline;
       if (typeof id !== "string" || id.length === 0) continue;
       if (!Array.isArray(pipeline)) continue;
-      const steps: OmniRouteCompressionStep[] = [];
+      const steps: CheapRouterCompressionStep[] = [];
       for (const step of pipeline) {
         if (!step || typeof step !== "object") continue;
         const engine = (step as { engine?: unknown }).engine;
         if (typeof engine !== "string" || engine.length === 0) continue;
         const intensity = (step as { intensity?: unknown }).intensity;
-        const entry: OmniRouteCompressionStep = { engine };
+        const entry: CheapRouterCompressionStep = { engine };
         if (typeof intensity === "string" && intensity.length > 0) {
           entry.intensity = intensity;
         }
         steps.push(entry);
       }
-      const combo: OmniRouteCompressionCombo = { id, pipeline: steps };
+      const combo: CheapRouterCompressionCombo = { id, pipeline: steps };
       const name = (raw as { name?: unknown }).name;
       if (typeof name === "string" && name.length > 0) combo.name = name;
       const description = (raw as { description?: unknown }).description;
@@ -2710,7 +2710,7 @@ export const defaultOmniRouteCompressionMetaFetcher: OmniRouteCompressionMetaFet
  *
  * Lookup is case-insensitive. Unknown intensities fall through to the
  * raw text form (`engine:<intensity>`) so we never hide a value that
- * OmniRoute knows but the plugin doesn't.
+ * CheapRouter knows but the plugin doesn't.
  *
  * Exported for callers (and tests) that want to assemble their own
  * pipeline strings.
@@ -2735,7 +2735,7 @@ export const COMPRESSION_INTENSITY_EMOJI: Record<string, string> = {
  *   `[caveman]`               (engine without intensity, no emoji)
  *   `[rtk:custom-thing]`      (unknown intensity, raw-text fallback)
  */
-export function formatCompressionPipeline(pipeline: OmniRouteCompressionStep[]): string {
+export function formatCompressionPipeline(pipeline: CheapRouterCompressionStep[]): string {
   if (!pipeline || pipeline.length === 0) return "";
   return (
     "[" +
@@ -2752,7 +2752,7 @@ export function formatCompressionPipeline(pipeline: OmniRouteCompressionStep[]):
 
 // ─────────────────────────────────────────────────────────────────────────
 // /api/providers (provider-connection status) — optional read used by the
-// `features.usableOnly` filter. Returns the operator's installed OmniRoute
+// `features.usableOnly` filter. Returns the operator's installed CheapRouter
 // provider connections, each with `provider` (canonical id), `isActive`,
 // `testStatus`. We treat a provider as USABLE when at least one of its
 // connections is `isActive: true && testStatus: 'active'`. Aliases (e.g.
@@ -2760,7 +2760,7 @@ export function formatCompressionPipeline(pipeline: OmniRouteCompressionStep[]):
 // ─────────────────────────────────────────────────────────────────────────
 
 /** Subset of `/api/providers/connections[]` we read. Other fields are kept as a permissive index signature. */
-export interface OmniRouteProviderConnection {
+export interface CheapRouterProviderConnection {
   /** Connection UUID. */
   id: string;
   /** Canonical provider id, e.g. `claude`, `gemini`, `kiro`. Matches `entry.id` in `/api/pricing/models`. */
@@ -2777,11 +2777,11 @@ export interface OmniRouteProviderConnection {
   [k: string]: unknown;
 }
 
-export type OmniRouteProvidersFetcher = (
+export type CheapRouterProvidersFetcher = (
   baseURL: string,
   apiKey: string,
   timeoutMs?: number
-) => Promise<OmniRouteProviderConnection[]>;
+) => Promise<CheapRouterProviderConnection[]>;
 
 /**
  * Default providers fetcher — calls `GET /api/providers`. Tolerates envelope
@@ -2789,12 +2789,12 @@ export type OmniRouteProvidersFetcher = (
  * (returns []) on non-2xx or parse errors so the `usableOnly` filter
  * gracefully degrades to "no filter" instead of hiding the whole catalog.
  */
-export const defaultOmniRouteProvidersFetcher: OmniRouteProvidersFetcher = async (
+export const defaultCheapRouterProvidersFetcher: CheapRouterProvidersFetcher = async (
   baseURL,
   apiKey,
   timeoutMs = 10_000
 ) => {
-  const empty: OmniRouteProviderConnection[] = [];
+  const empty: CheapRouterProviderConnection[] = [];
   if (!baseURL || !apiKey) return empty;
   const root = baseURL.replace(/\/v1\/?$/, "").replace(/\/$/, "");
   const url = `${root}/api/providers`;
@@ -2818,7 +2818,7 @@ export const defaultOmniRouteProvidersFetcher: OmniRouteProvidersFetcher = async
         : Array.isArray((body as { data?: unknown[] })?.data)
           ? (body as { data: unknown[] }).data
           : [];
-    const out: OmniRouteProviderConnection[] = [];
+    const out: CheapRouterProviderConnection[] = [];
     for (const raw of list) {
       if (!raw || typeof raw !== "object") continue;
       const provider = (raw as { provider?: unknown }).provider;
@@ -2847,7 +2847,7 @@ export const defaultOmniRouteProvidersFetcher: OmniRouteProvidersFetcher = async
  *
  * Callers should treat membership in EITHER set as "usable" — raw model
  * ids may be `<alias>/<model>` (`cc/claude-opus-4-7`) OR `<canonical>/<model>`
- * (`claude/sonnet-4`) depending on the OmniRoute deployment's `/v1/models`
+ * (`claude/sonnet-4`) depending on the CheapRouter deployment's `/v1/models`
  * surface shape.
  *
  * Subtract-filter semantics: callers MUST also keep models whose prefix is
@@ -2856,8 +2856,8 @@ export const defaultOmniRouteProvidersFetcher: OmniRouteProvidersFetcher = async
  * prefix in EITHER catalog table AND it's not usable, drop; otherwise keep".
  */
 export function usableProviderAliasSet(
-  connections: OmniRouteProviderConnection[],
-  enrichment: OmniRouteEnrichmentMap | undefined
+  connections: CheapRouterProviderConnection[],
+  enrichment: CheapRouterEnrichmentMap | undefined
 ): {
   aliases: Set<string>;
   canonicals: Set<string>;
@@ -2875,7 +2875,7 @@ export function usableProviderAliasSet(
   const knownAliases = new Set<string>();
   if (enrichment) {
     // Walk enrichment entries to map alias → canonical via the metadata
-    // populated by `defaultOmniRouteEnrichmentFetcher`. Every entry carries
+    // populated by `defaultCheapRouterEnrichmentFetcher`. Every entry carries
     // its providerAlias + providerCanonical so the namespaced/bare key
     // duplication is harmless. Collect EVERY alias we encounter (regardless
     // of usability) into `knownAliases` so the downstream filter can decide
@@ -2916,7 +2916,7 @@ export function isUsableRawModelId(
     canonicals: Set<string>;
     knownAliases: Set<string>;
   },
-  enrichment: OmniRouteEnrichmentMap | undefined
+  enrichment: CheapRouterEnrichmentMap | undefined
 ): boolean {
   const slash = id.indexOf("/");
   if (slash <= 0) return true;
@@ -2937,7 +2937,7 @@ export function isUsableRawModelId(
  * all-false LCD posture and surfaced as cosmetic-only entries).
  */
 export function isUsableCombo(
-  combo: OmniRouteRawCombo,
+  combo: CheapRouterRawCombo,
   usable: {
     aliases: Set<string>;
     canonicals: Set<string>;
@@ -2946,7 +2946,7 @@ export function isUsableCombo(
 ): boolean {
   const steps = Array.isArray(combo.models) ? combo.models : [];
   if (steps.length === 0) return true;
-  // The provider id is folded INTO the full model string by OmniRoute's
+  // The provider id is folded INTO the full model string by CheapRouter's
   // `normalizeComboRecord` (e.g. "cc/claude-opus-4-7") — combo member refs do
   // NOT carry a separate `providerId` field. Derive the prefix from `step.model`
   // and apply the same subtract-filter verdict as `isUsableRawModelId`.
@@ -3048,7 +3048,7 @@ export function passesModelAllowlist(
  * filter is set, all combos pass. Combos with zero resolvable members pass
  * (mirrors `isUsableCombo` semantics).
  */
-export function passesComboAllowlist(combo: OmniRouteRawCombo, visible?: ModelListFilter): boolean {
+export function passesComboAllowlist(combo: CheapRouterRawCombo, visible?: ModelListFilter): boolean {
   if (!visible) return true;
   const steps = Array.isArray(combo.models) ? combo.models : [];
   if (steps.length === 0) return true;
@@ -3094,24 +3094,24 @@ export function slugifyComboName(name: string): string {
 
 /**
  * Build a combo's static-block key, provider-prefixed as `<providerId>/<slug>`
- * (e.g. `omniroute/MASTER`, `omniroute/MASTER-LIGHT`), guaranteeing uniqueness
+ * (e.g. `cheaprouter/MASTER`, `cheaprouter/MASTER-LIGHT`), guaranteeing uniqueness
  * across an entire static catalog. If `<providerId>/<slug>` is already present in
  * `used`, suffixes a short UUID-prefix disambiguator from `combo.id` so the second
  * combo doesn't silently overwrite the first. Mutates `used` in place by recording
  * the chosen key. Returns the final `<providerId>/<slug>` key.
  *
- * NOTE: the key MUST carry the OWNING provider prefix (`omniroute/…`), never a
+ * NOTE: the key MUST carry the OWNING provider prefix (`cheaprouter/…`), never a
  * `combo/` namespace — OpenCode parses model IDs on `/` to extract the provider,
  * so `combo/MASTER` would resolve provider=`combo` (no credentials) and fail with
- * "Unable to determine provider", whereas `omniroute/MASTER` resolves provider=
- * `omniroute` and the openai-compatible adapter strips the prefix and sends the
+ * "Unable to determine provider", whereas `cheaprouter/MASTER` resolves provider=
+ * `cheaprouter` and the openai-compatible adapter strips the prefix and sends the
  * bare slug upstream, which the server resolves via getComboByName. See PR #4184.
  *
  * Falls back to `<providerId>/<id>` when the friendly name slugifies to the empty
  * string (e.g. a combo named just punctuation).
  */
 export function buildComboKey(
-  combo: OmniRouteRawCombo,
+  combo: CheapRouterRawCombo,
   used: Set<string>,
   providerId: string
 ): string {
@@ -3136,7 +3136,7 @@ export function buildComboKey(
  * results fetched under different permissions never share an entry. We hash
  * it so the cache key is safe to inspect without leaking either secret.
  * Different credential tuples MUST keep independent cache entries: a single
- * OC user may register prod + preprod OmniRoute side-by-side with distinct
+ * OC user may register prod + preprod CheapRouter side-by-side with distinct
  * keys, and serving one's catalog from the other's cache would be a
  * correctness bug, not just a privacy one.
  */
@@ -3166,24 +3166,24 @@ function modelsCacheKey(baseURL: string, credentialId: string): string {
  *     `cost`/`status`/`headers`). Caching the raw responses is the only
  *     lossless option.
  *   - On OC ≥1.14.49 cold start BOTH hooks fire within the same
- *     OmniRoutePlugin instance — sharing the cache means /v1/models +
+ *     CheapRouterPlugin instance — sharing the cache means /v1/models +
  *     /api/combos each hit the gateway exactly ONCE per TTL refresh, not
  *     twice.
  */
-export interface OmniRouteFetchCacheEntry {
-  rawModels: OmniRouteRawModelEntry[];
-  rawCombos: OmniRouteRawCombo[];
-  rawAutoCombos: OmniRouteRawAutoCombo[];
+export interface CheapRouterFetchCacheEntry {
+  rawModels: CheapRouterRawModelEntry[];
+  rawCombos: CheapRouterRawCombo[];
+  rawAutoCombos: CheapRouterRawAutoCombo[];
   /** Display-name + pricing overlay from /api/pricing/models. Empty Map when feature is disabled or fetch failed. */
-  rawEnrichment: OmniRouteEnrichmentMap;
+  rawEnrichment: CheapRouterEnrichmentMap;
   /** Compression combos from /api/context/combos. Empty array when feature is disabled or fetch failed. */
-  rawCompressionCombos: OmniRouteCompressionCombo[];
+  rawCompressionCombos: CheapRouterCompressionCombo[];
   /** Provider connections from /api/providers. Empty array when feature is disabled or fetch failed. */
-  rawConnections: OmniRouteProviderConnection[];
+  rawConnections: CheapRouterProviderConnection[];
   expiresAt: number;
 }
 
-export type OmniRouteFetchCache = Map<string, OmniRouteFetchCacheEntry>;
+export type CheapRouterFetchCache = Map<string, CheapRouterFetchCacheEntry>;
 
 /**
  * Build the ProviderHook portion of the plugin for a given options bag.
@@ -3201,7 +3201,7 @@ export type OmniRouteFetchCache = Map<string, OmniRouteFetchCacheEntry>;
  *     through `mapComboToModelV2` (LCD across its member models); merges
  *     combos into the same map under their combo id; caches the unified
  *     result by `(baseURL, sha256(apiKey))` for `modelCacheTtl`.
- *   - **Combo / model ID collisions: combos win.** OmniRoute treats combos
+ *   - **Combo / model ID collisions: combos win.** CheapRouter treats combos
  *     as the curated routing surface; if a combo and a raw model share an
  *     id the operator's intent is clearly the combo. We emit a
  *     `console.warn` exactly once per `(baseURL, apiKey, comboId)`
@@ -3209,7 +3209,7 @@ export type OmniRouteFetchCache = Map<string, OmniRouteFetchCacheEntry>;
  *     without log spam on every cache refresh.
  *   - **Combos fetch failure does NOT break the catalog**: soft-fail with
  *     a `console.warn` and fall back to a models-only catalog. Rationale:
- *     `/api/combos` requires a management-scoped key and OmniRoute may
+ *     `/api/combos` requires a management-scoped key and CheapRouter may
  *     not have any combos provisioned (preprod returned `{combos: []}`
  *     at probe time). Hard-failing the entire catalog when combos are
  *     optional would silently hide the whole provider from OC's model
@@ -3229,37 +3229,37 @@ export type OmniRouteFetchCache = Map<string, OmniRouteFetchCacheEntry>;
  *             lets the caller share state across reconstructions (unused
  *             outside tests today).
  */
-export function createOmniRouteProviderHook(
-  opts?: OmniRoutePluginOptions,
+export function createCheapRouterProviderHook(
+  opts?: CheapRouterPluginOptions,
   deps: {
-    fetcher?: OmniRouteModelsFetcher;
-    combosFetcher?: OmniRouteCombosFetcher;
-    autoCombosFetcher?: OmniRouteAutoCombosFetcher;
-    enrichmentFetcher?: OmniRouteEnrichmentFetcher;
-    compressionMetaFetcher?: OmniRouteCompressionMetaFetcher;
-    providersFetcher?: OmniRouteProvidersFetcher;
+    fetcher?: CheapRouterModelsFetcher;
+    combosFetcher?: CheapRouterCombosFetcher;
+    autoCombosFetcher?: CheapRouterAutoCombosFetcher;
+    enrichmentFetcher?: CheapRouterEnrichmentFetcher;
+    compressionMetaFetcher?: CheapRouterCompressionMetaFetcher;
+    providersFetcher?: CheapRouterProvidersFetcher;
     now?: () => number;
-    cache?: OmniRouteFetchCache;
+    cache?: CheapRouterFetchCache;
     logger?: _Logger;
   } = {}
 ): ProviderHook {
-  const resolved = resolveOmniRoutePluginOptions(opts);
+  const resolved = resolveCheapRouterPluginOptions(opts);
   const logger =
     deps.logger ??
     createLogger(
       resolved.features?.startupDebug ? "debug" : (resolved.features?.logLevel ?? "warn")
     );
-  const fetcher = deps.fetcher ?? defaultOmniRouteModelsFetcher;
+  const fetcher = deps.fetcher ?? defaultCheapRouterModelsFetcher;
   // T-05: combo discovery merges `/api/combos` entries into the same map as
   // `/v1/models`. Default fetcher is declared further down the file; the
   // reference resolves at hook-invocation time, not at hook-construction
   // time, so source-order beyond hoisting rules has no semantic effect.
-  const combosFetcher = deps.combosFetcher ?? defaultOmniRouteCombosFetcher;
-  const autoCombosFetcher = deps.autoCombosFetcher ?? defaultOmniRouteAutoCombosFetcher;
-  const enrichmentFetcher = deps.enrichmentFetcher ?? defaultOmniRouteEnrichmentFetcher;
+  const combosFetcher = deps.combosFetcher ?? defaultCheapRouterCombosFetcher;
+  const autoCombosFetcher = deps.autoCombosFetcher ?? defaultCheapRouterAutoCombosFetcher;
+  const enrichmentFetcher = deps.enrichmentFetcher ?? defaultCheapRouterEnrichmentFetcher;
   const compressionMetaFetcher =
-    deps.compressionMetaFetcher ?? defaultOmniRouteCompressionMetaFetcher;
-  const providersFetcher = deps.providersFetcher ?? defaultOmniRouteProvidersFetcher;
+    deps.compressionMetaFetcher ?? defaultCheapRouterCompressionMetaFetcher;
+  const providersFetcher = deps.providersFetcher ?? defaultCheapRouterProvidersFetcher;
   // Features defaults (mirror v0.1.0 behavior when unset).
   const features = resolved.features ?? {};
   const wantCombos = features.combos !== false;
@@ -3275,7 +3275,7 @@ export function createOmniRouteProviderHook(
   // T-07: cache holds RAW fetch results (not pre-derived ModelV2) so that
   // the config-shim hook can share the same cache and derive its stripped
   // sibling shape from the same source without a second round-trip.
-  const cache: OmniRouteFetchCache = deps.cache ?? new Map();
+  const cache: CheapRouterFetchCache = deps.cache ?? new Map();
   // T-05: collision-warning deduper. Emit warn once per (cacheKey, comboId)
   // tuple per hook instance so the operator sees the unusual naming choice
   // once per session, not once per cache refresh.
@@ -3334,12 +3334,12 @@ export function createOmniRouteProviderHook(
       const t = now();
       const cached = cache.get(cacheKey);
 
-      let rawModels: OmniRouteRawModelEntry[];
-      let rawCombos: OmniRouteRawCombo[];
-      let rawAutoCombos: OmniRouteRawAutoCombo[];
-      let rawEnrichment: OmniRouteEnrichmentMap;
-      let rawCompressionCombos: OmniRouteCompressionCombo[];
-      let rawConnections: OmniRouteProviderConnection[];
+      let rawModels: CheapRouterRawModelEntry[];
+      let rawCombos: CheapRouterRawCombo[];
+      let rawAutoCombos: CheapRouterRawAutoCombo[];
+      let rawEnrichment: CheapRouterEnrichmentMap;
+      let rawCompressionCombos: CheapRouterCompressionCombo[];
+      let rawConnections: CheapRouterProviderConnection[];
       if (cached && cached.expiresAt > t) {
         rawModels = cached.rawModels;
         rawCombos = cached.rawCombos;
@@ -3356,7 +3356,7 @@ export function createOmniRouteProviderHook(
         // T-05: combos fetch is best-effort, gated by features.combos.
         // Soft-fail on any error: emit a warn-level diagnostic and fall back
         // to a models-only catalog. Rationale: /api/combos requires a
-        // management-scoped key and OmniRoute may not have any combos
+        // management-scoped key and CheapRouter may not have any combos
         // provisioned. Hard-failing when combos are optional would
         // silently hide the whole provider from OC's picker.
         rawCombos = [];
@@ -3370,7 +3370,7 @@ export function createOmniRouteProviderHook(
 
         // Auto combos fetch — virtual server-side combos. Best-effort,
         // gated by features.autoCombos. Soft-fails silently (the endpoint
-        // may not exist yet on older OmniRoute versions).
+        // may not exist yet on older CheapRouter versions).
         rawAutoCombos = [];
         if (wantAutoCombos) {
           try {
@@ -3435,7 +3435,7 @@ export function createOmniRouteProviderHook(
         });
 
         // Debug breadcrumb: surface fetch result so operators can confirm
-        // the dynamic pipeline fired and how much catalog OmniRoute returned.
+        // the dynamic pipeline fired and how much catalog CheapRouter returned.
         // Emitted once per cache miss (TTL refresh) — quiet on cache hits.
         // Info-level: hidden at the default `warn` level (see #8982).
         logger.info(
@@ -3466,7 +3466,7 @@ export function createOmniRouteProviderHook(
       // Lookup index for LCD member resolution: O(1) per member lookup.
       // Indexed by raw model `id` — combo steps reference this exact
       // string per ComboModelStep in src/lib/combos/steps.ts.
-      const rawModelById = new Map<string, OmniRouteRawModelEntry>();
+      const rawModelById = new Map<string, CheapRouterRawModelEntry>();
       for (const entry of rawModels) {
         if (entry.id) rawModelById.set(entry.id, entry);
       }
@@ -3504,7 +3504,7 @@ export function createOmniRouteProviderHook(
         if (!passesModelAllowlist(entry.id, visibleFilter, hiddenFilter)) continue;
         const model = mapRawModelToModelV2(entry, {
           // #6859: server-facing id — NOT the OC-gate-prefixed `resolved.providerId`.
-          providerId: resolved.omnirouteProviderId,
+          providerId: resolved.cheaprouterProviderId,
           baseURL,
           apiFormat: resolved.features?.apiFormat,
         });
@@ -3527,14 +3527,14 @@ export function createOmniRouteProviderHook(
         }
         // OC's static-catalog reader parses the key on `/` to recover
         // (providerID, modelID). `mapRawModelToModelV2` already stamps the
-        // prefixed id on `model.id` (e.g. `omniroute/claude-primary`), so we
+        // prefixed id on `model.id` (e.g. `cheaprouter/claude-primary`), so we
         // must key by `model.id` — not by the raw `entry.id` which would be
         // a bare slug and parse as `providerID=slug, modelID=""`.
         models[model.id] = model;
       }
 
       // Default compression combo (used to decorate ALL combo names when
-      // compression metadata is present). OmniRoute returns at most one
+      // compression metadata is present). CheapRouter returns at most one
       // entry with `isDefault: true` per /api/context/combos.
       const defaultCompression = wantCompressionMeta
         ? rawCompressionCombos.find((c) => c.isDefault === true)
@@ -3591,7 +3591,7 @@ export function createOmniRouteProviderHook(
         const stillPending: typeof pending = [];
         for (const combo of pending) {
           const memberSteps = Array.isArray(combo.models) ? combo.models : [];
-          const memberEntries: OmniRouteRawModelEntry[] = [];
+          const memberEntries: CheapRouterRawModelEntry[] = [];
           let deferredThisPass = false;
 
           for (const step of memberSteps) {
@@ -3653,7 +3653,7 @@ export function createOmniRouteProviderHook(
                   attachment: nestedModel.capabilities.attachment,
                   tool_calling: nestedModel.capabilities.toolcall,
                 },
-              } as unknown as OmniRouteRawModelEntry);
+              } as unknown as CheapRouterRawModelEntry);
               continue;
             }
 
@@ -3672,13 +3672,13 @@ export function createOmniRouteProviderHook(
             combo,
             memberEntries,
             // #6859: server-facing id — NOT the OC-gate-prefixed `resolved.providerId`.
-            resolved.omnirouteProviderId,
+            resolved.cheaprouterProviderId,
             baseURL,
             features.apiFormat
           );
           const hasMembers = memberEntries.length > 0;
 
-          // Apply enrichment overlay to combos too (OmniRoute's
+          // Apply enrichment overlay to combos too (CheapRouter's
           // /api/pricing/models surfaces combos alongside provider-scoped
           // models with curated names).
           applyEnrichment(mapped, rawEnrichment.get(combo.id));
@@ -3692,7 +3692,7 @@ export function createOmniRouteProviderHook(
           }
 
           // #6859: server-facing key — NOT the OC-gate-prefixed `resolved.providerId`.
-          const comboKey = buildComboKey(combo, usedComboKeys, resolved.omnirouteProviderId);
+          const comboKey = buildComboKey(combo, usedComboKeys, resolved.cheaprouterProviderId);
 
           // Collision policy: combos win. Warn ONCE per (cacheKey, comboKey)
           // when overwriting a same-key raw model so the operator can spot
@@ -3793,7 +3793,7 @@ export function createOmniRouteProviderHook(
             status: "active",
             release_date: "",
             // #6859: server-facing id — NOT the OC-gate-prefixed `resolved.providerId`.
-            providerID: resolved.omnirouteProviderId,
+            providerID: resolved.cheaprouterProviderId,
             options: {},
             headers: {},
           };
@@ -3808,7 +3808,7 @@ export function createOmniRouteProviderHook(
 
 // ────────────────────────────────────────────────────────────────────────────
 // Fetch interceptor (T-04) — Bearer + Content-Type injection on intended
-// same-origin OmniRoute inference requests only
+// same-origin CheapRouter inference requests only
 // ────────────────────────────────────────────────────────────────────────────
 
 /**
@@ -3817,10 +3817,10 @@ export function createOmniRouteProviderHook(
  * `<base>/chat/completions` or `<base>/models`, where `<base>` is the
  * configured baseURL path normalized to end in `/v1`. Management, MCP, and
  * unrelated inference paths pass through untouched. The apiKey is treated as
- * a secret bound to both the configured OmniRoute origin and these intended
+ * a secret bound to both the configured CheapRouter origin and these intended
  * inference endpoints, and MUST NOT leak elsewhere.
  *
- * Ported from Alph4d0g's `opencode-omniroute-auth@1.2.1` `createFetchInterceptor`
+ * Ported from Alph4d0g's `opencode-cheaprouter-auth@1.2.1` `createFetchInterceptor`
  * (their `dist/src/plugin.js:477-516`) with these intentional deviations:
  *
  *   - **`baseURL` is required** here (no `localhost:20128/v1` fallback). T-04
@@ -3836,12 +3836,12 @@ export function createOmniRouteProviderHook(
  *   - **Header merge strategy mirrors theirs**: Request-attached headers
  *     first, then `init.headers` overlay, then our injected
  *     Authorization/Content-Type — so the apiKey we own ALWAYS wins over
- *     any caller-supplied Bearer for the same OmniRoute provider.
+ *     any caller-supplied Bearer for the same CheapRouter provider.
  *
  * @see https://opencode.ai/docs/plugins for the AuthLoaderResult.fetch contract
  *      (the returned function is invoked by the AI-SDK in lieu of global fetch).
  */
-export function createOmniRouteFetchInterceptor(config: {
+export function createCheapRouterFetchInterceptor(config: {
   apiKey: string;
   baseURL: string;
 }): typeof fetch {
@@ -3897,7 +3897,7 @@ export function createOmniRouteFetchInterceptor(config: {
       headers.set("Content-Type", "application/json");
     }
 
-    return applyOmniRouteInferenceTelemetry(await fetch(input, { ...init, headers }));
+    return applyCheapRouterInferenceTelemetry(await fetch(input, { ...init, headers }));
   };
 }
 
@@ -3911,10 +3911,10 @@ export function createOmniRouteFetchInterceptor(config: {
  * JSON-Schema keywords that the Gemini API rejects when present anywhere in
  * a function-calling tool definition. Standard OpenAI / Anthropic clients
  * happily emit these (they're valid Draft-07 schema) but Gemini's tool
- * validator throws on them, breaking OmniRoute → Gemini chains transparently.
+ * validator throws on them, breaking CheapRouter → Gemini chains transparently.
  *
  * Source: behavioural reverse-engineering from Alph4d0g's
- * opencode-omniroute-auth@1.2.1 (dist/src/plugin.js:517).
+ * opencode-cheaprouter-auth@1.2.1 (dist/src/plugin.js:517).
  */
 const GEMINI_SCHEMA_KEYS_TO_REMOVE = new Set(["$schema", "$ref", "ref", "additionalProperties"]);
 
@@ -4092,7 +4092,7 @@ let geminiStreamingWarningEmitted = false;
  *     OC streams plain text deltas; the operator should still know.
  *
  * @param inner The next fetch in the chain (typically the Bearer-injecting
- *              interceptor from `createOmniRouteFetchInterceptor`).
+ *              interceptor from `createCheapRouterFetchInterceptor`).
  */
 export function createGeminiSanitizingFetch(inner: typeof fetch): typeof fetch {
   return async (input, init) => {
@@ -4133,7 +4133,7 @@ export function createGeminiSanitizingFetch(inner: typeof fetch): typeof fetch {
           geminiStreamingWarningEmitted = true;
 
           console.warn(
-            "[omniroute-plugin] sanitizeGemini: streaming Request body, skipping schema strip (Gemini may reject)"
+            "[cheaprouter-plugin] sanitizeGemini: streaming Request body, skipping schema strip (Gemini may reject)"
           );
         }
         return inner(input, init);
@@ -4211,7 +4211,7 @@ export function __resetGeminiStreamingWarning(): void {
 // implements the static-publish half.
 //
 // Sibling shape source-of-truth: see
-// `@omniroute/opencode-provider/src/index.ts` (`createOmniRouteProvider`,
+// `@cheaprouter/opencode-provider/src/index.ts` (`createCheapRouterProvider`,
 // `OpenCodeProviderEntry`, `OpenCodeModelEntry`). We replicate that shape
 // here rather than depending on the sibling package — the plugin must stay
 // self-contained (npm-installable on its own, no peer dep on the provider
@@ -4220,17 +4220,17 @@ export function __resetGeminiStreamingWarning(): void {
 
 /**
  * Per-model entry shape under `provider.<id>.models[modelId]`. Mirrors
- * `OpenCodeModelEntry` exported by `@omniroute/opencode-provider`. Stripped
+ * `OpenCodeModelEntry` exported by `@cheaprouter/opencode-provider`. Stripped
  * down to the fields OC's static catalog reader actually consumes — NOT a
  * full ModelV2 (that's the dynamic-hook shape). Optional fields are omitted
- * when OmniRoute didn't surface a value, NOT emitted as `undefined` — the
- * resulting JSON must be diffable across OmniRoute deployments without
+ * when CheapRouter didn't surface a value, NOT emitted as `undefined` — the
+ * resulting JSON must be diffable across CheapRouter deployments without
  * `undefined` noise.
  */
 /** Modalities accepted by OC's static catalog reader (see `@opencode-ai/sdk`). */
-export type OmniRouteModalityKind = "text" | "audio" | "image" | "video" | "pdf";
+export type CheapRouterModalityKind = "text" | "audio" | "image" | "video" | "pdf";
 
-const STATIC_MODALITY_VALUES: ReadonlySet<OmniRouteModalityKind> = new Set([
+const STATIC_MODALITY_VALUES: ReadonlySet<CheapRouterModalityKind> = new Set([
   "text",
   "audio",
   "image",
@@ -4239,13 +4239,13 @@ const STATIC_MODALITY_VALUES: ReadonlySet<OmniRouteModalityKind> = new Set([
 ]);
 
 /** Normalise + filter raw modality list to the values OC accepts. Deduped. */
-function normaliseModalities(raw: unknown): OmniRouteModalityKind[] {
+function normaliseModalities(raw: unknown): CheapRouterModalityKind[] {
   if (!Array.isArray(raw)) return [];
-  const out: OmniRouteModalityKind[] = [];
+  const out: CheapRouterModalityKind[] = [];
   const seen = new Set<string>();
   for (const v of raw) {
     if (typeof v !== "string") continue;
-    const lower = v.toLowerCase() as OmniRouteModalityKind;
+    const lower = v.toLowerCase() as CheapRouterModalityKind;
     if (!STATIC_MODALITY_VALUES.has(lower)) continue;
     if (seen.has(lower)) continue;
     seen.add(lower);
@@ -4254,12 +4254,12 @@ function normaliseModalities(raw: unknown): OmniRouteModalityKind[] {
   return out;
 }
 
-export interface OmniRouteStaticModelEntry {
+export interface CheapRouterStaticModelEntry {
   /** Owning provider id. SHOULD match the parent `provider.<id>` key so OC's
    * static-catalog reader resolves credentials via `providerID` instead of
    * parsing the model key on `/`. Optional: OC's schema validator may
    * reject the entire provider block when this field is present but the
-   * model KEY already carries the provider prefix (e.g. `omniroute/MASTER`),
+   * model KEY already carries the provider prefix (e.g. `cheaprouter/MASTER`),
    * since the prefix makes the field redundant and the field is not part of
    * OC's expected schema. We omit it from entries and rely on the prefix
    * on the KEY alone. See PR #4184. */
@@ -4278,7 +4278,7 @@ export interface OmniRouteStaticModelEntry {
   /** Model supports function / tool calling. */
   tool_call?: boolean;
   /**
-   * Per-million-token cost. Maps from OmniRoute `/api/pricing` shape:
+   * Per-million-token cost. Maps from CheapRouter `/api/pricing` shape:
    * `input`/`output` pass through; `cached` → `cache_read`;
    * `cache_creation` → `cache_write`. Omitted when no pricing slot resolves.
    */
@@ -4299,23 +4299,23 @@ export interface OmniRouteStaticModelEntry {
   };
   /**
    * Modality lists the model accepts (input) and emits (output). Maps from
-   * OmniRoute's `input_modalities` / `output_modalities` on `/v1/models`.
+   * CheapRouter's `input_modalities` / `output_modalities` on `/v1/models`.
    * Emitted only when at least one modality is known — without this field
    * OC's runtime catalog defaults `input.image: false` even when the model
    * card has `attachment: true`, which blocks clipboard image paste in the
    * TUI for vision-capable models.
    */
   modalities?: {
-    input: OmniRouteModalityKind[];
-    output: OmniRouteModalityKind[];
+    input: CheapRouterModalityKind[];
+    output: CheapRouterModalityKind[];
   };
 }
 
 /**
  * Static `provider.<id>` block written to `input.provider` by the config hook.
- * Mirrors `OpenCodeProviderEntry` from `@omniroute/opencode-provider`.
+ * Mirrors `OpenCodeProviderEntry` from `@cheaprouter/opencode-provider`.
  *
- *   - `npm` is always `"@ai-sdk/openai-compatible"` — OmniRoute exposes an
+ *   - `npm` is always `"@ai-sdk/openai-compatible"` — CheapRouter exposes an
  *     OpenAI-compatible surface and that's the AI-SDK adapter that speaks it.
  *   - `options.baseURL` MUST be the fully-qualified `/v1` URL (the AI-SDK
  *     appends paths like `/chat/completions` directly under it).
@@ -4324,14 +4324,14 @@ export interface OmniRouteStaticModelEntry {
  *     embedded too so OC ≤1.14.48 can construct the SDK client without
  *     going through the auth hook.
  */
-export interface OmniRouteStaticProviderEntry {
+export interface CheapRouterStaticProviderEntry {
   npm: "@ai-sdk/openai-compatible";
   name: string;
   options: {
     baseURL: string;
     apiKey: string;
   };
-  models: Record<string, OmniRouteStaticModelEntry>;
+  models: Record<string, CheapRouterStaticModelEntry>;
 }
 
 /**
@@ -4340,7 +4340,7 @@ export interface OmniRouteStaticProviderEntry {
  * sibling provider package. Exported so callers and tests can construct the
  * block independently of the auth.json + fetch pipeline.
  *
- * Mapping rules (per the sibling `createOmniRouteProvider` output spec):
+ * Mapping rules (per the sibling `createCheapRouterProvider` output spec):
  *
  *   - One entry per raw model AND one entry per non-hidden combo.
  *   - `name` = model id (no separate display name on `/v1/models`).
@@ -4376,19 +4376,19 @@ export interface OmniRouteStaticProviderEntry {
  * @param apiKey    Bearer token — written verbatim to `options.apiKey`.
  */
 export function buildStaticProviderEntry(
-  rawModels: OmniRouteRawModelEntry[],
-  rawCombos: OmniRouteRawCombo[],
-  opts: ReturnType<typeof resolveOmniRoutePluginOptions>,
+  rawModels: CheapRouterRawModelEntry[],
+  rawCombos: CheapRouterRawCombo[],
+  opts: ReturnType<typeof resolveCheapRouterPluginOptions>,
   baseURL: string,
   apiKey: string,
-  enrichment?: OmniRouteEnrichmentMap,
-  compressionCombos?: OmniRouteCompressionCombo[],
-  connections?: OmniRouteProviderConnection[],
-  rawAutoCombos?: OmniRouteRawAutoCombo[],
-  logger?: OmniRouteLoggerSink
-): OmniRouteStaticProviderEntry {
+  enrichment?: CheapRouterEnrichmentMap,
+  compressionCombos?: CheapRouterCompressionCombo[],
+  connections?: CheapRouterProviderConnection[],
+  rawAutoCombos?: CheapRouterRawAutoCombo[],
+  logger?: CheapRouterLoggerSink
+): CheapRouterStaticProviderEntry {
   const log = logger ?? _logger;
-  const models: Record<string, OmniRouteStaticModelEntry> = {};
+  const models: Record<string, CheapRouterStaticModelEntry> = {};
   const rawModelKeys = new Set<string>();
 
   // usableOnly filter — compute once when feature enabled AND we have
@@ -4408,7 +4408,7 @@ export function buildStaticProviderEntry(
   // (Kiro). Combos skip this by design.
   const wantProviderTag = opts.features?.providerTag !== false;
 
-  // Build a name-set of every non-hidden combo from `/api/combos`. OmniRoute
+  // Build a name-set of every non-hidden combo from `/api/combos`. CheapRouter
   // pre-mirrors combos into `/v1/models` with the friendly name as the raw
   // id (e.g. `claude-primary`, `gemini-pro`), so without dedup the static
   // catalog ends up with both `claude-primary` (raw, opaque) AND the same
@@ -4476,9 +4476,9 @@ export function buildStaticProviderEntry(
     // individual entries — the parent block ID is the provider. Adding
     // unknown fields here can cause OC's schema validator to reject the
     // entire provider block, hiding ALL models. The provider prefix on the
-    // model KEY (e.g. `omniroute/claude-opus-4`) is what OC uses to recover
+    // model KEY (e.g. `cheaprouter/claude-opus-4`) is what OC uses to recover
     // (providerID, modelID) when the user selects a model.
-    const entry: OmniRouteStaticModelEntry = { name: displayName };
+    const entry: CheapRouterStaticModelEntry = { name: displayName };
 
     const attachment = caps.attachment ?? caps.vision;
     if (typeof attachment === "boolean") entry.attachment = attachment;
@@ -4511,7 +4511,7 @@ export function buildStaticProviderEntry(
       };
     }
 
-    // Modalities — emit when OmniRoute surfaced any. Without this field
+    // Modalities — emit when CheapRouter surfaced any. Without this field
     // OC's runtime model defaults `input.image: false` even for vision-
     // capable models, blocking clipboard image paste in the TUI.
     const inModalities = normaliseModalities(raw.input_modalities);
@@ -4524,10 +4524,10 @@ export function buildStaticProviderEntry(
     }
 
     // Cost from enrichment pricing (sourced from `/api/pricing`). Map
-    // OmniRoute field names to OC's static-schema field names.
+    // CheapRouter field names to OC's static-schema field names.
     const pricing = enrichmentEntry?.pricing;
     if (pricing && (typeof pricing.input === "number" || typeof pricing.output === "number")) {
-      const cost: NonNullable<OmniRouteStaticModelEntry["cost"]> = {
+      const cost: NonNullable<CheapRouterStaticModelEntry["cost"]> = {
         input: typeof pricing.input === "number" ? pricing.input : 0,
         output: typeof pricing.output === "number" ? pricing.output : 0,
       };
@@ -4555,7 +4555,7 @@ export function buildStaticProviderEntry(
   // `combo/<friendly-name>` so the OC TUI model picker shows them under a
   // distinct namespace (e.g. `combo/claude-primary`) instead of the opaque
   // upstream UUID id (e.g. `b4a0211e-e3e1-472d-b252-fb9bf6d1c935`).
-  const rawModelById = new Map<string, OmniRouteRawModelEntry>();
+  const rawModelById = new Map<string, CheapRouterRawModelEntry>();
   for (const m of rawModels) {
     if (m.id) rawModelById.set(m.id, m);
   }
@@ -4590,7 +4590,7 @@ export function buildStaticProviderEntry(
   // We bound the retries so a circular combo graph can't deadlock the
   // picker, and we break early when a pass makes no progress.
   const MAX_STATIC_COMBO_PASSES = 8;
-  const resolvedStaticCombosByName = new Map<string, OmniRouteStaticModelEntry>();
+  const resolvedStaticCombosByName = new Map<string, CheapRouterStaticModelEntry>();
   let pendingStatic = rawCombos.filter((combo) => {
     if (!combo.id) return false;
     if (combo.isHidden === true) return false;
@@ -4604,7 +4604,7 @@ export function buildStaticProviderEntry(
     const stillPendingStatic: typeof pendingStatic = [];
     for (const combo of pendingStatic) {
       const memberSteps = Array.isArray(combo.models) ? combo.models : [];
-      const memberEntries: OmniRouteRawModelEntry[] = [];
+      const memberEntries: CheapRouterRawModelEntry[] = [];
       let deferredThisPass = false;
 
       for (const step of memberSteps) {
@@ -4641,7 +4641,7 @@ export function buildStaticProviderEntry(
               attachment: nestedEntry.attachment,
               tool_calling: nestedEntry.tool_call,
             },
-          } as unknown as OmniRouteRawModelEntry);
+          } as unknown as CheapRouterRawModelEntry);
           continue;
         }
 
@@ -4663,8 +4663,8 @@ export function buildStaticProviderEntry(
         hasMembers && compressionSuffix ? `${friendlyName} ${compressionSuffix}` : friendlyName;
       // See the raw-model entry comment above — `providerID` on entries is
       // not part of OC's static-catalog schema; the parent block ID is the
-      // provider and the KEY prefix (`omniroute/<slug>`) is what OC parses.
-      const entry: OmniRouteStaticModelEntry = { name: displayName };
+      // provider and the KEY prefix (`cheaprouter/<slug>`) is what OC parses.
+      const entry: CheapRouterStaticModelEntry = { name: displayName };
 
       if (hasMembers) {
         // LCD across capabilities — every member must support for the combo
@@ -4716,10 +4716,10 @@ export function buildStaticProviderEntry(
         // accepts M. Same intersection rule as runtime capabilities.
         const inSets = memberEntries.map((m) => new Set(normaliseModalities(m.input_modalities)));
         const outSets = memberEntries.map((m) => new Set(normaliseModalities(m.output_modalities)));
-        const intersect = (sets: Set<OmniRouteModalityKind>[]): OmniRouteModalityKind[] => {
+        const intersect = (sets: Set<CheapRouterModalityKind>[]): CheapRouterModalityKind[] => {
           if (sets.length === 0) return [];
           const [first, ...rest] = sets;
-          const out: OmniRouteModalityKind[] = [];
+          const out: CheapRouterModalityKind[] = [];
           for (const v of first) {
             if (rest.every((s) => s.has(v))) out.push(v);
           }
@@ -4753,11 +4753,11 @@ export function buildStaticProviderEntry(
       // `model` field of the outbound `@ai-sdk/openai-compatible` request
       // (only the top-level `provider["<id>"]` segment is stripped for
       // routing) — so a bare-slug combo key prefixed with the OC-gated
-      // `opts.providerId` reaches OmniRoute's server doubled
-      // (`opencode-omniroute/opencode-omniroute/<slug>`), and `parseModel()`
-      // resolves credentials for the nonexistent provider `opencode-omniroute`
-      // instead of `omniroute`. See #7976.
-      const key = buildComboKey(combo, usedComboKeys, opts.omnirouteProviderId).split("/").pop()!;
+      // `opts.providerId` reaches CheapRouter's server doubled
+      // (`opencode-cheaprouter/opencode-cheaprouter/<slug>`), and `parseModel()`
+      // resolves credentials for the nonexistent provider `opencode-cheaprouter`
+      // instead of `cheaprouter`. See #7976.
+      const key = buildComboKey(combo, usedComboKeys, opts.cheaprouterProviderId).split("/").pop()!;
       models[key] = entry;
       rawModelKeys.delete(key);
 
@@ -4839,12 +4839,12 @@ type AuthJsonShape = Record<string, AuthJsonApiEntry | { type?: string; [k: stri
  * install — silent no-op). Returns `null` when the file exists but doesn't
  * parse as JSON (logs ONE warn so the operator sees the corruption).
  *
- * Exported as a dependency-injectable function on `createOmniRouteConfigHook`
+ * Exported as a dependency-injectable function on `createCheapRouterConfigHook`
  * so tests can stub it without monkey-patching `node:fs/promises`.
  */
 // ─────────────────────────────────────────────────────────────────────────
 // Disk-cache fallback. Persists the last successful raw-fetch snapshot to
-// `${OPENCODE_DATA_DIR ?? ~/.local/share/opencode}/plugins/omniroute-<providerId>.json`.
+// `${OPENCODE_DATA_DIR ?? ~/.local/share/opencode}/plugins/cheaprouter-<providerId>.json`.
 // When `/v1/models` is unreachable (e.g. IP whitelist drop, offline laptop)
 // AND the in-memory cache is cold, the config hook reads from disk so the
 // last-known catalog still surfaces in OC's model picker. Feature-flagged:
@@ -4852,17 +4852,17 @@ type AuthJsonShape = Record<string, AuthJsonApiEntry | { type?: string; [k: stri
 // ─────────────────────────────────────────────────────────────────────────
 
 /** Disk snapshot envelope. Versioned for forward-compat. */
-interface OmniRouteDiskSnapshot {
+interface CheapRouterDiskSnapshot {
   v: 2;
   /** Opaque identity for normalized baseURL + both effective credentials. */
   identityFingerprint: string;
-  rawModels: OmniRouteRawModelEntry[];
-  rawCombos: OmniRouteRawCombo[];
-  rawAutoCombos?: OmniRouteRawAutoCombo[];
+  rawModels: CheapRouterRawModelEntry[];
+  rawCombos: CheapRouterRawCombo[];
+  rawAutoCombos?: CheapRouterRawAutoCombo[];
   /** Serialised as array-of-pairs (Map is not JSON-friendly). */
-  rawEnrichment: Array<[string, OmniRouteEnrichmentEntry]>;
-  rawCompressionCombos: OmniRouteCompressionCombo[];
-  rawConnections: OmniRouteProviderConnection[];
+  rawEnrichment: Array<[string, CheapRouterEnrichmentEntry]>;
+  rawCompressionCombos: CheapRouterCompressionCombo[];
+  rawConnections: CheapRouterProviderConnection[];
   /** When the snapshot was written (epoch ms). */
   writtenAt: number;
 }
@@ -4870,7 +4870,7 @@ interface OmniRouteDiskSnapshot {
 /** Resolve the disk-snapshot path for a given providerId. */
 export function diskSnapshotPath(providerId: string): string {
   const dir = process.env.OPENCODE_DATA_DIR ?? path.join(os.homedir(), ".local/share/opencode");
-  return path.join(dir, "plugins", `omniroute-${providerId}.json`);
+  return path.join(dir, "plugins", `cheaprouter-${providerId}.json`);
 }
 
 /** Best-effort delete of the disk snapshot for a provider (force-sync). */
@@ -4886,16 +4886,16 @@ export async function clearDiskSnapshot(providerId: string): Promise<boolean> {
   }
 }
 
-export type OmniRouteDiskSnapshotWriter = (
+export type CheapRouterDiskSnapshotWriter = (
   providerId: string,
-  entry: Omit<OmniRouteFetchCacheEntry, "expiresAt">,
+  entry: Omit<CheapRouterFetchCacheEntry, "expiresAt">,
   identityFingerprint: string
 ) => Promise<void>;
 
-export type OmniRouteDiskSnapshotReader = (
+export type CheapRouterDiskSnapshotReader = (
   providerId: string,
   identityFingerprint: string
-) => Promise<(Omit<OmniRouteFetchCacheEntry, "expiresAt"> & { writtenAt?: number }) | undefined>;
+) => Promise<(Omit<CheapRouterFetchCacheEntry, "expiresAt"> & { writtenAt?: number }) | undefined>;
 
 /**
  * Bind a snapshot to the endpoint and effective credential tuple without
@@ -4922,7 +4922,7 @@ function diskSnapshotIdentityFingerprint(
 }
 
 /** Best-effort disk write. Soft-fails on any I/O error (no exception thrown). */
-export const defaultDiskSnapshotWriter: OmniRouteDiskSnapshotWriter = async (
+export const defaultDiskSnapshotWriter: CheapRouterDiskSnapshotWriter = async (
   providerId,
   entry,
   identityFingerprint
@@ -4932,7 +4932,7 @@ export const defaultDiskSnapshotWriter: OmniRouteDiskSnapshotWriter = async (
     // Restrict perms to the owner: the snapshot lives alongside auth.json
     // (0o600) and embeds provider topology + masked connection records.
     await mkdir(path.dirname(file), { recursive: true, mode: 0o700 });
-    const snapshot: OmniRouteDiskSnapshot = {
+    const snapshot: CheapRouterDiskSnapshot = {
       v: 2,
       identityFingerprint,
       rawModels: entry.rawModels,
@@ -4953,14 +4953,14 @@ export const defaultDiskSnapshotWriter: OmniRouteDiskSnapshotWriter = async (
 };
 
 /** Best-effort disk read. Returns `undefined` when missing/corrupt/unreadable. */
-export const defaultDiskSnapshotReader: OmniRouteDiskSnapshotReader = async (
+export const defaultDiskSnapshotReader: CheapRouterDiskSnapshotReader = async (
   providerId,
   identityFingerprint
 ) => {
   try {
     const file = diskSnapshotPath(providerId);
     const body = await readFile(file, "utf8");
-    const parsed = JSON.parse(body) as Partial<OmniRouteDiskSnapshot>;
+    const parsed = JSON.parse(body) as Partial<CheapRouterDiskSnapshot>;
     if (
       !parsed ||
       parsed.v !== 2 ||
@@ -4986,13 +4986,13 @@ export const defaultDiskSnapshotReader: OmniRouteDiskSnapshotReader = async (
 };
 
 /** No-op disk-cache pair — used by tests to avoid filesystem side effects.
- * Also used as the default in createOmniRouteConfigHook so that tests
+ * Also used as the default in createCheapRouterConfigHook so that tests
  * that don't pass a diskSnapshotReader don't read real snapshot files
  * from the user's ~/.local/share/opencode/plugins/ directory.
- * The OmniRoutePlugin function passes the real defaultDiskSnapshotReader
+ * The CheapRouterPlugin function passes the real defaultDiskSnapshotReader
  * explicitly. */
-export const noopDiskSnapshotReader: OmniRouteDiskSnapshotReader = async () => undefined;
-export const noopDiskSnapshotWriter: OmniRouteDiskSnapshotWriter = async () => {};
+export const noopDiskSnapshotReader: CheapRouterDiskSnapshotReader = async () => undefined;
+export const noopDiskSnapshotWriter: CheapRouterDiskSnapshotWriter = async () => {};
 
 /**
  * In-flight refresh guard: prevents concurrent refreshes for the same
@@ -5039,11 +5039,11 @@ function debugLogDir(): string {
 }
 
 function debugLogPath(providerId: string): string {
-  return join(debugLogDir(), `omniroute-debug-${providerId}.jsonl`);
+  return join(debugLogDir(), `cheaprouter-debug-${providerId}.jsonl`);
 }
 
 function debugStatePath(providerId: string): string {
-  return join(debugLogDir(), `omniroute-debug-${providerId}.state.json`);
+  return join(debugLogDir(), `cheaprouter-debug-${providerId}.state.json`);
 }
 
 export function debugLogEnabled(providerId: string): boolean {
@@ -5064,7 +5064,7 @@ export function debugLogSetEnabled(providerId: string, enabled: boolean): void {
     writeFileSync(debugStatePath(providerId), JSON.stringify({ enabled, ts: Date.now() }, null, 2));
   } catch (err) {
     // best-effort; never break the auth flow
-    console.warn(`[omniroute-plugin] debugLogSetEnabled failed: ${(err as Error).message}`);
+    console.warn(`[cheaprouter-plugin] debugLogSetEnabled failed: ${(err as Error).message}`);
   }
 }
 
@@ -5143,7 +5143,7 @@ export function debugLogAppend(entry: DebugLogEntry): void {
     };
     appendFileSync(debugLogPath(entry.providerId), JSON.stringify(safe) + "\n", "utf8");
   } catch (err) {
-    console.warn(`[omniroute-plugin] debugLogAppend failed: ${(err as Error).message}`);
+    console.warn(`[cheaprouter-plugin] debugLogAppend failed: ${(err as Error).message}`);
   }
 }
 
@@ -5191,7 +5191,7 @@ export function debugLogClear(providerId: string): void {
     const p = debugLogPath(providerId);
     if (existsSync(p)) writeFileSync(p, "", "utf8");
   } catch (err) {
-    console.warn(`[omniroute-plugin] debugLogClear failed: ${(err as Error).message}`);
+    console.warn(`[cheaprouter-plugin] debugLogClear failed: ${(err as Error).message}`);
   }
 }
 
@@ -5312,9 +5312,9 @@ export function createDebugLoggingFetch(
   };
 }
 
-export type OmniRouteReadAuthJson = () => Promise<AuthJsonShape | undefined | null>;
+export type CheapRouterReadAuthJson = () => Promise<AuthJsonShape | undefined | null>;
 
-export const defaultReadAuthJson: OmniRouteReadAuthJson = async () => {
+export const defaultReadAuthJson: CheapRouterReadAuthJson = async () => {
   const dir = process.env.OPENCODE_DATA_DIR ?? path.join(os.homedir(), ".local/share/opencode");
   const file = path.join(dir, "auth.json");
   let body: string;
@@ -5378,29 +5378,29 @@ export const defaultReadAuthJson: OmniRouteReadAuthJson = async () => {
  * @param opts Plugin options (validated, resolved with defaults).
  * @param deps Dependency injection.
  *   - `readAuthJson`     — replaces `defaultReadAuthJson` (test stub).
- *   - `fetcher`          — replaces `defaultOmniRouteModelsFetcher`.
- *   - `combosFetcher`    — replaces `defaultOmniRouteCombosFetcher`.
+ *   - `fetcher`          — replaces `defaultCheapRouterModelsFetcher`.
+ *   - `combosFetcher`    — replaces `defaultCheapRouterCombosFetcher`.
  *   - `now`              — clock for cache TTL (default `Date.now`).
  *   - `cache`            — shared fetch-result cache (see
- *                          `OmniRouteFetchCache`). Pass the same Map the
+ *                          `CheapRouterFetchCache`). Pass the same Map the
  *                          provider hook owns to dedupe round-trips.
  *   - `logger`           — injected sink for breadcrumb capture in tests.
  *                          Defaults to the plugin's leveled logger.
  */
-export function createOmniRouteConfigHook(
-  opts?: OmniRoutePluginOptions,
+export function createCheapRouterConfigHook(
+  opts?: CheapRouterPluginOptions,
   deps: {
-    readAuthJson?: OmniRouteReadAuthJson;
-    fetcher?: OmniRouteModelsFetcher;
-    combosFetcher?: OmniRouteCombosFetcher;
-    autoCombosFetcher?: OmniRouteAutoCombosFetcher;
-    enrichmentFetcher?: OmniRouteEnrichmentFetcher;
-    compressionMetaFetcher?: OmniRouteCompressionMetaFetcher;
-    providersFetcher?: OmniRouteProvidersFetcher;
-    diskSnapshotReader?: OmniRouteDiskSnapshotReader;
-    diskSnapshotWriter?: OmniRouteDiskSnapshotWriter;
+    readAuthJson?: CheapRouterReadAuthJson;
+    fetcher?: CheapRouterModelsFetcher;
+    combosFetcher?: CheapRouterCombosFetcher;
+    autoCombosFetcher?: CheapRouterAutoCombosFetcher;
+    enrichmentFetcher?: CheapRouterEnrichmentFetcher;
+    compressionMetaFetcher?: CheapRouterCompressionMetaFetcher;
+    providersFetcher?: CheapRouterProvidersFetcher;
+    diskSnapshotReader?: CheapRouterDiskSnapshotReader;
+    diskSnapshotWriter?: CheapRouterDiskSnapshotWriter;
     now?: () => number;
-    cache?: OmniRouteFetchCache;
+    cache?: CheapRouterFetchCache;
     logger?: {
       error?: (message: string, ...args: unknown[]) => void;
       warn: (message: string, ...args: unknown[]) => void;
@@ -5408,19 +5408,19 @@ export function createOmniRouteConfigHook(
     };
   } = {}
 ): (input: Config) => Promise<void> {
-  const resolved = resolveOmniRoutePluginOptions(opts);
+  const resolved = resolveCheapRouterPluginOptions(opts);
   const readAuthJson = deps.readAuthJson ?? defaultReadAuthJson;
-  const fetcher = deps.fetcher ?? defaultOmniRouteModelsFetcher;
-  const combosFetcher = deps.combosFetcher ?? defaultOmniRouteCombosFetcher;
-  const autoCombosFetcher = deps.autoCombosFetcher ?? defaultOmniRouteAutoCombosFetcher;
-  const enrichmentFetcher = deps.enrichmentFetcher ?? defaultOmniRouteEnrichmentFetcher;
+  const fetcher = deps.fetcher ?? defaultCheapRouterModelsFetcher;
+  const combosFetcher = deps.combosFetcher ?? defaultCheapRouterCombosFetcher;
+  const autoCombosFetcher = deps.autoCombosFetcher ?? defaultCheapRouterAutoCombosFetcher;
+  const enrichmentFetcher = deps.enrichmentFetcher ?? defaultCheapRouterEnrichmentFetcher;
   const compressionMetaFetcher =
-    deps.compressionMetaFetcher ?? defaultOmniRouteCompressionMetaFetcher;
-  const providersFetcher = deps.providersFetcher ?? defaultOmniRouteProvidersFetcher;
+    deps.compressionMetaFetcher ?? defaultCheapRouterCompressionMetaFetcher;
+  const providersFetcher = deps.providersFetcher ?? defaultCheapRouterProvidersFetcher;
   const diskSnapshotReader = deps.diskSnapshotReader ?? noopDiskSnapshotReader;
   const diskSnapshotWriter = deps.diskSnapshotWriter ?? noopDiskSnapshotWriter;
   const now = deps.now ?? Date.now;
-  const cache: OmniRouteFetchCache = deps.cache ?? new Map();
+  const cache: CheapRouterFetchCache = deps.cache ?? new Map();
   const logger = deps.logger ?? _logger;
   const logAt = (level: "error" | "warn" | "debug", message: string): void => {
     const sink = logger[level] ?? logger.warn;
@@ -5460,8 +5460,8 @@ export function createOmniRouteConfigHook(
       authJson = undefined;
     }
 
-    // Try both prefixed (e.g. opencode-omniroute) and unprefixed (e.g. omniroute)
-    // keys so a user who ran `/connect omniroute` before the auto-prefix fix
+    // Try both prefixed (e.g. opencode-cheaprouter) and unprefixed (e.g. cheaprouter)
+    // keys so a user who ran `/connect cheaprouter` before the auto-prefix fix
     // does not need to re-auth. Also handles dual-key for auth.json entries
     // written by a newer OC dispatcher with the prefixed key.
     const bareKey = resolved.providerId.startsWith("opencode-")
@@ -5512,12 +5512,12 @@ export function createOmniRouteConfigHook(
     const t = now();
     const cached = cache.get(cacheKey);
 
-    let rawModels: OmniRouteRawModelEntry[] = [];
-    let rawCombos: OmniRouteRawCombo[] = [];
-    let rawAutoCombos: OmniRouteRawAutoCombo[] = [];
-    let rawEnrichment: OmniRouteEnrichmentMap = new Map();
-    let rawCompressionCombos: OmniRouteCompressionCombo[] = [];
-    let rawConnections: OmniRouteProviderConnection[] = [];
+    let rawModels: CheapRouterRawModelEntry[] = [];
+    let rawCombos: CheapRouterRawCombo[] = [];
+    let rawAutoCombos: CheapRouterRawAutoCombo[] = [];
+    let rawEnrichment: CheapRouterEnrichmentMap = new Map();
+    let rawCompressionCombos: CheapRouterCompressionCombo[] = [];
+    let rawConnections: CheapRouterProviderConnection[] = [];
 
     if (cached && cached.expiresAt > t) {
       rawModels = cached.rawModels;
@@ -5533,7 +5533,7 @@ export function createOmniRouteConfigHook(
       // fetch then refreshes in the background (detached) and updates the
       // cache + snapshot. Gated by features.diskCache (default-on).
       // ─────────────────────────────────────────────────────────────────────
-      let warmSnapshot: Omit<OmniRouteFetchCacheEntry, "expiresAt"> | undefined;
+      let warmSnapshot: Omit<CheapRouterFetchCacheEntry, "expiresAt"> | undefined;
       if (wantDiskCache) {
         const snapshotResult = await diskSnapshotReader(resolved.providerId, snapshotFingerprint);
         if (snapshotResult && snapshotResult.rawModels.length > 0) {
@@ -5557,12 +5557,12 @@ export function createOmniRouteConfigHook(
       // ─────────────────────────────────────────────────────────────────────
       const doRefresh = async (): Promise<void> => {
         let modelsFetchThrew = false;
-        let localRawModels: OmniRouteRawModelEntry[] = [];
-        let localRawCombos: OmniRouteRawCombo[] = [];
-        let localRawAutoCombos: OmniRouteRawAutoCombo[] = [];
-        let localRawEnrichment: OmniRouteEnrichmentMap = new Map();
-        let localRawCompressionCombos: OmniRouteCompressionCombo[] = [];
-        let localRawConnections: OmniRouteProviderConnection[] = [];
+        let localRawModels: CheapRouterRawModelEntry[] = [];
+        let localRawCombos: CheapRouterRawCombo[] = [];
+        let localRawAutoCombos: CheapRouterRawAutoCombo[] = [];
+        let localRawEnrichment: CheapRouterEnrichmentMap = new Map();
+        let localRawCompressionCombos: CheapRouterCompressionCombo[] = [];
+        let localRawConnections: CheapRouterProviderConnection[] = [];
 
         // Each wrapper keeps the existing try/catch, default value, and
         // exact warn message so per-endpoint fallbacks are preserved.

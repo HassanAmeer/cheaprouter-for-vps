@@ -63,7 +63,7 @@ export interface ResolveConversationIdInput {
   body: JsonRecord | null | undefined;
   model: string | null;
   apiKeyId: string | null;
-  /** Raw `x-omniroute-session-id` header value, if the client supplied one. */
+  /** Raw `x-cheaprouter-session-id` header value, if the client supplied one. */
   clientSessionIdHeader: string | null;
   /**
    * call_logs.correlation_id for this request (109_call_logs_correlation_id)
@@ -203,7 +203,7 @@ export function extractCanonicalTurns(body: JsonRecord | null | undefined): Cano
 // Content fingerprint for conversation identity, not a password/credential hash — keyed with a
 // fixed context label so it reads as a domain-separated digest rather than a bare password hash.
 function hashHex(text: string): string {
-  return createHmac("sha256", "omniroute-conversation-fingerprint-v1").update(text).digest("hex");
+  return createHmac("sha256", "cheaprouter-conversation-fingerprint-v1").update(text).digest("hex");
 }
 
 function extractToolNames(body: JsonRecord | null | undefined): string[] {

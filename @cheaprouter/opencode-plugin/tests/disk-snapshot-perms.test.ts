@@ -15,10 +15,10 @@ import path from "node:path";
 import {
   defaultDiskSnapshotWriter,
   diskSnapshotPath,
-  type OmniRouteFetchCacheEntry,
+  type CheapRouterFetchCacheEntry,
 } from "../src/index.js";
 
-function makeEntry(): Omit<OmniRouteFetchCacheEntry, "expiresAt"> {
+function makeEntry(): Omit<CheapRouterFetchCacheEntry, "expiresAt"> {
   return {
     rawModels: [],
     rawCombos: [],
@@ -35,7 +35,7 @@ test("defaultDiskSnapshotWriter writes an owner-only (no group/other) snapshot",
     return;
   }
 
-  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "omniroute-disk-perms-"));
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "cheaprouter-disk-perms-"));
   const prevDataDir = process.env.OPENCODE_DATA_DIR;
   process.env.OPENCODE_DATA_DIR = tmp;
 

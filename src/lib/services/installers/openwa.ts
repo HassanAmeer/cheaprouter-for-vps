@@ -111,7 +111,7 @@ export async function install(version = "latest"): Promise<InstallResult> {
     fs.writeFileSync(
       hostPkgPath,
       JSON.stringify(
-        { name: "omniroute-openwa-host", version: "0.0.0", private: true, dependencies: {} },
+        { name: "cheaprouter-openwa-host", version: "0.0.0", private: true, dependencies: {} },
         null,
         2
       ),

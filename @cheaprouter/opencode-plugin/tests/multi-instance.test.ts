@@ -1,14 +1,14 @@
 /**
  * T-08 multi-instance smoke.
  *
- * Validates that two `OmniRoutePlugin(input, opts)` invocations with
+ * Validates that two `CheapRouterPlugin(input, opts)` invocations with
  * different `providerId` values coexist without sharing mutable state.
  * This is the contract that lets opencode.json declare prod + preprod
  * side by side:
  *
  *   "plugin": [
- *     ["@omniroute/opencode-plugin", {"providerId": "omniroute-prod",    "baseURL": "https://or.example/v1"}],
- *     ["@omniroute/opencode-plugin", {"providerId": "omniroute-preprod", "baseURL": "https://or-preprod.example/v1"}]
+ *     ["@cheaprouter/opencode-plugin", {"providerId": "cheaprouter-prod",    "baseURL": "https://or.example/v1"}],
+ *     ["@cheaprouter/opencode-plugin", {"providerId": "cheaprouter-preprod", "baseURL": "https://or-preprod.example/v1"}]
  *   ]
  *
  * Assertions:
@@ -24,30 +24,30 @@
 
 import test from "node:test";
 import assert from "node:assert/strict";
-import { OmniRoutePlugin } from "../src/index.js";
+import { CheapRouterPlugin } from "../src/index.js";
 
-const fakeInput = {} as Parameters<typeof OmniRoutePlugin>[0];
+const fakeInput = {} as Parameters<typeof CheapRouterPlugin>[0];
 
 test("multi-instance: two plugin invocations bind to their own providerId", async () => {
-  const a = await OmniRoutePlugin(fakeInput, {
-    providerId: "omniroute-prod",
+  const a = await CheapRouterPlugin(fakeInput, {
+    providerId: "cheaprouter-prod",
     baseURL: "https://a.example/v1",
   });
-  const b = await OmniRoutePlugin(fakeInput, {
-    providerId: "omniroute-preprod",
+  const b = await CheapRouterPlugin(fakeInput, {
+    providerId: "cheaprouter-preprod",
     baseURL: "https://b.example/v1",
   });
 
-  assert.equal(a.auth?.provider, "opencode-omniroute-prod");
-  assert.equal(b.auth?.provider, "opencode-omniroute-preprod");
+  assert.equal(a.auth?.provider, "opencode-cheaprouter-prod");
+  assert.equal(b.auth?.provider, "opencode-cheaprouter-preprod");
 });
 
 test("multi-instance: hook objects + nested arrays are independent references", async () => {
-  const a = await OmniRoutePlugin(fakeInput, {
+  const a = await CheapRouterPlugin(fakeInput, {
     providerId: "alpha",
     baseURL: "https://a.example/v1",
   });
-  const b = await OmniRoutePlugin(fakeInput, {
+  const b = await CheapRouterPlugin(fakeInput, {
     providerId: "bravo",
     baseURL: "https://b.example/v1",
   });
@@ -63,8 +63,8 @@ test("multi-instance: hook objects + nested arrays are independent references", 
 
 test("multi-instance: identical opts twice still yield independent objects", async () => {
   const opts = { providerId: "twin", baseURL: "https://twin.example/v1" };
-  const first = await OmniRoutePlugin(fakeInput, { ...opts });
-  const second = await OmniRoutePlugin(fakeInput, { ...opts });
+  const first = await CheapRouterPlugin(fakeInput, { ...opts });
+  const second = await CheapRouterPlugin(fakeInput, { ...opts });
 
   assert.notEqual(first, second);
   assert.notEqual(first.auth, second.auth);
@@ -75,11 +75,11 @@ test("multi-instance: identical opts twice still yield independent objects", asy
 });
 
 test("multi-instance: mutating instance A's auth.methods does not affect instance B", async () => {
-  const a = await OmniRoutePlugin(fakeInput, {
+  const a = await CheapRouterPlugin(fakeInput, {
     providerId: "iso-a",
     baseURL: "https://a.example/v1",
   });
-  const b = await OmniRoutePlugin(fakeInput, {
+  const b = await CheapRouterPlugin(fakeInput, {
     providerId: "iso-b",
     baseURL: "https://b.example/v1",
   });
@@ -96,12 +96,12 @@ test("multi-instance: loader closures see their own opts (not last-write-wins)",
   // captured at invocation time. If the factory accidentally shared a closure
   // (e.g. a module-scope let that the last invocation overwrites), both
   // loaders would emit the same baseURL. Verify they don't.
-  const a = await OmniRoutePlugin(fakeInput, {
-    providerId: "omniroute-prod",
+  const a = await CheapRouterPlugin(fakeInput, {
+    providerId: "cheaprouter-prod",
     baseURL: "https://prod.example/v1",
   });
-  const b = await OmniRoutePlugin(fakeInput, {
-    providerId: "omniroute-preprod",
+  const b = await CheapRouterPlugin(fakeInput, {
+    providerId: "cheaprouter-preprod",
     baseURL: "https://preprod.example/v1",
   });
 
@@ -125,10 +125,10 @@ test("multi-instance: invalid opts on one instance does not poison the other", a
   // good call must still produce a working hooks object. Confirms no
   // half-built module-level state survives a failed parse.
   await assert.rejects(
-    () => OmniRoutePlugin(fakeInput, { providerId: "bad id!" } as never),
+    () => CheapRouterPlugin(fakeInput, { providerId: "bad id!" } as never),
     /providerId/
   );
-  const ok = await OmniRoutePlugin(fakeInput, {
+  const ok = await CheapRouterPlugin(fakeInput, {
     providerId: "recovered",
     baseURL: "https://ok.example/v1",
   });

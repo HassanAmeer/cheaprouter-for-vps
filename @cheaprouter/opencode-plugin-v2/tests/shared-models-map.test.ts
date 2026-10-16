@@ -64,10 +64,10 @@ describe("mapRawModelToModelV2", () => {
         input_modalities: ["text", "image"],
         capabilities: { tool_calling: true, reasoning: true },
       },
-      { providerId: "omniroute", baseURL: "https://gw.example.com" }
+      { providerId: "cheaprouter", baseURL: "https://gw.example.com" }
     );
-    assert.equal(m.id, "omniroute/gpt-x");
-    assert.equal(m.providerID, "omniroute");
+    assert.equal(m.id, "cheaprouter/gpt-x");
+    assert.equal(m.providerID, "cheaprouter");
     assert.equal(m.capabilities.toolcall, true);
     assert.equal(m.capabilities.reasoning, true);
     assert.equal(m.capabilities.input.image, true);
@@ -79,7 +79,7 @@ describe("mapRawModelToModelV2", () => {
   it("maps effort_tiers to variants, omits key when absent", () => {
     const withTiers = mapRawModelToModelV2(
       { id: "r1", capabilities: { effort_tiers: ["low", "high"] } },
-      { providerId: "omniroute", baseURL: "https://gw.example.com" }
+      { providerId: "cheaprouter", baseURL: "https://gw.example.com" }
     );
     assert.deepEqual(withTiers.variants, {
       low: { reasoningEffort: "low" },
@@ -87,7 +87,7 @@ describe("mapRawModelToModelV2", () => {
     });
     const without = mapRawModelToModelV2(
       { id: "r2" },
-      { providerId: "omniroute", baseURL: "https://gw.example.com" }
+      { providerId: "cheaprouter", baseURL: "https://gw.example.com" }
     );
     assert.ok(!("variants" in without));
   });

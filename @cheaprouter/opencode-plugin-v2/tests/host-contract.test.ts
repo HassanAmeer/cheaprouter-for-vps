@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { buildProviderPayload, collectCatalog } from "../src/catalog.js";
 
 const baseOpts = {
-  providerId: "omniroute",
+  providerId: "cheaprouter",
   baseURL: "https://gw.example.com",
   apiKey: "k",
   timeoutMs: 1000,
@@ -31,7 +31,7 @@ async function publish() {
 describe("stable payload", () => {
   it("publishes one provider info with endpoint plus key", async () => {
     const { info } = await publish();
-    assert.equal(info.id, "omniroute");
+    assert.equal(info.id, "cheaprouter");
     assert.equal(info.package, "@opencode/ai/providers/openai-compatible");
     assert.equal((info.settings as Record<string, unknown>).baseURL, "https://gw.example.com/v1");
     assert.equal((info.settings as Record<string, unknown>).apiKey, "k");

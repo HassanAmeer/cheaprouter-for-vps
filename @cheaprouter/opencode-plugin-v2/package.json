@@ -37,18 +37,18 @@
     "node": ">=22.22.3"
   },
   "license": "MIT",
-  "author": "OmniRoute contributors",
+  "author": "CheapRouter contributors",
   "repository": {
     "type": "git",
-    "url": "https://github.com/diegosouzapw/OmniRoute.git",
+    "url": "https://github.com/diegosouzapw/CheapRouter.git",
     "directory": "@cheaprouter/opencode-plugin-v2"
   },
-  "homepage": "https://github.com/diegosouzapw/OmniRoute/tree/main/%40cheaprouter/opencode-plugin-v2#readme",
+  "homepage": "https://github.com/diegosouzapw/CheapRouter/tree/main/%40cheaprouter/opencode-plugin-v2#readme",
   "bugs": {
-    "url": "https://github.com/diegosouzapw/OmniRoute/issues"
+    "url": "https://github.com/diegosouzapw/CheapRouter/issues"
   },
   "keywords": [
-    "omniroute",
+    "cheaprouter",
     "opencode",
     "opencode-plugin",
     "opencode-v2",

@@ -35,7 +35,7 @@ export function createSourceErrorReporter(
           `(it currently falls back to "apiKey", which a gateway usually rejects here).`
         : ` The configured "managementReadToken" was rejected — check it grants read access to /api/*.`;
     log.warn(
-      `[omniroute-v2] gateway source ${endpoint} unavailable (${reason}): ${consequenceOf(endpoint)}.${hint}`
+      `[cheaprouter-v2] gateway source ${endpoint} unavailable (${reason}): ${consequenceOf(endpoint)}.${hint}`
     );
   };
 }

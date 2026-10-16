@@ -1,7 +1,7 @@
 /**
  * T-08 options-schema tests.
  *
- * Covers `parseOmniRoutePluginOptions(opts)` — the strict Zod gate that
+ * Covers `parseCheapRouterPluginOptions(opts)` — the strict Zod gate that
  * validates the second-arg `PluginOptions` bag from opencode.json before
  * any hook is wired. Anti-pattern checklist mirrored here:
  *
@@ -12,99 +12,99 @@
 
 import test from "node:test";
 import assert from "node:assert/strict";
-import { parseOmniRoutePluginOptions } from "../src/index.js";
+import { parseCheapRouterPluginOptions } from "../src/index.js";
 
-test("parseOmniRoutePluginOptions: undefined → {}", () => {
-  assert.deepEqual(parseOmniRoutePluginOptions(undefined), {});
+test("parseCheapRouterPluginOptions: undefined → {}", () => {
+  assert.deepEqual(parseCheapRouterPluginOptions(undefined), {});
 });
 
-test("parseOmniRoutePluginOptions: null → {}", () => {
-  assert.deepEqual(parseOmniRoutePluginOptions(null), {});
+test("parseCheapRouterPluginOptions: null → {}", () => {
+  assert.deepEqual(parseCheapRouterPluginOptions(null), {});
 });
 
-test("parseOmniRoutePluginOptions: empty object → {}", () => {
-  assert.deepEqual(parseOmniRoutePluginOptions({}), {});
+test("parseCheapRouterPluginOptions: empty object → {}", () => {
+  assert.deepEqual(parseCheapRouterPluginOptions({}), {});
 });
 
-test("parseOmniRoutePluginOptions: valid providerId → returns it", () => {
-  const r = parseOmniRoutePluginOptions({ providerId: "omniroute-preprod" });
-  assert.equal(r.providerId, "omniroute-preprod");
+test("parseCheapRouterPluginOptions: valid providerId → returns it", () => {
+  const r = parseCheapRouterPluginOptions({ providerId: "cheaprouter-preprod" });
+  assert.equal(r.providerId, "cheaprouter-preprod");
 });
 
-test("parseOmniRoutePluginOptions: invalid providerId (special chars) → throws", () => {
+test("parseCheapRouterPluginOptions: invalid providerId (special chars) → throws", () => {
   assert.throws(
-    () => parseOmniRoutePluginOptions({ providerId: "omniroute prod!" }),
+    () => parseCheapRouterPluginOptions({ providerId: "cheaprouter prod!" }),
     /providerId.*slug/i
   );
 });
 
-test("parseOmniRoutePluginOptions: empty providerId → throws", () => {
-  assert.throws(() => parseOmniRoutePluginOptions({ providerId: "" }), /providerId/i);
+test("parseCheapRouterPluginOptions: empty providerId → throws", () => {
+  assert.throws(() => parseCheapRouterPluginOptions({ providerId: "" }), /providerId/i);
 });
 
-test("parseOmniRoutePluginOptions: valid modelCacheTtl → returns it", () => {
-  const r = parseOmniRoutePluginOptions({ modelCacheTtl: 60_000 });
+test("parseCheapRouterPluginOptions: valid modelCacheTtl → returns it", () => {
+  const r = parseCheapRouterPluginOptions({ modelCacheTtl: 60_000 });
   assert.equal(r.modelCacheTtl, 60_000);
 });
 
-test("parseOmniRoutePluginOptions: negative modelCacheTtl → throws", () => {
-  assert.throws(() => parseOmniRoutePluginOptions({ modelCacheTtl: -1 }), /modelCacheTtl/i);
+test("parseCheapRouterPluginOptions: negative modelCacheTtl → throws", () => {
+  assert.throws(() => parseCheapRouterPluginOptions({ modelCacheTtl: -1 }), /modelCacheTtl/i);
 });
 
-test("parseOmniRoutePluginOptions: zero modelCacheTtl → throws (positive required)", () => {
-  assert.throws(() => parseOmniRoutePluginOptions({ modelCacheTtl: 0 }), /modelCacheTtl/i);
+test("parseCheapRouterPluginOptions: zero modelCacheTtl → throws (positive required)", () => {
+  assert.throws(() => parseCheapRouterPluginOptions({ modelCacheTtl: 0 }), /modelCacheTtl/i);
 });
 
-test("parseOmniRoutePluginOptions: invalid baseURL (not a URL) → throws", () => {
-  assert.throws(() => parseOmniRoutePluginOptions({ baseURL: "not-a-url" }), /baseURL/i);
+test("parseCheapRouterPluginOptions: invalid baseURL (not a URL) → throws", () => {
+  assert.throws(() => parseCheapRouterPluginOptions({ baseURL: "not-a-url" }), /baseURL/i);
 });
 
-test("parseOmniRoutePluginOptions: baseURL without an http(s) scheme → throws", () => {
+test("parseCheapRouterPluginOptions: baseURL without an http(s) scheme → throws", () => {
   // `new URL()` reads "localhost:20128" as the scheme "localhost:" followed by
   // a path, so the address parses and the models are published with an api url
   // no client can call.
   for (const baseURL of ["localhost:20128", "localhost:20128/v1", "ftp://or.example.com", "or.example.com"]) {
     assert.throws(
-      () => parseOmniRoutePluginOptions({ baseURL }),
+      () => parseCheapRouterPluginOptions({ baseURL }),
       /baseURL must be an http\(s\) URL/,
       `expected ${baseURL} to be rejected`
     );
   }
 });
 
-test("parseOmniRoutePluginOptions: http and https baseURLs are accepted, padding trimmed", () => {
+test("parseCheapRouterPluginOptions: http and https baseURLs are accepted, padding trimmed", () => {
   for (const baseURL of ["http://localhost:20128", "https://or.example.com/v1"]) {
-    assert.equal(parseOmniRoutePluginOptions({ baseURL }).baseURL, baseURL);
-    assert.equal(parseOmniRoutePluginOptions({ baseURL: `  ${baseURL}  ` }).baseURL, baseURL);
+    assert.equal(parseCheapRouterPluginOptions({ baseURL }).baseURL, baseURL);
+    assert.equal(parseCheapRouterPluginOptions({ baseURL: `  ${baseURL}  ` }).baseURL, baseURL);
   }
 });
 
-test("parseOmniRoutePluginOptions: unknown key → throws (strict mode catches typos)", () => {
+test("parseCheapRouterPluginOptions: unknown key → throws (strict mode catches typos)", () => {
   assert.throws(
     () =>
-      parseOmniRoutePluginOptions({
-        providerId: "omniroute",
+      parseCheapRouterPluginOptions({
+        providerId: "cheaprouter",
         provider_id: "typo-here",
       }),
     /provider_id|unrecognized/i
   );
 });
 
-test("parseOmniRoutePluginOptions: all four fields populated correctly → returns them", () => {
+test("parseCheapRouterPluginOptions: all four fields populated correctly → returns them", () => {
   const opts = {
-    providerId: "omniroute-prod",
-    displayName: "OmniRoute Production",
+    providerId: "cheaprouter-prod",
+    displayName: "CheapRouter Production",
     modelCacheTtl: 120_000,
     baseURL: "https://or.example.com/v1",
   };
-  const r = parseOmniRoutePluginOptions(opts);
+  const r = parseCheapRouterPluginOptions(opts);
   assert.deepEqual(r, opts);
 });
 
-test("parseOmniRoutePluginOptions: error message lists every issue path", () => {
+test("parseCheapRouterPluginOptions: error message lists every issue path", () => {
   // Two bad fields at once → error string should mention BOTH.
   try {
-    parseOmniRoutePluginOptions({
+    parseCheapRouterPluginOptions({
       providerId: "",
       baseURL: "garbage",
     });
@@ -116,9 +116,9 @@ test("parseOmniRoutePluginOptions: error message lists every issue path", () => 
   }
 });
 
-test("parseOmniRoutePluginOptions: module import alone does NOT throw", async () => {
+test("parseCheapRouterPluginOptions: module import alone does NOT throw", async () => {
   // Re-importing the entry must not trigger validation; validation only fires
-  // on explicit parseOmniRoutePluginOptions / OmniRoutePlugin invocation.
+  // on explicit parseCheapRouterPluginOptions / CheapRouterPlugin invocation.
   const mod = await import("../src/index.js");
-  assert.equal(typeof mod.parseOmniRoutePluginOptions, "function");
+  assert.equal(typeof mod.parseCheapRouterPluginOptions, "function");
 });

@@ -25,7 +25,7 @@
     "prepublishOnly": "npm run clean && npm run build && npm test"
   },
   "keywords": [
-    "omniroute",
+    "cheaprouter",
     "opencode",
     "opencode-ai",
     "ai-sdk",
@@ -34,17 +34,17 @@
     "ai-gateway",
     "llm-router"
   ],
-  "author": "OmniRoute contributors",
+  "author": "CheapRouter contributors",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/diegosouzapw/OmniRoute.git",
+    "url": "git+https://github.com/diegosouzapw/CheapRouter.git",
     "directory": "@cheaprouter/opencode-provider"
   },
   "bugs": {
-    "url": "https://github.com/diegosouzapw/OmniRoute/issues"
+    "url": "https://github.com/diegosouzapw/CheapRouter/issues"
   },
-  "homepage": "https://github.com/diegosouzapw/OmniRoute/tree/main/%40cheaprouter/opencode-provider#readme",
+  "homepage": "https://github.com/diegosouzapw/CheapRouter/tree/main/%40cheaprouter/opencode-provider#readme",
   "engines": {
     "node": ">=22.22.3"
   },

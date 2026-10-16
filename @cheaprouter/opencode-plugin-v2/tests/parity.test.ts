@@ -5,10 +5,10 @@ import { publishCatalog } from "../src/catalog.js";
 import {
   mapComboToModelV2 as sharedMapCombo,
   mapRawModelToModelV2 as sharedMapModel,
-  type OmniRouteCombosFetcher,
-  type OmniRouteModelsFetcher,
-  type OmniRouteRawCombo,
-  type OmniRouteRawModelEntry,
+  type CheapRouterCombosFetcher,
+  type CheapRouterModelsFetcher,
+  type CheapRouterRawCombo,
+  type CheapRouterRawModelEntry,
 } from "../src/shared/index.js";
 type BetaDraft = {
   provider: {
@@ -26,8 +26,8 @@ type BetaDraft = {
 };
 
 interface Fixture {
-  models: OmniRouteRawModelEntry[];
-  combos: OmniRouteRawCombo[];
+  models: CheapRouterRawModelEntry[];
+  combos: CheapRouterRawCombo[];
 }
 
 /**
@@ -99,7 +99,7 @@ function fakeDraft() {
 
 const TEST_OPTS = {
   baseURL: "https://gw.example.com",
-  providerId: "omniroute",
+  providerId: "cheaprouter",
   apiKey: "parity-key",
   timeoutMs: 1000,
   modelCacheTtlMs: 300000,
@@ -112,14 +112,14 @@ describe("v1-vs-v2 catalog parity", () => {
     assert.equal(fixture.models.length, 5);
     assert.equal(fixture.combos.length, 2);
 
-    const fetcher: OmniRouteModelsFetcher = async () => fixture.models;
-    const combosFetcher: OmniRouteCombosFetcher = async () => fixture.combos;
+    const fetcher: CheapRouterModelsFetcher = async () => fixture.models;
+    const combosFetcher: CheapRouterCombosFetcher = async () => fixture.combos;
 
     const recorded = await loadV1Parity();
-    assert.equal(recorded.hookId, "opencode-omniroute", "v1 published under its own provider id");
+    assert.equal(recorded.hookId, "opencode-cheaprouter", "v1 published under its own provider id");
 
     const stripX = (k: string): string =>
-      k.startsWith("omniroute/") ? k.slice("omniroute/".length) : k;
+      k.startsWith("cheaprouter/") ? k.slice("cheaprouter/".length) : k;
     const v1Keys = recorded.publishedKeys;
 
     const draft = fakeDraft();
@@ -132,7 +132,7 @@ describe("v1-vs-v2 catalog parity", () => {
     // src/catalog.ts assignModelFields): api resolves to the
     // openai-compatible AISDK block, capabilities fold tool_calling into
     // tools, cost is zeroed (pricing lives server-side).
-    const mAlpha = draft.models.get("omniroute/m-alpha");
+    const mAlpha = draft.models.get("cheaprouter/m-alpha");
     assert.ok(mAlpha, "m-alpha published in v2 draft");
     assert.equal(mAlpha.api.type, "aisdk");
     if (mAlpha.api.type !== "aisdk") throw new Error("m-alpha api must be aisdk");
@@ -141,13 +141,13 @@ describe("v1-vs-v2 catalog parity", () => {
     assert.equal(mAlpha.cost[0].input, 0);
 
     // Measured key shapes: v1 namespaces the friendly name
-    // (`Combo Fast` -> `omniroute/combo-fast`) and keys the colliding combo
-    // by its raw id (`good-combo` -> `omniroute/good-combo`, combo wins over
+    // (`Combo Fast` -> `cheaprouter/combo-fast`) and keys the colliding combo
+    // by its raw id (`good-combo` -> `cheaprouter/good-combo`, combo wins over
     // the same-named raw model). v2 publishes combos under their advertised
-    // NAME verbatim (`Combo Fast` -> `omniroute/Combo Fast`,
-    // `Good Combo` -> `omniroute/Good Combo`) — the string GET /v1/models
+    // NAME verbatim (`Combo Fast` -> `cheaprouter/Combo Fast`,
+    // `Good Combo` -> `cheaprouter/Good Combo`) — the string GET /v1/models
     // advertises and POST /v1/chat/completions routes (getComboByName), so
-    // the raw model at `omniroute/good-combo` no longer collides with the
+    // the raw model at `cheaprouter/good-combo` no longer collides with the
     // combo and survives alongside it. The raw-model key set is therefore
     // still identical on both sides; only the combo keys intentionally
     // diverge (slug vs advertised name).
@@ -164,7 +164,7 @@ describe("v1-vs-v2 catalog parity", () => {
     const v1Models = v1Keys.filter((k) => !k.startsWith("combo-") && k !== "good-combo").sort();
     // Anchor v1 model keys as literals (modulo the slashed-id exclusion
     // documented above: the bare `cc/m-gamma` key fails the
-    // `startsWith("omniroute/")` filter and is dropped here).
+    // `startsWith("cheaprouter/")` filter and is dropped here).
     assert.deepEqual(v1Models, ["local-delta", "m-alpha", "m-beta"]);
     const v2Models = [...draft.models.keys()]
       .map(stripX)
@@ -191,9 +191,9 @@ describe("v1-vs-v2 catalog parity", () => {
     try {
       const draft2 = fakeDraft();
       await publishCatalog(draft2, TEST_OPTS, { fetcher, combosFetcher });
-      assert.ok(draft2.models.has("omniroute/Good Combo"), "combo keyed by its name in v2");
+      assert.ok(draft2.models.has("cheaprouter/Good Combo"), "combo keyed by its name in v2");
       assert.ok(
-        draft2.models.has("omniroute/good-combo"),
+        draft2.models.has("cheaprouter/good-combo"),
         "raw model keeps its id key alongside the combo"
       );
     } finally {
@@ -218,7 +218,7 @@ describe("v1-vs-v2 catalog parity", () => {
       const expected = recorded.mappedModels[entry.id];
       assert.ok(expected, `v1 output recorded for ${entry.id}`);
       const viaShared = sharedMapModel(entry, {
-        providerId: "omniroute",
+        providerId: "cheaprouter",
         baseURL: TEST_OPTS.baseURL,
       });
       assert.deepEqual(
@@ -232,8 +232,8 @@ describe("v1-vs-v2 catalog parity", () => {
       const members = (combo.models ?? [])
         .filter((s) => s?.kind !== "combo-ref" && typeof s?.model === "string")
         .map((s) => byId.get(s.model as string))
-        .filter((m): m is OmniRouteRawModelEntry => m !== undefined);
-      const viaSharedFull = sharedMapCombo(combo, members, "omniroute", TEST_OPTS.baseURL);
+        .filter((m): m is CheapRouterRawModelEntry => m !== undefined);
+      const viaSharedFull = sharedMapCombo(combo, members, "cheaprouter", TEST_OPTS.baseURL);
       const expected = recorded.mappedCombos[combo.id];
       assert.ok(expected, `v1 output recorded for ${combo.id}`);
       // The combo mapper now publishes `id: combo.name` (the advertised name

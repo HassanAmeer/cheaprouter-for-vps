@@ -101,8 +101,8 @@ describe("shared leveled logger (v1 parity)", () => {
     } finally {
       cap.restore();
     }
-    assert.match(cap.warns[0], /\[omniroute-plugin\] \[WARN\] hello/);
-    assert.match(cap.errors[0], /\[omniroute-plugin\] \[ERROR\] boom/);
+    assert.match(cap.warns[0], /\[cheaprouter-plugin\] \[WARN\] hello/);
+    assert.match(cap.errors[0], /\[cheaprouter-plugin\] \[ERROR\] boom/);
   });
 
   it("child loggers append their tag after the namespace", () => {
@@ -113,7 +113,7 @@ describe("shared leveled logger (v1 parity)", () => {
     } finally {
       cap.restore();
     }
-    assert.match(cap.warns[0], /\[omniroute-plugin\]\[v2\] \[INFO\] hello/);
+    assert.match(cap.warns[0], /\[cheaprouter-plugin\]\[v2\] \[INFO\] hello/);
   });
 
   it("always() emits regardless of level", () => {

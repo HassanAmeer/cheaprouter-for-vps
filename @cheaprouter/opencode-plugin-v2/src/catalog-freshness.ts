@@ -1,4 +1,4 @@
-import type { OmniRouteRawModelEntry } from "./shared/index.js";
+import type { CheapRouterRawModelEntry } from "./shared/index.js";
 
 /**
  * Freshness window in days. The millisecond value below derives from it,
@@ -38,7 +38,7 @@ export function freshWindowDaysToMs(days: number): number {
  * — neither works as a uniform freshness date.
  */
 export function isFreshModel(
-  entry: OmniRouteRawModelEntry,
+  entry: CheapRouterRawModelEntry,
   nowMs: number,
   windowMs: number = FRESHNESS_WINDOW_MS
 ): boolean {
@@ -61,7 +61,7 @@ export function isFreshModel(
  * `/`, else `"unknown"`. Shared by the showcase ranking and the fresh cap
  * so both count the same groups.
  */
-export function ownerKeyOf(entry: OmniRouteRawModelEntry): string {
+export function ownerKeyOf(entry: CheapRouterRawModelEntry): string {
   if (typeof entry.owned_by === "string" && entry.owned_by.length > 0) return entry.owned_by;
   if (typeof entry.id === "string" && entry.id.includes("/"))
     return entry.id.slice(0, entry.id.indexOf("/"));
@@ -72,7 +72,7 @@ export function ownerKeyOf(entry: OmniRouteRawModelEntry): string {
  * Recency order shared by the showcase ranking and the fresh cap: newest
  * `release_date` first (unknown = oldest), then largest `context_length`.
  */
-export function compareByRecency(a: OmniRouteRawModelEntry, b: OmniRouteRawModelEntry): number {
+export function compareByRecency(a: CheapRouterRawModelEntry, b: CheapRouterRawModelEntry): number {
   const aDate = typeof a.release_date === "string" ? Date.parse(a.release_date) : NaN;
   const bDate = typeof b.release_date === "string" ? Date.parse(b.release_date) : NaN;
   const aMs = Number.isNaN(aDate) ? 0 : aDate;
@@ -89,7 +89,7 @@ export function compareByRecency(a: OmniRouteRawModelEntry, b: OmniRouteRawModel
  * the exact `"deprecated"` string excludes, anything else (absent,
  * mistyped, other value) keeps the entry.
  */
-export function readEntryStatus(entry: OmniRouteRawModelEntry): unknown {
+export function readEntryStatus(entry: CheapRouterRawModelEntry): unknown {
   return (entry as { status?: unknown }).status;
 }
 
@@ -125,10 +125,10 @@ export function isFlatTierId(id: string): boolean {
  * hardcoded here.
  */
 export function selectShowcaseIds(
-  entries: readonly OmniRouteRawModelEntry[],
+  entries: readonly CheapRouterRawModelEntry[],
   perOwner: number = SHOWCASE_PER_OWNER
 ): Set<string> {
-  const groups = new Map<string, OmniRouteRawModelEntry[]>();
+  const groups = new Map<string, CheapRouterRawModelEntry[]>();
   for (const entry of entries) {
     if (!entry || typeof entry.id !== "string" || entry.id.length === 0) continue;
     const owner = ownerKeyOf(entry);
@@ -155,7 +155,7 @@ export function selectShowcaseIds(
  * A pin always wins over every exclusion below.
  */
 export function passesWhatServes(
-  entry: OmniRouteRawModelEntry,
+  entry: CheapRouterRawModelEntry,
   showcased: ReadonlySet<string>,
   visibleFilter: ModelListFilter | undefined,
   nowMs: number = Date.now(),
@@ -185,14 +185,14 @@ export function passesWhatServes(
  * effort-variant ids never take a fresh slot.
  */
 export function selectFreshKeptIds(
-  entries: readonly OmniRouteRawModelEntry[],
+  entries: readonly CheapRouterRawModelEntry[],
   perOwner: number = FRESH_PER_OWNER,
   nowMs: number = Date.now(),
   visibleFilter?: ModelListFilter,
   windowMs: number = FRESHNESS_WINDOW_MS
 ): Set<string> {
   const perOwnerCount = Number.isFinite(perOwner) && perOwner > 0 ? perOwner : FRESH_PER_OWNER;
-  const groups = new Map<string, OmniRouteRawModelEntry[]>();
+  const groups = new Map<string, CheapRouterRawModelEntry[]>();
   for (const entry of entries) {
     if (!entry || typeof entry.id !== "string" || entry.id.length === 0) continue;
     if (readEntryStatus(entry) === "deprecated") continue;
@@ -222,7 +222,7 @@ export function selectFreshKeptIds(
  * filter (they pass the static gate already).
  */
 export function staysDropped(
-  entry: OmniRouteRawModelEntry,
+  entry: CheapRouterRawModelEntry,
   freshKept: ReadonlySet<string>,
   nowMs: number = Date.now(),
   windowMs: number = FRESHNESS_WINDOW_MS

@@ -56,7 +56,7 @@ function fakeDraft(): FakeDraft {
 }
 
 const baseOpts = {
-  providerId: "omniroute",
+  providerId: "cheaprouter",
   baseURL: "https://gw.example.com",
   apiKey: "k",
   timeoutMs: 1000,
@@ -71,15 +71,15 @@ describe("catalog provider template", () => {
       fetcher: async () => [],
       combosFetcher: async () => [],
     });
-    const p = draft.providers.get("omniroute");
+    const p = draft.providers.get("cheaprouter");
     assert.ok(p);
-    assert.equal(p?.name, "OmniRoute");
+    assert.equal(p?.name, "CheapRouter");
     assert.deepEqual(p?.api, {
       type: "aisdk",
       package: "@ai-sdk/openai-compatible",
       url: "https://gw.example.com/v1",
     });
-    assert.equal(p?.integrationID, "omniroute");
+    assert.equal(p?.integrationID, "cheaprouter");
   });
 
   it("publishes stub models with mapped fields, counts them", async () => {
@@ -98,9 +98,9 @@ describe("catalog provider template", () => {
       combosFetcher: async () => [],
     });
     assert.deepEqual(res, { models: 2, combos: 0 });
-    const m = draft.models.get("omniroute/gpt-x");
+    const m = draft.models.get("cheaprouter/gpt-x");
     assert.ok(m);
-    assert.equal(m?.providerID, "omniroute");
+    assert.equal(m?.providerID, "cheaprouter");
     assert.equal(m?.limit.context, 128000);
     assert.equal(m?.capabilities.tools, true);
     assert.equal(m?.status, "active");
@@ -118,8 +118,8 @@ describe("catalog allowlist", () => {
       { fetcher: stubModels, combosFetcher: async () => [] }
     );
     assert.equal(res.models, 1);
-    assert.ok(draft.models.has("omniroute/cc/keep-me"));
-    assert.ok(!draft.models.has("omniroute/cc/drop-me"));
+    assert.ok(draft.models.has("cheaprouter/cc/keep-me"));
+    assert.ok(!draft.models.has("cheaprouter/cc/drop-me"));
   });
 
   it("hidden deny-wins over visible allow", async () => {
@@ -140,8 +140,8 @@ describe("catalog allowlist", () => {
       { fetcher: stubModels, combosFetcher: async () => [] }
     );
     assert.equal(res.models, 2);
-    assert.ok(!draft.models.has("omniroute/cc/drop-me"));
-    assert.ok(draft.models.has("omniroute/bare-keep"));
+    assert.ok(!draft.models.has("cheaprouter/cc/drop-me"));
+    assert.ok(draft.models.has("cheaprouter/bare-keep"));
   });
 });
 
@@ -166,7 +166,7 @@ describe("catalog fail-open", () => {
     }
     assert.equal(warns.length, 1);
     assert.match(warns[0], /models fetch failed/);
-    assert.ok(draft.providers.has("omniroute"));
+    assert.ok(draft.providers.has("cheaprouter"));
   });
 
   it("combos fetch throw keeps models, warns, returns models-only counts", async () => {
@@ -190,7 +190,7 @@ describe("catalog fail-open", () => {
     }
     assert.equal(warns.length, 1);
     assert.match(warns[0], /combos fetch failed/);
-    assert.ok(draft.models.has("omniroute/m1"));
+    assert.ok(draft.models.has("cheaprouter/m1"));
   });
 
   it("combos fetch 403 (PROD) keeps models, warns, never rejects", async () => {
@@ -206,7 +206,7 @@ describe("catalog fail-open", () => {
         enrichmentFetcher: async () => new Map(),
         combosFetcher: async () => {
           throw new Error(
-            "[omniroute-v2] GET https://gw.example.com/api/combos failed: 403 Forbidden"
+            "[cheaprouter-v2] GET https://gw.example.com/api/combos failed: 403 Forbidden"
           );
         },
       });
@@ -217,7 +217,7 @@ describe("catalog fail-open", () => {
     assert.equal(warns.length, 1);
     assert.match(warns[0], /combos fetch failed/);
     assert.match(warns[0], /403/);
-    assert.ok(draft.models.has("omniroute/m1"));
+    assert.ok(draft.models.has("cheaprouter/m1"));
   });
 
   it("combos fetch 500 keeps models, warns, never rejects", async () => {
@@ -233,7 +233,7 @@ describe("catalog fail-open", () => {
         enrichmentFetcher: async () => new Map(),
         combosFetcher: async () => {
           throw new Error(
-            "[omniroute-v2] GET https://gw.example.com/api/combos failed: 500 Internal Server Error"
+            "[cheaprouter-v2] GET https://gw.example.com/api/combos failed: 500 Internal Server Error"
           );
         },
       });
@@ -244,7 +244,7 @@ describe("catalog fail-open", () => {
     assert.equal(warns.length, 1);
     assert.match(warns[0], /combos fetch failed/);
     assert.match(warns[0], /500/);
-    assert.ok(draft.models.has("omniroute/m1"));
+    assert.ok(draft.models.has("cheaprouter/m1"));
   });
 
   it("combos fetch timeout (AbortError) keeps models, warns, never rejects", async () => {
@@ -270,7 +270,7 @@ describe("catalog fail-open", () => {
     }
     assert.equal(warns.length, 1);
     assert.match(warns[0], /combos fetch failed/);
-    assert.ok(draft.models.has("omniroute/m1"));
+    assert.ok(draft.models.has("cheaprouter/m1"));
   });
 });
 
@@ -304,15 +304,15 @@ describe("catalog combo vs combo", () => {
       console.warn = origWarn;
     }
     // Under name-based keying the combos publish at their own keys
-    // (`omniroute/Dupe Combo` and `omniroute/Dupe Combo Again`) — they no
-    // longer collide with the model `dupe` at `omniroute/dupe`.
+    // (`cheaprouter/Dupe Combo` and `cheaprouter/Dupe Combo Again`) — they no
+    // longer collide with the model `dupe` at `cheaprouter/dupe`.
     assert.equal(warns.length, 0);
-    const m = draft.models.get("omniroute/dupe");
+    const m = draft.models.get("cheaprouter/dupe");
     assert.ok(m, "raw model remains at its own key");
     assert.equal(m?.name, "dupe");
-    const combo1 = draft.models.get("omniroute/Dupe Combo");
+    const combo1 = draft.models.get("cheaprouter/Dupe Combo");
     assert.ok(combo1, "first combo published under its name");
-    const combo2 = draft.models.get("omniroute/Dupe Combo Again");
+    const combo2 = draft.models.get("cheaprouter/Dupe Combo Again");
     assert.ok(combo2, "second combo published under its name");
     assert.equal(combo2?.name, "Dupe Combo Again");
   });
@@ -343,12 +343,12 @@ describe("catalog model bare vs combo", () => {
       console.warn = origWarn;
     }
     // Name-based keying: the combo advertises `Dupe Combo`, so it sits at
-    // `omniroute/Dupe Combo` instead of collapsing onto the raw model's
-    // `omniroute/dupe` key (the accidental-collision class the warn was
+    // `cheaprouter/Dupe Combo` instead of collapsing onto the raw model's
+    // `cheaprouter/dupe` key (the accidental-collision class the warn was
     // written for). Both entries publish, nothing warns.
     assert.equal(warns.length, 0);
-    assert.ok(draft.models.get("omniroute/dupe"), "raw model keeps its id key");
-    assert.ok(draft.models.get("omniroute/Dupe Combo"), "combo published under its name");
+    assert.ok(draft.models.get("cheaprouter/dupe"), "raw model keeps its id key");
+    assert.ok(draft.models.get("cheaprouter/Dupe Combo"), "combo published under its name");
   });
 });
 
@@ -380,8 +380,8 @@ describe("catalog capability presets", () => {
       }
     );
     assert.equal(res.models, 1);
-    assert.ok(draft.models.has("omniroute/free-m"));
-    assert.ok(!draft.models.has("omniroute/paid-m"));
+    assert.ok(draft.models.has("cheaprouter/free-m"));
+    assert.ok(!draft.models.has("cheaprouter/paid-m"));
   });
 
   it("freeOnly without enrichment publishes nothing and warns once", async () => {
@@ -441,7 +441,7 @@ describe("catalog capability presets", () => {
     );
     assert.equal(res.models, 1);
     assert.equal(res.combos, 0);
-    assert.ok(!draft.models.has("omniroute/Combo A"));
+    assert.ok(!draft.models.has("cheaprouter/Combo A"));
   });
 
   it("toolsOnly keeps only tool-calling models", async () => {
@@ -458,8 +458,8 @@ describe("catalog capability presets", () => {
       }
     );
     assert.equal(res.models, 1);
-    assert.ok(draft.models.has("omniroute/with-tools"));
-    assert.ok(!draft.models.has("omniroute/no-tools"));
+    assert.ok(draft.models.has("cheaprouter/with-tools"));
+    assert.ok(!draft.models.has("cheaprouter/no-tools"));
   });
 
   it("toolsOnly drops a combo with a member lacking tool calls", async () => {
@@ -483,8 +483,8 @@ describe("catalog capability presets", () => {
       }
     );
     assert.equal(res.combos, 1);
-    assert.ok(draft.models.has("omniroute/Pure"));
-    assert.ok(!draft.models.has("omniroute/Mixed"));
+    assert.ok(draft.models.has("cheaprouter/Pure"));
+    assert.ok(!draft.models.has("cheaprouter/Mixed"));
   });
 
   it("visionOnly keeps image-input models from either server convention", async () => {
@@ -502,9 +502,9 @@ describe("catalog capability presets", () => {
       }
     );
     assert.equal(res.models, 2);
-    assert.ok(draft.models.has("omniroute/img"));
-    assert.ok(draft.models.has("omniroute/vis"));
-    assert.ok(!draft.models.has("omniroute/txt"));
+    assert.ok(draft.models.has("cheaprouter/img"));
+    assert.ok(draft.models.has("cheaprouter/vis"));
+    assert.ok(!draft.models.has("cheaprouter/txt"));
   });
 
   it("visionOnly drops auto combos (no image input)", async () => {
@@ -520,7 +520,7 @@ describe("catalog capability presets", () => {
     );
     // #15392 no longer requests the virtual auto-combo route, so the entry is absent.
     assert.equal((res as { autoCombos?: number }).autoCombos, undefined);
-    assert.ok(!draft.models.has("omniroute/auto"));
+    assert.ok(!draft.models.has("cheaprouter/auto"));
   });
 
   it("visibleModels allowlist composes with presets (both subtract)", async () => {
@@ -538,7 +538,7 @@ describe("catalog capability presets", () => {
       }
     );
     assert.equal(res.models, 1);
-    assert.ok(draft.models.has("omniroute/a"));
+    assert.ok(draft.models.has("cheaprouter/a"));
   });
 
   it("hiddenModels deny wins over presets", async () => {
@@ -555,7 +555,7 @@ describe("catalog capability presets", () => {
       }
     );
     assert.equal(res.models, 1);
-    assert.ok(draft.models.has("omniroute/b"));
+    assert.ok(draft.models.has("cheaprouter/b"));
   });
 
   it("usableOnly and presets compose (both subtractive)", async () => {
@@ -585,7 +585,7 @@ describe("catalog capability presets", () => {
       }
     );
     assert.equal(res.models, 1);
-    assert.ok(draft.models.has("omniroute/cc/good"));
+    assert.ok(draft.models.has("cheaprouter/cc/good"));
   });
 
   it("toolsOnly: false opts out and publishes the full catalog", async () => {

@@ -117,7 +117,7 @@ function stubDraft(): { draft: unknown; published: Map<string, Record<string, un
 }
 
 function isolateDisk(): { dir: string; restore: () => void } {
-  const dir = mkdtempSync(join(tmpdir(), "omniroute-p1-"));
+  const dir = mkdtempSync(join(tmpdir(), "cheaprouter-p1-"));
   const prev = process.env.OPENCODE_DATA_DIR;
   process.env.OPENCODE_DATA_DIR = dir;
   return {
@@ -264,7 +264,7 @@ describe("plugin-v2 P1 parity: TTL 300s + disk snapshot", () => {
     }
 
     const warmBody = (await import("node:fs/promises").then((fs) =>
-      fs.readFile(join(disk.dir, "plugins", "omniroute-warm.json"), "utf8")
+      fs.readFile(join(disk.dir, "plugins", "cheaprouter-warm.json"), "utf8")
     )) as string;
     void warmBody;
 
@@ -352,7 +352,7 @@ describe("the snapshot carries the display overlay across a restart", () => {
     const { tmpdir } = await import("node:os");
     const { join } = await import("node:path");
     const { writeDiskSnapshot, readDiskSnapshot } = await import("../src/cache.js");
-    const dir = mkdtempSync(join(tmpdir(), "omniroute-enrich-snap-"));
+    const dir = mkdtempSync(join(tmpdir(), "cheaprouter-enrich-snap-"));
     const prev = process.env.OPENCODE_DATA_DIR;
     process.env.OPENCODE_DATA_DIR = dir;
     try {

@@ -7,21 +7,21 @@ import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 
 import {
-  buildOmniRouteOpenCodeConfig,
-  createOmniRouteAgentBlock,
-  createOmniRouteComboConfig,
-  createOmniRouteMCPEntry,
-  createOmniRouteModesBlock,
-  createOmniRouteProvider,
+  buildCheapRouterOpenCodeConfig,
+  createCheapRouterAgentBlock,
+  createCheapRouterComboConfig,
+  createCheapRouterMCPEntry,
+  createCheapRouterModesBlock,
+  createCheapRouterProvider,
   fetchLiveModels,
   listCombos,
   mergeIntoExistingConfig,
   normalizeBaseURL,
-  OMNIROUTE_DEFAULT_MODEL_CAPABILITIES,
-  OMNIROUTE_DEFAULT_MODEL_CONTEXT_LENGTHS,
-  OMNIROUTE_DEFAULT_OPENCODE_MODELS,
-  OMNIROUTE_MCP_DEFAULT_SCOPES,
-  OMNIROUTE_PROVIDER_NPM,
+  CHEAPROUTER_DEFAULT_MODEL_CAPABILITIES,
+  CHEAPROUTER_DEFAULT_MODEL_CONTEXT_LENGTHS,
+  CHEAPROUTER_DEFAULT_OPENCODE_MODELS,
+  CHEAPROUTER_MCP_DEFAULT_SCOPES,
+  CHEAPROUTER_PROVIDER_NPM,
   OPENCODE_CONFIG_SCHEMA,
 } from "../src/index.ts";
 
@@ -46,38 +46,38 @@ test("normalizeBaseURL rejects malformed URLs", () => {
   assert.throws(() => normalizeBaseURL("not a url"), /not a valid URL/);
 });
 
-test("createOmniRouteProvider validates required fields", () => {
+test("createCheapRouterProvider validates required fields", () => {
   assert.throws(
-    () => createOmniRouteProvider({ baseURL: "", apiKey: "x" } as never),
+    () => createCheapRouterProvider({ baseURL: "", apiKey: "x" } as never),
     /baseURL is required/
   );
   assert.throws(
-    () => createOmniRouteProvider({ baseURL: "http://x", apiKey: "" } as never),
+    () => createCheapRouterProvider({ baseURL: "http://x", apiKey: "" } as never),
     /apiKey is required/
   );
 });
 
-test("createOmniRouteProvider produces the OpenCode-compatible shape", () => {
-  const provider = createOmniRouteProvider({
+test("createCheapRouterProvider produces the OpenCode-compatible shape", () => {
+  const provider = createCheapRouterProvider({
     baseURL: "http://localhost:20128",
-    apiKey: "sk_omniroute",
+    apiKey: "sk_cheaprouter",
   });
 
-  assert.equal(provider.npm, OMNIROUTE_PROVIDER_NPM);
-  assert.equal(provider.name, "OmniRoute");
+  assert.equal(provider.npm, CHEAPROUTER_PROVIDER_NPM);
+  assert.equal(provider.name, "CheapRouter");
   assert.equal(provider.options.baseURL, "http://localhost:20128/v1");
-  assert.equal(provider.options.apiKey, "sk_omniroute");
+  assert.equal(provider.options.apiKey, "sk_cheaprouter");
   assert.equal(typeof provider.models, "object");
 });
 
-test("createOmniRouteProvider seeds the default model catalog", () => {
-  const provider = createOmniRouteProvider({
+test("createCheapRouterProvider seeds the default model catalog", () => {
+  const provider = createCheapRouterProvider({
     baseURL: "http://localhost:20128",
-    apiKey: "sk_omniroute",
+    apiKey: "sk_cheaprouter",
   });
 
   const modelIds = Object.keys(provider.models).sort();
-  const defaultIds = [...OMNIROUTE_DEFAULT_OPENCODE_MODELS].sort();
+  const defaultIds = [...CHEAPROUTER_DEFAULT_OPENCODE_MODELS].sort();
   assert.deepEqual(modelIds, defaultIds);
   for (const id of defaultIds) {
     assert.equal(provider.models[id]?.name, id);
@@ -85,10 +85,10 @@ test("createOmniRouteProvider seeds the default model catalog", () => {
   }
 });
 
-test("createOmniRouteProvider honours a custom models list and labels", () => {
-  const provider = createOmniRouteProvider({
+test("createCheapRouterProvider honours a custom models list and labels", () => {
+  const provider = createCheapRouterProvider({
     baseURL: "http://localhost:20128",
-    apiKey: "sk_omniroute",
+    apiKey: "sk_cheaprouter",
     models: ["auto", "claude-opus-4-7"],
     modelLabels: { auto: "Auto-Combo", "claude-opus-4-7": "Opus 4.7" },
   });
@@ -98,59 +98,59 @@ test("createOmniRouteProvider honours a custom models list and labels", () => {
   assert.equal(provider.models["claude-opus-4-7"].name, "Opus 4.7");
 });
 
-test("createOmniRouteProvider deduplicates and trims model ids", () => {
-  const provider = createOmniRouteProvider({
+test("createCheapRouterProvider deduplicates and trims model ids", () => {
+  const provider = createCheapRouterProvider({
     baseURL: "http://localhost:20128",
-    apiKey: "sk_omniroute",
+    apiKey: "sk_cheaprouter",
     models: ["  auto  ", "auto", "", "claude-opus-4-7"],
   });
   assert.deepEqual(Object.keys(provider.models), ["auto", "claude-opus-4-7"]);
 });
 
-test("createOmniRouteProvider honours displayName override", () => {
-  const provider = createOmniRouteProvider({
+test("createCheapRouterProvider honours displayName override", () => {
+  const provider = createCheapRouterProvider({
     baseURL: "http://localhost:20128",
-    apiKey: "sk_omniroute",
-    displayName: "Local OmniRoute",
+    apiKey: "sk_cheaprouter",
+    displayName: "Local CheapRouter",
   });
-  assert.equal(provider.name, "Local OmniRoute");
+  assert.equal(provider.name, "Local CheapRouter");
 });
 
-test("buildOmniRouteOpenCodeConfig wraps the provider with the OpenCode schema", () => {
-  const doc = buildOmniRouteOpenCodeConfig({
+test("buildCheapRouterOpenCodeConfig wraps the provider with the OpenCode schema", () => {
+  const doc = buildCheapRouterOpenCodeConfig({
     baseURL: "http://localhost:20128/v1",
-    apiKey: "sk_omniroute",
+    apiKey: "sk_cheaprouter",
   });
 
   assert.equal(doc.$schema, OPENCODE_CONFIG_SCHEMA);
-  assert.equal(typeof doc.provider.omniroute, "object");
-  assert.equal(doc.provider.omniroute.options.baseURL, "http://localhost:20128/v1");
+  assert.equal(typeof doc.provider.cheaprouter, "object");
+  assert.equal(doc.provider.cheaprouter.options.baseURL, "http://localhost:20128/v1");
 });
 
 test("config document is JSON-serialisable", () => {
-  const doc = buildOmniRouteOpenCodeConfig({
+  const doc = buildCheapRouterOpenCodeConfig({
     baseURL: "http://localhost:20128",
-    apiKey: "sk_omniroute",
+    apiKey: "sk_cheaprouter",
   });
   const round = JSON.parse(JSON.stringify(doc));
   assert.deepEqual(round, doc);
 });
 
-test("buildOmniRouteOpenCodeConfig emits model and small_model prefixed with provider key", () => {
-  const doc = buildOmniRouteOpenCodeConfig({
+test("buildCheapRouterOpenCodeConfig emits model and small_model prefixed with provider key", () => {
+  const doc = buildCheapRouterOpenCodeConfig({
     baseURL: "http://localhost:20128",
-    apiKey: "sk_omniroute",
+    apiKey: "sk_cheaprouter",
     model: "claude-sonnet-4-5-thinking",
     smallModel: "gemini-3-flash",
   });
-  assert.equal(doc.model, "omniroute/claude-sonnet-4-5-thinking");
-  assert.equal(doc.small_model, "omniroute/gemini-3-flash");
+  assert.equal(doc.model, "cheaprouter/claude-sonnet-4-5-thinking");
+  assert.equal(doc.small_model, "cheaprouter/gemini-3-flash");
 });
 
-test("buildOmniRouteOpenCodeConfig omits model and small_model when not supplied", () => {
-  const doc = buildOmniRouteOpenCodeConfig({
+test("buildCheapRouterOpenCodeConfig omits model and small_model when not supplied", () => {
+  const doc = buildCheapRouterOpenCodeConfig({
     baseURL: "http://localhost:20128",
-    apiKey: "sk_omniroute",
+    apiKey: "sk_cheaprouter",
   });
   assert.equal(doc.model, undefined);
   assert.equal(doc.small_model, undefined);
@@ -158,10 +158,10 @@ test("buildOmniRouteOpenCodeConfig omits model and small_model when not supplied
   assert.ok(!("small_model" in doc));
 });
 
-test("buildOmniRouteOpenCodeConfig ignores blank model strings", () => {
-  const doc = buildOmniRouteOpenCodeConfig({
+test("buildCheapRouterOpenCodeConfig ignores blank model strings", () => {
+  const doc = buildCheapRouterOpenCodeConfig({
     baseURL: "http://localhost:20128",
-    apiKey: "sk_omniroute",
+    apiKey: "sk_cheaprouter",
     model: "   ",
     smallModel: "",
   });
@@ -179,17 +179,17 @@ test("mergeIntoExistingConfig preserves existing provider entries", () => {
   };
   const result = mergeIntoExistingConfig(existing, {
     baseURL: "http://localhost:20128",
-    apiKey: "sk_omniroute",
+    apiKey: "sk_cheaprouter",
   });
   assert.ok("anthropic" in (result.provider as Record<string, unknown>));
-  assert.ok("omniroute" in (result.provider as Record<string, unknown>));
+  assert.ok("cheaprouter" in (result.provider as Record<string, unknown>));
   assert.deepEqual((result as Record<string, unknown>).keybinds, { submit: "enter" });
 });
 
-test("mergeIntoExistingConfig overwrites existing omniroute entry", () => {
+test("mergeIntoExistingConfig overwrites existing cheaprouter entry", () => {
   const existing = {
     provider: {
-      omniroute: {
+      cheaprouter: {
         npm: "@ai-sdk/openai-compatible",
         name: "OLD",
         options: { baseURL: "http://old/v1", apiKey: "old" },
@@ -202,8 +202,8 @@ test("mergeIntoExistingConfig overwrites existing omniroute entry", () => {
     apiKey: "new-key",
     displayName: "NEW",
   });
-  const omniroute = (result.provider as Record<string, unknown>).omniroute as { name: string };
-  assert.equal(omniroute.name, "NEW");
+  const cheaprouter = (result.provider as Record<string, unknown>).cheaprouter as { name: string };
+  assert.equal(cheaprouter.name, "NEW");
 });
 
 test("mergeIntoExistingConfig writes model and small_model when supplied", () => {
@@ -211,70 +211,70 @@ test("mergeIntoExistingConfig writes model and small_model when supplied", () =>
     {},
     {
       baseURL: "http://localhost:20128",
-      apiKey: "sk_omniroute",
+      apiKey: "sk_cheaprouter",
       model: "claude-sonnet-4-5-thinking",
       smallModel: "gemini-3-flash",
     }
   );
-  assert.equal(result.model, "omniroute/claude-sonnet-4-5-thinking");
-  assert.equal(result.small_model, "omniroute/gemini-3-flash");
+  assert.equal(result.model, "cheaprouter/claude-sonnet-4-5-thinking");
+  assert.equal(result.small_model, "cheaprouter/gemini-3-flash");
 });
 
 test("mergeIntoExistingConfig does not add model keys when not supplied", () => {
   const result = mergeIntoExistingConfig(
     {},
-    { baseURL: "http://localhost:20128", apiKey: "sk_omniroute" }
+    { baseURL: "http://localhost:20128", apiKey: "sk_cheaprouter" }
   );
   assert.ok(!("model" in result));
   assert.ok(!("small_model" in result));
 });
 
-test("OMNIROUTE_MCP_DEFAULT_SCOPES contains 7 read-only scopes", () => {
-  assert.equal(OMNIROUTE_MCP_DEFAULT_SCOPES.length, 7);
-  assert.ok(OMNIROUTE_MCP_DEFAULT_SCOPES.every((s) => s.startsWith("read:")));
+test("CHEAPROUTER_MCP_DEFAULT_SCOPES contains 7 read-only scopes", () => {
+  assert.equal(CHEAPROUTER_MCP_DEFAULT_SCOPES.length, 7);
+  assert.ok(CHEAPROUTER_MCP_DEFAULT_SCOPES.every((s) => s.startsWith("read:")));
 });
 
-test("createOmniRouteMCPEntry defaults to tsx runtime", () => {
-  const entry = createOmniRouteMCPEntry({
+test("createCheapRouterMCPEntry defaults to tsx runtime", () => {
+  const entry = createCheapRouterMCPEntry({
     serverPath: "/path/to/server.ts",
-    apiKey: "sk_omniroute",
+    apiKey: "sk_cheaprouter",
   });
   assert.equal(entry.command, "npx");
   assert.deepEqual(entry.args, ["tsx", "/path/to/server.ts"]);
-  assert.equal(entry.env.OMNIROUTE_API_KEY, "sk_omniroute");
-  assert.ok(!("OMNIROUTE_MCP_ENFORCE_SCOPES" in entry.env));
-  assert.ok(!("OMNIROUTE_MANAGEMENT_API_KEY" in entry.env));
+  assert.equal(entry.env.CHEAPROUTER_API_KEY, "sk_cheaprouter");
+  assert.ok(!("CHEAPROUTER_MCP_ENFORCE_SCOPES" in entry.env));
+  assert.ok(!("CHEAPROUTER_MANAGEMENT_API_KEY" in entry.env));
 });
 
-test("createOmniRouteMCPEntry uses node runtime when specified", () => {
-  const entry = createOmniRouteMCPEntry({
+test("createCheapRouterMCPEntry uses node runtime when specified", () => {
+  const entry = createCheapRouterMCPEntry({
     serverPath: "/path/to/server.js",
-    apiKey: "sk_omniroute",
+    apiKey: "sk_cheaprouter",
     runtime: "node",
   });
   assert.equal(entry.command, "node");
   assert.deepEqual(entry.args, ["/path/to/server.js"]);
 });
 
-test("createOmniRouteMCPEntry sets management key and scopes when supplied", () => {
-  const entry = createOmniRouteMCPEntry({
+test("createCheapRouterMCPEntry sets management key and scopes when supplied", () => {
+  const entry = createCheapRouterMCPEntry({
     serverPath: "/path/to/server.ts",
-    apiKey: "sk_omniroute",
+    apiKey: "sk_cheaprouter",
     managementApiKey: "sk_manage",
     scopes: ["read:health", "read:combos", "execute:completions"],
   });
-  assert.equal(entry.env.OMNIROUTE_MANAGEMENT_API_KEY, "sk_manage");
-  assert.equal(entry.env.OMNIROUTE_MCP_ENFORCE_SCOPES, "true");
-  assert.equal(entry.env.OMNIROUTE_MCP_SCOPES, "read:health,read:combos,execute:completions");
+  assert.equal(entry.env.CHEAPROUTER_MANAGEMENT_API_KEY, "sk_manage");
+  assert.equal(entry.env.CHEAPROUTER_MCP_ENFORCE_SCOPES, "true");
+  assert.equal(entry.env.CHEAPROUTER_MCP_SCOPES, "read:health,read:combos,execute:completions");
 });
 
-test("createOmniRouteMCPEntry rejects missing required fields", () => {
+test("createCheapRouterMCPEntry rejects missing required fields", () => {
   assert.throws(
-    () => createOmniRouteMCPEntry({ serverPath: "", apiKey: "x" }),
+    () => createCheapRouterMCPEntry({ serverPath: "", apiKey: "x" }),
     /serverPath is required/
   );
   assert.throws(
-    () => createOmniRouteMCPEntry({ serverPath: "/p", apiKey: "" }),
+    () => createCheapRouterMCPEntry({ serverPath: "/p", apiKey: "" }),
     /apiKey is required/
   );
 });
@@ -367,8 +367,8 @@ test("listCombos normalises compressionOverride", async () => {
   }
 });
 
-test("createOmniRouteComboConfig builds minimal payload", () => {
-  const payload = createOmniRouteComboConfig({ name: "my-combo", strategy: "priority" });
+test("createCheapRouterComboConfig builds minimal payload", () => {
+  const payload = createCheapRouterComboConfig({ name: "my-combo", strategy: "priority" });
   assert.equal(payload.name, "my-combo");
   assert.equal(payload.strategy, "priority");
   assert.equal(payload.active, true);
@@ -376,8 +376,8 @@ test("createOmniRouteComboConfig builds minimal payload", () => {
   assert.ok(!("providers" in payload));
 });
 
-test("createOmniRouteComboConfig includes optional fields when supplied", () => {
-  const payload = createOmniRouteComboConfig({
+test("createCheapRouterComboConfig includes optional fields when supplied", () => {
+  const payload = createCheapRouterComboConfig({
     name: "full",
     strategy: "weighted",
     compressionOverride: "aggressive",
@@ -389,8 +389,8 @@ test("createOmniRouteComboConfig includes optional fields when supplied", () => 
   assert.deepEqual(payload.providers, ["provider-a", "provider-b"]);
 });
 
-test("OMNIROUTE_DEFAULT_OPENCODE_MODELS includes cc/ prefixed models", () => {
-  const defaults = [...OMNIROUTE_DEFAULT_OPENCODE_MODELS];
+test("CHEAPROUTER_DEFAULT_OPENCODE_MODELS includes cc/ prefixed models", () => {
+  const defaults = [...CHEAPROUTER_DEFAULT_OPENCODE_MODELS];
   assert.ok(defaults.includes("cc/claude-opus-4-8"));
   assert.ok(
     defaults.some((m) => m.startsWith("cc/")),
@@ -399,9 +399,9 @@ test("OMNIROUTE_DEFAULT_OPENCODE_MODELS includes cc/ prefixed models", () => {
   assert.ok(defaults.length >= 7, "should have at least 7 models");
 });
 
-test("OMNIROUTE_DEFAULT_MODEL_CONTEXT_LENGTHS covers every default model id", () => {
-  for (const id of OMNIROUTE_DEFAULT_OPENCODE_MODELS) {
-    const ctx = OMNIROUTE_DEFAULT_MODEL_CONTEXT_LENGTHS[id];
+test("CHEAPROUTER_DEFAULT_MODEL_CONTEXT_LENGTHS covers every default model id", () => {
+  for (const id of CHEAPROUTER_DEFAULT_OPENCODE_MODELS) {
+    const ctx = CHEAPROUTER_DEFAULT_MODEL_CONTEXT_LENGTHS[id];
     assert.ok(
       typeof ctx === "number" && ctx > 0,
       `default context_length for ${id} missing — should be a positive number`
@@ -412,10 +412,10 @@ test("OMNIROUTE_DEFAULT_MODEL_CONTEXT_LENGTHS covers every default model id", ()
   }
 });
 
-test("createOmniRouteProvider emits limit.context on default model entries", () => {
-  const provider = createOmniRouteProvider({
+test("createCheapRouterProvider emits limit.context on default model entries", () => {
+  const provider = createCheapRouterProvider({
     baseURL: "http://localhost:20128",
-    apiKey: "sk_omniroute",
+    apiKey: "sk_cheaprouter",
   });
   const entry = provider.models["cc/claude-opus-4-8"];
   assert.ok(entry.limit, "model entry should have a limit field");
@@ -423,25 +423,25 @@ test("createOmniRouteProvider emits limit.context on default model entries", () 
   assert.equal(provider.models["cc/claude-opus-4-7"].limit!.context, 1_000_000);
 });
 
-test("createOmniRouteProvider omits limit.context for unknown model ids", () => {
-  const provider = createOmniRouteProvider({
+test("createCheapRouterProvider omits limit.context for unknown model ids", () => {
+  const provider = createCheapRouterProvider({
     baseURL: "http://localhost:20128",
-    apiKey: "sk_omniroute",
+    apiKey: "sk_cheaprouter",
     models: ["completely-unknown-model"],
   });
   const entry = provider.models["completely-unknown-model"];
   assert.equal(entry.limit, undefined);
 });
 
-test("createOmniRouteProvider reads contextLength from a live model entry for ids absent from the static map", () => {
-  // #3298 regression guard: the static OMNIROUTE_DEFAULT_MODEL_CONTEXT_LENGTHS
+test("createCheapRouterProvider reads contextLength from a live model entry for ids absent from the static map", () => {
+  // #3298 regression guard: the static CHEAPROUTER_DEFAULT_MODEL_CONTEXT_LENGTHS
   // map only covers the legacy 8 Claude/Gemini ids. Before this change, any
   // other model got `undefined` context (see the test above, string form) and
   // OpenCode silently fell back to its 128K internal default. A live model
   // entry carrying `contextLength` must now surface as `limit.context`.
-  const provider = createOmniRouteProvider({
+  const provider = createCheapRouterProvider({
     baseURL: "http://localhost:20128",
-    apiKey: "sk_omniroute",
+    apiKey: "sk_cheaprouter",
     models: [{ id: "completely-unknown-model", contextLength: 262_144 }],
   });
   const entry = provider.models["completely-unknown-model"];
@@ -449,26 +449,26 @@ test("createOmniRouteProvider reads contextLength from a live model entry for id
   assert.equal(entry.limit!.context, 262_144);
 });
 
-test("createOmniRouteProvider: a live model contextLength wins over the static default map", () => {
+test("createCheapRouterProvider: a live model contextLength wins over the static default map", () => {
   // `cc/claude-opus-4-8` has a static default (1_000_000). A live entry carrying
   // a different contextLength must take precedence (live > modelContextLengths >
   // static defaults).
-  const provider = createOmniRouteProvider({
+  const provider = createCheapRouterProvider({
     baseURL: "http://localhost:20128",
-    apiKey: "sk_omniroute",
+    apiKey: "sk_cheaprouter",
     models: [{ id: "cc/claude-opus-4-8", contextLength: 524_288 }],
   });
   assert.equal(provider.models["cc/claude-opus-4-8"].limit!.context, 524_288);
 });
 
-test("createOmniRouteProvider serialises limit.context to JSON", () => {
-  const provider = createOmniRouteProvider({
+test("createCheapRouterProvider serialises limit.context to JSON", () => {
+  const provider = createCheapRouterProvider({
     baseURL: "http://localhost:20128",
-    apiKey: "sk_omniroute",
+    apiKey: "sk_cheaprouter",
   });
   const round = JSON.parse(JSON.stringify(provider));
-  for (const id of OMNIROUTE_DEFAULT_OPENCODE_MODELS) {
-    const expectedContext = OMNIROUTE_DEFAULT_MODEL_CONTEXT_LENGTHS[id];
+  for (const id of CHEAPROUTER_DEFAULT_OPENCODE_MODELS) {
+    const expectedContext = CHEAPROUTER_DEFAULT_MODEL_CONTEXT_LENGTHS[id];
     assert.equal(
       round.models[id].limit?.context,
       expectedContext,
@@ -499,19 +499,19 @@ test("fetchLiveModels extracts context_length from snake_case field", async () =
   }
 });
 
-test("OMNIROUTE_DEFAULT_MODEL_CAPABILITIES covers every default model id", () => {
-  for (const id of OMNIROUTE_DEFAULT_OPENCODE_MODELS) {
-    const caps = OMNIROUTE_DEFAULT_MODEL_CAPABILITIES[id];
+test("CHEAPROUTER_DEFAULT_MODEL_CAPABILITIES covers every default model id", () => {
+  for (const id of CHEAPROUTER_DEFAULT_OPENCODE_MODELS) {
+    const caps = CHEAPROUTER_DEFAULT_MODEL_CAPABILITIES[id];
     assert.ok(caps, `default capabilities for ${id} missing`);
     assert.equal(caps.attachment, true, `${id} should default to attachment=true`);
     assert.equal(caps.tool_call, true, `${id} should default to tool_call=true`);
   }
 });
 
-test("createOmniRouteProvider emits default capability flags inline with the model entry", () => {
-  const provider = createOmniRouteProvider({
+test("createCheapRouterProvider emits default capability flags inline with the model entry", () => {
+  const provider = createCheapRouterProvider({
     baseURL: "http://localhost:20128",
-    apiKey: "sk_omniroute",
+    apiKey: "sk_cheaprouter",
   });
   const entry = provider.models["cc/claude-opus-4-8"];
   assert.equal(entry.name, "cc/claude-opus-4-8");
@@ -521,10 +521,10 @@ test("createOmniRouteProvider emits default capability flags inline with the mod
   assert.equal(entry.tool_call, true);
 });
 
-test("createOmniRouteProvider modelCapabilities overrides defaults and merges per id", () => {
-  const provider = createOmniRouteProvider({
+test("createCheapRouterProvider modelCapabilities overrides defaults and merges per id", () => {
+  const provider = createCheapRouterProvider({
     baseURL: "http://localhost:20128",
-    apiKey: "sk_omniroute",
+    apiKey: "sk_cheaprouter",
     modelCapabilities: {
       "cc/claude-opus-4-7": { reasoning: false, label: "Opus (no thinking)" },
     },
@@ -536,10 +536,10 @@ test("createOmniRouteProvider modelCapabilities overrides defaults and merges pe
   assert.equal(entry.tool_call, true);
 });
 
-test("createOmniRouteProvider applies capability overrides to non-default model ids", () => {
-  const provider = createOmniRouteProvider({
+test("createCheapRouterProvider applies capability overrides to non-default model ids", () => {
+  const provider = createCheapRouterProvider({
     baseURL: "http://localhost:20128",
-    apiKey: "sk_omniroute",
+    apiKey: "sk_cheaprouter",
     models: ["custom-model"],
     modelCapabilities: {
       "custom-model": { attachment: false, tool_call: true, label: "Custom" },
@@ -553,45 +553,45 @@ test("createOmniRouteProvider applies capability overrides to non-default model 
   assert.equal(entry.temperature, undefined);
 });
 
-test("createOmniRouteProvider modelLabels still works when modelCapabilities omits label", () => {
-  const provider = createOmniRouteProvider({
+test("createCheapRouterProvider modelLabels still works when modelCapabilities omits label", () => {
+  const provider = createCheapRouterProvider({
     baseURL: "http://localhost:20128",
-    apiKey: "sk_omniroute",
+    apiKey: "sk_cheaprouter",
     models: ["claude-opus-4-5-thinking"],
     modelLabels: { "claude-opus-4-5-thinking": "Opus 4.5 (legacy label)" },
   });
   assert.equal(provider.models["claude-opus-4-5-thinking"].name, "Opus 4.5 (legacy label)");
 });
 
-test("createOmniRouteAgentBlock builds provider-prefixed entries per role", () => {
-  const block = createOmniRouteAgentBlock({
+test("createCheapRouterAgentBlock builds provider-prefixed entries per role", () => {
+  const block = createCheapRouterAgentBlock({
     roles: {
       build: { modelId: "claude-sonnet-4-5-thinking", temperature: 0.2 },
       plan: { modelId: "claude-opus-4-5-thinking", top_p: 0.95 },
       review: { modelId: "gemini-3-flash", temperature: 0.0 },
     },
   });
-  assert.equal(block.build.model, "omniroute/claude-sonnet-4-5-thinking");
+  assert.equal(block.build.model, "cheaprouter/claude-sonnet-4-5-thinking");
   assert.equal(block.build.temperature, 0.2);
-  assert.equal(block.plan.model, "omniroute/claude-opus-4-5-thinking");
+  assert.equal(block.plan.model, "cheaprouter/claude-opus-4-5-thinking");
   assert.equal(block.plan.top_p, 0.95);
-  assert.equal(block.review.model, "omniroute/gemini-3-flash");
+  assert.equal(block.review.model, "cheaprouter/gemini-3-flash");
   assert.equal(block.review.temperature, 0.0);
 });
 
-test("createOmniRouteAgentBlock omits optional fields when not supplied", () => {
-  const block = createOmniRouteAgentBlock({
+test("createCheapRouterAgentBlock omits optional fields when not supplied", () => {
+  const block = createCheapRouterAgentBlock({
     roles: { build: { modelId: "claude-sonnet-4-5-thinking" } },
   });
-  assert.equal(block.build.model, "omniroute/claude-sonnet-4-5-thinking");
+  assert.equal(block.build.model, "cheaprouter/claude-sonnet-4-5-thinking");
   assert.ok(!("temperature" in block.build));
   assert.ok(!("top_p" in block.build));
   assert.ok(!("tools" in block.build));
   assert.ok(!("prompt" in block.build));
 });
 
-test("createOmniRouteAgentBlock skips roles with empty modelId", () => {
-  const block = createOmniRouteAgentBlock({
+test("createCheapRouterAgentBlock skips roles with empty modelId", () => {
+  const block = createCheapRouterAgentBlock({
     roles: {
       build: { modelId: "claude-sonnet-4-5-thinking" },
       plan: { modelId: "   " },
@@ -601,8 +601,8 @@ test("createOmniRouteAgentBlock skips roles with empty modelId", () => {
   assert.deepEqual(Object.keys(block), ["build"]);
 });
 
-test("createOmniRouteAgentBlock emits tools as Record<string, boolean> per OC schema", () => {
-  const block = createOmniRouteAgentBlock({
+test("createCheapRouterAgentBlock emits tools as Record<string, boolean> per OC schema", () => {
+  const block = createCheapRouterAgentBlock({
     roles: {
       build: {
         modelId: "claude-sonnet-4-5-thinking",
@@ -615,8 +615,8 @@ test("createOmniRouteAgentBlock emits tools as Record<string, boolean> per OC sc
   assert.equal(block.build.prompt, "Edit files carefully.");
 });
 
-test("createOmniRouteAgentBlock filters invalid tool entries and omits empty maps", () => {
-  const block = createOmniRouteAgentBlock({
+test("createCheapRouterAgentBlock filters invalid tool entries and omits empty maps", () => {
+  const block = createCheapRouterAgentBlock({
     roles: {
       build: {
         modelId: "claude-sonnet-4-5-thinking",
@@ -633,22 +633,22 @@ test("createOmniRouteAgentBlock filters invalid tool entries and omits empty map
   assert.ok(!("tools" in block.plan));
 });
 
-test("createOmniRouteModesBlock builds provider-prefixed mode entries", () => {
-  const block = createOmniRouteModesBlock({
+test("createCheapRouterModesBlock builds provider-prefixed mode entries", () => {
+  const block = createCheapRouterModesBlock({
     modes: {
       build: { modelId: "claude-sonnet-4-5-thinking", tools: { edit: true, bash: true } },
       plan: { modelId: "claude-opus-4-5-thinking", prompt: "Plan first, code later." },
       review: { modelId: "gemini-3-flash" },
     },
   });
-  assert.equal(block.build.model, "omniroute/claude-sonnet-4-5-thinking");
+  assert.equal(block.build.model, "cheaprouter/claude-sonnet-4-5-thinking");
   assert.deepEqual(block.build.tools, { edit: true, bash: true });
   assert.equal(block.plan.prompt, "Plan first, code later.");
-  assert.equal(block.review.model, "omniroute/gemini-3-flash");
+  assert.equal(block.review.model, "cheaprouter/gemini-3-flash");
 });
 
-test("createOmniRouteModesBlock skips modes with empty modelId", () => {
-  const block = createOmniRouteModesBlock({
+test("createCheapRouterModesBlock skips modes with empty modelId", () => {
+  const block = createCheapRouterModesBlock({
     modes: {
       build: { modelId: "claude-sonnet-4-5-thinking" },
       plan: { modelId: "" },
@@ -657,8 +657,8 @@ test("createOmniRouteModesBlock skips modes with empty modelId", () => {
   assert.deepEqual(Object.keys(block), ["build"]);
 });
 
-test("createOmniRouteModesBlock honours numeric overrides limited to OC schema", () => {
-  const block = createOmniRouteModesBlock({
+test("createCheapRouterModesBlock honours numeric overrides limited to OC schema", () => {
+  const block = createCheapRouterModesBlock({
     modes: {
       build: {
         modelId: "claude-sonnet-4-5-thinking",
@@ -671,16 +671,16 @@ test("createOmniRouteModesBlock honours numeric overrides limited to OC schema",
   assert.equal(block.build.top_p, 0.9);
 });
 
-// #3419 — soft-deprecation in favour of @omniroute/opencode-plugin. Guard the
+// #3419 — soft-deprecation in favour of @cheaprouter/opencode-plugin. Guard the
 // deprecation notice so it can't be silently dropped while the package is kept
 // publishing (it still works; it is just no longer the recommended path).
-test("package is marked deprecated in favour of @omniroute/opencode-plugin (#3419)", () => {
+test("package is marked deprecated in favour of @cheaprouter/opencode-plugin (#3419)", () => {
   const here = dirname(fileURLToPath(import.meta.url));
   const pkg = JSON.parse(readFileSync(join(here, "..", "package.json"), "utf8"));
   assert.match(pkg.description, /DEPRECATED/);
-  assert.match(pkg.description, /@omniroute\/opencode-plugin/);
+  assert.match(pkg.description, /@cheaprouter\/opencode-plugin/);
 
   const readme = readFileSync(join(here, "..", "README.md"), "utf8");
   assert.match(readme, /Deprecated/i);
-  assert.match(readme, /@omniroute\/opencode-plugin/);
+  assert.match(readme, /@cheaprouter\/opencode-plugin/);
 });

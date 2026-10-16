@@ -1,6 +1,6 @@
 import { describe, it, afterEach } from "node:test";
 import assert from "node:assert/strict";
-import { defaultOmniRouteEnrichmentFetcher } from "../src/shared/enrich.js";
+import { defaultCheapRouterEnrichmentFetcher } from "../src/shared/enrich.js";
 
 const realFetch = globalThis.fetch;
 afterEach(() => {
@@ -13,7 +13,7 @@ describe("enrichment source failures are reported", () => {
       new Response("forbidden", { status: 403 })) as unknown as typeof globalThis.fetch;
     const seen: Array<[string, string]> = [];
     await assert.rejects(
-      defaultOmniRouteEnrichmentFetcher("https://gw.example.com", "k", 1000, (endpoint, reason) =>
+      defaultCheapRouterEnrichmentFetcher("https://gw.example.com", "k", 1000, (endpoint, reason) =>
         seen.push([endpoint, reason])
       ),
       /enrichment (catalog source|sources) failed/
@@ -32,7 +32,7 @@ describe("enrichment source failures are reported", () => {
     }) as unknown as typeof globalThis.fetch;
     const seen: string[] = [];
     await assert.rejects(
-      defaultOmniRouteEnrichmentFetcher("https://gw.example.com", "k", 1000, (_e, reason) =>
+      defaultCheapRouterEnrichmentFetcher("https://gw.example.com", "k", 1000, (_e, reason) =>
         seen.push(reason)
       ),
       /enrichment (catalog source|sources) failed/
@@ -48,7 +48,7 @@ describe("enrichment source failures are reported", () => {
         headers: { "content-type": "application/json" },
       })) as unknown as typeof globalThis.fetch;
     const seen: string[] = [];
-    await defaultOmniRouteEnrichmentFetcher("https://gw.example.com", "k", 1000, (e) =>
+    await defaultCheapRouterEnrichmentFetcher("https://gw.example.com", "k", 1000, (e) =>
       seen.push(e)
     );
     assert.deepEqual(seen, []);

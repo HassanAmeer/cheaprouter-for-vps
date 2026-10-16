@@ -1,6 +1,6 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { defaultOmniRouteEnrichmentFetcher } from "../src/shared/enrich.js";
+import { defaultCheapRouterEnrichmentFetcher } from "../src/shared/enrich.js";
 
 function stubFetch(handler: (url: string) => unknown): typeof fetch {
   return (async (url: unknown) => {
@@ -14,7 +14,7 @@ function stubFetch(handler: (url: string) => unknown): typeof fetch {
   }) as unknown as typeof fetch;
 }
 
-describe("defaultOmniRouteEnrichmentFetcher", () => {
+describe("defaultCheapRouterEnrichmentFetcher", () => {
   it("merges display names and pricing from the two catalog sources", async () => {
     const origFetch = globalThis.fetch;
     globalThis.fetch = stubFetch((url) =>
@@ -32,7 +32,7 @@ describe("defaultOmniRouteEnrichmentFetcher", () => {
           : { perModel: [] }
     );
     try {
-      const map = await defaultOmniRouteEnrichmentFetcher("https://gw.example.com", "k", 1000);
+      const map = await defaultCheapRouterEnrichmentFetcher("https://gw.example.com", "k", 1000);
       const namespaced = map.get("cc/m1");
       assert.ok(namespaced);
       assert.equal(namespaced?.name, "Model One");
@@ -65,7 +65,7 @@ describe("defaultOmniRouteEnrichmentFetcher", () => {
       };
     }) as unknown as typeof fetch;
     try {
-      const map = await defaultOmniRouteEnrichmentFetcher("https://gw.example.com", "k", 1000);
+      const map = await defaultCheapRouterEnrichmentFetcher("https://gw.example.com", "k", 1000);
       assert.equal(map.get("cc/m1")?.name, "Model One");
       assert.equal(map.get("cc/m1")?.pricing, undefined);
     } finally {
@@ -88,7 +88,7 @@ describe("defaultOmniRouteEnrichmentFetcher", () => {
       };
     }) as unknown as typeof fetch;
     try {
-      const map = await defaultOmniRouteEnrichmentFetcher("https://gw.example.com", "k", 1000);
+      const map = await defaultCheapRouterEnrichmentFetcher("https://gw.example.com", "k", 1000);
       assert.deepEqual(map.get("cc/m1")?.pricing, { input: 1, output: 2 });
       assert.equal(map.get("cc/m1")?.name, undefined);
     } finally {
@@ -110,7 +110,7 @@ describe("defaultOmniRouteEnrichmentFetcher", () => {
             }
     );
     try {
-      const map = await defaultOmniRouteEnrichmentFetcher("https://gw.example.com", "k", 1000);
+      const map = await defaultCheapRouterEnrichmentFetcher("https://gw.example.com", "k", 1000);
       assert.equal(map.get("cc/m1")?.freeType, "monthly");
       assert.equal(map.get("cc/m1")?.monthlyTokens, 100);
     } finally {
@@ -119,7 +119,7 @@ describe("defaultOmniRouteEnrichmentFetcher", () => {
   });
 
   it("returns an empty map without credentials instead of throwing", async () => {
-    const map = await defaultOmniRouteEnrichmentFetcher("https://gw.example.com", "", 1000);
+    const map = await defaultCheapRouterEnrichmentFetcher("https://gw.example.com", "", 1000);
     assert.equal(map.size, 0);
   });
 });

@@ -10,7 +10,7 @@ describe("stable contract smoke", () => {
   it("setup registers transforms against a stable ctx", async () => {
     const seen: string[] = [];
     const ctx = {
-      options: { baseURL: "https://gw.example.com", providerId: "omniroute" },
+      options: { baseURL: "https://gw.example.com", providerId: "cheaprouter" },
       provider: {
         transform: async () => {
           seen.push("provider.transform");
@@ -44,7 +44,7 @@ describe("stable contract smoke", () => {
     const { buildProviderPayload, collectCatalog } = await import("../src/catalog.js");
     const collected = await collectCatalog(
       {
-        providerId: "omniroute",
+        providerId: "cheaprouter",
         baseURL: "https://gw.example.com",
         apiKey: "k",
         timeoutMs: 1000,
@@ -58,14 +58,14 @@ describe("stable contract smoke", () => {
     );
     assert.equal(collected.counts.models, 1);
     const payload = buildProviderPayload(collected, {
-      providerId: "omniroute",
+      providerId: "cheaprouter",
       baseURL: "https://gw.example.com",
       apiKey: "k",
       timeoutMs: 1000,
       modelCacheTtlMs: 300000,
       usableOnly: false,
     });
-    assert.equal((payload.info as unknown as { id: string }).id, "omniroute");
+    assert.equal((payload.info as unknown as { id: string }).id, "cheaprouter");
     assert.deepEqual(
       payload.models.map((m) => String((m as unknown as { id: string }).id)),
       ["m1"]

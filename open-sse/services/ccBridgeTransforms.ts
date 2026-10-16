@@ -92,9 +92,9 @@ export interface InjectBillingHeaderOp {
   /**
    * Version suffix algorithm:
    *   - ex-machina: sha256(SALT + chars-at-positions + version).slice(0,3)
-   *   - omniroute-daystamp: sha256(YYYY-MM-DD + version).slice(0,3)
+   *   - cheaprouter-daystamp: sha256(YYYY-MM-DD + version).slice(0,3)
    */
-  versionFormat: "ex-machina" | "omniroute-daystamp";
+  versionFormat: "ex-machina" | "cheaprouter-daystamp";
   /**
    * CCH attestation algorithm:
    *   - sha256-first-user: sha256(firstUserMessageText).slice(0,5)  (ex-machina)
@@ -283,7 +283,7 @@ export function computeCchSha256FirstUser(firstUserText: string): string {
 
 interface BuildBillingHeaderOptions {
   entrypoint: string;
-  versionFormat: "ex-machina" | "omniroute-daystamp";
+  versionFormat: "ex-machina" | "cheaprouter-daystamp";
   cchAlgo: "sha256-first-user" | "xxhash64-body" | "static-zero";
   version?: string;
   buildRevision?: string;
@@ -308,7 +308,7 @@ export function buildBillingHeaderValue(
 
   const suffix =
     options.buildRevision ??
-    (options.versionFormat === "omniroute-daystamp"
+    (options.versionFormat === "cheaprouter-daystamp"
       ? computeDaystampVersionSuffix(version, options.now)
       : computeExMachinaVersionSuffix(firstUserText, version));
 

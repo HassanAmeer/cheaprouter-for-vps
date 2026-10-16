@@ -1,5 +1,5 @@
 /**
- * Namespaced leveled logger shared by the OmniRoute OpenCode packages.
+ * Namespaced leveled logger shared by the CheapRouter OpenCode packages.
  *
  * Levels: error < warn < info < debug. Default: warn.
  * Ported from the v1 plugin (`logger.ts`) so both new packages share one
@@ -15,7 +15,7 @@ const LEVEL_ORDER: Record<LogLevel, number> = {
   debug: 3,
 };
 
-const TAG = "[omniroute-plugin]";
+const TAG = "[cheaprouter-plugin]";
 
 function shouldLog(current: LogLevel, target: LogLevel): boolean {
   return LEVEL_ORDER[current] >= LEVEL_ORDER[target];

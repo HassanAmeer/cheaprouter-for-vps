@@ -1,6 +1,6 @@
 import { describe, it, afterEach } from "node:test";
 import assert from "node:assert/strict";
-import { defaultOmniRouteEnrichmentFetcher } from "../src/shared/enrich.js";
+import { defaultCheapRouterEnrichmentFetcher } from "../src/shared/enrich.js";
 
 const realFetch = globalThis.fetch;
 afterEach(() => {
@@ -47,7 +47,7 @@ describe("two providers selling the same model id keep their own overlay", () =>
       return ok({});
     }) as unknown as typeof fetch;
 
-    const map = await defaultOmniRouteEnrichmentFetcher("https://gw.example.com", "k", 1000);
+    const map = await defaultCheapRouterEnrichmentFetcher("https://gw.example.com", "k", 1000);
     assert.deepEqual(map.get("cc/shared")?.pricing, { input: 3, output: 15 });
     assert.deepEqual(map.get("kir/shared")?.pricing, { input: 99, output: 99 });
     // The bare fallback belongs to whoever claimed it first, and keeps that

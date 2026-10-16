@@ -1,12 +1,12 @@
 {
-  "_note": "Recorded output of @omniroute/opencode-plugin (v1) against tests/fixtures/catalog.json. This is the contract this package claims parity with; regenerate only when intentionally re-basing on a newer v1.",
+  "_note": "Recorded output of @cheaprouter/opencode-plugin (v1) against tests/fixtures/catalog.json. This is the contract this package claims parity with; regenerate only when intentionally re-basing on a newer v1.",
   "v1PluginVersion": "0.2.1",
-  "hookId": "opencode-omniroute",
+  "hookId": "opencode-cheaprouter",
   "publishedKeys": ["combo-fast", "good-combo", "local-delta", "m-alpha", "m-beta"],
   "comboSlugs": ["combo-fast", "good-combo"],
   "mappedModels": {
     "m-alpha": {
-      "id": "omniroute/m-alpha",
+      "id": "cheaprouter/m-alpha",
       "name": "m-alpha",
       "capabilities": {
         "temperature": true,
@@ -45,7 +45,7 @@
       "options": {},
       "headers": {},
       "release_date": "",
-      "providerID": "omniroute",
+      "providerID": "cheaprouter",
       "api": {
         "id": "openai-compatible",
         "url": "https://gw.example.com/v1",
@@ -53,7 +53,7 @@
       }
     },
     "m-beta": {
-      "id": "omniroute/m-beta",
+      "id": "cheaprouter/m-beta",
       "name": "m-beta",
       "capabilities": {
         "temperature": false,
@@ -92,7 +92,7 @@
       "options": {},
       "headers": {},
       "release_date": "",
-      "providerID": "omniroute",
+      "providerID": "cheaprouter",
       "api": {
         "id": "openai-compatible",
         "url": "https://gw.example.com/v1",
@@ -100,7 +100,7 @@
       }
     },
     "local-delta": {
-      "id": "omniroute/local-delta",
+      "id": "cheaprouter/local-delta",
       "name": "local-delta",
       "capabilities": {
         "temperature": true,
@@ -147,7 +147,7 @@
       "options": {},
       "headers": {},
       "release_date": "",
-      "providerID": "omniroute",
+      "providerID": "cheaprouter",
       "api": {
         "id": "openai-compatible",
         "url": "https://gw.example.com/v1",
@@ -155,7 +155,7 @@
       }
     },
     "good-combo": {
-      "id": "omniroute/good-combo",
+      "id": "cheaprouter/good-combo",
       "name": "good-combo",
       "capabilities": {
         "temperature": true,
@@ -194,7 +194,7 @@
       "options": {},
       "headers": {},
       "release_date": "",
-      "providerID": "omniroute",
+      "providerID": "cheaprouter",
       "api": {
         "id": "openai-compatible",
         "url": "https://gw.example.com/v1",
@@ -205,7 +205,7 @@
   "mappedCombos": {
     "combo-fast": {
       "id": "combo-fast",
-      "providerID": "omniroute",
+      "providerID": "cheaprouter",
       "api": {
         "id": "openai-compatible",
         "url": "https://gw.example.com/v1",
@@ -252,7 +252,7 @@
     },
     "good-combo": {
       "id": "good-combo",
-      "providerID": "omniroute",
+      "providerID": "cheaprouter",
       "api": {
         "id": "openai-compatible",
         "url": "https://gw.example.com/v1",

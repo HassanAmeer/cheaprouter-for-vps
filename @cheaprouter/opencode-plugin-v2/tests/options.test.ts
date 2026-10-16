@@ -11,7 +11,7 @@ import {
 describe("parsePluginOptions", () => {
   it("applies the real default path via parsePluginOptions: freeOnly/toolsOnly/visionOnly all off", () => {
     const opts = parsePluginOptions({ baseURL: "https://gw.example.com" });
-    assert.equal(opts.providerId, "omniroute");
+    assert.equal(opts.providerId, "cheaprouter");
     assert.equal(opts.timeoutMs, 10000);
     assert.equal(opts.usableOnly, false);
     assert.equal(opts.enrichment, true);
@@ -159,7 +159,7 @@ describe("parsePluginOptions", () => {
       "http://localhost:20128/v1",
       "http://localhost:20128",
       "https://gw.example.com/v1",
-      "https://gw.example.com/omniroute/v1",
+      "https://gw.example.com/cheaprouter/v1",
     ]) {
       assert.equal(parsePluginOptions({ baseURL }).baseURL, baseURL);
       // Padding a copied address is trimmed rather than rejected, matching the
@@ -202,12 +202,12 @@ describe("parsePluginOptions", () => {
 
 describe("identity table", () => {
   it("maps providerId X to provider X and integration X, under one fixed plugin id", () => {
-    assert.equal(providerIdFor("omniroute"), "omniroute");
-    assert.equal(integrationIdFor("omniroute"), "omniroute");
+    assert.equal(providerIdFor("cheaprouter"), "cheaprouter");
+    assert.equal(integrationIdFor("cheaprouter"), "cheaprouter");
     assert.equal(providerIdFor("second-gateway"), "second-gateway");
     // The host reads the plugin id before any option exists, so it never
     // varies with providerId.
-    assert.equal(PLUGIN_ID, "omniroute-v2");
+    assert.equal(PLUGIN_ID, "cheaprouter-v2");
   });
 });
 
@@ -278,7 +278,7 @@ describe("providerId is bounded because it reaches a filesystem path", () => {
   });
 
   it("keeps the ids a user would actually pick", () => {
-    for (const ok of ["omniroute", "omniroute-2", "gw.staging", "gw_prod"]) {
+    for (const ok of ["cheaprouter", "cheaprouter-2", "gw.staging", "gw_prod"]) {
       assert.equal(
         parsePluginOptions({ baseURL: "https://gw.example.com", providerId: ok }).providerId,
         ok

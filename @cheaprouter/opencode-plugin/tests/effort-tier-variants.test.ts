@@ -7,12 +7,12 @@
  */
 import test from "node:test";
 import assert from "node:assert/strict";
-import { mapRawModelToModelV2, type OmniRouteRawModelEntry } from "../src/index.js";
+import { mapRawModelToModelV2, type CheapRouterRawModelEntry } from "../src/index.js";
 
-const CTX = { providerId: "omniroute", baseURL: "http://127.0.0.1:20128" } as const;
+const CTX = { providerId: "cheaprouter", baseURL: "http://127.0.0.1:20128" } as const;
 
 test("maps declared tiers to reasoningEffort variants", () => {
-  const raw: OmniRouteRawModelEntry = {
+  const raw: CheapRouterRawModelEntry = {
     id: "oc/x-preview-f-free",
     owned_by: "opencode",
     capabilities: { reasoning: true, effort_tiers: ["low", "high", "max"] },
@@ -27,7 +27,7 @@ test("maps declared tiers to reasoningEffort variants", () => {
 });
 
 test("no tiers => NO variants key (not an empty object)", () => {
-  const raw: OmniRouteRawModelEntry = {
+  const raw: CheapRouterRawModelEntry = {
     id: "plain-model",
     capabilities: { reasoning: true },
   };
@@ -51,7 +51,7 @@ test("empty or malformed tiers array => NO variants key", () => {
 });
 
 test("static registry entry WITH tiers also gets variants (N1 blast radius)", () => {
-  const raw: OmniRouteRawModelEntry = {
+  const raw: CheapRouterRawModelEntry = {
     id: "some-static-model",
     owned_by: "registry",
     capabilities: { effort_tiers: ["minimal", "high"] },

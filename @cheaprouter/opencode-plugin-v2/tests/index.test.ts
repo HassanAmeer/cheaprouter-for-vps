@@ -84,7 +84,7 @@ describe("plugin-v2 entrypoint", () => {
     };
     try {
       await (plugin as unknown as { setup: (ctx: FakeCtx) => Promise<void> }).setup(
-        fakeCtx({ baseURL: "https://gw.example.com", providerId: "omniroute" }, seen)
+        fakeCtx({ baseURL: "https://gw.example.com", providerId: "cheaprouter" }, seen)
       );
     } finally {
       console.warn = origWarn;
@@ -105,7 +105,7 @@ describe("plugin-v2 entrypoint", () => {
     try {
       await (plugin as unknown as { setup: (ctx: FakeCtx) => Promise<void> }).setup(
         fakeCtx(
-          { baseURL: "https://gw.example.com", providerId: "omniroute", startupDebug: true },
+          { baseURL: "https://gw.example.com", providerId: "cheaprouter", startupDebug: true },
           seen2
         )
       );
@@ -113,7 +113,7 @@ describe("plugin-v2 entrypoint", () => {
       console.warn = origWarn;
     }
     assert.ok(
-      warns2.some((line) => line.includes("init providerId=omniroute")),
+      warns2.some((line) => line.includes("init providerId=cheaprouter")),
       `boot line must show with startupDebug, got: ${JSON.stringify(warns2)}`
     );
   });
@@ -167,7 +167,7 @@ describe("plugin-v2 entrypoint", () => {
     const integrationCallbacks: Array<(draft: unknown) => unknown> = [];
     const providerCallbacks: Array<(editor: unknown) => unknown> = [];
     const ctx: FakeCtx = {
-      options: { baseURL: "https://gw.example.com", providerId: "omniroute" },
+      options: { baseURL: "https://gw.example.com", providerId: "cheaprouter" },
       provider: {
         transform: (cb: (editor: unknown) => unknown) => {
           seen.push({ kind: "provider" });
@@ -224,13 +224,13 @@ describe("plugin-v2 entrypoint", () => {
       },
     };
     (integrationCallbacks[0] as (draft: FakeIntegrationDraft) => unknown)(draft);
-    assert.deepEqual(draft.updates, [{ id: "omniroute", name: "OmniRoute" }]);
+    assert.deepEqual(draft.updates, [{ id: "cheaprouter", name: "CheapRouter" }]);
     const keyMethod = draft.methods.find((m) => m.method.type === "key");
     const envMethod = draft.methods.find((m) => m.method.type === "env");
     assert.ok(keyMethod);
-    assert.equal(keyMethod?.integrationID, "omniroute");
+    assert.equal(keyMethod?.integrationID, "cheaprouter");
     assert.ok(envMethod);
-    assert.deepEqual(envMethod?.method.names, ["OMNIROUTE_API_KEY"]);
+    assert.deepEqual(envMethod?.method.names, ["CHEAPROUTER_API_KEY"]);
     assert.ok(!draft.methods.some((m) => m.method.type === "oauth"));
   });
 
@@ -238,7 +238,7 @@ describe("plugin-v2 entrypoint", () => {
     const { mkdtempSync } = await import("node:fs");
     const { tmpdir } = await import("node:os");
     const { join } = await import("node:path");
-    const dir = mkdtempSync(join(tmpdir(), "omniroute-lazy-"));
+    const dir = mkdtempSync(join(tmpdir(), "cheaprouter-lazy-"));
     const prevDataDir = process.env.OPENCODE_DATA_DIR;
     process.env.OPENCODE_DATA_DIR = dir;
     let modelsCall = 0;

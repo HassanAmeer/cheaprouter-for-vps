@@ -24,8 +24,8 @@ const MODELS_URL = "https://gw.example.com/v1/models";
 const COMBOS_URL = "https://gw.example.com/api/combos";
 const PRICING_MODELS_URL = "https://gw.example.com/api/pricing/models";
 
-const MGMT_ENV_VAR = "OMNIROUTE_MANAGEMENT_API_KEY";
-const INFERENCE_ENV_VAR = "OMNIROUTE_API_KEY";
+const MGMT_ENV_VAR = "CHEAPROUTER_MANAGEMENT_API_KEY";
+const INFERENCE_ENV_VAR = "CHEAPROUTER_API_KEY";
 
 function okJson(body: unknown) {
   return { ok: true, status: 200, statusText: "OK", json: async () => body };
@@ -82,7 +82,7 @@ async function withIsolatedEnv<T>(
   // per case keeps the real disk snapshot out of the run, so a filtered 'it'
   // never gets a warm snapshot served without fetch.
   const prevDataDir = process.env.OPENCODE_DATA_DIR;
-  process.env.OPENCODE_DATA_DIR = mkdtempSync(join(tmpdir(), "omniroute-mgmt-env-"));
+  process.env.OPENCODE_DATA_DIR = mkdtempSync(join(tmpdir(), "cheaprouter-mgmt-env-"));
   if (mgmt === undefined) delete process.env[MGMT_ENV_VAR];
   else process.env[MGMT_ENV_VAR] = mgmt;
   if (inference === undefined) delete process.env[INFERENCE_ENV_VAR];
@@ -155,7 +155,7 @@ describe("plugin-v2 management token environment source", () => {
       try {
         const { catalogCallbacks, ctx } = setupHarness({
           baseURL: "https://gw.example.com",
-          providerId: "omniroute",
+          providerId: "cheaprouter",
           apiKey: "chat-key",
           managementReadToken: "mgmt-option-token",
         });
@@ -177,7 +177,7 @@ describe("plugin-v2 management token environment source", () => {
       try {
         const { catalogCallbacks, ctx } = setupHarness({
           baseURL: "https://gw.example.com",
-          providerId: "omniroute",
+          providerId: "cheaprouter",
           apiKey: "chat-key",
         });
         await runSetup(ctx);
@@ -198,7 +198,7 @@ describe("plugin-v2 management token environment source", () => {
       try {
         const { catalogCallbacks, ctx } = setupHarness({
           baseURL: "https://gw.example.com",
-          providerId: "omniroute",
+          providerId: "cheaprouter",
           apiKey: "chat-key",
           managementReadToken: "mgmt-option-token",
         });
@@ -219,7 +219,7 @@ describe("plugin-v2 management token environment source", () => {
       try {
         const { catalogCallbacks, ctx } = setupHarness({
           baseURL: "https://gw.example.com",
-          providerId: "omniroute",
+          providerId: "cheaprouter",
           apiKey: "chat-key",
         });
         await runSetup(ctx);
@@ -252,7 +252,7 @@ describe("plugin-v2 management token environment source", () => {
       try {
         const { catalogCallbacks, ctx } = setupHarness({
           baseURL: "https://gw.example.com",
-          providerId: "omniroute",
+          providerId: "cheaprouter",
           apiKey: "chat-key",
           managementReadToken: "",
         });
@@ -273,7 +273,7 @@ describe("plugin-v2 management token environment source", () => {
       try {
         const { catalogCallbacks, ctx } = setupHarness({
           baseURL: "https://gw.example.com",
-          providerId: "omniroute",
+          providerId: "cheaprouter",
           apiKey: "chat-key",
           managementReadToken: "mgmt-option-token",
         });
@@ -294,7 +294,7 @@ describe("plugin-v2 management token environment source", () => {
       try {
         const { catalogCallbacks, ctx } = setupHarness({
           baseURL: "https://gw.example.com",
-          providerId: "omniroute",
+          providerId: "cheaprouter",
           apiKey: "chat-key",
           managementReadToken: "",
         });
@@ -341,7 +341,7 @@ describe("plugin-v2 management token environment source", () => {
       publishCatalog(
         draft,
         {
-          providerId: "omniroute",
+          providerId: "cheaprouter",
           baseURL: "https://gw.example.com",
           apiKey: "chat-key",
           managementReadToken: process.env[MGMT_ENV_VAR],
@@ -369,7 +369,7 @@ describe("plugin-v2 management token environment source", () => {
     assert.deepEqual(res, { models: 1, combos: 1 });
     assert.equal(seenCombos, "mgmt-env-token");
     assert.equal(seenPricing, "mgmt-env-token");
-    const entry = models.get("omniroute/team-combo");
+    const entry = models.get("cheaprouter/team-combo");
     assert.ok(entry, "expected the combo entry in the published catalog");
     assert.equal(entry?.name, "Team Combo");
   });

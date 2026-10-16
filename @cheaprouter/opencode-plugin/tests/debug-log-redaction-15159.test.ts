@@ -17,7 +17,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 
-const TEST_DATA_DIR = fs.mkdtempSync(path.join(os.tmpdir(), "omniroute-o05-"));
+const TEST_DATA_DIR = fs.mkdtempSync(path.join(os.tmpdir(), "cheaprouter-o05-"));
 // debugLogDir() resolves OPENCODE_DATA_DIR lazily on every call, so this only needs
 // to be set before the first append — no import-order gymnastics required.
 process.env.OPENCODE_DATA_DIR = TEST_DATA_DIR;
@@ -30,7 +30,7 @@ const COOKIE_SECRET = "session=SESSIONVALUE15159";
 
 /** Raw JSONL bytes for a provider — the real artifact that leaks to disk. */
 function readRawLog(providerId: string): string {
-  const p = path.join(TEST_DATA_DIR, "plugins", `omniroute-debug-${providerId}.jsonl`);
+  const p = path.join(TEST_DATA_DIR, "plugins", `cheaprouter-debug-${providerId}.jsonl`);
   return fs.existsSync(p) ? fs.readFileSync(p, "utf8") : "";
 }
 

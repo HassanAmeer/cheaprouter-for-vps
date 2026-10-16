@@ -5,11 +5,11 @@ import {
   buildCanonicalToAliasMap,
   canonicalDedupSet,
   lookupEnrichment,
-  type OmniRouteEnrichmentMap,
+  type CheapRouterEnrichmentMap,
 } from "../src/shared/enrich.js";
 import { mapRawModelToModelV2 } from "../src/shared/models-map.js";
 
-const enrichment: OmniRouteEnrichmentMap = new Map([
+const enrichment: CheapRouterEnrichmentMap = new Map([
   ["cc/model-x", { name: "Model X", providerAlias: "cc", providerCanonical: "claude" }],
   ["model-x", { name: "Model X", providerAlias: "cc", providerCanonical: "claude" }],
 ]);
@@ -27,7 +27,7 @@ describe("applyEnrichment", () => {
   it("overlays the enrichment display name onto the model", () => {
     const model = mapRawModelToModelV2(
       { id: "cc/model-x" },
-      { providerId: "omniroute", baseURL: "https://gw.example.com" }
+      { providerId: "cheaprouter", baseURL: "https://gw.example.com" }
     );
     applyEnrichment(model, { name: "Model X" });
     assert.equal(model.name, "Model X");

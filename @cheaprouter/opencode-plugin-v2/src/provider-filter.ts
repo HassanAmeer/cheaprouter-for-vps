@@ -16,7 +16,7 @@
  * matches `cc/...` rows.
  */
 
-import type { OmniRouteRawCombo } from "./shared/combos-map.js";
+import type { CheapRouterRawCombo } from "./shared/combos-map.js";
 import type { Logger } from "./shared/logger.js";
 
 /** Compiled allowlist. `undefined` means inactive (empty/absent = full catalog). */
@@ -187,7 +187,7 @@ export function filterAllUnknown(filter: ProviderFilter, resolve: ProviderResolv
 }
 
 /** Read one combo member model id, skipping `combo-ref` steps. */
-function comboMemberIds(combo: OmniRouteRawCombo): string[] {
+function comboMemberIds(combo: CheapRouterRawCombo): string[] {
   const steps = Array.isArray(combo.models) ? combo.models : [];
   const out: string[] = [];
   for (const step of steps) {
@@ -204,7 +204,7 @@ function comboMemberIds(combo: OmniRouteRawCombo): string[] {
  * skipped, zero resolvable members keep (mirrors the usableOnly combo rule).
  */
 export function passesProviderCombo(
-  combo: OmniRouteRawCombo,
+  combo: CheapRouterRawCombo,
   filter: ProviderFilter | undefined,
   resolve?: ProviderResolve,
   allUnknown?: boolean
@@ -248,7 +248,7 @@ export function warnUnknownProviders(
   if (warned.has(key)) return;
   warned.add(key);
   log.warn(
-    `[omniroute-v2] unknown provider(s) in providersAllow: ${unknown.join(",")} — ` +
+    `[cheaprouter-v2] unknown provider(s) in providersAllow: ${unknown.join(",")} — ` +
       `no catalog entry matches these names, they filter nothing.`
   );
 }
@@ -266,7 +266,7 @@ export function warnNoVocabulary(
   if (warned.has(key)) return;
   warned.add(key);
   log.warn(
-    `[omniroute-v2] provider filter active but no provider vocabulary available, ` +
+    `[cheaprouter-v2] provider filter active but no provider vocabulary available, ` +
       `keeping the full catalog.`
   );
 }

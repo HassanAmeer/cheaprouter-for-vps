@@ -21,7 +21,7 @@
  */
 
 /** Human-recognizable, copy-paste-safe prefix. The decoder requires it. */
-export const CREDENTIAL_BLOB_PREFIX = "omniroute-cred-v1.";
+export const CREDENTIAL_BLOB_PREFIX = "cheaprouter-cred-v1.";
 
 /** Current blob schema version (embedded in the payload as `v`). */
 const CREDENTIAL_BLOB_VERSION = 1;

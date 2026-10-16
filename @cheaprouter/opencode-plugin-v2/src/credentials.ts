@@ -20,7 +20,7 @@ export interface ResolvedApiKey {
   origin: ApiKeyOrigin;
 }
 
-const ENV_VAR = "OMNIROUTE_API_KEY";
+const ENV_VAR = "CHEAPROUTER_API_KEY";
 
 /**
  * `ctx.integration.connection` carries the stored credential. Probing the
@@ -74,7 +74,7 @@ async function keyFromConnection(
     if (credential === undefined) return undefined;
     if (credential.type !== "key") {
       log.warn(
-        `[omniroute-v2] ignoring the stored ${String(credential.type)} credential: this plugin authenticates with an API key`
+        `[cheaprouter-v2] ignoring the stored ${String(credential.type)} credential: this plugin authenticates with an API key`
       );
       return undefined;
     }
@@ -83,7 +83,7 @@ async function keyFromConnection(
       : undefined;
   } catch (err) {
     log.warn(
-      `[omniroute-v2] could not read the stored credential: ${err instanceof Error ? err.message : String(err)}`
+      `[cheaprouter-v2] could not read the stored credential: ${err instanceof Error ? err.message : String(err)}`
     );
     return undefined;
   }
@@ -115,7 +115,7 @@ export async function resolveApiKey(
 export function warnIfMissing(resolved: ResolvedApiKey, integrationID: string, log: Logger): void {
   if (resolved.origin !== "missing") return;
   log.warn(
-    `[omniroute-v2] no API key for "${integrationID}": the catalog will be empty. ` +
+    `[cheaprouter-v2] no API key for "${integrationID}": the catalog will be empty. ` +
       `Connect the integration from opencode, set "apiKey" in the plugin options, ` +
       `or export ${ENV_VAR}.`
   );

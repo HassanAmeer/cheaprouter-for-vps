@@ -1,7 +1,7 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { defaultOmniRouteModelsFetcher } from "../src/shared/models-map.js";
-import { defaultOmniRouteCombosFetcher } from "../src/shared/combos-map.js";
+import { defaultCheapRouterModelsFetcher } from "../src/shared/models-map.js";
+import { defaultCheapRouterCombosFetcher } from "../src/shared/combos-map.js";
 
 // A fetch stub that hangs until the caller aborts: proves the AbortController
 // wiring fires. Rejects with an AbortError like undici does on abort.
@@ -26,7 +26,7 @@ describe("shared default fetchers abort on timeout", () => {
     globalThis.fetch = hangingFetch();
     try {
       await assert.rejects(
-        defaultOmniRouteModelsFetcher("https://gw.example.com", "k", 20),
+        defaultCheapRouterModelsFetcher("https://gw.example.com", "k", 20),
         /aborted/i
       );
     } finally {
@@ -39,7 +39,7 @@ describe("shared default fetchers abort on timeout", () => {
     globalThis.fetch = hangingFetch();
     try {
       await assert.rejects(
-        defaultOmniRouteCombosFetcher("https://gw.example.com", "k", 20),
+        defaultCheapRouterCombosFetcher("https://gw.example.com", "k", 20),
         /aborted/i
       );
     } finally {

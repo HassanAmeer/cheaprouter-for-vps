@@ -1,13 +1,13 @@
-# @omniroute/opencode-plugin-v2
+# @cheaprouter/opencode-plugin-v2
 
-OpenCode v2 plugin (`define({ id, setup })`, Promise API) that publishes the live OmniRoute catalog — models from `/v1/models`, combos from `/api/combos` (least-common-denominator join), enrichment (names + pricing), and usable-provider filtering — into the v2 `catalog.transform`, with `key` + `env` auth via `integration.transform`.
+OpenCode v2 plugin (`define({ id, setup })`, Promise API) that publishes the live CheapRouter catalog — models from `/v1/models`, combos from `/api/combos` (least-common-denominator join), enrichment (names + pricing), and usable-provider filtering — into the v2 `catalog.transform`, with `key` + `env` auth via `integration.transform`.
 
-Companion to `@omniroute/opencode-plugin` (OpenCode v1, same repo). The two packages are independent: this one carries its own catalog-mapping logic and the v1 plugin is left untouched.
+Companion to `@cheaprouter/opencode-plugin` (OpenCode v1, same repo). The two packages are independent: this one carries its own catalog-mapping logic and the v1 plugin is left untouched.
 
 ## Install
 
 ```sh
-npm install @omniroute/opencode-plugin-v2
+npm install @cheaprouter/opencode-plugin-v2
 ```
 
 `opencode.json`:
@@ -16,9 +16,9 @@ npm install @omniroute/opencode-plugin-v2
 {
   "plugins": [
     {
-      "package": "@omniroute/opencode-plugin-v2",
+      "package": "@cheaprouter/opencode-plugin-v2",
       "options": {
-        "providerId": "omniroute",
+        "providerId": "cheaprouter",
         "baseURL": "http://localhost:20128"
       }
     }
@@ -40,9 +40,9 @@ exactly that probe, so pointing OpenCode at a local checkout works:
 {
   "plugins": [
     {
-      "package": "file:///path/to/OmniRoute/@omniroute/opencode-plugin-v2",
+      "package": "file:///path/to/CheapRouter/@cheaprouter/opencode-plugin-v2",
       "options": {
-        "providerId": "omniroute",
+        "providerId": "cheaprouter",
         "baseURL": "http://localhost:20128"
       }
     }
@@ -65,7 +65,7 @@ order:
    recommended route.
 2. **`apiKey` in the plugin options**, when you want a per-project override.
    Remember that this puts the key in a config file you may be committing.
-3. **`OMNIROUTE_API_KEY` in the environment.**
+3. **`CHEAPROUTER_API_KEY` in the environment.**
 
 If none of the three yields a key, the catalog is empty and the plugin says so
 once at startup rather than leaving you with a silent empty model list.
@@ -84,9 +84,9 @@ explicitly:
 }
 ```
 
-The token can also come from the `OMNIROUTE_MANAGEMENT_API_KEY` environment
+The token can also come from the `CHEAPROUTER_MANAGEMENT_API_KEY` environment
 variable (the option wins when both are set). Resolution order:
-`managementReadToken` option, then `OMNIROUTE_MANAGEMENT_API_KEY`, then the
+`managementReadToken` option, then `CHEAPROUTER_MANAGEMENT_API_KEY`, then the
 `apiKey` fallback.
 
 Left unset, `managementReadToken` falls back to `apiKey` for backwards
@@ -101,11 +101,11 @@ catalog is never a mystery.
 
 | Key                                     | Default                                                    | Notes                                                                                                                                                                                                                                               |
 | --------------------------------------- | ---------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `providerId`                            | `"omniroute"`                                              | Provider id and integration id; models publish under `<providerId>/…`                                                                                                                                                                               |
-| `baseURL`                               | required                                                   | OmniRoute gateway root (no `/v1` suffix needed)                                                                                                                                                                                                     |
-| `apiKey`                                | connected credential, then `OMNIROUTE_API_KEY`             | Chat key for `/v1/*` — see [Credentials](#credentials)                                                                                                                                                                                              |
-| `managementReadToken`                   | option, then `OMNIROUTE_MANAGEMENT_API_KEY`, then `apiKey` | Management key for `/api/*` (combos, providers, enrichment) — usually **not** the same key                                                                                                                                                          |
-| `displayName`                           | `"OmniRoute"`                                              | Provider display name                                                                                                                                                                                                                               |
+| `providerId`                            | `"cheaprouter"`                                              | Provider id and integration id; models publish under `<providerId>/…`                                                                                                                                                                               |
+| `baseURL`                               | required                                                   | CheapRouter gateway root (no `/v1` suffix needed)                                                                                                                                                                                                     |
+| `apiKey`                                | connected credential, then `CHEAPROUTER_API_KEY`             | Chat key for `/v1/*` — see [Credentials](#credentials)                                                                                                                                                                                              |
+| `managementReadToken`                   | option, then `CHEAPROUTER_MANAGEMENT_API_KEY`, then `apiKey` | Management key for `/api/*` (combos, providers, enrichment) — usually **not** the same key                                                                                                                                                          |
+| `displayName`                           | `"CheapRouter"`                                              | Provider display name                                                                                                                                                                                                                               |
 | `timeoutMs`                             | `10000`                                                    | Per-endpoint fetch timeout                                                                                                                                                                                                                          |
 | `modelCacheTtlMs`                       | `300000`                                                   | Catalog cache TTL; disk snapshot warms cold starts                                                                                                                                                                                                  |
 | `timeouts`                              | per-endpoint override                                      | `{ models, combos, enrichment }` in ms; falls back to `timeoutMs` (`autoCombos` still parses but is ignored — the virtual-entries route is no longer requested)                                                                                     |

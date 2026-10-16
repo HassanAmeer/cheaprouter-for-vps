@@ -12,7 +12,7 @@ import { t } from "../i18n.mjs";
 import { readDatabaseHealth, readEncryptedCredentialSamples } from "../sqlite.mjs";
 import { getCrashLogPath } from "../runtime/processSupervisor.mjs";
 import { prebuiltBinaryName } from "../runtime/nativeDeps.mjs";
-const STATIC_SALT = "omniroute-field-encryption-v1";
+const STATIC_SALT = "cheaprouter-field-encryption-v1";
 const KEY_LENGTH = 32;
 const CHECK_TIMEOUT_MS = 2000;
 

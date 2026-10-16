@@ -13,15 +13,15 @@ function validContext() {
 
 describe("assertContext", () => {
   it("throws on non-object ctx", () => {
-    assert.throws(() => assertContext(null), /\[omniroute-v2\] contract breach/);
+    assert.throws(() => assertContext(null), /\[cheaprouter-v2\] contract breach/);
   });
   it("throws when provider.transform is missing", () => {
     const ctx = { ...validContext(), provider: {} };
-    assert.throws(() => assertContext(ctx), /\[omniroute-v2\] contract breach/);
+    assert.throws(() => assertContext(ctx), /\[cheaprouter-v2\] contract breach/);
   });
   it("throws when model.transform is missing", () => {
     const ctx = { ...validContext(), model: {} };
-    assert.throws(() => assertContext(ctx), /\[omniroute-v2\] contract breach/);
+    assert.throws(() => assertContext(ctx), /\[cheaprouter-v2\] contract breach/);
   });
   it("serves a catalog on a host that has no integration domain", () => {
     // The integration domain carries the credential flow, not the catalog.
@@ -31,7 +31,7 @@ describe("assertContext", () => {
   });
   it("throws when options is not an object", () => {
     const ctx = { ...validContext(), options: undefined };
-    assert.throws(() => assertContext(ctx), /\[omniroute-v2\] contract breach/);
+    assert.throws(() => assertContext(ctx), /\[cheaprouter-v2\] contract breach/);
   });
   it("passes for a valid context", () => {
     assert.doesNotThrow(() => assertContext(validContext()));

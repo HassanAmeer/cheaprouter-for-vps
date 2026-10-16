@@ -1,5 +1,5 @@
 /**
- * Tests for `formatFreeBudget` (@omniroute/opencode-plugin/src/naming.ts):
+ * Tests for `formatFreeBudget` (@cheaprouter/opencode-plugin/src/naming.ts):
  * formats a free-tier model's budget info into a short human-readable
  * suffix, branching on `freeType`.
  */

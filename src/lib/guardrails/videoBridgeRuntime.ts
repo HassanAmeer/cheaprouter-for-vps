@@ -972,7 +972,7 @@ export async function extractVideoFramesFromBytes(
   frames: ExtractedVideoFrame[];
   sampling: VideoSamplingMetadata;
 }> {
-  const temporaryDirectory = await mkdtemp(join(tmpdir(), "omniroute-video-broker-"));
+  const temporaryDirectory = await mkdtemp(join(tmpdir(), "cheaprouter-video-broker-"));
   try {
     if (options.signal?.aborted) throw new Error("Video extraction request aborted");
     const inputPath = join(temporaryDirectory, "input.video");

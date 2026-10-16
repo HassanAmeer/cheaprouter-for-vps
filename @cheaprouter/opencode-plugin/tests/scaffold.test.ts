@@ -1,63 +1,63 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {
-  OmniRoutePlugin,
-  OMNIROUTE_PROVIDER_KEY,
+  CheapRouterPlugin,
+  CHEAPROUTER_PROVIDER_KEY,
   DEFAULT_MODEL_CACHE_TTL_MS,
-  resolveOmniRoutePluginOptions,
+  resolveCheapRouterPluginOptions,
 } from "../src/index.js";
 
 test("scaffold: exports public surface", () => {
   assert.equal(
-    typeof OmniRoutePlugin,
+    typeof CheapRouterPlugin,
     "function",
-    "OmniRoutePlugin must be a function (Plugin factory)"
+    "CheapRouterPlugin must be a function (Plugin factory)"
   );
-  assert.equal(OMNIROUTE_PROVIDER_KEY, "omniroute");
+  assert.equal(CHEAPROUTER_PROVIDER_KEY, "cheaprouter");
   assert.equal(DEFAULT_MODEL_CACHE_TTL_MS, 300_000);
 });
 
-test("scaffold: default export is v1 plugin shape { id, server: OmniRoutePlugin }", async () => {
+test("scaffold: default export is v1 plugin shape { id, server: CheapRouterPlugin }", async () => {
   const mod = await import("../src/index.js");
   assert.equal(typeof mod.default, "object");
-  assert.equal(mod.default.id, "@omniroute/opencode-plugin");
-  assert.equal(mod.default.server, mod.OmniRoutePlugin);
+  assert.equal(mod.default.id, "@cheaprouter/opencode-plugin");
+  assert.equal(mod.default.server, mod.CheapRouterPlugin);
 });
 
-test("resolveOmniRoutePluginOptions: defaults", () => {
-  const r = resolveOmniRoutePluginOptions();
-  assert.equal(r.providerId, "opencode-omniroute");
-  assert.equal(r.displayName, "OmniRoute");
+test("resolveCheapRouterPluginOptions: defaults", () => {
+  const r = resolveCheapRouterPluginOptions();
+  assert.equal(r.providerId, "opencode-cheaprouter");
+  assert.equal(r.displayName, "CheapRouter");
   assert.equal(r.modelCacheTtl, 300_000);
   assert.equal(r.baseURL, undefined);
 });
 
-test("resolveOmniRoutePluginOptions: custom providerId derives displayName", () => {
-  const r = resolveOmniRoutePluginOptions({ providerId: "omniroute-preprod" });
-  assert.equal(r.providerId, "opencode-omniroute-preprod");
-  assert.equal(r.displayName, "OmniRoute (opencode-omniroute-preprod)");
+test("resolveCheapRouterPluginOptions: custom providerId derives displayName", () => {
+  const r = resolveCheapRouterPluginOptions({ providerId: "cheaprouter-preprod" });
+  assert.equal(r.providerId, "opencode-cheaprouter-preprod");
+  assert.equal(r.displayName, "CheapRouter (opencode-cheaprouter-preprod)");
 });
 
-test("resolveOmniRoutePluginOptions: explicit displayName wins", () => {
-  const r = resolveOmniRoutePluginOptions({
-    providerId: "omniroute-x",
+test("resolveCheapRouterPluginOptions: explicit displayName wins", () => {
+  const r = resolveCheapRouterPluginOptions({
+    providerId: "cheaprouter-x",
     displayName: "Custom Label",
   });
   assert.equal(r.displayName, "Custom Label");
 });
 
-test("resolveOmniRoutePluginOptions: invalid TTL falls back to default", () => {
-  assert.equal(resolveOmniRoutePluginOptions({ modelCacheTtl: 0 }).modelCacheTtl, 300_000);
-  assert.equal(resolveOmniRoutePluginOptions({ modelCacheTtl: -1 }).modelCacheTtl, 300_000);
+test("resolveCheapRouterPluginOptions: invalid TTL falls back to default", () => {
+  assert.equal(resolveCheapRouterPluginOptions({ modelCacheTtl: 0 }).modelCacheTtl, 300_000);
+  assert.equal(resolveCheapRouterPluginOptions({ modelCacheTtl: -1 }).modelCacheTtl, 300_000);
 });
 
-test("resolveOmniRoutePluginOptions: positive TTL respected", () => {
-  assert.equal(resolveOmniRoutePluginOptions({ modelCacheTtl: 60_000 }).modelCacheTtl, 60_000);
+test("resolveCheapRouterPluginOptions: positive TTL respected", () => {
+  assert.equal(resolveCheapRouterPluginOptions({ modelCacheTtl: 60_000 }).modelCacheTtl, 60_000);
 });
 
-test("OmniRoutePlugin: returns an empty hooks object (scaffold)", async () => {
-  const fakeCtx = {} as Parameters<typeof OmniRoutePlugin>[0];
-  const hooks = await OmniRoutePlugin(fakeCtx);
+test("CheapRouterPlugin: returns an empty hooks object (scaffold)", async () => {
+  const fakeCtx = {} as Parameters<typeof CheapRouterPlugin>[0];
+  const hooks = await CheapRouterPlugin(fakeCtx);
   assert.equal(typeof hooks, "object");
   assert.notEqual(hooks, null);
 });
@@ -68,6 +68,6 @@ test("scaffold: built ESM default export resolves with the v1 plugin shape", asy
   // distributable's default export still carries the OpenCode v1 { id, server } shape.
   const mod = await import("../dist/index.js");
   assert.strictEqual(typeof mod.default, "object");
-  assert.strictEqual(mod.default.id, "@omniroute/opencode-plugin");
+  assert.strictEqual(mod.default.id, "@cheaprouter/opencode-plugin");
   assert.strictEqual(typeof mod.default.server, "function");
 });

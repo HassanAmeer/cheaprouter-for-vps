@@ -1,24 +1,24 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {
-  applyOmniRouteInferenceTelemetry,
-  attachOmniRouteTelemetryToPayload,
-  attachOmniRouteTelemetryToSseLine,
-  parseOmniRouteInferenceTelemetry,
+  applyCheapRouterInferenceTelemetry,
+  attachCheapRouterTelemetryToPayload,
+  attachCheapRouterTelemetryToSseLine,
+  parseCheapRouterInferenceTelemetry,
 } from "../src/telemetry.js";
 
-test("parseOmniRouteInferenceTelemetry: copies cost, tokens, tok/s, winning model", () => {
+test("parseCheapRouterInferenceTelemetry: copies cost, tokens, tok/s, winning model", () => {
   const headers = new Headers({
-    "X-OmniRoute-Response-Cost": "0.0123",
-    "X-OmniRoute-Tokens-In": "10",
-    "X-OmniRoute-Tokens-Out": "200",
-    "X-OmniRoute-Tokens-Per-Second": "100.5",
-    "X-OmniRoute-Ttft-Ms": "300",
-    "X-OmniRoute-Latency-Ms": "2300",
-    "X-OmniRoute-Model": "winner-model",
-    "X-OmniRoute-Provider": "openai",
+    "X-CheapRouter-Response-Cost": "0.0123",
+    "X-CheapRouter-Tokens-In": "10",
+    "X-CheapRouter-Tokens-Out": "200",
+    "X-CheapRouter-Tokens-Per-Second": "100.5",
+    "X-CheapRouter-Ttft-Ms": "300",
+    "X-CheapRouter-Latency-Ms": "2300",
+    "X-CheapRouter-Model": "winner-model",
+    "X-CheapRouter-Provider": "openai",
   });
-  const got = parseOmniRouteInferenceTelemetry(headers);
+  const got = parseCheapRouterInferenceTelemetry(headers);
   assert.equal(got.costUsd, 0.0123);
   assert.equal(got.tokensIn, 10);
   assert.equal(got.tokensOut, 200);
@@ -28,23 +28,23 @@ test("parseOmniRouteInferenceTelemetry: copies cost, tokens, tok/s, winning mode
   assert.equal(got.provider, "openai");
 });
 
-test("parseOmniRouteInferenceTelemetry: omits tok/s when header missing (do not invent from latency)", () => {
+test("parseCheapRouterInferenceTelemetry: omits tok/s when header missing (do not invent from latency)", () => {
   const headers = new Headers({
-    "X-OmniRoute-Tokens-Out": "200",
-    "X-OmniRoute-Latency-Ms": "2000",
+    "X-CheapRouter-Tokens-Out": "200",
+    "X-CheapRouter-Latency-Ms": "2000",
   });
-  const got = parseOmniRouteInferenceTelemetry(headers);
+  const got = parseCheapRouterInferenceTelemetry(headers);
   assert.equal(got.tokensPerSecond, undefined);
   assert.equal(got.tokensOut, 200);
-  const payload = attachOmniRouteTelemetryToPayload(
+  const payload = attachCheapRouterTelemetryToPayload(
     { object: "chat.completion", usage: { prompt_tokens: 10, completion_tokens: 200 } },
     got,
   ) as { usage: { tokens_per_second?: number } };
   assert.equal(payload.usage.tokens_per_second, undefined);
 });
 
-test("attachOmniRouteTelemetryToPayload: writes usage.tokens_per_second and winning model", () => {
-  const got = attachOmniRouteTelemetryToPayload(
+test("attachCheapRouterTelemetryToPayload: writes usage.tokens_per_second and winning model", () => {
+  const got = attachCheapRouterTelemetryToPayload(
     {
       object: "chat.completion",
       model: "combo/auto",
@@ -61,24 +61,24 @@ test("attachOmniRouteTelemetryToPayload: writes usage.tokens_per_second and winn
   assert.equal(got.usage.cost, 0);
 });
 
-test("attachOmniRouteTelemetryToPayload: does not mutate /v1/models catalog JSON", () => {
+test("attachCheapRouterTelemetryToPayload: does not mutate /v1/models catalog JSON", () => {
   const catalog = { object: "list", data: [{ id: "m1" }] };
-  const got = attachOmniRouteTelemetryToPayload(catalog, {
+  const got = attachCheapRouterTelemetryToPayload(catalog, {
     tokensPerSecond: 99,
     model: "should-not-apply",
   });
   assert.deepEqual(got, catalog);
 });
 
-test("attachOmniRouteTelemetryToSseLine: patches terminal usage data line", () => {
+test("attachCheapRouterTelemetryToSseLine: patches terminal usage data line", () => {
   const line =
     'data: {"object":"chat.completion.chunk","usage":{"completion_tokens":200}}';
-  const got = attachOmniRouteTelemetryToSseLine(line, { tokensPerSecond: 50 });
+  const got = attachCheapRouterTelemetryToSseLine(line, { tokensPerSecond: 50 });
   assert.match(got, /"tokens_per_second":50/);
   assert.match(got, /^data: /);
 });
 
-test("applyOmniRouteInferenceTelemetry: JSON response gets header tok/s", async () => {
+test("applyCheapRouterInferenceTelemetry: JSON response gets header tok/s", async () => {
   const response = new Response(
     JSON.stringify({
       object: "chat.completion",
@@ -88,12 +88,12 @@ test("applyOmniRouteInferenceTelemetry: JSON response gets header tok/s", async 
     {
       headers: {
         "Content-Type": "application/json",
-        "X-OmniRoute-Tokens-Per-Second": "40",
-        "X-OmniRoute-Model": "winner",
+        "X-CheapRouter-Tokens-Per-Second": "40",
+        "X-CheapRouter-Model": "winner",
       },
     },
   );
-  const next = await applyOmniRouteInferenceTelemetry(response);
+  const next = await applyCheapRouterInferenceTelemetry(response);
   const body = JSON.parse(await next.text()) as {
     model: string;
     usage: { tokens_per_second: number };

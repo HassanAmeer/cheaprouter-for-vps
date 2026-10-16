@@ -1,7 +1,7 @@
 import type { LegacyModel } from "../legacy-model.js";
-import { type ApiFormatV2, type OmniRouteRawModelEntry, resolveApiBlockV2 } from "./models-map.js";
+import { type ApiFormatV2, type CheapRouterRawModelEntry, resolveApiBlockV2 } from "./models-map.js";
 
-export interface OmniRouteRawComboMemberRef {
+export interface CheapRouterRawComboMemberRef {
   /** Step kind: "model" references a raw model id; "combo-ref" nests another combo. */
   kind?: "model" | "combo-ref";
   /** Full model id referenced by this step (when kind === "model"). */
@@ -14,16 +14,16 @@ export interface OmniRouteRawComboMemberRef {
   label?: string;
 }
 
-export interface OmniRouteRawCombo {
+export interface CheapRouterRawCombo {
   id: string;
   name?: string;
   /** Routing strategy. Surfaced for forward-compat but not consumed by LCD. */
   strategy?: string;
   /** Member step list. Only `kind: "model"` steps participate in LCD. */
-  models?: OmniRouteRawComboMemberRef[];
+  models?: CheapRouterRawComboMemberRef[];
   /** Hidden combos are excluded from the OC model picker. */
   isHidden?: boolean;
-  /** When OmniRoute attaches a lifecycle hint we forward it; today it doesn't. */
+  /** When CheapRouter attaches a lifecycle hint we forward it; today it doesn't. */
   release_date?: string;
   /**
    * Server-computed context window for this combo (aggregated from member
@@ -37,14 +37,14 @@ export interface OmniRouteRawCombo {
 
 /**
  * Fetcher contract for `/api/combos`. Same DI shape as
- * `OmniRouteModelsFetcher` so unit tests can inject a stub instead of
+ * `CheapRouterModelsFetcher` so unit tests can inject a stub instead of
  * monkey-patching global `fetch`.
  */
-export type OmniRouteCombosFetcher = (
+export type CheapRouterCombosFetcher = (
   baseURL: string,
   apiKey: string,
   timeoutMs?: number
-) => Promise<OmniRouteRawCombo[]>;
+) => Promise<CheapRouterRawCombo[]>;
 
 function trimTrailingSlashes(value: string): string {
   let i = value.length;
@@ -56,9 +56,9 @@ function trimTrailingSlashes(value: string): string {
  * Default fetcher: `GET <baseURL>/api/combos` with bearer auth +
  * AbortController timeout. Accepts both the `{combos: [...]}` envelope the
  * gateway emits today and a bare-array envelope (defensive — keeps the
- * plugin working if a future OmniRoute build trims the wrapper).
+ * plugin working if a future CheapRouter build trims the wrapper).
  *
- * Differences from `defaultOmniRouteModelsFetcher`:
+ * Differences from `defaultCheapRouterModelsFetcher`:
  *   - URL is `/api/combos`, NOT `/v1/combos`. The `/v1/...` namespace is the
  *     OpenAI-compatible surface (chat completions, models); combo discovery
  *     lives on the management plane under `/api/...`. We tolerate both
@@ -70,13 +70,13 @@ function trimTrailingSlashes(value: string): string {
  *
  * Anything that isn't an object with a string `id` is filtered out silently.
  */
-export const defaultOmniRouteCombosFetcher: OmniRouteCombosFetcher = async (
+export const defaultCheapRouterCombosFetcher: CheapRouterCombosFetcher = async (
   baseURL,
   apiKey,
   timeoutMs = 10_000
 ) => {
-  if (!apiKey) throw new Error("[omniroute-v2] apiKey required to fetch /api/combos");
-  if (!baseURL) throw new Error("[omniroute-v2] baseURL required to fetch /api/combos");
+  if (!apiKey) throw new Error("[cheaprouter-v2] apiKey required to fetch /api/combos");
+  if (!baseURL) throw new Error("[cheaprouter-v2] baseURL required to fetch /api/combos");
 
   // Strip trailing slashes, then strip a trailing `/v1` so we land on the
   // management plane. Models live under `/v1/models`; combos live under
@@ -97,7 +97,7 @@ export const defaultOmniRouteCombosFetcher: OmniRouteCombosFetcher = async (
       signal: controller.signal,
     });
     if (!res.ok) {
-      throw new Error(`[omniroute-v2] GET ${url} failed: ${res.status} ${res.statusText}`);
+      throw new Error(`[cheaprouter-v2] GET ${url} failed: ${res.status} ${res.statusText}`);
     }
     const body = (await res.json()) as unknown;
     const rawList: unknown[] = Array.isArray(body)
@@ -105,10 +105,10 @@ export const defaultOmniRouteCombosFetcher: OmniRouteCombosFetcher = async (
       : body && typeof body === "object" && Array.isArray((body as { combos?: unknown }).combos)
         ? ((body as { combos: unknown[] }).combos as unknown[])
         : [];
-    const out: OmniRouteRawCombo[] = [];
+    const out: CheapRouterRawCombo[] = [];
     for (const r of rawList) {
       if (r && typeof r === "object" && typeof (r as { id?: unknown }).id === "string") {
-        out.push(r as OmniRouteRawCombo);
+        out.push(r as CheapRouterRawCombo);
       }
     }
     return out;
@@ -157,8 +157,8 @@ export const defaultOmniRouteCombosFetcher: OmniRouteCombosFetcher = async (
  * @param baseURL Resolved gateway base URL for ModelV2.api.url.
  */
 export function mapComboToModelV2(
-  combo: OmniRouteRawCombo,
-  members: OmniRouteRawModelEntry[],
+  combo: CheapRouterRawCombo,
+  members: CheapRouterRawModelEntry[],
   providerId: string,
   baseURL: string,
   apiFormat?: ApiFormatV2
@@ -225,7 +225,7 @@ export function mapComboToModelV2(
       : resolveApiBlockV2(combo.id, baseURL, apiFormat);
   })();
 
-  // OmniRoute addresses a combo by its NAME (e.g. "static-best-free", "Kimi Coding", "auto/best-coding")
+  // CheapRouter addresses a combo by its NAME (e.g. "static-best-free", "Kimi Coding", "auto/best-coding")
   // — that string is what GET /v1/models publishes as the model id and what
   // POST /v1/chat/completions routes via getComboByName (slugified names 400
   // with "Unable to determine provider"). Some deployments store a UUID in
