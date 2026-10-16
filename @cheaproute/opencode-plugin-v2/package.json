@@ -1,7 +1,7 @@
 {
-  "name": "@omniroute/opencode-plugin-v2",
+  "name": "@cheaproute/opencode-plugin-v2",
   "version": "0.1.0",
-  "description": "OmniRoute OpenCode plugin (v2 Promise API): catalog transform with models, combos, enrichment, and naming.",
+  "description": "CheapRoute OpenCode plugin (v2 Promise API): catalog transform with models, combos, enrichment, and naming.",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -41,9 +41,9 @@
   "repository": {
     "type": "git",
     "url": "https://github.com/diegosouzapw/OmniRoute.git",
-    "directory": "@omniroute/opencode-plugin-v2"
+    "directory": "@cheaproute/opencode-plugin-v2"
   },
-  "homepage": "https://github.com/diegosouzapw/OmniRoute/tree/main/%40omniroute/opencode-plugin-v2#readme",
+  "homepage": "https://github.com/diegosouzapw/OmniRoute/tree/main/%40cheaproute/opencode-plugin-v2#readme",
   "bugs": {
     "url": "https://github.com/diegosouzapw/OmniRoute/issues"
   },

@@ -1,7 +1,7 @@
 {
-  "name": "@omniroute/opencode-plugin",
+  "name": "@cheaproute/opencode-plugin",
   "version": "0.2.1",
-  "description": "OpenCode plugin for the OmniRoute AI Gateway. Drives dynamic model discovery, /connect auth flow, and multi-instance OmniRoute providers via the official @opencode-ai/plugin contract.",
+  "description": "OpenCode plugin for the CheapRoute AI Gateway. Drives dynamic model discovery, /connect auth flow, and multi-instance CheapRoute providers via the official @opencode-ai/plugin contract.",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -42,12 +42,12 @@
   "repository": {
     "type": "git",
     "url": "https://github.com/diegosouzapw/OmniRoute.git",
-    "directory": "@omniroute/opencode-plugin"
+    "directory": "@cheaproute/opencode-plugin"
   },
   "bugs": {
     "url": "https://github.com/diegosouzapw/OmniRoute/issues"
   },
-  "homepage": "https://github.com/diegosouzapw/OmniRoute/tree/main/%40omniroute/opencode-plugin#readme",
+  "homepage": "https://github.com/diegosouzapw/OmniRoute/tree/main/%40cheaproute/opencode-plugin#readme",
   "engines": {
     "node": ">=22.22.3"
   },
