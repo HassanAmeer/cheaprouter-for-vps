@@ -381,6 +381,11 @@ const nextConfig = {
     // type"; externalizing it keeps the require at runtime (like better-sqlite3).
     // See issue #3066.
     "sqlite-vec",
+    "sqlite-vec-linux-x64",
+    "sqlite-vec-linux-arm64",
+    "sqlite-vec-darwin-x64",
+    "sqlite-vec-darwin-arm64",
+    "sqlite-vec-windows-x64",
     "node-machine-id",
     "keytar",
     "wreq-js",

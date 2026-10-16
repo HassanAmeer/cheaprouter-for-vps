@@ -39,8 +39,10 @@ const KEY_LENGTH = 32;
 const AUTH_TAG_LENGTH = 16;
 const PREFIX = "enc:v1:";
 const STATIC_SALT = "cheaprouter-field-encryption-v1";
+const LEGACY_STATIC_SALT = "omniroute-field-encryption-v1";
 
 let _staticKey: Buffer | null = null;
+let _legacyStaticKey: Buffer | null = null;
 let _legacyDynamicKey: Buffer | null = null;
 /** Connection object with potentially encrypted credential fields. */
 export interface ConnectionFields {
@@ -135,6 +137,24 @@ function getStaticKey(): Buffer | null {
     return null;
   }
   return _staticKey;
+}
+
+/**
+ * Derive the legacy static-salt key (from pre-rename "omniroute-field-encryption-v1").
+ * Used for fallback decryption and automatic migration to the current static salt.
+ */
+function getLegacyStaticKey(): Buffer | null {
+  if (_legacyStaticKey !== null) return _legacyStaticKey;
+
+  const secret = ensureSecretLoaded();
+  if (!secret || typeof secret !== "string" || secret.trim().length === 0) return null;
+
+  try {
+    _legacyStaticKey = scryptSync(secret, LEGACY_STATIC_SALT, KEY_LENGTH);
+  } catch {
+    return null;
+  }
+  return _legacyStaticKey;
 }
 
 /**
@@ -264,9 +284,27 @@ export function decrypt(
 
   try {
     // PRIMARY: Try static-salt key first (canonical derivation)
-    const decrypted = tryDecryptWithKey(staticKey);
+    let decrypted = tryDecryptWithKey(staticKey);
     if (decrypted !== null) {
       return decrypted;
+    }
+
+    // FALLBACK 1: Try legacy pre-rename static salt ("omniroute-field-encryption-v1")
+    const legacyStaticKey = getLegacyStaticKey();
+    if (legacyStaticKey) {
+      decrypted = tryDecryptWithKey(legacyStaticKey);
+      if (decrypted !== null) {
+        return decrypted;
+      }
+    }
+
+    // FALLBACK 2: Try legacy dynamic salt (sha256 hash of secret)
+    const legacyDynamicKey = getLegacyDynamicKey();
+    if (legacyDynamicKey) {
+      decrypted = tryDecryptWithKey(legacyDynamicKey);
+      if (decrypted !== null) {
+        return decrypted;
+      }
     }
 
     // #9927 — the low-level generic log is suppressed when called through the
@@ -411,6 +449,7 @@ export function migrateLegacyEncryptedString(ciphertext: string | null | undefin
   if (!ciphertext.startsWith(PREFIX)) return { updated: false, value: ciphertext };
 
   const staticKey = getStaticKey();
+  const legacyStaticKey = getLegacyStaticKey();
   const legacyKey = getLegacyDynamicKey();
 
   if (!staticKey) return { updated: false, value: null };
@@ -443,7 +482,15 @@ export function migrateLegacyEncryptedString(ciphertext: string | null | undefin
     return { updated: false, value: ciphertext };
   }
 
-  // 2. If it decrypts with the legacy key, it needs migration!
+  // 2. If it decrypts with the legacy static key ("omniroute-field-encryption-v1"), migrate!
+  if (legacyStaticKey) {
+    const legacyStaticDecrypted = tryDecryptWithKey(legacyStaticKey);
+    if (legacyStaticDecrypted !== null) {
+      return { updated: true, value: encrypt(legacyStaticDecrypted) };
+    }
+  }
+
+  // 3. If it decrypts with the legacy dynamic key, migrate!
   if (legacyKey) {
     const legacyDecrypted = tryDecryptWithKey(legacyKey);
     if (legacyDecrypted !== null) {
@@ -452,6 +499,6 @@ export function migrateLegacyEncryptedString(ciphertext: string | null | undefin
     }
   }
 
-  // 3. Un-decryptable or corrupted, leave it alone
+  // 4. Un-decryptable or corrupted, leave it alone
   return { updated: false, value: ciphertext };
 }

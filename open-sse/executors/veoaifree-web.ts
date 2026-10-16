@@ -276,7 +276,10 @@ async function handleImage(
     actionType: "banan-image-generator",
   });
   const trimmed = result.trim();
-  if (!trimmed || trimmed === "0" || trimmed.toLowerCase().includes("error")) {
+  if (trimmed.includes("Login to Create") || trimmed.includes("rate-limit")) {
+    return errResp("Veo AI Free requires login or rate limit exceeded on upstream", 429, "upstream_rate_limited");
+  }
+  if (!trimmed || trimmed === "0" || trimmed.toLowerCase().includes("error") || trimmed.startsWith("<")) {
     return errResp("Image generation failed");
   }
   const parts = trimmed
@@ -645,8 +648,11 @@ async function handleVideo(
     actionType: "full-video-generate",
   });
   const sceneData = genResult.trim();
-  if (!sceneData || sceneData === "0" || sceneData.toLowerCase().includes("error")) {
-    return errResp("Video generation failed");
+  if (sceneData.includes("Login to Create") || sceneData.includes("rate-limit")) {
+    return errResp("Veo AI Free requires login or rate limit exceeded on upstream", 429, "upstream_rate_limited");
+  }
+  if (!sceneData || sceneData === "0" || sceneData.toLowerCase().includes("error") || sceneData.startsWith("<")) {
+    return errResp("Video generation failed: invalid scene response from upstream");
   }
 
   for (let i = 0; i < MAX_POLLS; i++) {

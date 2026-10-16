@@ -16,6 +16,11 @@ export const uncloseaiProvider: RegistryEntry = {
     // 404 "model does not exist" on /v1/chat/completions. The live id below
     // was confirmed with a real completion (vllm backend, max_model_len 65536).
     {
+      id: "turboderp/Qwen3.8-27B-exl3",
+      name: "Qwen3.8 27B exl3 (🆓 Free)",
+      contextLength: 65536,
+    },
+    {
       id: "Lorbus/Qwen3.6-27B-int4-AutoRound",
       name: "Qwen3.6 27B int4 AutoRound (🆓 Free)",
       contextLength: 65536,

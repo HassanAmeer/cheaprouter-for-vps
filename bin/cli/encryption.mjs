@@ -10,8 +10,10 @@ const PREFIX = "enc:v1:";
 // Keep this salt in sync with the app-side field encryption format so credentials written by
 // CLI setup remain decryptable by the dashboard/server and vice versa.
 const STATIC_SALT = "cheaprouter-field-encryption-v1";
+const LEGACY_STATIC_SALT = "omniroute-field-encryption-v1";
 
 let cachedKey = null;
+let cachedLegacyKey = null;
 
 function getEncryptionKey() {
   if (cachedKey !== null) return cachedKey;
@@ -23,6 +25,18 @@ function getEncryptionKey() {
 
   cachedKey = scryptSync(secret, STATIC_SALT, KEY_LENGTH);
   return cachedKey;
+}
+
+function getLegacyEncryptionKey() {
+  if (cachedLegacyKey !== null) return cachedLegacyKey;
+
+  const secret = process.env.STORAGE_ENCRYPTION_KEY;
+  if (!secret || typeof secret !== "string" || secret.trim().length === 0) {
+    return null;
+  }
+
+  cachedLegacyKey = scryptSync(secret, LEGACY_STATIC_SALT, KEY_LENGTH);
+  return cachedLegacyKey;
 }
 
 export function encryptCredential(value) {
@@ -56,12 +70,32 @@ export function decryptCredential(value) {
   }
 
   const [ivHex, encryptedHex, authTagHex] = parts;
-  const decipher = createDecipheriv(ALGORITHM, key, Buffer.from(ivHex, "hex"), {
-    authTagLength: AUTH_TAG_LENGTH,
-  });
-  decipher.setAuthTag(Buffer.from(authTagHex, "hex"));
+  const iv = Buffer.from(ivHex, "hex");
+  const encrypted = Buffer.from(encryptedHex, "hex");
+  const authTag = Buffer.from(authTagHex, "hex");
 
-  let decrypted = decipher.update(encryptedHex, "hex", "utf8");
-  decrypted += decipher.final("utf8");
-  return decrypted;
+  const tryDecrypt = (k) => {
+    try {
+      const decipher = createDecipheriv(ALGORITHM, k, iv, {
+        authTagLength: AUTH_TAG_LENGTH,
+      });
+      decipher.setAuthTag(authTag);
+      let decrypted = decipher.update(encrypted, undefined, "utf8");
+      decrypted += decipher.final("utf8");
+      return decrypted;
+    } catch {
+      return null;
+    }
+  };
+
+  const primary = tryDecrypt(key);
+  if (primary !== null) return primary;
+
+  const legacyKey = getLegacyEncryptionKey();
+  if (legacyKey) {
+    const legacy = tryDecrypt(legacyKey);
+    if (legacy !== null) return legacy;
+  }
+
+  throw new Error("Failed to decrypt provider credential — key or auth tag mismatch.");
 }
