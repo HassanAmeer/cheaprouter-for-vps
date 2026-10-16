@@ -1,7 +1,13 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import type { PublicCombo } from "@/lib/cheaproute";
+import ApiKeysView from "../components/ApiKeysView";
+import UsageLogsView from "../components/UsageLogsView";
+import BillingView from "../components/BillingView";
+import AffiliateView from "../components/AffiliateView";
+import SettingsView from "../components/SettingsView";
 
 interface Subscription {
   plan: {
@@ -33,17 +39,24 @@ interface Analytics {
 
 export default function DashboardClient({
   user,
+  initialMenu = "dashboard",
 }: {
   user: { id: number; email: string; name: string; role: string };
+  initialMenu?: "dashboard" | "keys" | "logs" | "billing" | "affiliate" | "settings";
 }) {
   const [sub, setSub] = useState<Subscription | null>(null);
   const [keys, setKeys] = useState<ByokKey[]>([]);
   const [combos, setCombos] = useState<PublicCombo[]>([]);
   const [analytics, setAnalytics] = useState<Analytics | null>(null);
-  const [byokEnabled, setByokEnabled] = useState<boolean | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Active navigation & tab states
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [activeMenu, setActiveMenu] = useState<"dashboard" | "keys" | "logs" | "billing" | "affiliate" | "settings">(initialMenu);
+  const [activeSubTab, setActiveSubTab] = useState<"analytics" | "overview" | "flow">("analytics");
+
+  // API Key & BYOK operations
   const [apiKey, setApiKey] = useState<string | null>(null);
   const [keyMsg, setKeyMsg] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
@@ -68,9 +81,8 @@ export default function DashboardClient({
       setKeys(k.keys ?? []);
       setCombos(c?.combos ?? []);
       setAnalytics(a.error ? null : a);
-      setByokEnabled(c?.byokEnabled ?? null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to load dashboard");
+      setError(err instanceof Error ? err.message : "Failed to load dashboard data");
     } finally {
       setLoading(false);
     }
@@ -95,15 +107,10 @@ export default function DashboardClient({
 
   function copyKey() {
     if (!apiKey) return;
-    if (navigator?.clipboard?.writeText) {
-      navigator.clipboard.writeText(apiKey).then(
-        () => {
-          setCopied(true);
-          setTimeout(() => setCopied(false), 1500);
-        },
-        () => setCopied(false)
-      );
-    }
+    navigator.clipboard?.writeText(apiKey).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    });
   }
 
   async function addByok(e: React.FormEvent) {
@@ -154,229 +161,601 @@ export default function DashboardClient({
     window.location.href = "/login";
   }
 
-  if (loading) return <p className="muted" style={{ padding: "32px 0" }}>Loading dashboard…</p>;
-  if (error || !sub) {
-    return <div className="alert error" style={{ margin: "32px 0" }}>{error ?? "No subscription"}</div>;
-  }
+  // Greeting
+  const greeting = useMemo(() => {
+    const hour = new Date().getHours();
+    let timeGreeting = "Good afternoon";
+    if (hour < 12) timeGreeting = "Good morning";
+    else if (hour >= 18) timeGreeting = "Good evening";
+    const displayName = user.name || (user.email ? user.email.split("@")[0] : "Hasan ameer");
+    return `${timeGreeting}, ${displayName}`;
+  }, [user]);
 
-  const maxDaily = Math.max(1, ...((analytics?.daily ?? []).map((d) => d.tokens)));
+  // Current Date Display (e.g. OCT 16, 2026)
+  const formattedDate = useMemo(() => {
+    return new Date().toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    }).toUpperCase();
+  }, []);
 
-  function copyText(text: string) {
-    if (navigator?.clipboard?.writeText) {
-      navigator.clipboard.writeText(text);
-    }
-  }
-
-  const gatewayApiUrl = process.env.NEXT_PUBLIC_CHEAPROUTE_API_URL || "http://localhost:20128/v1";
+  const totalTokens = sub?.usage?.tokensUsed ?? 0;
+  const statisticalCount = totalTokens > 0 ? Math.round(totalTokens / 850) : 0;
+  const statisticalQuota = sub?.usage?.tokenBudget ? `$${((sub.usage.tokenBudget - totalTokens) / 1000000 * 0.5).toFixed(4)}` : "$0.0000";
+  const averageRpm = sub?.plan?.rpm_limit ? sub.plan.rpm_limit.toFixed(2) : "0.00";
+  const averageTpm = sub?.plan?.rpm_limit ? (sub.plan.rpm_limit * 1200).toLocaleString() : "0";
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 16, padding: "32px 0" }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-        <h1 style={{ margin: 0 }}>Dashboard</h1>
-        <span className="spacer" style={{ flex: 1 }} />
-        <button className="btn ghost small" onClick={logout}>Logout</button>
-      </div>
+    <div className="uno-dash-wrapper">
+      {/* ========================================================
+          LEFT SIDEBAR (MATCHING SCREENSHOT 3)
+         ======================================================== */}
+      <aside className={`uno-dash-sidebar ${sidebarCollapsed ? "collapsed" : ""}`}>
+        {/* Brand Logo */}
+        <Link href="/" className="uno-dash-sidebar-brand">
+          <div className="uno-logo-icon" style={{ width: 24, height: 24 }}>
+            <svg width="24" height="24" viewBox="0 0 32 32" fill="none">
+              <circle cx="16" cy="16" r="15" fill="#0E1219" stroke="#E11D48" strokeWidth="2" />
+              <path d="M11 11L7 16L11 21" stroke="#E11D48" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+              <path d="M15 11L11 16L15 21" stroke="#FFFFFF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+              <path d="M21 21L25 16L21 11" stroke="#E11D48" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+              <path d="M17 21L21 16L17 11" stroke="#FFFFFF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </div>
+          {!sidebarCollapsed && <span>UNOROUTER</span>}
+        </Link>
 
-      <section className="card">
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <h2 style={{ margin: 0, fontSize: 18 }}>Active Subscription</h2>
-          <span className="badge">{sub.plan.name}</span>
-          <span className="spacer" style={{ flex: 1 }} />
-          <span className="muted" style={{ fontSize: 13 }}>{sub.expiryLabel}</span>
-        </div>
-        <div style={{ marginTop: 12 }}>
-          <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13 }} className="muted">
-            <span>Token quota</span>
-            <span className="mono">
-              {sub.usage.tokensUsed.toLocaleString()} /{" "}
-              {sub.usage.tokenBudget == null ? "∞" : sub.usage.tokenBudget.toLocaleString()}
+        {/* Section 1: Menu */}
+        <div className="uno-dash-sidebar-section">
+          {!sidebarCollapsed && <div className="uno-dash-section-label">Menu</div>}
+
+          <button
+            type="button"
+            className={`uno-dash-nav-item ${activeMenu === "dashboard" ? "active" : ""}`}
+            onClick={() => setActiveMenu("dashboard")}
+          >
+            <span className="uno-dash-nav-icon">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <rect x="3" y="3" width="7" height="7" />
+                <rect x="14" y="3" width="7" height="7" />
+                <rect x="14" y="14" width="7" height="7" />
+                <rect x="3" y="14" width="7" height="7" />
+              </svg>
             </span>
-          </div>
-          <div className="progress" style={{ marginTop: 6 }}>
-            <div style={{ width: `${sub.usage.usedPct}%` }} />
-          </div>
-        </div>
-      </section>
+            {!sidebarCollapsed && <span>Dashboard</span>}
+          </button>
 
-      <section className="card">
-        <h2 style={{ margin: "0 0 8px", fontSize: 18 }}>API Key & Endpoint</h2>
-        <div style={{ marginBottom: 12, fontSize: 13 }}>
-          <span className="muted">Base URL: </span>
-          <code className="mono" style={{ background: "rgba(255,255,255,0.06)", padding: "2px 6px", borderRadius: 4 }}>
-            {gatewayApiUrl}
-          </code>
-        </div>
-        {!sub.plan.hasKey && !apiKey && (
-          <p className="muted" style={{ fontSize: 13 }}>
-            No key issued yet — ask your admin to assign a plan, or regenerate below.
-          </p>
-        )}
-        {apiKey && (
-          <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 8 }}>
-            <code className="mono" style={{ fontSize: 12, wordBreak: "break-all" }}>{apiKey}</code>
-            <button className="btn ghost small" onClick={copyKey}>{copied ? "Copied" : "Copy"}</button>
-          </div>
-        )}
-        {keyMsg && <div className="alert ok" style={{ marginBottom: 8 }}>{keyMsg}</div>}
-        <button className="btn small" onClick={regenerate}>Regenerate key</button>
-      </section>
+          <button
+            type="button"
+            className={`uno-dash-nav-item ${activeMenu === "keys" ? "active" : ""}`}
+            onClick={() => setActiveMenu("keys")}
+          >
+            <span className="uno-dash-nav-icon">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <circle cx="7.5" cy="15.5" r="5.5" />
+                <path d="M12 11l9-9" />
+                <path d="M16 4l2 2" />
+                <path d="M18 6l2 2" />
+              </svg>
+            </span>
+            {!sidebarCollapsed && <span>API Keys</span>}
+          </button>
 
-      {/* Combos & Models Catalog Card */}
-      {combos.length > 0 && (
-        <section className="card">
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
-            <h2 style={{ margin: 0, fontSize: 18 }}>Available AI Combos ({combos.length})</h2>
-            <span className="badge">Auto-Routed</span>
+          <button
+            type="button"
+            className={`uno-dash-nav-item ${activeMenu === "logs" ? "active" : ""}`}
+            onClick={() => setActiveMenu("logs")}
+          >
+            <span className="uno-dash-nav-icon">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                <polyline points="14 2 14 8 20 8" />
+                <line x1="16" y1="13" x2="8" y2="13" />
+                <line x1="16" y1="17" x2="8" y2="17" />
+              </svg>
+            </span>
+            {!sidebarCollapsed && <span>Usage Logs</span>}
+          </button>
+
+          <button
+            type="button"
+            className={`uno-dash-nav-item ${activeMenu === "billing" ? "active" : ""}`}
+            onClick={() => setActiveMenu("billing")}
+          >
+            <span className="uno-dash-nav-icon">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <rect x="1" y="4" width="22" height="16" rx="2" ry="2" />
+                <line x1="1" y1="10" x2="23" y2="10" />
+              </svg>
+            </span>
+            {!sidebarCollapsed && <span>Billing</span>}
+          </button>
+
+          <button
+            type="button"
+            className={`uno-dash-nav-item ${activeMenu === "affiliate" ? "active" : ""}`}
+            onClick={() => setActiveMenu("affiliate")}
+          >
+            <span className="uno-dash-nav-icon">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <polyline points="20 12 20 22 4 22 4 12" />
+                <rect x="2" y="7" width="20" height="5" />
+                <line x1="12" y1="22" x2="12" y2="7" />
+                <path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z" />
+                <path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z" />
+              </svg>
+            </span>
+            {!sidebarCollapsed && <span>Affiliate</span>}
+          </button>
+
+          <button
+            type="button"
+            className={`uno-dash-nav-item ${activeMenu === "settings" ? "active" : ""}`}
+            onClick={() => setActiveMenu("settings")}
+          >
+            <span className="uno-dash-nav-icon">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <circle cx="12" cy="12" r="3" />
+                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
+              </svg>
+            </span>
+            {!sidebarCollapsed && <span>Settings</span>}
+          </button>
+        </div>
+
+        {/* Section 2: Navigate */}
+        <div className="uno-dash-sidebar-section">
+          {!sidebarCollapsed && <div className="uno-dash-section-label">Navigate</div>}
+
+          <Link href="/models" className="uno-dash-nav-item">
+            <span className="uno-dash-nav-icon">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <polygon points="12 2 2 7 12 12 22 7 12 2" />
+                <polyline points="2 17 12 22 22 17" />
+                <polyline points="2 12 12 17 22 12" />
+              </svg>
+            </span>
+            {!sidebarCollapsed && <span>Models</span>}
+          </Link>
+
+          <Link href="/models" className="uno-dash-nav-item">
+            <span className="uno-dash-nav-icon">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <line x1="18" y1="20" x2="18" y2="10" />
+                <line x1="12" y1="20" x2="12" y2="4" />
+                <line x1="6" y1="20" x2="6" y2="14" />
+              </svg>
+            </span>
+            {!sidebarCollapsed && <span>Rankings</span>}
+          </Link>
+
+          <button
+            type="button"
+            className="uno-dash-nav-item"
+            onClick={() => setActiveMenu("dashboard")}
+          >
+            <span className="uno-dash-nav-icon">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <circle cx="11" cy="11" r="8" />
+                <line x1="21" y1="21" x2="16.65" y2="16.65" />
+              </svg>
+            </span>
+            {!sidebarCollapsed && <span>Inspector</span>}
+          </button>
+
+          <Link href="/pricing" className="uno-dash-nav-item">
+            <span className="uno-dash-nav-icon">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <line x1="12" y1="1" x2="12" y2="23" />
+                <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+              </svg>
+            </span>
+            {!sidebarCollapsed && <span>Pricing</span>}
+          </Link>
+
+          <Link href="/" className="uno-dash-nav-item">
+            <span className="uno-dash-nav-icon">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+              </svg>
+            </span>
+            {!sidebarCollapsed && <span>Chat</span>}
+          </Link>
+
+          <Link href="/" className="uno-dash-nav-item">
+            <span className="uno-dash-nav-icon">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                <circle cx="8.5" cy="8.5" r="1.5" />
+                <polyline points="21 15 16 10 5 21" />
+              </svg>
+            </span>
+            {!sidebarCollapsed && <span>Image</span>}
+          </Link>
+
+          <Link href="/" className="uno-dash-nav-item">
+            <span className="uno-dash-nav-icon">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
+                <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
+              </svg>
+            </span>
+            {!sidebarCollapsed && <span>Docs</span>}
+          </Link>
+        </div>
+
+        {/* Sidebar Footer: Status Indicator */}
+        <div className="uno-dash-sidebar-footer">
+          <span className="uno-dot-pulse" />
+          {!sidebarCollapsed && (
+            <span style={{ fontSize: 12, fontWeight: 600, color: "var(--uno-text-secondary)" }}>
+              Status
+            </span>
+          )}
+        </div>
+      </aside>
+
+      {/* ========================================================
+          MAIN DASHBOARD WORKSPACE
+         ======================================================== */}
+      <div className="uno-dash-main">
+        {/* Top Navbar */}
+        <header className="uno-dash-topbar">
+          <div className="uno-dash-topbar-left">
+            <button
+              type="button"
+              className="uno-dash-toggle-btn"
+              onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+              title="Toggle sidebar"
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                <line x1="9" y1="3" x2="9" y2="21" />
+              </svg>
+            </button>
+
+            <div className="uno-dash-breadcrumb">
+              <span className="uno-dot-pulse" />
+              <span>
+                {activeMenu === "keys"
+                  ? "API KEYS"
+                  : activeMenu === "billing"
+                  ? "BILLING"
+                  : activeMenu === "logs"
+                  ? "USAGE LOGS"
+                  : activeMenu === "settings"
+                  ? "SETTINGS"
+                  : "DASHBOARD"}
+              </span>
+            </div>
           </div>
-          <div style={{ display: "grid", gap: 10 }}>
-            {combos.map((c) => {
-              const tier = c.pricing?.tier || "free";
-              const isFree = tier === "free";
-              return (
-                <div
-                  key={c.name}
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                    padding: "10px 12px",
-                    borderRadius: 8,
-                    background: "rgba(255,255,255,0.02)",
-                    border: "1px solid var(--border-subtle, rgba(255,255,255,0.08))",
-                  }}
+
+          <div className="uno-dash-topbar-right">
+            {/* Live Date Badge */}
+            <div className="uno-dash-date-badge">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
+              </svg>
+              <span>{formattedDate}</span>
+            </div>
+
+            {/* Notification Bell */}
+            <button type="button" className="uno-icon-btn" title="Notifications">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+                <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+              </svg>
+            </button>
+
+            {/* Flag / Locale */}
+            <div className="uno-icon-btn" title="US English" style={{ cursor: "default" }}>
+              <span>🇺🇸</span>
+            </div>
+
+            {/* Moon Theme Toggle */}
+            <button type="button" className="uno-icon-btn" title="Dark Theme">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+              </svg>
+            </button>
+
+            {/* User Profile Avatar */}
+            <button
+              type="button"
+              className="uno-icon-btn"
+              onClick={() => setActiveMenu("settings")}
+              title={`Logged in as ${user.email}`}
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                <circle cx="12" cy="7" r="4"></circle>
+              </svg>
+            </button>
+          </div>
+        </header>
+
+        {/* Dashboard Content */}
+        <div className="uno-dash-content">
+          {activeMenu === "keys" && (
+            <ApiKeysView userKey={apiKey} onRegenerateKey={regenerate} />
+          )}
+
+          {activeMenu === "logs" && (
+            <UsageLogsView userEmail={user.email} tokensUsed={sub?.usage.tokensUsed ?? 0} />
+          )}
+
+          {activeMenu === "dashboard" && (
+            <>
+              {/* Main Greeting */}
+              <h1 className="uno-dash-greeting">{greeting}</h1>
+
+              {/* Sub-tabs: Model Analytics | Overview | Flow */}
+              <div className="uno-dash-subtabs">
+                <button
+                  type="button"
+                  className={`uno-dash-subtab ${activeSubTab === "analytics" ? "active" : ""}`}
+                  onClick={() => setActiveSubTab("analytics")}
                 >
-                  <div>
-                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                      <span className="mono" style={{ fontWeight: 600, fontSize: 13 }}>{c.name}</span>
-                      <span
-                        style={{
-                          fontSize: 10,
-                          padding: "2px 6px",
-                          borderRadius: 4,
-                          backgroundColor: isFree ? "rgba(16, 185, 129, 0.2)" : "rgba(168, 85, 247, 0.2)",
-                          color: isFree ? "#34d399" : "#c084fc",
-                          fontWeight: 700,
-                          textTransform: "uppercase",
-                        }}
-                      >
-                        {isFree
-                          ? "FREE"
-                          : `PAID ($${c.pricing?.inputCost ?? 0} in / $${c.pricing?.outputCost ?? 0} out)`}
-                      </span>
-                      <span className="badge" style={{ fontSize: 10 }}>{c.strategy || "priority"}</span>
-                    </div>
-                    {c.models && c.models.length > 0 && (
-                      <div className="muted" style={{ fontSize: 11, marginTop: 4 }}>
-                        Fallbacks: {c.models.slice(0, 4).join(" → ")}{c.models.length > 4 ? ` +${c.models.length - 4} more` : ""}
-                      </div>
-                    )}
+                  Model Analytics
+                </button>
+                <button
+                  type="button"
+                  className={`uno-dash-subtab ${activeSubTab === "overview" ? "active" : ""}`}
+                  onClick={() => setActiveSubTab("overview")}
+                >
+                  Overview
+                </button>
+                <button
+                  type="button"
+                  className={`uno-dash-subtab ${activeSubTab === "flow" ? "active" : ""}`}
+                  onClick={() => setActiveSubTab("flow")}
+                >
+                  Flow
+                </button>
+              </div>
+
+          {/* 5 KPI Metric Cards (Screenshot 3) */}
+          <div className="uno-dash-kpi-grid">
+            <div className="uno-kpi-card">
+              <div className="uno-kpi-header">
+                <span>#</span>
+                <span>STATISTICAL COUNT</span>
+              </div>
+              <div className="uno-kpi-val">{statisticalCount}</div>
+              <div className="uno-kpi-sub">Statistical count</div>
+            </div>
+
+            <div className="uno-kpi-card">
+              <div className="uno-kpi-header">
+                <span>$</span>
+                <span>STATISTICAL QUOTA</span>
+              </div>
+              <div className="uno-kpi-val">{statisticalQuota}</div>
+              <div className="uno-kpi-sub">Statistical quota</div>
+            </div>
+
+            <div className="uno-kpi-card">
+              <div className="uno-kpi-header">
+                <span>⁝⁝</span>
+                <span>STATISTICAL TOKENS</span>
+              </div>
+              <div className="uno-kpi-val">{totalTokens.toLocaleString()}</div>
+              <div className="uno-kpi-sub">Statistical tokens</div>
+            </div>
+
+            <div className="uno-kpi-card">
+              <div className="uno-kpi-header">
+                <span>⏱</span>
+                <span>AVERAGE RPM</span>
+              </div>
+              <div className="uno-kpi-val">{averageRpm}</div>
+              <div className="uno-kpi-sub">Requests per minute</div>
+            </div>
+
+            <div className="uno-kpi-card">
+              <div className="uno-kpi-header">
+                <span>⚡</span>
+                <span>AVERAGE TPM</span>
+              </div>
+              <div className="uno-kpi-val">{averageTpm}</div>
+              <div className="uno-kpi-sub">Tokens per minute</div>
+            </div>
+          </div>
+
+          {/* Performance Strip (Screenshot 3) */}
+          <div className="uno-perf-strip">
+            <div className="uno-perf-top">
+              <div className="uno-perf-label">
+                <span>💚</span>
+                <span>Performance</span>
+              </div>
+
+              <div className="uno-perf-metric">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#22c55e" strokeWidth="2.5">
+                  <polyline points="20 6 9 17 4 12"></polyline>
+                </svg>
+                <span>SUCCESS RATE</span>
+                <span className="uno-perf-val-yellow">84.54%</span>
+              </div>
+
+              <div className="uno-perf-metric">
+                <span>⏱</span>
+                <span>AVERAGE LATENCY</span>
+                <span style={{ color: "#ffffff", fontWeight: 700 }}>24.12s</span>
+              </div>
+
+              <div className="uno-perf-metric">
+                <span>⚡</span>
+                <span>THROUGHPUT</span>
+                <span style={{ color: "#ffffff", fontWeight: 700 }}>71.7 t/s</span>
+              </div>
+            </div>
+
+            {/* Scrollable Model Health Chips */}
+            <div className="uno-perf-chips-row">
+              <div className="uno-model-health-chip">
+                <span>deepseek-v4.1-flash</span>
+                <span className="uno-dot-green" />
+                <span style={{ color: "#10b981" }}>99.73%</span>
+              </div>
+
+              <div className="uno-model-health-chip">
+                <span>glm-5.3</span>
+                <span className="uno-dot-green" />
+                <span style={{ color: "#10b981" }}>99.78%</span>
+              </div>
+
+              <div className="uno-model-health-chip">
+                <span>deepseek-v4-pro</span>
+                <span className="uno-dot-green" />
+                <span style={{ color: "#10b981" }}>99.59%</span>
+              </div>
+
+              <div className="uno-model-health-chip">
+                <span>nemotron-3-ultra-550b-a…</span>
+                <span className="uno-dot-orange" />
+                <span style={{ color: "#f97316" }}>83.79%</span>
+              </div>
+
+              <div className="uno-model-health-chip">
+                <span>agnes-3.0-flash:free</span>
+                <span className="uno-dot-yellow" />
+                <span style={{ color: "#eab308" }}>92.81%</span>
+              </div>
+
+              <div className="uno-model-health-chip">
+                <span>claude-haiku-5-5:free</span>
+                <span className="uno-dot-yellow" />
+                <span style={{ color: "#eab308" }}>91.84%</span>
+              </div>
+
+              <div className="uno-model-health-chip">
+                <span>gpt-4o</span>
+                <span className="uno-dot-green" />
+                <span style={{ color: "#10b981" }}>99.9%</span>
+              </div>
+
+              <div className="uno-model-health-chip">
+                <span>claude-3-5-sonnet</span>
+                <span className="uno-dot-green" />
+                <span style={{ color: "#10b981" }}>99.95%</span>
+              </div>
+            </div>
+          </div>
+
+          {/* ========================================================
+              MODEL DATA ANALYSIS & WORKSPACE TABS
+             ======================================================== */}
+          <div className="uno-analysis-box">
+              {/* Box Header Toolbar */}
+              <div className="uno-analysis-header">
+                <div className="uno-analysis-title">
+                  <span>⊞</span>
+                  <span>Model Data Analysis</span>
+                </div>
+
+                <div className="uno-analysis-controls">
+                  <button type="button" className="uno-analysis-btn">
+                    <span>⚙</span>
+                    <span>Preferences</span>
+                  </button>
+
+                  <button type="button" className="uno-analysis-btn">
+                    <span>⏚</span>
+                    <span>Filter</span>
+                  </button>
+
+                  <div className="uno-analysis-date-badge">
+                    <span>📅</span>
+                    <span>Oct 15, 2026 16:46 - Oct 16, 2026 16:46</span>
                   </div>
+
                   <button
-                    className="btn ghost small"
-                    style={{ fontSize: 11 }}
-                    onClick={() => copyText(c.name)}
-                    title="Copy model name for API requests"
+                    type="button"
+                    className="uno-analysis-btn"
+                    onClick={refresh}
+                    title="Refresh data"
                   >
-                    Copy Model
+                    🔄
                   </button>
                 </div>
-              );
-            })}
-          </div>
-        </section>
-      )}
+              </div>
 
-      {byokEnabled !== false && (
-        <section className="card">
-          <h2 style={{ margin: "0 0 8px", fontSize: 18 }}>BYOK Keys Manager</h2>
-          {byokEnabled === null && (
-            <p className="faint" style={{ fontSize: 12 }}>
-              Gateway BYOK state unknown (gateway unreachable?) — keys are still stored locally.
-            </p>
-          )}
-          <form onSubmit={addByok} style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 12 }}>
-            <input
-              className="input"
-              style={{ maxWidth: 180 }}
-              placeholder="provider id (e.g. glm)"
-              value={newProvider}
-              onChange={(e) => setNewProvider(e.target.value)}
-            />
-            <input
-              className="input mono"
-              style={{ flex: 1, minWidth: 220 }}
-              placeholder="paste provider key"
-              value={newKey}
-              onChange={(e) => setNewKey(e.target.value)}
-              autoComplete="off"
-              spellCheck={false}
-            />
-            <button className="btn small" disabled={byokBusy}>{byokBusy ? "Adding…" : "Add key"}</button>
-          </form>
-          {byokMsg && <div className="alert ok" style={{ marginBottom: 8 }}>{byokMsg}</div>}
-          {keys.length === 0 ? (
-            <p className="muted" style={{ fontSize: 13 }}>No BYOK keys yet.</p>
-          ) : (
-            <table className="table">
-              <thead>
-                <tr>
-                  <th>Provider</th>
-                  <th>Masked key</th>
-                  <th>Status</th>
-                  <th>Added</th>
-                  <th></th>
-                </tr>
-              </thead>
-              <tbody>
-                {keys.map((k) => (
-                  <tr key={k.id}>
-                    <td className="mono">{k.provider_id}</td>
-                    <td className="mono" style={{ fontSize: 12 }}>{k.masked_key}</td>
-                    <td>{k.is_paused ? <span className="badge">paused</span> : <span className="badge">active</span>}</td>
-                    <td className="faint" style={{ fontSize: 12 }}>{k.created_at}</td>
-                    <td style={{ whiteSpace: "nowrap" }}>
-                      <button className="btn ghost small" onClick={() => togglePause(k.id, !k.is_paused)}>
-                        {k.is_paused ? "Resume" : "Pause"}
-                      </button>{" "}
-                      <button className="btn ghost small" onClick={() => deleteKey(k.id)}>Delete</button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-          <p className="faint" style={{ fontSize: 12 }}>
-            Send your key per-request as <span className="mono">x-upstream-key</span> (billed to your
-            own provider account, 0 plan tokens deducted).
-          </p>
-        </section>
-      )}
+              {/* Box Body */}
+              <div className="uno-analysis-body">
+                {analytics?.daily && analytics.daily.length > 0 ? (
+                  <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, color: "var(--uno-text-secondary)" }}>
+                      <span>Past 14 Days Token Volume</span>
+                      <span className="mono">
+                        Total: {analytics.tokensUsed.toLocaleString()} tokens
+                      </span>
+                    </div>
 
-      <section className="card">
-        <h2 style={{ margin: "0 0 8px", fontSize: 18 }}>Live Analytics</h2>
-        <div style={{ display: "flex", gap: 24, marginBottom: 12, fontSize: 13 }} className="muted">
-          <span>RPM limit: <b className="mono">{analytics?.rpmLimit ?? "—"}</b></span>
-          <span>Tokens used: <b className="mono">{(analytics?.tokensUsed ?? 0).toLocaleString()}</b></span>
-          {!analytics?.live && <span className="faint">(gateway offline — plan data only)</span>}
-        </div>
-        <div style={{ display: "flex", alignItems: "flex-end", gap: 6, height: 120 }}>
-          {(analytics?.daily ?? []).map((d) => (
-            <div key={d.day} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
-              <div
-                title={`${d.day}: ${d.tokens.toLocaleString()} tokens`}
-                style={{
-                  width: "100%",
-                  height: `${Math.max(2, Math.round((d.tokens / maxDaily) * 96))}px`,
-                  background: "var(--muted)",
-                  borderRadius: 4,
-                  opacity: d.tokens > 0 ? 1 : 0.25,
-                }}
-              />
-              <span className="faint" style={{ fontSize: 10 }}>{d.day}</span>
+                    <div style={{ display: "grid", gridTemplateColumns: `repeat(${analytics.daily.length}, 1fr)`, gap: 8, height: 160, alignItems: "flex-end" }}>
+                      {analytics.daily.map((d) => {
+                        const maxVal = Math.max(1, ...analytics.daily.map((x) => x.tokens));
+                        const pct = Math.min(100, Math.max(4, (d.tokens / maxVal) * 100));
+                        return (
+                          <div key={d.day} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6 }}>
+                            <div
+                              style={{
+                                width: "100%",
+                                height: `${pct}%`,
+                                background: "linear-gradient(180deg, #10b981 0%, #064e3b 100%)",
+                                borderRadius: 4,
+                                border: "1px solid rgba(16, 185, 129, 0.4)",
+                              }}
+                              title={`${d.day}: ${d.tokens.toLocaleString()} tokens`}
+                            />
+                            <span style={{ fontSize: 10, color: "var(--uno-text-muted)", fontFamily: "var(--uno-font-mono)" }}>
+                              {d.day.slice(5)}
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ) : (
+                  <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "48px 0", gap: 12 }}>
+                    <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.2)" strokeWidth="1.5">
+                      <line x1="18" y1="20" x2="18" y2="10"></line>
+                      <line x1="12" y1="20" x2="12" y2="4"></line>
+                      <line x1="6" y1="20" x2="6" y2="14"></line>
+                    </svg>
+                    <p style={{ color: "var(--uno-text-muted)", fontSize: 13, margin: 0 }}>
+                      No live requests logged in this period. Make API calls to visualize token distributions.
+                    </p>
+                  </div>
+                )}
+              </div>
             </div>
-          ))}
+          </>
+        )}
+
+          {/* ========================================================
+              BILLING VIEW (Screenshots 1 & 2)
+             ======================================================== */}
+          {activeMenu === "billing" && (
+            <BillingView user={user} sub={sub} />
+          )}
+
+          {/* ========================================================
+              AFFILIATE VIEW (Screenshots 1 & 2)
+             ======================================================== */}
+          {activeMenu === "affiliate" && (
+            <AffiliateView user={user} />
+          )}
+
+          {/* ========================================================
+              SETTINGS & PROFILE VIEW (Screenshot)
+             ======================================================== */}
+          {activeMenu === "settings" && (
+            <SettingsView user={user} sub={sub} />
+          )}
         </div>
-      </section>
+      </div>
     </div>
   );
 }
