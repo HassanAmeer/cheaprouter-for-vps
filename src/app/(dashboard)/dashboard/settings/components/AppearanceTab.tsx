@@ -2,7 +2,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Button, Card, Toggle } from "@/shared/components";
+import { Button, Card, Toggle, ProviderImagePicker } from "@/shared/components";
 import { useTheme } from "@/shared/hooks/useTheme";
 import useThemeStore, { COLOR_THEMES } from "@/store/themeStore";
 import { cn } from "@/shared/utils/cn";
@@ -311,12 +311,12 @@ export default function AppearanceTab() {
                   <img
                     src={settings.customLogoBase64 || settings.customLogoUrl || "/cheaprouter-logo.jpg"}
                     alt={t("appearanceLogoPreviewAlt")}
-                    className="h-12 w-12 object-cover rounded-lg border border-border bg-surface shadow-xs"
+                    className="h-12 w-12 object-contain p-0.5 rounded-lg border border-border bg-surface shadow-xs"
                   />
                   <span className="text-xs text-text-muted">
                     {settings.customLogoBase64 || settings.customLogoUrl
                       ? "Custom logo active"
-                      : "Default CheapRouter crown logo active"}
+                      : "Default CheapRouter robot logo active"}
                   </span>
                 </div>
               </div>
@@ -327,16 +327,15 @@ export default function AppearanceTab() {
                 <p className="font-medium">{t("customFavicon")}</p>
                 <p className="text-sm text-text-muted">{t("customFaviconDesc")}</p>
               </div>
-              <div className="flex items-center gap-2">
-                <input
-                  type="text"
-                  value={settings.customFaviconUrl || ""}
-                  onChange={(e) => updateSetting("customFaviconUrl", e.target.value)}
-                  className="flex-1 h-10 px-3 rounded-lg bg-surface border border-border text-sm text-text-main focus:outline-none focus:border-primary"
-                  placeholder="https://example.com/favicon.ico"
-                  maxLength={2000}
-                />
-              </div>
+              <ProviderImagePicker
+                value={settings.customFaviconUrl || ""}
+                onChange={(val) => {
+                  updateSetting("customFaviconUrl", val);
+                  if (val) updateSetting("customFaviconBase64", "");
+                }}
+                label="Select Favicon from Storage or Web Link"
+                hint="Pick an icon from the storage library (e.g. providers/robot) or enter a custom URL"
+              />
             </div>
 
             <div className="flex flex-col gap-2">
@@ -345,11 +344,11 @@ export default function AppearanceTab() {
                 <label className="flex items-center gap-2 px-4 py-2 rounded-lg bg-surface border border-border text-sm text-text-main cursor-pointer hover:bg-surface/80 transition-colors">
                   <input
                     type="file"
-                    accept="image/png,image/x-icon,image/svg+xml,image/gif,image/webp"
+                    accept="image/png,image/x-icon,image/svg+xml,image/gif,image/webp,image/jpeg"
                     onChange={(e) => {
                       const file = e.target.files?.[0];
                       if (file) {
-                        if (file.size > 50 * 1024) {
+                        if (file.size > 256 * 1024) {
                           setUploadError({
                             target: "favicon",
                             message: t("faviconFileTooLarge"),
@@ -362,6 +361,7 @@ export default function AppearanceTab() {
                           "image/svg+xml",
                           "image/gif",
                           "image/webp",
+                          "image/jpeg",
                         ];
                         if (!validTypes.includes(file.type)) {
                           setUploadError({
@@ -378,6 +378,7 @@ export default function AppearanceTab() {
                         reader.onload = (event) => {
                           const base64 = event.target?.result as string;
                           updateSetting("customFaviconBase64", base64);
+                          updateSetting("customFaviconUrl", "");
                         };
                         reader.readAsDataURL(file);
                       }
@@ -385,7 +386,7 @@ export default function AppearanceTab() {
                     className="hidden"
                   />
                   <span className="material-symbols-outlined text-[18px]">upload</span>
-                  <span>{t("uploadFavicon")}</span>
+                  <span>{t("uploadFavicon")} File</span>
                 </label>
                 <Button
                   variant="secondary"
@@ -411,12 +412,12 @@ export default function AppearanceTab() {
                   <img
                     src={settings.customFaviconBase64 || settings.customFaviconUrl || "/cheaprouter-logo.jpg"}
                     alt={t("appearanceFaviconPreviewAlt")}
-                    className="h-8 w-8 object-cover rounded-md border border-border bg-surface shadow-xs"
+                    className="h-8 w-8 object-contain p-0.5 rounded-md border border-border bg-surface shadow-xs"
                   />
                   <span className="text-xs text-text-muted">
                     {settings.customFaviconBase64 || settings.customFaviconUrl
                       ? "Custom favicon active"
-                      : "Default CheapRouter favicon active"}
+                      : "Default CheapRouter robot favicon active"}
                   </span>
                 </div>
               </div>

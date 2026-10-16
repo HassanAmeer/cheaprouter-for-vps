@@ -244,7 +244,7 @@ export default function LoginPage() {
                   <img
                     src="/cheaprouter-logo.jpg"
                     alt={appName}
-                    className="size-full object-cover"
+                    className="size-full object-contain p-0.5"
                   />
                 </div>
                 <div className="flex flex-col min-w-0">

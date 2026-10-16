@@ -24,7 +24,7 @@ export default function Navigation() {
             <img
               src="/cheaprouter-logo.jpg"
               alt={process.env.NEXT_PUBLIC_APP_NAME || "CheapRouter"}
-              className="size-full object-cover"
+              className="size-full object-contain p-0.5"
             />
           </div>
           <h2 className="text-white text-lg sm:text-xl font-bold tracking-tight truncate sm:max-w-none max-w-[160px]">

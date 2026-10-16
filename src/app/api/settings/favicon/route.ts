@@ -12,7 +12,7 @@ const ALLOWED_IMAGE_TYPES = [
   "image/webp",
   "image/jpeg",
 ];
-const MAX_FAVICON_SIZE = 50 * 1024; // 50KB
+const MAX_FAVICON_SIZE = 256 * 1024; // 256KB
 const FETCH_TIMEOUT = 5000; // 5 seconds
 const CACHE_DURATION = 300; // 5 minutes
 
@@ -34,7 +34,7 @@ function validateImageData(base64Data: string, contentType: string): boolean {
   return true;
 }
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
     const settings = await getSettings();
 
@@ -50,6 +50,9 @@ export async function GET() {
         faviconData = customFaviconBase64;
       }
     } else if (customFaviconUrl) {
+      if (customFaviconUrl.startsWith("/")) {
+        return NextResponse.redirect(new URL(customFaviconUrl, request.url));
+      }
       try {
         const response = await safeOutboundFetch(customFaviconUrl, {
           ...SAFE_OUTBOUND_FETCH_PRESETS.validationRead,

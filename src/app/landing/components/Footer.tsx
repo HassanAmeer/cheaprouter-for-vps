@@ -18,7 +18,7 @@ export default function Footer() {
                 <img
                   src="/cheaprouter-logo.jpg"
                   alt={process.env.NEXT_PUBLIC_APP_NAME || "CheapRouter"}
-                  className="size-full object-cover"
+                  className="size-full object-contain p-0.5"
                 />
               </div>
               <h3 className="text-white text-lg font-bold">{process.env.NEXT_PUBLIC_APP_NAME || t("brandName")}</h3>

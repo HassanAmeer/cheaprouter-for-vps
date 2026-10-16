@@ -39,12 +39,12 @@ export async function generateMetadata() {
       icon: customFaviconUrl
         ? "/api/settings/favicon"
         : [
+            { url: "/cheaprouter-logo.png", type: "image/png", sizes: "any" },
             { url: "/cheaprouter-logo.jpg", sizes: "any" },
             { url: "/favicon.ico", sizes: "any" },
             { url: "/favicon.svg", type: "image/svg+xml" },
-            { url: "/icon-512.png", type: "image/png", sizes: "512x512" },
           ],
-      apple: [{ url: "/cheaprouter-logo.jpg", sizes: "180x180", type: "image/jpeg" }],
+      apple: [{ url: "/cheaprouter-logo.png", sizes: "180x180", type: "image/png" }],
     },
   };
 }

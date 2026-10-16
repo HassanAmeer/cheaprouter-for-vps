@@ -716,7 +716,7 @@ export default function Sidebar({
                 <img
                   src="/cheaprouter-logo.jpg"
                   alt={customAppName || APP_CONFIG.name}
-                  className="size-full object-cover"
+                  className="size-full object-contain p-0.5"
                 />
               )}
             </div>
