@@ -693,7 +693,7 @@ data.providers.forEach(p => {
             <p className="text-xs text-text-muted mt-1">
               Aapke users Cursor, Cline, LibreChat, Next.js, ya kisi bhi OpenAI SDK ke zariye
               requests bhej sakte hain. Router check karta hai: agar user ne apni BYOK key lagayi
-              hui hai to uski key se upstream bhejta hai, warna CheapRoute ke combos se execute
+              hui hai to uski key se upstream bhejta hai, warna CheapRouter ke combos se execute
               karta hai.
             </p>
           </div>

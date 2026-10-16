@@ -91,7 +91,7 @@ export const PROVIDER_CATEGORIES: ProviderCategoryConfig[] = [
     placeholderBaseUrl: "https://openrouter.ai/api/v1",
     defaultHeaders: [
       { name: "HTTP-Referer", value: "https://cheaproute.ai" },
-      { name: "X-Title", value: "CheapRoute" },
+      { name: "X-Title", value: "CheapRouter" },
     ],
     defaultApi: "openai",
     apiTypeDefault: "chat",
@@ -425,7 +425,7 @@ export default function CustomProviderInlineForm({
         effectiveHeaders.push({
           key: nextKey("header"),
           name: "X-Title",
-          value: "CheapRoute",
+          value: "CheapRouter",
         });
       }
     }

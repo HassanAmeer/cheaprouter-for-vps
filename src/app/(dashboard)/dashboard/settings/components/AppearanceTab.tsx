@@ -210,9 +210,9 @@ export default function AppearanceTab() {
               </div>
               <input
                 type="text"
-                value={settings.instanceName ?? (process.env.NEXT_PUBLIC_APP_NAME || "CheapRoute")}
+                value={settings.instanceName ?? (process.env.NEXT_PUBLIC_APP_NAME || "CheapRouter")}
                 onChange={(e) => updateSetting("instanceName", e.target.value)}
-                placeholder={process.env.NEXT_PUBLIC_APP_NAME || "CheapRoute"}
+                placeholder={process.env.NEXT_PUBLIC_APP_NAME || "CheapRouter"}
                 maxLength={100}
                 className="h-10 px-3 rounded-lg bg-surface border border-border text-sm text-text-main focus:outline-none focus:border-primary w-full sm:w-48"
               />
@@ -316,7 +316,7 @@ export default function AppearanceTab() {
                   <span className="text-xs text-text-muted">
                     {settings.customLogoBase64 || settings.customLogoUrl
                       ? "Custom logo active"
-                      : "Default CheapRoute crown logo active"}
+                      : "Default CheapRouter crown logo active"}
                   </span>
                 </div>
               </div>
@@ -416,7 +416,7 @@ export default function AppearanceTab() {
                   <span className="text-xs text-text-muted">
                     {settings.customFaviconBase64 || settings.customFaviconUrl
                       ? "Custom favicon active"
-                      : "Default CheapRoute favicon active"}
+                      : "Default CheapRouter favicon active"}
                   </span>
                 </div>
               </div>

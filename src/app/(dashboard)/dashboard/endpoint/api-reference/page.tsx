@@ -315,7 +315,7 @@ export default function ApiReferencePage() {
         <>
           <p className="text-xs text-text-muted mb-4 rounded-md border border-border bg-surface/50 p-2">
             <span className="font-semibold text-text-main">Authentication:</span> pass your
-            CheapRoute API key as <span className="font-mono">Authorization: Bearer &lt;key&gt;</span>{" "}
+            CheapRouter API key as <span className="font-mono">Authorization: Bearer &lt;key&gt;</span>{" "}
             (endpoints marked <span className="font-semibold">AUTH</span> require it).
           </p>
 

@@ -87,7 +87,7 @@ export function PlaygroundStudio() {
               id: comboName,
               name: comboName,
               type: "combo",
-              provider: "CheapRoute Combo",
+              provider: "CheapRouter Combo",
               capabilities: ["Chat", "Auto Failover", "Multi-Target"],
               limits: `${models.length} failover targets`,
             });
