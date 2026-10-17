@@ -26,6 +26,13 @@ const saveSchema = z.object({
   contextWindow: z.number().int().positive().nullable().optional(),
   isActive: z.boolean().optional(),
   isFreeOverride: z.boolean().nullable().optional(),
+  pricingTier: z.enum(["free", "paid"]).optional(),
+  originalInputCost: z.number().nonnegative().nullable().optional(),
+  originalCacheCost: z.number().nonnegative().nullable().optional(),
+  originalOutputCost: z.number().nonnegative().nullable().optional(),
+  inputCost: z.number().nonnegative().optional(),
+  cacheCost: z.number().nonnegative().optional(),
+  outputCost: z.number().nonnegative().optional(),
 });
 
 const activeSchema = z.object({
@@ -225,6 +232,13 @@ export async function POST(request: Request) {
         contextWindow,
         isActive,
         isFreeOverride,
+        pricingTier,
+        originalInputCost,
+        originalCacheCost,
+        originalOutputCost,
+        inputCost,
+        cacheCost,
+        outputCost,
       } = saveResult.data;
       const row = upsertCustomization({
         providerId,
@@ -234,6 +248,13 @@ export async function POST(request: Request) {
         contextWindow,
         isActive,
         isFreeOverride,
+        pricingTier,
+        originalInputCost,
+        originalCacheCost,
+        originalOutputCost,
+        inputCost,
+        cacheCost,
+        outputCost,
       });
       return NextResponse.json({ success: true, customization: row }, { status: 201 });
     }

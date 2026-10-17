@@ -27,8 +27,8 @@ function premiumModelRequiresKeyError(model: string): Error {
 }
 
 export class PollinationsExecutor extends BaseExecutor {
-  constructor() {
-    super("pollinations", PROVIDERS["pollinations"] || { format: "openai" });
+  constructor(providerId = "pollinations") {
+    super(providerId, PROVIDERS[providerId] || PROVIDERS["pollinations"] || { format: "openai" });
     this.poolConfig = DEFAULT_POOL_CONFIG;
   }
 

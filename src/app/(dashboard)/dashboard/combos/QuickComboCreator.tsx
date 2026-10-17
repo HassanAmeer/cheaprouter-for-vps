@@ -15,12 +15,13 @@
  * `model` parameter for API calls (e.g. `auto-coding-combo`).
  */
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import Card from "@/shared/components/Card";
 import Button from "@/shared/components/Button";
 import Input from "@/shared/components/Input";
 import Toggle from "@/shared/components/Toggle";
 import { matchesSearch } from "@/shared/utils/turkishText";
+import { detectModelCapabilities } from "@/shared/utils/modelCapabilities";
 
 interface Candidate {
   key: string;
@@ -30,14 +31,38 @@ interface Candidate {
   displayName: string;
   customAlias?: string | null;
   healthStatus: "healthy" | "cooldown" | "error";
+  contextWindow?: number | null;
+  capabilities: {
+    hasChat: boolean;
+    hasVision: boolean;
+    hasReasoning: boolean;
+    hasCode: boolean;
+    hasImageGen: boolean;
+    hasAudio: boolean;
+    hasVideo: boolean;
+    hasSearch: boolean;
+    hasEmbedding: boolean;
+  };
+}
+
+function formatContextWindow(tokens: number | null | undefined): string {
+  if (!tokens || tokens <= 0) return "128K";
+  if (tokens >= 1_000_000) {
+    const m = tokens / 1_000_000;
+    return `${Number.isInteger(m) ? m : m.toFixed(1)}M`;
+  }
+  if (tokens >= 1000) return `${Math.round(tokens / 1000)}K`;
+  return `${tokens}`;
 }
 
 async function fetchActiveCandidates(): Promise<Candidate[]> {
   const res = await fetch("/api/v1/models/curation");
   if (!res.ok) throw new Error(`Curation API returned ${res.status}`);
   const data = await res.json();
-  const modelsByProvider: Record<string, Array<{ id: string; name?: string }>> =
-    data?.modelsByProvider ?? {};
+  const modelsByProvider: Record<
+    string,
+    Array<{ id: string; name?: string }>
+  > = data?.modelsByProvider ?? {};
   const connectedProviderIds: string[] = Array.isArray(data?.connectedProviderIds)
     ? data.connectedProviderIds
     : [];
@@ -53,6 +78,8 @@ async function fetchActiveCandidates(): Promise<Candidate[]> {
     customName?: string | null;
     customAlias?: string | null;
     testStatus?: "verified" | "failed" | null;
+    contextWindow?: number | null;
+    capabilities?: string[] | null;
     isActive?: boolean;
   }> = Array.isArray(data?.customizations) ? data.customizations : [];
 
@@ -62,6 +89,8 @@ async function fetchActiveCandidates(): Promise<Candidate[]> {
       customName?: string | null;
       customAlias?: string | null;
       testStatus?: "verified" | "failed" | null;
+      contextWindow?: number | null;
+      capabilities?: string[] | null;
     }
   >();
   for (const c of customizations) {
@@ -70,33 +99,64 @@ async function fetchActiveCandidates(): Promise<Candidate[]> {
         customName: c.customName,
         customAlias: c.customAlias,
         testStatus: c.testStatus,
+        contextWindow: c.contextWindow,
+        capabilities: c.capabilities,
       });
     }
   }
 
+  const hasCustomizations = customizations.length > 0;
   const out: Candidate[] = [];
   for (const [providerId, models] of Object.entries(modelsByProvider)) {
     if (!connectedSet.has(providerId)) continue;
     for (const m of models) {
       const k = `${providerId}::${m.id}`;
       const cust = activeCustomizations.get(k);
-      if (!cust) continue;
+      if (hasCustomizations && !cust) continue;
 
       let healthStatus: "healthy" | "cooldown" | "error" = "healthy";
       if (coolingSet.has(providerId)) {
         healthStatus = "cooldown";
-      } else if (cust.testStatus === "failed") {
+      } else if (cust?.testStatus === "failed") {
         healthStatus = "error";
       }
+
+      const detected = detectModelCapabilities({
+        id: m.id,
+        name: m.name,
+        capabilities: (cust?.capabilities || (m as Record<string, unknown>).capabilities) as
+          string[] | Record<string, unknown> | null | undefined,
+        categories: (m as Record<string, unknown>).categories as string[] | null | undefined,
+        supportsVision: (m as Record<string, unknown>).supportsVision as boolean | undefined,
+        supportsThinking: (m as Record<string, unknown>).supportsThinking as boolean | undefined,
+      });
+
+      const contextTokens =
+        cust?.contextWindow ??
+        ((m as Record<string, unknown>).contextWindow as number | undefined) ??
+        ((m as Record<string, unknown>).inputTokenLimit as number | undefined) ??
+        null;
 
       out.push({
         key: k,
         providerId,
         modelId: m.id,
-        target: cust.customAlias || `${providerId}/${m.id}`,
-        displayName: cust.customName || m.name || m.id,
-        customAlias: cust.customAlias,
+        target: cust?.customAlias || `${providerId}/${m.id}`,
+        displayName: cust?.customName || m.name || m.id,
+        customAlias: cust?.customAlias,
         healthStatus,
+        contextWindow: contextTokens,
+        capabilities: {
+          hasChat: detected.hasChat,
+          hasVision: detected.hasVision,
+          hasReasoning: detected.hasReasoning,
+          hasCode: detected.hasCode,
+          hasImageGen: detected.hasImageGen,
+          hasAudio: detected.hasAudio,
+          hasVideo: detected.hasVideo,
+          hasSearch: detected.hasSearch,
+          hasEmbedding: detected.hasEmbedding,
+        },
       });
     }
   }
@@ -113,14 +173,7 @@ export default function QuickComboCreator({
   const [candidates, setCandidates] = useState<Candidate[]>([]);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [filter, setFilter] = useState("");
-  const [page, setPage] = useState(1);
-  const PAGE_SIZE = 50;
-
-  // Pricing & Tier Label state
-  const [pricingTier, setPricingTier] = useState<"free" | "paid">("free");
-  const [inputCost, setInputCost] = useState("");
-  const [cacheCost, setCacheCost] = useState("");
-  const [outputCost, setOutputCost] = useState("");
+  const [activeProvider, setActiveProvider] = useState<string>("all");
 
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -189,13 +242,6 @@ export default function QuickComboCreator({
     }
     setCreating(true);
     try {
-      const pricingPayload = {
-        tier: pricingTier,
-        inputCost: pricingTier === "paid" && inputCost.trim() ? Math.max(0, Number(inputCost)) : 0,
-        cacheCost: pricingTier === "paid" && cacheCost.trim() ? Math.max(0, Number(cacheCost)) : 0,
-        outputCost: pricingTier === "paid" && outputCost.trim() ? Math.max(0, Number(outputCost)) : 0,
-      };
-
       const res = await fetch("/api/combos", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -203,7 +249,6 @@ export default function QuickComboCreator({
           name: comboName,
           models: targets,
           strategy,
-          pricing: pricingPayload,
         }),
       });
       const data = await res.json().catch(() => null);
@@ -223,17 +268,13 @@ export default function QuickComboCreator({
       setComboTestResult(null);
       setName("");
       setSelected(new Set());
-      setPricingTier("free");
-      setInputCost("");
-      setCacheCost("");
-      setOutputCost("");
       onCreated?.(createdId);
     } catch (err) {
       setFormError(err instanceof Error ? err.message : "Create failed");
     } finally {
       setCreating(false);
     }
-  }, [name, candidates, selected, strategy, pricingTier, inputCost, cacheCost, outputCost, onCreated]);
+  }, [name, candidates, selected, strategy, onCreated]);
 
   // 💡 Idea 4: Instant combo dry-run probe
   const testCreatedCombo = useCallback(async (comboName: string) => {
@@ -290,57 +331,27 @@ export default function QuickComboCreator({
     }
   }, []);
 
-  const visible = candidates.filter(
-    (c) =>
-      matchesSearch(c.displayName, filter) ||
-      matchesSearch(c.target, filter) ||
-      matchesSearch(c.modelId, filter) ||
-      matchesSearch(c.providerId, filter)
-  );
+  const connectedProviders = useMemo(() => {
+    const set = new Set<string>();
+    for (const c of candidates) {
+      if (c.providerId) set.add(c.providerId);
+    }
+    return Array.from(set).sort();
+  }, [candidates]);
 
-  const totalPages = Math.max(1, Math.ceil(visible.length / PAGE_SIZE));
-  const currentPage = Math.min(Math.max(1, page), totalPages);
-  const startIndex = (currentPage - 1) * PAGE_SIZE;
-  const paginatedCandidates = visible.slice(startIndex, startIndex + PAGE_SIZE);
-
-  const renderPaginationBar = (position: "top" | "bottom") => {
-    if (visible.length <= PAGE_SIZE) return null;
-    return (
-      <div
-        className={`flex items-center justify-between gap-2 px-3 py-1.5 text-xs text-text-muted bg-black/20 dark:bg-white/5 rounded-lg border border-border/60 ${
-          position === "top" ? "mb-1" : "mt-1"
-        }`}
-      >
-        <span className="font-mono text-[11px] text-text-muted">
-          Showing {visible.length === 0 ? 0 : startIndex + 1}–
-          {Math.min(startIndex + PAGE_SIZE, visible.length)} of {visible.length} models
-        </span>
-        <div className="flex items-center gap-1.5">
-          <Button
-            size="sm"
-            variant="ghost"
-            disabled={currentPage <= 1}
-            onClick={() => setPage((p) => Math.max(1, p - 1))}
-            className="!px-2.5 !py-1 text-xs"
-          >
-            Previous
-          </Button>
-          <span className="px-2 py-0.5 rounded bg-black/30 dark:bg-white/10 font-mono text-[11px] font-semibold text-text-main">
-            Page {currentPage} of {totalPages}
-          </span>
-          <Button
-            size="sm"
-            variant="ghost"
-            disabled={currentPage >= totalPages}
-            onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-            className="!px-2.5 !py-1 text-xs"
-          >
-            Next
-          </Button>
-        </div>
-      </div>
-    );
-  };
+  const displayedCandidates = useMemo(() => {
+    return candidates.filter((c) => {
+      const matchesProvider = activeProvider === "all" || c.providerId === activeProvider;
+      if (!matchesProvider) return false;
+      if (!filter.trim()) return true;
+      return (
+        matchesSearch(c.displayName, filter) ||
+        matchesSearch(c.target, filter) ||
+        matchesSearch(c.modelId, filter) ||
+        matchesSearch(c.providerId, filter)
+      );
+    });
+  }, [candidates, activeProvider, filter]);
 
   return (
     <Card padding="sm">
@@ -396,192 +407,381 @@ export default function QuickComboCreator({
             </div>
           </div>
 
-          {/* Pricing & Tier Label Section */}
-          <div className="flex flex-col gap-2.5 p-3 rounded-xl border border-border/70 bg-black/10 dark:bg-white/[0.02]">
+          <div className="flex flex-col gap-2.5">
             <div className="flex items-center justify-between gap-2 flex-wrap">
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-semibold text-text-main flex items-center gap-1.5">
-                  <span className="material-symbols-outlined text-[16px] text-primary">sell</span>
-                  Pricing & Tier Label
-                </span>
-                <span className="text-[11px] text-text-muted">
-                  (Exported via API to Reseller platform & API docs)
-                </span>
-              </div>
-              {/* Free vs Paid Toggle */}
-              <div className="flex items-center gap-1 p-0.5 rounded-lg bg-black/20 dark:bg-white/10 border border-border/60">
-                <button
-                  type="button"
-                  onClick={() => setPricingTier("free")}
-                  className={`px-3 py-1 rounded-md text-xs font-semibold transition-all flex items-center gap-1.5 cursor-pointer ${
-                    pricingTier === "free"
-                      ? "bg-emerald-500 text-white shadow-sm"
-                      : "text-text-muted hover:text-text-main"
-                  }`}
-                >
-                  <span className="material-symbols-outlined text-[13px]">check_circle</span>
-                  Free
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setPricingTier("paid")}
-                  className={`px-3 py-1 rounded-md text-xs font-semibold transition-all flex items-center gap-1.5 cursor-pointer ${
-                    pricingTier === "paid"
-                      ? "bg-amber-500 text-white shadow-sm"
-                      : "text-text-muted hover:text-text-main"
-                  }`}
-                >
-                  <span className="material-symbols-outlined text-[13px]">payments</span>
-                  Paid
-                </button>
-              </div>
-            </div>
-
-            {/* Cost inputs */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-1">
-              <label className="flex flex-col gap-1 text-[11px] text-text-muted">
-                <span className="flex items-center justify-between">
-                  <span>Input Cost ($/1M tokens)</span>
-                  {pricingTier === "free" && (
-                    <span className="text-emerald-400 font-semibold text-[10px]">$0 (Free)</span>
-                  )}
-                </span>
-                <Input
-                  type="number"
-                  step="0.0001"
-                  min="0"
-                  disabled={pricingTier === "free"}
-                  value={pricingTier === "free" ? "0" : inputCost}
-                  onChange={(e) => setInputCost(e.target.value)}
-                  placeholder="e.g. 0.50"
-                />
-              </label>
-              <label className="flex flex-col gap-1 text-[11px] text-text-muted">
-                <span className="flex items-center justify-between">
-                  <span>Cache Read Cost ($/1M tokens)</span>
-                  {pricingTier === "free" && (
-                    <span className="text-emerald-400 font-semibold text-[10px]">$0 (Free)</span>
-                  )}
-                </span>
-                <Input
-                  type="number"
-                  step="0.0001"
-                  min="0"
-                  disabled={pricingTier === "free"}
-                  value={pricingTier === "free" ? "0" : cacheCost}
-                  onChange={(e) => setCacheCost(e.target.value)}
-                  placeholder="e.g. 0.125"
-                />
-              </label>
-              <label className="flex flex-col gap-1 text-[11px] text-text-muted">
-                <span className="flex items-center justify-between">
-                  <span>Output Cost ($/1M tokens)</span>
-                  {pricingTier === "free" && (
-                    <span className="text-emerald-400 font-semibold text-[10px]">$0 (Free)</span>
-                  )}
-                </span>
-                <Input
-                  type="number"
-                  step="0.0001"
-                  min="0"
-                  disabled={pricingTier === "free"}
-                  value={pricingTier === "free" ? "0" : outputCost}
-                  onChange={(e) => setOutputCost(e.target.value)}
-                  placeholder="e.g. 1.50"
-                />
-              </label>
-            </div>
-          </div>
-
-          <div className="flex flex-col gap-2">
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-text-muted">
-                Candidate models — Manage Models active list only ({selected.size}/
-                {candidates.length} selected)
+              <span className="text-xs font-semibold text-text-muted flex items-center gap-1.5">
+                <span className="material-symbols-outlined text-[15px] text-primary">hub</span>
+                Candidate models — Pipe Models active list only ({selected.size}/{candidates.length}{" "}
+                selected)
               </span>
-              <span className="flex-1" />
-              <Input
-                value={filter}
-                onChange={(e) => {
-                  setFilter(e.target.value);
-                  setPage(1);
-                }}
-                placeholder="Filter models…"
-              />
+              {selected.size > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setSelected(new Set())}
+                  className="text-xs text-rose-400 hover:text-rose-300 font-medium cursor-pointer transition-colors"
+                >
+                  Clear selection ({selected.size})
+                </button>
+              )}
             </div>
+
             {loading && <p className="text-xs text-text-muted">Loading active models…</p>}
             {loadError && (
               <p role="alert" className="text-xs text-red-500">
                 {loadError}
               </p>
             )}
+
             {!loading && !loadError && (
               <>
-                {/* Top Pagination Bar */}
-                {renderPaginationBar("top")}
+                {/* Connected Providers List (Row / Flex-wrap) */}
+                <div className="flex flex-col gap-1.5 pt-0.5">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] font-semibold text-text-muted flex items-center gap-1.5">
+                      <span className="size-1.5 rounded-full bg-emerald-400" />
+                      Connected Providers:
+                    </span>
+                    {connectedProviders.length > 0 && (
+                      <span className="text-[10px] text-text-muted font-mono">
+                        {connectedProviders.length} connected
+                      </span>
+                    )}
+                  </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 max-h-[340px] overflow-y-auto pr-1">
-                  {paginatedCandidates.map((c) => (
-                    <label
-                      key={c.key}
-                      className="flex items-start gap-2.5 px-3 py-2 rounded-xl border border-border/70 hover:border-primary/50 transition-all cursor-pointer bg-black/20 hover:bg-black/30"
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <button
+                      type="button"
+                      onClick={() => setActiveProvider("all")}
+                      className={`px-3 py-1 rounded-lg text-xs font-medium transition-all flex items-center gap-1.5 cursor-pointer border ${
+                        activeProvider === "all"
+                          ? "bg-primary text-white border-primary shadow-sm"
+                          : "bg-black/20 dark:bg-white/5 border-border/70 text-text-muted hover:text-text-main hover:border-border"
+                      }`}
                     >
-                      <input
-                        type="checkbox"
-                        checked={selected.has(c.key)}
-                        onChange={(e) => toggleCandidate(c.key, e.target.checked)}
-                        className="size-4 accent-primary shrink-0 mt-0.5 rounded cursor-pointer"
-                      />
-                      <div className="flex flex-col min-w-0 flex-1">
-                        <div className="flex items-center gap-1.5 min-w-0">
-                          {/* 💡 Idea 5: Live Health Dot */}
+                      <span>All Connected</span>
+                      <span
+                        className={`px-1.5 py-0.2 rounded-full text-[10px] font-mono ${
+                          activeProvider === "all"
+                            ? "bg-black/30 text-white"
+                            : "bg-black/20 text-text-muted"
+                        }`}
+                      >
+                        {candidates.length}
+                      </span>
+                    </button>
+
+                    {connectedProviders.map((pid) => {
+                      const pCount = candidates.filter((c) => c.providerId === pid).length;
+                      const pSelected = candidates.filter(
+                        (c) => c.providerId === pid && selected.has(c.key)
+                      ).length;
+                      const isCurrent = activeProvider === pid;
+
+                      return (
+                        <button
+                          key={pid}
+                          type="button"
+                          onClick={() => setActiveProvider(isCurrent ? "all" : pid)}
+                          className={`px-3 py-1 rounded-lg text-xs font-medium transition-all flex items-center gap-1.5 cursor-pointer border ${
+                            isCurrent
+                              ? "bg-primary text-white border-primary shadow-sm"
+                              : "bg-black/20 dark:bg-white/5 border-border/70 text-text-muted hover:text-text-main hover:border-border"
+                          }`}
+                        >
+                          <span className="capitalize">{pid}</span>
                           <span
-                            className={`size-2 rounded-full shrink-0 ${
-                              c.healthStatus === "cooldown"
-                                ? "bg-amber-400 ring-2 ring-amber-400/20"
-                                : c.healthStatus === "error"
-                                  ? "bg-rose-500 ring-2 ring-rose-500/20"
-                                  : "bg-emerald-400 ring-2 ring-emerald-400/20"
+                            className={`px-1.5 py-0.2 rounded-full text-[10px] font-mono ${
+                              isCurrent ? "bg-black/30 text-white" : "bg-black/20 text-text-muted"
                             }`}
-                            title={
-                              c.healthStatus === "cooldown"
-                                ? "Cooldown / Rate-limited"
-                                : c.healthStatus === "error"
-                                  ? "Upstream Test Failed"
-                                  : "Healthy & Ready"
-                            }
-                          />
-                          {/* 💡 Idea 3: Rich Model Identity (Display Name) */}
-                          <span
-                            className="font-semibold text-xs text-text-main truncate"
-                            title={c.displayName}
                           >
-                            {c.displayName}
+                            {pCount}
                           </span>
-                        </div>
-                        {/* 💡 Idea 3: Provider and Model ID faint mono detail */}
-                        <div className="flex items-center gap-1 text-[10px] text-text-muted/70 font-mono truncate mt-0.5">
-                          <span className="truncate">
-                            {c.providerId} / {c.modelId}
-                          </span>
-                          {c.customAlias && (
-                            <span className="text-primary/80 shrink-0">➔ {c.customAlias}</span>
+                          {pSelected > 0 && (
+                            <span
+                              className="size-2 rounded-full bg-emerald-400 shrink-0"
+                              title={`${pSelected} selected`}
+                            />
                           )}
-                        </div>
-                      </div>
-                    </label>
-                  ))}
-                  {visible.length === 0 && (
-                    <p className="text-xs text-text-muted col-span-full py-3 text-center">
-                      {candidates.length === 0
-                        ? "No active models — activate some in Providers → Manage Models first."
-                        : "No candidates match the filter."}
-                    </p>
-                  )}
+                        </button>
+                      );
+                    })}
+
+                    {connectedProviders.length === 0 && (
+                      <span className="text-xs text-text-muted italic">
+                        No connected providers with active models found.
+                      </span>
+                    )}
+                  </div>
                 </div>
 
-                {/* Bottom Pagination Bar */}
-                {renderPaginationBar("bottom")}
+                {/* Textarea Container for Candidate Model Chips */}
+                <div className="flex flex-col gap-2 p-3 rounded-xl border border-border/80 bg-black/25 dark:bg-white/[0.02] shadow-inner focus-within:border-primary/60 transition-colors">
+                  {/* Toolbar inside textarea */}
+                  <div className="flex items-center justify-between gap-2 flex-wrap pb-2 border-b border-border/40">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-semibold text-text-main flex items-center gap-1.5">
+                        <span className="material-symbols-outlined text-[15px] text-primary">
+                          dns
+                        </span>
+                        {activeProvider === "all"
+                          ? "All Connected Models"
+                          : `${activeProvider.toUpperCase()} Models`}
+                      </span>
+                      <span className="text-[11px] text-text-muted font-mono">
+                        ({displayedCandidates.length} available)
+                      </span>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      {displayedCandidates.length > 0 && (
+                        <div className="flex items-center gap-1">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setSelected((prev) => {
+                                const next = new Set(prev);
+                                for (const c of displayedCandidates) next.add(c.key);
+                                return next;
+                              });
+                            }}
+                            className="text-[11px] px-2 py-0.5 rounded bg-black/30 dark:bg-white/10 hover:bg-primary/20 text-text-muted hover:text-primary transition-colors cursor-pointer border border-border/50"
+                          >
+                            Select all
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setSelected((prev) => {
+                                const next = new Set(prev);
+                                for (const c of displayedCandidates) next.delete(c.key);
+                                return next;
+                              });
+                            }}
+                            className="text-[11px] px-2 py-0.5 rounded bg-black/30 dark:bg-white/10 hover:bg-rose-500/20 text-text-muted hover:text-rose-400 transition-colors cursor-pointer border border-border/50"
+                          >
+                            Deselect
+                          </button>
+                        </div>
+                      )}
+                      <div className="relative">
+                        <Input
+                          value={filter}
+                          onChange={(e) => setFilter(e.target.value)}
+                          placeholder="Filter model chips…"
+                          className="!py-1 !text-xs !w-44"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Selected Models Chips Bar (inside textarea) */}
+                  {selected.size > 0 && (
+                    <div className="flex flex-col gap-1.5 p-2 rounded-lg bg-black/30 dark:bg-white/5 border border-primary/20">
+                      <div className="flex items-center justify-between text-[11px] text-primary-light font-medium">
+                        <span className="flex items-center gap-1">
+                          <span className="material-symbols-outlined text-[14px]">
+                            check_circle
+                          </span>
+                          Selected in combo ({selected.size}):
+                        </span>
+                      </div>
+                      <div className="flex flex-wrap gap-1.5 max-h-[96px] overflow-y-auto">
+                        {Array.from(selected).map((key) => {
+                          const c = candidates.find((item) => item.key === key);
+                          if (!c) return null;
+                          return (
+                            <span
+                              key={c.key}
+                              className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-primary/20 border border-primary/40 text-text-main text-[11px] font-mono"
+                            >
+                              <span className="text-[9px] px-1 py-0.2 rounded bg-black/40 text-primary-light uppercase font-bold">
+                                {c.providerId}
+                              </span>
+                              <span className="font-sans font-medium text-text-main truncate max-w-[150px]">
+                                {c.displayName}
+                              </span>
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  toggleCandidate(c.key, false);
+                                }}
+                                className="hover:text-rose-400 text-text-muted transition-colors cursor-pointer"
+                                title="Remove"
+                              >
+                                <span className="material-symbols-outlined text-[12px] leading-none">
+                                  close
+                                </span>
+                              </button>
+                            </span>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Textarea List Items Body (Compact multi-column grid, not full width) */}
+                  <div className="min-h-[280px] max-h-[520px] overflow-y-auto p-2.5 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-2 content-start rounded-lg bg-black/35 dark:bg-black/50 border border-border/60">
+                    {displayedCandidates.map((c) => {
+                      const isChecked = selected.has(c.key);
+                      return (
+                        <label
+                          key={c.key}
+                          className={`flex items-center gap-2 p-2 rounded-xl text-xs transition-all border cursor-pointer select-none min-w-0 ${
+                            isChecked
+                              ? "bg-primary/15 border-primary text-text-main shadow-sm ring-1 ring-primary/30"
+                              : "bg-black/25 dark:bg-white/[0.03] hover:bg-black/40 border-border/70 text-text-muted hover:text-text-main"
+                          }`}
+                        >
+                          {/* Left Section: Top-left checkmark, neechy context window */}
+                          <div className="flex flex-col items-center justify-center shrink-0 min-w-[44px] gap-1">
+                            <div className="flex items-center gap-1">
+                              <input
+                                type="checkbox"
+                                checked={isChecked}
+                                onChange={(e) => toggleCandidate(c.key, e.target.checked)}
+                                className="size-3.5 accent-primary rounded cursor-pointer"
+                              />
+                              <span
+                                className={`size-1.5 rounded-full shrink-0 ${
+                                  c.healthStatus === "cooldown"
+                                    ? "bg-amber-400 ring-2 ring-amber-400/20"
+                                    : c.healthStatus === "error"
+                                      ? "bg-rose-500 ring-2 ring-rose-500/20"
+                                      : "bg-emerald-400 ring-2 ring-emerald-400/20"
+                                }`}
+                                title={
+                                  c.healthStatus === "cooldown"
+                                    ? "Cooldown / Rate-limited"
+                                    : c.healthStatus === "error"
+                                      ? "Upstream Test Failed"
+                                      : "Healthy & Ready"
+                                }
+                              />
+                            </div>
+                            <span className="text-[9px] font-mono px-1 py-0.2 rounded bg-purple-500/10 text-purple-300 border border-purple-500/20 font-medium leading-tight">
+                              {formatContextWindow(c.contextWindow)}
+                            </span>
+                          </div>
+
+                          <div className="h-7 w-px bg-border/40 shrink-0" />
+
+                          {/* Middle Section: Provider name, and neechy capabilities icons (buht choty) */}
+                          <div className="flex flex-col items-start justify-center shrink-0 min-w-[65px] gap-0.5">
+                            <span className="text-[8.5px] font-mono px-1 py-0.2 rounded bg-black/40 dark:bg-black/60 border border-border/60 text-primary-light uppercase font-bold tracking-wider leading-tight">
+                              {c.providerId}
+                            </span>
+                            <div className="flex items-center gap-0.5 text-text-muted/80">
+                              {c.capabilities.hasChat && (
+                                <span
+                                  className="material-symbols-outlined text-[10px] leading-none"
+                                  title="Chat"
+                                >
+                                  chat
+                                </span>
+                              )}
+                              {c.capabilities.hasVision && (
+                                <span
+                                  className="material-symbols-outlined text-[10px] leading-none text-cyan-400"
+                                  title="Vision"
+                                >
+                                  visibility
+                                </span>
+                              )}
+                              {c.capabilities.hasReasoning && (
+                                <span
+                                  className="material-symbols-outlined text-[10px] leading-none text-amber-400"
+                                  title="Reasoning"
+                                >
+                                  psychology
+                                </span>
+                              )}
+                              {c.capabilities.hasCode && (
+                                <span
+                                  className="material-symbols-outlined text-[10px] leading-none text-blue-400"
+                                  title="Code"
+                                >
+                                  code
+                                </span>
+                              )}
+                              {c.capabilities.hasImageGen && (
+                                <span
+                                  className="material-symbols-outlined text-[10px] leading-none text-pink-400"
+                                  title="Image Gen"
+                                >
+                                  palette
+                                </span>
+                              )}
+                              {c.capabilities.hasAudio && (
+                                <span
+                                  className="material-symbols-outlined text-[10px] leading-none text-emerald-400"
+                                  title="Audio"
+                                >
+                                  volume_up
+                                </span>
+                              )}
+                              {c.capabilities.hasVideo && (
+                                <span
+                                  className="material-symbols-outlined text-[10px] leading-none text-purple-400"
+                                  title="Video"
+                                >
+                                  videocam
+                                </span>
+                              )}
+                              {c.capabilities.hasSearch && (
+                                <span
+                                  className="material-symbols-outlined text-[10px] leading-none text-orange-400"
+                                  title="Search"
+                                >
+                                  travel_explore
+                                </span>
+                              )}
+                              {c.capabilities.hasEmbedding && (
+                                <span
+                                  className="material-symbols-outlined text-[10px] leading-none text-indigo-400"
+                                  title="Embedding"
+                                >
+                                  hub
+                                </span>
+                              )}
+                            </div>
+                          </div>
+
+                          <div className="h-7 w-px bg-border/40 shrink-0" />
+
+                          {/* Right Section: Next in row is Model Name and Model ID in columns */}
+                          <div className="flex flex-col min-w-0 flex-1 text-left">
+                            <span
+                              className="font-semibold text-text-main text-[11px] truncate leading-snug"
+                              title={c.displayName}
+                            >
+                              {c.displayName}
+                            </span>
+                            <div className="flex items-center gap-1 text-[9.5px] font-mono text-text-muted/70 truncate mt-0.5">
+                              <span className="truncate">
+                                {c.providerId}/{c.modelId}
+                              </span>
+                              {c.customAlias && (
+                                <span className="text-primary text-[9.5px] font-mono shrink-0">
+                                  ➔ {c.customAlias}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </label>
+                      );
+                    })}
+
+                    {displayedCandidates.length === 0 && (
+                      <div className="w-full py-8 text-center text-xs text-text-muted">
+                        {candidates.length === 0
+                          ? "No active models found in connected providers. Activate models in Providers → Pipe Models first."
+                          : "No models match your current filter or provider selection."}
+                      </div>
+                    )}
+                  </div>
+                </div>
               </>
             )}
           </div>
@@ -633,9 +833,13 @@ export default function QuickComboCreator({
                   }`}
                 >
                   <div className="flex items-center gap-2 font-semibold mb-1">
-                    <span>{comboTestResult.ok ? "✅ Live Combo Output" : "❌ Combo Test Failed"}</span>
+                    <span>
+                      {comboTestResult.ok ? "✅ Live Combo Output" : "❌ Combo Test Failed"}
+                    </span>
                     {comboTestResult.latencyMs != null && (
-                      <span className="text-zinc-400 font-sans">· {comboTestResult.latencyMs}ms</span>
+                      <span className="text-zinc-400 font-sans">
+                        · {comboTestResult.latencyMs}ms
+                      </span>
                     )}
                     {comboTestResult.modelServed && (
                       <span className="text-zinc-300 font-sans">

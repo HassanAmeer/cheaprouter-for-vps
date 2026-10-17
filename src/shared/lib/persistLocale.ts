@@ -5,9 +5,9 @@ import type { Locale } from "@/i18n/config";
  * Persist the locale preference in the cookie `src/i18n/request.ts` reads on
  * the server, plus localStorage as a client-side convenience mirror.
  *
- * Shared by every client-side locale writer (manual selection in
- * `LanguageSelector`, first-visit auto-detection in `LocaleAutoDetect`) so
- * there is a single source of truth for the cookie name/format.
+ * Shared by every client-side locale writer (e.g. first-visit
+ * auto-detection in `LocaleAutoDetect`) so there is a single source
+ * of truth for the cookie name/format.
  *
  * Also flips `<html dir/lang>` immediately: `router.refresh()` in the App
  * Router does NOT re-render the root layout, so without this the page text

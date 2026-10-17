@@ -1944,6 +1944,20 @@ async function handleChatCoreInner({
       );
     }
     if (isCombo && comboName) {
+      try {
+        const { checkModelComboLimitExceeded } = await import("@/lib/db/modelLimits");
+        const comboBankBreach = checkModelComboLimitExceeded("combo", comboName);
+        if (comboBankBreach) {
+          return createErrorResult(
+            HTTP_STATUS.RATE_LIMITED,
+            comboBankBreach.message,
+            null,
+            "LIMIT_BANK_EXCEEDED"
+          );
+        }
+      } catch {
+        // fail-open on transient check error
+      }
       log?.info?.("CONTEXT", `Attempting to resolve combo limits for comboName=${comboName}`);
       try {
         const { getComboByName } = await import("@/lib/db/combos");
@@ -3157,6 +3171,23 @@ async function handleChatCoreInner({
       // A transient counter read error here must not break an otherwise-valid request.
       log?.warn?.("TOKEN_LIMIT", "Tier 2 token-limit check failed; allowing request", { err });
     }
+  }
+
+  // ── Global Model Limits Bank check (applies across all API consumers) ──
+  try {
+    const { checkModelComboLimitExceeded } = await import("@/lib/db/modelLimits");
+    const modelBankBreach = checkModelComboLimitExceeded("model", model || "", provider);
+    if (modelBankBreach) {
+      trackPendingRequest(model, provider, pendingConnId, false, undefined, pendingRequestId);
+      return createErrorResult(
+        HTTP_STATUS.RATE_LIMITED,
+        modelBankBreach.message,
+        null,
+        "LIMIT_BANK_EXCEEDED"
+      );
+    }
+  } catch (err) {
+    log?.warn?.("LIMIT_BANK", "Model limit bank check failed; allowing request", { err });
   }
 
   // ── Gemini pre-dispatch TPM / RPM guard ──────────────────────────────────

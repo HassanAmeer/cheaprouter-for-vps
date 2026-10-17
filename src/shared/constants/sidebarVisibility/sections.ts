@@ -1,7 +1,4 @@
-import type {
-  SidebarItemDefinition,
-  SidebarSectionDefinition,
-} from "./types";
+import type { SidebarItemDefinition, SidebarSectionDefinition } from "./types";
 
 // ─── Item arrays ────────────────────────────────────────────────────────────
 
@@ -17,7 +14,7 @@ const TOP_STANDALONE_ITEMS: readonly SidebarItemDefinition[] = [
   },
 ];
 
-// CheapProxy section: Providers, Manage Models, Combos, Limits, API Keys, Users, Usage
+// CheapProxy section: Providers, Combos, Pipe Models, Limits, Users, API Keys, Usage
 const CHEAP_PROXY_ITEMS: readonly SidebarItemDefinition[] = [
   {
     id: "providers",
@@ -27,15 +24,6 @@ const CHEAP_PROXY_ITEMS: readonly SidebarItemDefinition[] = [
     icon: "dns",
   },
   {
-    id: "manage-models",
-    href: "/dashboard/manage-models",
-    i18nKey: "manageModels",
-    labelFallback: "Manage Models",
-    subtitleKey: "manageModelsSubtitle",
-    subtitleFallback: "Activate, alias & test models",
-    icon: "tune",
-  },
-  {
     id: "combos",
     href: "/dashboard/combos",
     i18nKey: "combos",
@@ -43,20 +31,22 @@ const CHEAP_PROXY_ITEMS: readonly SidebarItemDefinition[] = [
     icon: "layers",
   },
   {
+    id: "manage-models",
+    href: "/dashboard/manage-models",
+    i18nKey: "manageModels",
+    labelFallback: "Pipe Models",
+    subtitleKey: "manageModelsSubtitle",
+    subtitleFallback: "Activate, alias & test models",
+    icon: "tune",
+  },
+  {
     id: "limits",
     href: "/dashboard/limits",
     i18nKey: "limits",
-    labelFallback: "Limits",
+    labelFallback: "Limits Bank",
     subtitleKey: "limitsSubtitle",
-    subtitleFallback: "Rate limits & quotas",
+    subtitleFallback: "Model & combo token limits bank",
     icon: "speed",
-  },
-  {
-    id: "api-manager",
-    href: "/dashboard/api-manager",
-    i18nKey: "apiManager",
-    subtitleKey: "apiManagerSubtitle",
-    icon: "vpn_key",
   },
   {
     id: "users",
@@ -66,6 +56,13 @@ const CHEAP_PROXY_ITEMS: readonly SidebarItemDefinition[] = [
     subtitleKey: "usersSubtitle",
     subtitleFallback: "Reseller users, plans & BYOK keys",
     icon: "groups",
+  },
+  {
+    id: "api-manager",
+    href: "/dashboard/api-manager",
+    i18nKey: "apiManager",
+    subtitleKey: "apiManagerSubtitle",
+    icon: "vpn_key",
   },
   {
     id: "usage",

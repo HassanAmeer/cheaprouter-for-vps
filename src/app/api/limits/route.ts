@@ -35,23 +35,77 @@ export async function GET(request: Request) {
   try {
     const limits = listModelLimits();
 
+    // Fetch customizations to resolve custom names and aliases
+    let customizations: any[] = [];
+    try {
+      const { getAllCustomizations } = await import("@/lib/db/providerModelCustomizations");
+      customizations = getAllCustomizations();
+    } catch {
+      // Best-effort
+    }
+    const custMap = new Map<string, any>();
+    for (const c of customizations) {
+      if (c && c.originalModelId) {
+        custMap.set(`${c.providerId}::${c.originalModelId}`, c);
+        custMap.set(c.originalModelId, c);
+      }
+    }
+
     // Fetch list of available combos
-    let combos: Array<{ id: string; name: string; strategy?: string; modelsCount?: number }> = [];
+    let combos: Array<{
+      id: string;
+      name: string;
+      originalName: string;
+      customName: string | null;
+      customAlias: string | null;
+      strategy?: string;
+      modelsCount?: number;
+      isActive: boolean;
+      limitPolicy: any | null;
+    }> = [];
     try {
       const { getCombos } = await import("@/lib/db/combos");
       const rawCombos = await getCombos();
-      combos = (rawCombos || []).map((c: any) => ({
-        id: String(c.id || c.name),
-        name: String(c.name || c.id),
-        strategy: c.strategy || "priority",
-        modelsCount: Array.isArray(c.models) ? c.models.length : 0,
-      }));
+      combos = (rawCombos || []).map((c: any) => {
+        const id = String(c.id || c.name);
+        const originalName = String(c.name || c.id);
+        const customName = c.displayName || null;
+        const customAlias = c.customAlias || null;
+        const name = customName || originalName;
+        const matchedLimit = limits.find(
+          (l) =>
+            l.targetType === "combo" &&
+            (l.targetId === id || l.targetId === originalName || (customAlias && l.targetId === customAlias))
+        ) || null;
+
+        return {
+          id,
+          name,
+          originalName,
+          customName,
+          customAlias,
+          strategy: c.strategy || "priority",
+          modelsCount: Array.isArray(c.models) ? c.models.length : 0,
+          isActive: c.isActive !== false,
+          limitPolicy: matchedLimit,
+        };
+      });
     } catch {
       // Best-effort
     }
 
     // Fetch list of available models
-    let availableModels: Array<{ id: string; name: string; provider?: string }> = [];
+    let availableModels: Array<{
+      id: string;
+      name: string;
+      originalName: string;
+      customName: string | null;
+      customAlias: string | null;
+      provider?: string;
+      isActive: boolean;
+      contextWindow?: number | null;
+      limitPolicy: any | null;
+    }> = [];
     try {
       const { getAllCustomModels } = await import("@/lib/db/models");
       const customModelsMap = await getAllCustomModels();
@@ -59,10 +113,29 @@ export async function GET(request: Request) {
         if (Array.isArray(models)) {
           for (const m of models) {
             if (m && m.id) {
+              const cust = custMap.get(`${provider}::${m.id}`) || custMap.get(m.id);
+              const originalName = m.name || m.id;
+              const customName = cust?.customName || null;
+              const customAlias = cust?.customAlias || null;
+              const name = customName || originalName;
+              const matchedLimit = limits.find(
+                (l) =>
+                  l.targetType === "model" &&
+                  (l.targetId === m.id ||
+                    l.targetId === `${provider}/${m.id}` ||
+                    (customAlias && l.targetId === customAlias))
+              ) || null;
+
               availableModels.push({
                 id: m.id,
-                name: m.name || m.id,
+                name,
+                originalName,
+                customName,
+                customAlias,
                 provider,
+                isActive: cust ? cust.isActive === true : true,
+                contextWindow: cust?.contextWindow ?? m.contextWindow ?? m.inputTokenLimit ?? null,
+                limitPolicy: matchedLimit,
               });
             }
           }
@@ -80,10 +153,35 @@ export async function GET(request: Request) {
           const regModels = getModelsByProviderId(pid);
           for (const m of regModels || []) {
             if (m && m.id) {
+              const cust = custMap.get(`${pid}::${m.id}`) || custMap.get(m.id);
+              const originalName = m.name || m.id;
+              const customName = cust?.customName || null;
+              const customAlias = cust?.customAlias || null;
+              const name = customName || originalName;
+              const matchedLimit = limits.find(
+                (l) =>
+                  l.targetType === "model" &&
+                  (l.targetId === m.id ||
+                    l.targetId === `${pid}/${m.id}` ||
+                    (customAlias && l.targetId === customAlias))
+              ) || null;
+
               availableModels.push({
                 id: m.id,
-                name: m.name || m.id,
+                name,
+                originalName,
+                customName,
+                customAlias,
                 provider: pid,
+                isActive: cust ? cust.isActive === true : true,
+                contextWindow:
+                  cust?.contextWindow ??
+                  (m as unknown as { context_length?: number; contextWindow?: number })
+                    .context_length ??
+                  (m as unknown as { context_length?: number; contextWindow?: number })
+                    .contextWindow ??
+                  null,
+                limitPolicy: matchedLimit,
               });
             }
           }
@@ -155,6 +253,12 @@ export async function PATCH(request: Request) {
     if (action === "toggleActive") {
       const updated = toggleModelLimitActive(id, Boolean(isActive));
       return NextResponse.json({ success: updated });
+    }
+
+    if (action === "resetTokens") {
+      const { resetConsumedTokens } = await import("@/lib/db/modelLimits");
+      const updated = resetConsumedTokens(id);
+      return NextResponse.json({ success: Boolean(updated), limit: updated });
     }
 
     if (action === "addTokens") {

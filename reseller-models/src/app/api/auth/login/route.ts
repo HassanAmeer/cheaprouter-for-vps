@@ -26,7 +26,7 @@ export async function POST(request: Request) {
   } catch (err: any) {
     console.error("[login route fatal error]:", err);
     return NextResponse.json(
-      { error: err?.message || "Login failed", stack: err?.stack },
+      { error: err instanceof Error ? err.message : "Login failed" },
       { status: 500 }
     );
   }

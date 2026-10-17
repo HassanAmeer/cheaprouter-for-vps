@@ -7,6 +7,7 @@ export async function POST(request: Request) {
   const email = typeof body?.email === "string" ? body.email.trim() : "";
   const name = typeof body?.name === "string" ? body.name.trim() : "";
   const password = typeof body?.password === "string" ? body.password : "";
+  const planId = body?.planId ? Number(body.planId) : undefined;
   if (!email || !email.includes("@") || password.length < 4) {
     return NextResponse.json(
       { error: "A valid email and a 4+ character password are required" },
@@ -17,7 +18,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "An account with this email already exists" }, { status: 409 });
   }
   try {
-    const user = createUser(email, name, password);
+    const user = createUser(email, name, password, planId);
     const token = createSession(user.id);
     const response = NextResponse.json(
       { user: { id: user.id, email: user.email, name: user.name, role: user.role } },

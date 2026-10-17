@@ -87,7 +87,8 @@ export default function RuntimeRequestInspector() {
 
   const getStatusBadgeClass = (status?: number, error?: string | null) => {
     if (error || !status) return "bg-red-500/20 text-red-400 border-red-500/30";
-    if (status >= 200 && status < 300) return "bg-emerald-500/20 text-emerald-400 border-emerald-500/30";
+    if (status >= 200 && status < 300)
+      return "bg-emerald-500/20 text-emerald-400 border-emerald-500/30";
     if (status >= 300 && status < 400) return "bg-sky-500/20 text-sky-400 border-sky-500/30";
     if (status >= 400 && status < 500) return "bg-amber-500/20 text-amber-400 border-amber-500/30";
     return "bg-red-500/20 text-red-400 border-red-500/30";
@@ -99,21 +100,23 @@ export default function RuntimeRequestInspector() {
       <button
         type="button"
         onClick={() => setIsOpen(true)}
-        className="fixed bottom-6 right-6 z-40 flex items-center gap-2.5 rounded-full border border-white/20 bg-[#121212]/95 px-3.5 py-2.5 shadow-2xl backdrop-blur-xl transition-all duration-200 hover:border-white/40 hover:bg-[#1C1C1C] hover:scale-105 active:scale-95 group text-white cursor-pointer"
+        className="fixed bottom-[5px] right-[5px] z-40 flex items-center gap-1.5 rounded-lg border border-white/15 bg-[#121212]/95 px-2 py-1 shadow-lg backdrop-blur-xl transition-all duration-200 hover:border-white/30 hover:bg-[#1C1C1C] hover:scale-105 active:scale-95 group text-white cursor-pointer select-none"
         title="Open Live Request Inspector & Track AI Models"
       >
-        <span className="material-symbols-outlined text-[19px] text-primary group-hover:scale-110 transition-transform">
-          psychology
+        <span className="material-symbols-outlined text-[18px] text-primary group-hover:scale-110 transition-transform">
+          vital_signs
         </span>
-        <span className="text-xs font-semibold tracking-wide text-white">Live Logs</span>
-        <span className="rounded-full bg-white/10 px-1.5 py-0.5 text-[11px] font-mono text-white/80">
-          {logs.length}
-        </span>
-        {errorCount > 0 && (
-          <span className="rounded-full bg-red-500/25 border border-red-500/40 px-1.5 py-0.5 text-[10px] font-bold text-red-400 animate-pulse">
-            {errorCount} err
+        <div className="flex flex-col items-center justify-center font-mono text-[9px] font-semibold leading-none tabular-nums gap-0.5">
+          <span className="text-emerald-400" title="Total Requests">
+            {logs.length}
           </span>
-        )}
+          <span
+            className={errorCount > 0 ? "text-rose-400 font-bold" : "text-rose-400/60"}
+            title="Errors"
+          >
+            {errorCount}
+          </span>
+        </div>
       </button>
 
       {/* ── RIGHT-SIDE SLIDE-OVER SHEET ── */}
@@ -125,70 +128,72 @@ export default function RuntimeRequestInspector() {
             onClick={() => setIsOpen(false)}
           />
 
-          <aside className="fixed inset-y-0 right-0 z-50 flex w-[90%] max-w-[90%] sm:w-full flex-col border-l border-white/[0.12] bg-[#1C1C1E]/95 backdrop-blur-3xl text-white shadow-2xl sm:max-w-3xl md:max-w-4xl lg:max-w-5xl xl:max-w-6xl 2xl:max-w-7xl animate-in slide-in-from-right duration-300 rounded-l-[28px] sm:rounded-l-[36px] overflow-hidden">
+          <aside className="fixed inset-y-0 right-0 z-50 flex w-full sm:w-[52vw] sm:max-w-[52vw] md:w-[48vw] md:max-w-[48vw] lg:w-[45vw] lg:max-w-[45vw] xl:w-[42vw] xl:max-w-[42vw] flex-col border-l border-white/[0.12] bg-[#1C1C1E]/95 backdrop-blur-3xl text-white shadow-2xl animate-in slide-in-from-right duration-300 rounded-l-[20px] sm:rounded-l-[24px] overflow-hidden">
             {/* iOS Pull Grabber Bar (Mobile only) */}
-            <div className="sm:hidden pt-2.5 pb-1 flex justify-center bg-[#1C1C1E]/90 shrink-0">
-              <div className="w-12 h-1.5 rounded-full bg-white/25" />
+            <div className="sm:hidden pt-2 pb-1 flex justify-center bg-[#1C1C1E]/90 shrink-0">
+              <div className="w-10 h-1 rounded-full bg-white/20" />
             </div>
 
             {/* Header */}
-            <div className="flex items-center justify-between border-b border-white/[0.08] px-4 sm:px-6 py-3.5 bg-[#1C1C1E]/80 backdrop-blur-xl gap-2 shrink-0">
-              <div className="flex items-center gap-3 min-w-0">
-                <div className="size-9 rounded-2xl bg-primary/15 border border-primary/25 flex items-center justify-center shrink-0 text-primary shadow-sm">
-                  <span className="material-symbols-outlined text-lg sm:text-xl">receipt_long</span>
+            <div className="flex items-center justify-between border-b border-white/[0.08] px-3.5 sm:px-4 py-2 bg-[#1C1C1E]/85 backdrop-blur-xl gap-2 shrink-0">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div className="size-7 rounded-lg bg-primary/15 border border-primary/25 flex items-center justify-center shrink-0 text-primary shadow-xs">
+                  <span className="material-symbols-outlined text-base">receipt_long</span>
                 </div>
                 <div className="min-w-0">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <h2 className="text-sm sm:text-base font-bold text-white tracking-tight truncate">
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <h2 className="text-xs sm:text-sm font-bold text-white tracking-tight truncate">
                       Live Request Inspector
                     </h2>
-                    <span className="hidden sm:inline-flex rounded-full bg-primary/15 border border-primary/30 px-2.5 py-0.5 text-[9px] uppercase font-mono text-primary font-semibold">
-                      Cupertino Live
+                    <span className="inline-flex rounded-full bg-primary/15 border border-primary/30 px-1.5 py-0.2 text-[8px] uppercase font-mono text-primary font-semibold">
+                      Cupertino
                     </span>
                   </div>
-                  <p className="hidden sm:block text-[11px] text-white/50 truncate">
-                    Real-time telemetry for models, user prompt, upstream headers & responses
+                  <p className="hidden sm:block text-[10px] text-white/50 truncate">
+                    Real-time telemetry for models, prompts, headers & responses
                   </p>
                 </div>
               </div>
 
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1.5">
                 <button
                   type="button"
                   onClick={() => runtimeLogger.clearLogs()}
                   disabled={logs.length === 0}
-                  className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-[#2C2C2E]/80 px-3 py-1.5 text-xs font-medium text-white/80 transition-all hover:bg-red-500/20 hover:border-red-500/30 hover:text-red-400 active:scale-95 disabled:opacity-40 disabled:pointer-events-none cursor-pointer"
+                  className="inline-flex items-center gap-1 rounded-lg border border-white/10 bg-[#2C2C2E]/80 px-2 py-1 text-[11px] font-medium text-white/80 transition-all hover:bg-red-500/20 hover:border-red-500/30 hover:text-red-400 active:scale-95 disabled:opacity-40 disabled:pointer-events-none cursor-pointer"
                   title="Clear in-memory request logs"
                 >
-                  <span className="material-symbols-outlined text-[15px]">delete_sweep</span>
-                  <span className="hidden sm:inline">Clear</span>
+                  <span className="material-symbols-outlined text-[13px]">delete_sweep</span>
+                  <span>Clear</span>
                 </button>
                 <button
                   type="button"
                   onClick={() => setIsOpen(false)}
-                  className="size-8 rounded-full bg-[#2C2C2E] border border-white/10 flex items-center justify-center text-white/70 transition-all hover:bg-[#3A3A3C] hover:text-white active:scale-90 cursor-pointer shadow-xs"
+                  className="size-7 rounded-lg bg-[#2C2C2E] border border-white/10 flex items-center justify-center text-white/70 transition-all hover:bg-[#3A3A3C] hover:text-white active:scale-90 cursor-pointer shadow-xs"
                   aria-label="Close"
                 >
-                  <span className="material-symbols-outlined text-lg">close</span>
+                  <span className="material-symbols-outlined text-base">close</span>
                 </button>
               </div>
             </div>
 
             {/* ── TOP PRIMARY TABS: Cupertino Segmented Control ── */}
-            <div className="px-3 sm:px-6 py-2.5 border-b border-white/[0.08] bg-[#1C1C1E]/60 backdrop-blur-xl shrink-0">
-              <div className="flex p-1 bg-[#2C2C2E]/80 backdrop-blur-md rounded-2xl border border-white/[0.06] gap-1 shadow-inner">
+            <div className="px-3 sm:px-4 py-1.5 border-b border-white/[0.08] bg-[#1C1C1E]/60 backdrop-blur-xl shrink-0">
+              <div className="flex p-0.5 bg-[#2C2C2E]/80 backdrop-blur-md rounded-xl border border-white/[0.06] gap-1 shadow-inner">
                 <button
                   type="button"
                   onClick={() => setMainTab("ai-models")}
-                  className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 text-xs font-semibold rounded-xl transition-all duration-200 cursor-pointer active:scale-[0.98] ${
+                  className={`flex-1 flex items-center justify-center gap-1.5 py-1 px-2.5 text-[11px] font-semibold rounded-lg transition-all duration-200 cursor-pointer active:scale-[0.98] ${
                     mainTab === "ai-models"
-                      ? "bg-[#3A3A3C] text-white shadow-md border border-white/10"
+                      ? "bg-[#3A3A3C] text-white shadow-sm border border-white/10"
                       : "text-white/60 hover:text-white"
                   }`}
                 >
-                  <span className="material-symbols-outlined text-[16px] text-primary">psychology</span>
-                  <span className="truncate">Track AI Models Logs</span>
-                  <span className="rounded-full bg-primary/20 text-primary px-1.5 py-0.5 text-[10px] font-mono shrink-0">
+                  <span className="material-symbols-outlined text-[14px] text-primary">
+                    psychology
+                  </span>
+                  <span className="truncate">Track AI Models</span>
+                  <span className="rounded-full bg-primary/20 text-primary px-1.5 py-0.2 text-[9px] font-mono shrink-0">
                     Live
                   </span>
                 </button>
@@ -196,15 +201,15 @@ export default function RuntimeRequestInspector() {
                 <button
                   type="button"
                   onClick={() => setMainTab("all-requests")}
-                  className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 text-xs font-semibold rounded-xl transition-all duration-200 cursor-pointer active:scale-[0.98] ${
+                  className={`flex-1 flex items-center justify-center gap-1.5 py-1 px-2.5 text-[11px] font-semibold rounded-lg transition-all duration-200 cursor-pointer active:scale-[0.98] ${
                     mainTab === "all-requests"
-                      ? "bg-[#3A3A3C] text-white shadow-md border border-white/10"
+                      ? "bg-[#3A3A3C] text-white shadow-sm border border-white/10"
                       : "text-white/60 hover:text-white"
                   }`}
                 >
-                  <span className="material-symbols-outlined text-[16px]">network_check</span>
-                  <span className="truncate">All Network Requests</span>
-                  <span className="rounded-full bg-white/10 px-1.5 py-0.5 text-[10px] font-mono text-white/70 shrink-0">
+                  <span className="material-symbols-outlined text-[14px]">network_check</span>
+                  <span className="truncate">Network HTTP</span>
+                  <span className="rounded-full bg-white/10 px-1.5 py-0.2 text-[9px] font-mono text-white/70 shrink-0">
                     {logs.length}
                   </span>
                 </button>
@@ -264,242 +269,257 @@ export default function RuntimeRequestInspector() {
                   </div>
                 </div>
 
-            {/* Content: Split Layout (List on Top or Left, Inspector Details Below) */}
-            <div className="flex flex-1 min-h-0 flex-col md:flex-row overflow-hidden">
-              {/* Request List Column */}
-              <div className="flex flex-col md:w-1/2 border-b md:border-b-0 md:border-r border-white/10 overflow-y-auto custom-scrollbar">
-                {filteredLogs.length === 0 ? (
-                  <div className="p-8 text-center text-xs text-white/40">
-                    <span className="material-symbols-outlined text-3xl mb-2 text-white/20 block">
-                      inbox
-                    </span>
-                    No requests match filter
-                  </div>
-                ) : (
-                  <div className="divide-y divide-white/5">
-                    {filteredLogs.map((log) => {
-                      const isSelected = selectedLog?.id === log.id;
-                      return (
-                        <div
-                          key={log.id}
-                          onClick={() => setSelectedId(log.id)}
-                          className={`flex items-start gap-2.5 p-3 text-xs transition-colors cursor-pointer ${
-                            isSelected ? "bg-white/10 border-l-2 border-white" : "hover:bg-white/5"
-                          }`}
-                        >
-                          <span
-                            className={`rounded px-1.5 py-0.5 font-mono text-[10px] font-bold border ${getMethodBadgeClass(
-                              log.method
-                            )}`}
-                          >
-                            {log.method}
-                          </span>
-                          <span
-                            className={`rounded px-1.5 py-0.5 font-mono text-[10px] font-semibold border ${getStatusBadgeClass(
-                              log.status,
-                              log.error
-                            )}`}
-                          >
-                            {log.error ? "ERR" : log.status || "..."}
-                          </span>
-                          <div className="flex-1 min-w-0">
-                            <p className="truncate font-mono text-white/90 font-medium" title={log.pathname}>
-                              {log.pathname}
-                            </p>
-                            <div className="flex items-center gap-2 text-[10px] text-white/40 mt-0.5">
-                              <span>{log.timestamp}</span>
-                              {log.durationMs !== undefined && <span>{log.durationMs}ms</span>}
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-
-              {/* Request Details Inspector Column */}
-              <div className="flex flex-col md:w-1/2 overflow-y-auto custom-scrollbar bg-[#0A0A0A] p-4 text-xs">
-                {selectedLog ? (
-                  <div className="flex flex-col gap-4">
-                    {/* Overview Header */}
-                    <div className="rounded-lg border border-white/10 bg-black/40 p-3 flex flex-col gap-2">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <span
-                            className={`rounded px-2 py-0.5 font-mono text-xs font-bold border ${getMethodBadgeClass(
-                              selectedLog.method
-                            )}`}
-                          >
-                            {selectedLog.method}
-                          </span>
-                          <span
-                            className={`rounded px-2 py-0.5 font-mono text-xs font-bold border ${getStatusBadgeClass(
-                              selectedLog.status,
-                              selectedLog.error
-                            )}`}
-                          >
-                            {selectedLog.error
-                              ? "ERROR"
-                              : `${selectedLog.status} ${selectedLog.statusText || ""}`}
-                          </span>
-                        </div>
-                        <span className="text-[11px] text-white/40 font-mono">
-                          {selectedLog.durationMs !== undefined ? `${selectedLog.durationMs}ms` : ""}
+                {/* Content: Split Layout (List on Top or Left, Inspector Details Below) */}
+                <div className="flex flex-1 min-h-0 flex-col md:flex-row overflow-hidden">
+                  {/* Request List Column */}
+                  <div className="flex flex-col md:w-1/2 border-b md:border-b-0 md:border-r border-white/10 overflow-y-auto custom-scrollbar">
+                    {filteredLogs.length === 0 ? (
+                      <div className="p-8 text-center text-xs text-white/40">
+                        <span className="material-symbols-outlined text-3xl mb-2 text-white/20 block">
+                          inbox
                         </span>
+                        No requests match filter
                       </div>
-
-                      <div className="flex items-center justify-between gap-2 pt-1 border-t border-white/5">
-                        <p className="font-mono text-xs text-white/90 break-all select-all">
-                          {selectedLog.url}
-                        </p>
-                        <button
-                          type="button"
-                          onClick={() => copyToClipboard(selectedLog.url, "url")}
-                          className="text-[11px] text-white/60 hover:text-white shrink-0"
-                          title="Copy URL"
-                        >
-                          {copiedKey === "url" ? "✓" : "Copy"}
-                        </button>
-                      </div>
-                    </div>
-
-                    {/* Network Error Alert */}
-                    {selectedLog.error && (
-                      <div className="rounded-lg border border-red-500/30 bg-red-500/10 p-3 text-red-400">
-                        <strong className="block mb-1">Network Error:</strong>
-                        <p className="font-mono text-[11px] break-all">{selectedLog.error}</p>
+                    ) : (
+                      <div className="divide-y divide-white/5">
+                        {filteredLogs.map((log) => {
+                          const isSelected = selectedLog?.id === log.id;
+                          return (
+                            <div
+                              key={log.id}
+                              onClick={() => setSelectedId(log.id)}
+                              className={`flex items-start gap-2.5 p-3 text-xs transition-colors cursor-pointer ${
+                                isSelected
+                                  ? "bg-white/10 border-l-2 border-white"
+                                  : "hover:bg-white/5"
+                              }`}
+                            >
+                              <span
+                                className={`rounded px-1.5 py-0.5 font-mono text-[10px] font-bold border ${getMethodBadgeClass(
+                                  log.method
+                                )}`}
+                              >
+                                {log.method}
+                              </span>
+                              <span
+                                className={`rounded px-1.5 py-0.5 font-mono text-[10px] font-semibold border ${getStatusBadgeClass(
+                                  log.status,
+                                  log.error
+                                )}`}
+                              >
+                                {log.error ? "ERR" : log.status || "..."}
+                              </span>
+                              <div className="flex-1 min-w-0">
+                                <p
+                                  className="truncate font-mono text-white/90 font-medium"
+                                  title={log.pathname}
+                                >
+                                  {log.pathname}
+                                </p>
+                                <div className="flex items-center gap-2 text-[10px] text-white/40 mt-0.5">
+                                  <span>{log.timestamp}</span>
+                                  {log.durationMs !== undefined && <span>{log.durationMs}ms</span>}
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
                       </div>
                     )}
+                  </div>
 
-                    {/* Request Headers */}
-                    <div className="flex flex-col gap-1.5">
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs font-semibold text-white/80">Request Headers</span>
-                        {Object.keys(selectedLog.requestHeaders).length > 0 && (
-                          <button
-                            type="button"
-                            onClick={() =>
-                              copyToClipboard(
-                                JSON.stringify(selectedLog.requestHeaders, null, 2),
-                                "req_headers"
-                              )
-                            }
-                            className="text-[11px] text-white/40 hover:text-white"
-                          >
-                            {copiedKey === "req_headers" ? "Copied" : "Copy"}
-                          </button>
-                        )}
-                      </div>
-                      <div className="rounded-lg border border-white/10 bg-black/60 p-2.5 font-mono text-[11px] text-white/80 overflow-x-auto max-h-36">
-                        {Object.keys(selectedLog.requestHeaders).length === 0 ? (
-                          <span className="text-white/40">No request headers</span>
-                        ) : (
-                          Object.entries(selectedLog.requestHeaders).map(([k, v]) => (
-                            <div key={k} className="flex gap-2">
-                              <span className="text-white/40 select-all">{k}:</span>
-                              <span className="text-white/90 select-all">{v}</span>
+                  {/* Request Details Inspector Column */}
+                  <div className="flex flex-col md:w-1/2 overflow-y-auto custom-scrollbar bg-[#0A0A0A] p-4 text-xs">
+                    {selectedLog ? (
+                      <div className="flex flex-col gap-4">
+                        {/* Overview Header */}
+                        <div className="rounded-lg border border-white/10 bg-black/40 p-3 flex flex-col gap-2">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <span
+                                className={`rounded px-2 py-0.5 font-mono text-xs font-bold border ${getMethodBadgeClass(
+                                  selectedLog.method
+                                )}`}
+                              >
+                                {selectedLog.method}
+                              </span>
+                              <span
+                                className={`rounded px-2 py-0.5 font-mono text-xs font-bold border ${getStatusBadgeClass(
+                                  selectedLog.status,
+                                  selectedLog.error
+                                )}`}
+                              >
+                                {selectedLog.error
+                                  ? "ERROR"
+                                  : `${selectedLog.status} ${selectedLog.statusText || ""}`}
+                              </span>
                             </div>
-                          ))
-                        )}
-                      </div>
-                    </div>
+                            <span className="text-[11px] text-white/40 font-mono">
+                              {selectedLog.durationMs !== undefined
+                                ? `${selectedLog.durationMs}ms`
+                                : ""}
+                            </span>
+                          </div>
 
-                    {/* Request Body */}
-                    <div className="flex flex-col gap-1.5">
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs font-semibold text-white/80">Request Body</span>
-                        {selectedLog.requestBody && (
-                          <button
-                            type="button"
-                            onClick={() =>
-                              copyToClipboard(formatJson(selectedLog.requestBody), "req_body")
-                            }
-                            className="text-[11px] text-white/40 hover:text-white"
-                          >
-                            {copiedKey === "req_body" ? "Copied" : "Copy"}
-                          </button>
-                        )}
-                      </div>
-                      <textarea
-                        readOnly
-                        rows={5}
-                        value={formatJson(selectedLog.requestBody)}
-                        className="w-full rounded-lg border border-white/10 bg-black/60 p-2.5 font-mono text-[11px] text-white/90 resize-none focus:outline-none"
-                      />
-                    </div>
-
-                    {/* Response Headers */}
-                    <div className="flex flex-col gap-1.5">
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs font-semibold text-white/80">Response Headers</span>
-                        {selectedLog.responseHeaders &&
-                          Object.keys(selectedLog.responseHeaders).length > 0 && (
+                          <div className="flex items-center justify-between gap-2 pt-1 border-t border-white/5">
+                            <p className="font-mono text-xs text-white/90 break-all select-all">
+                              {selectedLog.url}
+                            </p>
                             <button
                               type="button"
-                              onClick={() =>
-                                copyToClipboard(
-                                  JSON.stringify(selectedLog.responseHeaders, null, 2),
-                                  "res_headers"
-                                )
-                              }
-                              className="text-[11px] text-white/40 hover:text-white"
+                              onClick={() => copyToClipboard(selectedLog.url, "url")}
+                              className="text-[11px] text-white/60 hover:text-white shrink-0"
+                              title="Copy URL"
                             >
-                              {copiedKey === "res_headers" ? "Copied" : "Copy"}
+                              {copiedKey === "url" ? "✓" : "Copy"}
                             </button>
-                          )}
-                      </div>
-                      <div className="rounded-lg border border-white/10 bg-black/60 p-2.5 font-mono text-[11px] text-white/80 overflow-x-auto max-h-36">
-                        {!selectedLog.responseHeaders ||
-                        Object.keys(selectedLog.responseHeaders).length === 0 ? (
-                          <span className="text-white/40">No response headers</span>
-                        ) : (
-                          Object.entries(selectedLog.responseHeaders).map(([k, v]) => (
-                            <div key={k} className="flex gap-2">
-                              <span className="text-white/40 select-all">{k}:</span>
-                              <span className="text-white/90 select-all">{v}</span>
-                            </div>
-                          ))
-                        )}
-                      </div>
-                    </div>
+                          </div>
+                        </div>
 
-                    {/* Response Payload */}
-                    <div className="flex flex-col gap-1.5">
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs font-semibold text-white/80">Response Body</span>
-                        {selectedLog.responseBody && (
-                          <button
-                            type="button"
-                            onClick={() =>
-                              copyToClipboard(formatJson(selectedLog.responseBody), "res_body")
-                            }
-                            className="text-[11px] text-white/40 hover:text-white"
-                          >
-                            {copiedKey === "res_body" ? "Copied" : "Copy"}
-                          </button>
+                        {/* Network Error Alert */}
+                        {selectedLog.error && (
+                          <div className="rounded-lg border border-red-500/30 bg-red-500/10 p-3 text-red-400">
+                            <strong className="block mb-1">Network Error:</strong>
+                            <p className="font-mono text-[11px] break-all">{selectedLog.error}</p>
+                          </div>
                         )}
+
+                        {/* Request Headers */}
+                        <div className="flex flex-col gap-1.5">
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs font-semibold text-white/80">
+                              Request Headers
+                            </span>
+                            {Object.keys(selectedLog.requestHeaders).length > 0 && (
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  copyToClipboard(
+                                    JSON.stringify(selectedLog.requestHeaders, null, 2),
+                                    "req_headers"
+                                  )
+                                }
+                                className="text-[11px] text-white/40 hover:text-white"
+                              >
+                                {copiedKey === "req_headers" ? "Copied" : "Copy"}
+                              </button>
+                            )}
+                          </div>
+                          <div className="rounded-lg border border-white/10 bg-black/60 p-2.5 font-mono text-[11px] text-white/80 overflow-x-auto max-h-36">
+                            {Object.keys(selectedLog.requestHeaders).length === 0 ? (
+                              <span className="text-white/40">No request headers</span>
+                            ) : (
+                              Object.entries(selectedLog.requestHeaders).map(([k, v]) => (
+                                <div key={k} className="flex gap-2">
+                                  <span className="text-white/40 select-all">{k}:</span>
+                                  <span className="text-white/90 select-all">{v}</span>
+                                </div>
+                              ))
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Request Body */}
+                        <div className="flex flex-col gap-1.5">
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs font-semibold text-white/80">
+                              Request Body
+                            </span>
+                            {selectedLog.requestBody && (
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  copyToClipboard(formatJson(selectedLog.requestBody), "req_body")
+                                }
+                                className="text-[11px] text-white/40 hover:text-white"
+                              >
+                                {copiedKey === "req_body" ? "Copied" : "Copy"}
+                              </button>
+                            )}
+                          </div>
+                          <textarea
+                            readOnly
+                            rows={5}
+                            value={formatJson(selectedLog.requestBody)}
+                            className="w-full rounded-lg border border-white/10 bg-black/60 p-2.5 font-mono text-[11px] text-white/90 resize-none focus:outline-none"
+                          />
+                        </div>
+
+                        {/* Response Headers */}
+                        <div className="flex flex-col gap-1.5">
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs font-semibold text-white/80">
+                              Response Headers
+                            </span>
+                            {selectedLog.responseHeaders &&
+                              Object.keys(selectedLog.responseHeaders).length > 0 && (
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    copyToClipboard(
+                                      JSON.stringify(selectedLog.responseHeaders, null, 2),
+                                      "res_headers"
+                                    )
+                                  }
+                                  className="text-[11px] text-white/40 hover:text-white"
+                                >
+                                  {copiedKey === "res_headers" ? "Copied" : "Copy"}
+                                </button>
+                              )}
+                          </div>
+                          <div className="rounded-lg border border-white/10 bg-black/60 p-2.5 font-mono text-[11px] text-white/80 overflow-x-auto max-h-36">
+                            {!selectedLog.responseHeaders ||
+                            Object.keys(selectedLog.responseHeaders).length === 0 ? (
+                              <span className="text-white/40">No response headers</span>
+                            ) : (
+                              Object.entries(selectedLog.responseHeaders).map(([k, v]) => (
+                                <div key={k} className="flex gap-2">
+                                  <span className="text-white/40 select-all">{k}:</span>
+                                  <span className="text-white/90 select-all">{v}</span>
+                                </div>
+                              ))
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Response Payload */}
+                        <div className="flex flex-col gap-1.5">
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs font-semibold text-white/80">
+                              Response Body
+                            </span>
+                            {selectedLog.responseBody && (
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  copyToClipboard(formatJson(selectedLog.responseBody), "res_body")
+                                }
+                                className="text-[11px] text-white/40 hover:text-white"
+                              >
+                                {copiedKey === "res_body" ? "Copied" : "Copy"}
+                              </button>
+                            )}
+                          </div>
+                          <textarea
+                            readOnly
+                            rows={8}
+                            value={formatJson(selectedLog.responseBody)}
+                            className="w-full rounded-lg border border-white/10 bg-black/60 p-2.5 font-mono text-[11px] text-white/90 resize-none focus:outline-none"
+                          />
+                        </div>
                       </div>
-                      <textarea
-                        readOnly
-                        rows={8}
-                        value={formatJson(selectedLog.responseBody)}
-                        className="w-full rounded-lg border border-white/10 bg-black/60 p-2.5 font-mono text-[11px] text-white/90 resize-none focus:outline-none"
-                      />
-                    </div>
+                    ) : (
+                      <div className="flex h-full items-center justify-center p-8 text-center text-xs text-white/40">
+                        Select a request from the list to inspect full details
+                      </div>
+                    )}
                   </div>
-                ) : (
-                  <div className="flex h-full items-center justify-center p-8 text-center text-xs text-white/40">
-                    Select a request from the list to inspect full details
-                  </div>
-                )}
-              </div>
-            </div>
-          </>
-        )}
-      </aside>
-    </div>
-  )}
+                </div>
+              </>
+            )}
+          </aside>
+        </div>
+      )}
     </>
   );
 }

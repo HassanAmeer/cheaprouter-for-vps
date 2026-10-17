@@ -20,21 +20,39 @@ export function findUser(login: string): User | undefined {
     | undefined;
 }
 
-export function createUser(email: string, name: string, password: string): User {
+export function createUser(email: string, name: string, password: string, planId?: number): User {
   const db = getDb();
   const info = db
-    .prepare("INSERT INTO users (email, name, password_hash, role) VALUES (?, ?, ?, 'user')")
+    .prepare("INSERT INTO users (email, name, password_hash, role, status) VALUES (?, ?, ?, 'user', 'active')")
     .run(email.trim(), name.trim() || email.trim(), hashPassword(password));
-  const free = db.prepare("SELECT id FROM plans WHERE name = 'Free'").get() as { id: number };
-  db.prepare(
-    "INSERT INTO user_subscriptions (user_id, plan_id, expires_at) VALUES (?, ?, datetime('now', '+7 days'))"
-  ).run(info.lastInsertRowid, free.id);
+
+  let targetPlanId = planId;
+  if (!targetPlanId) {
+    const free =
+      (db.prepare("SELECT id FROM plans WHERE name = 'Free'").get() as { id: number } | undefined) ??
+      (db.prepare("SELECT id FROM plans ORDER BY price ASC LIMIT 1").get() as { id: number } | undefined);
+    targetPlanId = free?.id;
+  }
+
+  if (targetPlanId) {
+    const plan = db.prepare("SELECT validity_days FROM plans WHERE id = ?").get(targetPlanId) as
+      | { validity_days: number | null }
+      | undefined;
+    const expiresClause =
+      plan?.validity_days && plan.validity_days > 0
+        ? `datetime('now', '+${plan.validity_days} days')`
+        : "NULL";
+    db.prepare(
+      `INSERT INTO user_subscriptions (user_id, plan_id, expires_at) VALUES (?, ?, ${expiresClause})`
+    ).run(info.lastInsertRowid, targetPlanId);
+  }
   return db.prepare("SELECT * FROM users WHERE id = ?").get(info.lastInsertRowid) as User;
 }
 
 export function verifyLogin(login: string, password: string): SessionUser | null {
   const user = findUser(login);
   if (!user || !verifyPassword(password, user.password_hash)) return null;
+  if (user.status === "banned") return null;
   return { id: user.id, email: user.email, name: user.name, role: user.role };
 }
 
@@ -56,7 +74,7 @@ export function getSessionUser(token: string | undefined): SessionUser | null {
     .prepare(
       `SELECT u.id, u.email, u.name, u.role FROM sessions s
        JOIN users u ON u.id = s.user_id
-       WHERE s.token = ? AND s.expires_at > datetime('now')`
+       WHERE s.token = ? AND s.expires_at > datetime('now') AND (u.status IS NULL OR u.status != 'banned')`
     )
     .get(token) as SessionUser | undefined;
   return row ?? null;

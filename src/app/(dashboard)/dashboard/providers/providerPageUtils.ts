@@ -31,6 +31,10 @@ import { getFeaturedProviderRank } from "./featuredProviders";
 
 export interface ProviderStatsSnapshot {
   total?: number;
+  connected?: number;
+  error?: number;
+  warning?: number;
+  allDisabled?: boolean;
   [key: string]: unknown;
 }
 
@@ -300,7 +304,8 @@ export function connectionMatchesProviderCard(
   cardAuthType: "oauth" | "free" | "apikey",
   providerNodes?: Array<{ id: string; prefix?: string | null }>
 ): boolean {
-  if (!conn || !connectionBelongsToProviderPage(conn.provider, providerId, providerNodes)) return false;
+  if (!conn || !connectionBelongsToProviderPage(conn.provider, providerId, providerNodes))
+    return false;
   if (cardAuthType === "free") return true;
   if (conn.authType === "anonymous") return true;
   if (
@@ -544,9 +549,34 @@ export function filterConfiguredProviderEntries<TProvider>(
 
   // Connection status filter (connected vs unconnected tab filter)
   if (connectionStatusFilter === "connected") {
-    filtered = filtered.filter((entry) => Number(entry.stats?.total || 0) > 0);
+    filtered = filtered.filter((entry) => {
+      const isPaused = Boolean(entry.stats?.allDisabled);
+      if (isPaused) return false;
+      const isNoAuth =
+        entry.displayAuthType === "no-auth" ||
+        Boolean((entry.provider as Record<string, unknown>)?.noAuth);
+      if (isNoAuth) return true;
+      return Number(entry.stats?.connected || 0) > 0 || Number(entry.stats?.total || 0) > 0;
+    });
   } else if (connectionStatusFilter === "unconnected") {
-    filtered = filtered.filter((entry) => Number(entry.stats?.total || 0) === 0);
+    filtered = filtered.filter((entry) => {
+      const isPaused = Boolean(entry.stats?.allDisabled);
+      // Paused providers must be shown in the unconnected tab
+      if (isPaused) return true;
+
+      const isNoAuth =
+        entry.displayAuthType === "no-auth" ||
+        Boolean((entry.provider as Record<string, unknown>)?.noAuth);
+      // Active no-auth providers are connected by default, so exclude them
+      if (isNoAuth) return false;
+
+      // Active connected connections mean the provider is connected, so exclude
+      const connected = Number(entry.stats?.connected || 0);
+      if (connected > 0) return false;
+
+      // Regular providers with 0 total connections are unconnected
+      return Number(entry.stats?.total || 0) === 0;
+    });
   } else if (showConfiguredOnly) {
     // no-auth providers never create a DB connection row (stats.total === 0) but
     // are always usable and appear unconditionally in the /v1/models catalog, so

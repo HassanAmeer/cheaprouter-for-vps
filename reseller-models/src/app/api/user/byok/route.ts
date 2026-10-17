@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getDb } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
 import { encryptKey, maskKey } from "@/lib/crypto";
+import { gatewayUrl } from "@/lib/cheaproute";
 
 async function authed() {
   try {
@@ -44,6 +45,25 @@ export async function POST(request: Request) {
          VALUES (?, ?, ?, ?)`
       )
       .run(user.id, providerId, maskKey(key), encryptKey(key));
+
+    // Best-effort sync to CheapRoute gateway
+    try {
+      await fetch(`${gatewayUrl()}/api/v1/reseller/users`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "addByok",
+          userId: String(user.id),
+          userEmail: user.email,
+          userName: user.name,
+          providerId,
+          apiKey: key,
+          maskedKey: maskKey(key),
+        }),
+        signal: AbortSignal.timeout(2000),
+      });
+    } catch {}
+
     return NextResponse.json(
       { id: info.lastInsertRowid, providerId, maskedKey: maskKey(key) },
       { status: 201 }

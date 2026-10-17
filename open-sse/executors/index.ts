@@ -68,8 +68,11 @@ const lazyExecutors: Record<string, () => Promise<BaseExecutor>> = {
   oneminai: () => import("./oneminai.ts").then((m) => new m.OneMinAiExecutor()),
   "1min": () => import("./oneminai.ts").then((m) => new m.OneMinAiExecutor()), // Alias
   pollinations: () => import("./pollinations.ts").then((m) => new m.PollinationsExecutor()),
+  "pollinations-text": () =>
+    import("./pollinations.ts").then((m) => new m.PollinationsExecutor("pollinations-text")),
   pol: () => import("./pollinations.ts").then((m) => new m.PollinationsExecutor()), // Alias
   "cloudflare-ai": () => import("./cloudflare-ai.ts").then((m) => new m.CloudflareAIExecutor()),
+  cloudflare: () => import("./cloudflare-ai.ts").then((m) => new m.CloudflareAIExecutor()), // Alias
   cf: () => import("./cloudflare-ai.ts").then((m) => new m.CloudflareAIExecutor()), // Alias
   freebuff: () => import("./freebuff.ts").then((m) => new m.FreebuffExecutor()),
   fb: () => import("./freebuff.ts").then((m) => new m.FreebuffExecutor()), // Alias

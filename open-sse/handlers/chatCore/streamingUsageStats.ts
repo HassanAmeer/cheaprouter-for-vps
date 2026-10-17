@@ -13,6 +13,7 @@
 import { saveRequestUsage } from "@/lib/usageDb";
 import { recordKeyQuotaUsage } from "@/domain/keyQuota";
 import { recordTokenUsage } from "../../services/tokenLimitCounter.ts";
+import { recordTokenConsumption } from "@/lib/db/modelLimits";
 import { computeBillableTokens } from "./upstreamTimeouts.ts";
 import { type EffectiveServiceTier } from "./serviceTier.ts";
 
@@ -64,9 +65,20 @@ function persistStreamingUsageRow(usage: object, ctx: RecordStreamingUsageStatsC
 }
 
 function recordStreamingBillableTokens(usage: object, ctx: RecordStreamingUsageStatsContext): void {
-  if (!ctx.apiKeyInfo?.id || ctx.streamStatus !== 200) return;
+  if (ctx.streamStatus !== 200) return;
   try {
     const billable = computeBillableTokens(usage);
+    if (billable > 0) {
+      try {
+        recordTokenConsumption("model", ctx.model || "unknown", billable, ctx.provider);
+        if (ctx.isCombo && ctx.comboStrategy) {
+          recordTokenConsumption("combo", ctx.comboStrategy, billable);
+        }
+      } catch {
+        // never block stream on limit bank recording
+      }
+    }
+    if (!ctx.apiKeyInfo?.id) return;
     // Key-quota tpm/rpm counters advance on every completed stream.
     recordKeyQuotaUsage(ctx.apiKeyInfo.id, billable);
     if (billable > 0)

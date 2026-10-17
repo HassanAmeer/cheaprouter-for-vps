@@ -16,9 +16,10 @@
  * alias resolves back to the original upstream model id at dispatch time.
  */
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { Fragment, useCallback, useEffect, useMemo, useState } from "react";
 import { Card, ShimmerPageLoader } from "@/shared/components";
 import { isCatalogFreeModel } from "@/shared/utils/freeModels";
+import { getPricingForModel } from "@/shared/constants/pricing";
 import { matchesSearch } from "@/shared/utils/turkishText";
 import { detectModelCapabilities } from "@/shared/utils/modelCapabilities";
 import DefaultCapabilitiesPromptModal, {
@@ -77,6 +78,34 @@ interface Customization {
   contextWindow: number | null;
   capabilities: string[] | null;
   isFreeOverride?: boolean | null;
+  pricingTier?: "free" | "paid" | null;
+  originalInputCost?: number | null;
+  originalCacheCost?: number | null;
+  originalOutputCost?: number | null;
+  inputCost?: number | null;
+  cacheCost?: number | null;
+  outputCost?: number | null;
+}
+
+interface ManagedCombo {
+  id: string;
+  name: string;
+  displayName?: string | null;
+  customAlias?: string | null;
+  context_length?: number | null;
+  computed_context_length?: number | null;
+  isActive?: boolean;
+  strategy?: string;
+  models?: Array<{ providerId?: string; model?: string; provider?: string }>;
+  pricing?: {
+    tier?: "free" | "paid";
+    originalInputCost?: number | null;
+    originalCacheCost?: number | null;
+    originalOutputCost?: number | null;
+    inputCost?: number | null;
+    cacheCost?: number | null;
+    outputCost?: number | null;
+  } | null;
 }
 
 interface LiveTestResult {
@@ -183,6 +212,17 @@ async function fetchCurationPayload(): Promise<{
   };
 }
 
+async function fetchCombosPayload(): Promise<ManagedCombo[]> {
+  try {
+    const res = await fetch("/api/combos");
+    if (!res.ok) return [];
+    const data = await res.json().catch(() => null);
+    return Array.isArray(data?.combos) ? data.combos : [];
+  } catch {
+    return [];
+  }
+}
+
 async function postCuration(payload: Record<string, unknown>): Promise<Customization | null> {
   const res = await fetch("/api/v1/models/curation", {
     method: "POST",
@@ -210,9 +250,47 @@ export default function ManageModelsPanel() {
   const [testingId, setTestingId] = useState<string | null>(null);
   const [testResults, setTestResults] = useState<Record<string, LiveTestResult>>({});
   const [aliasDrafts, setAliasDrafts] = useState<
-    Record<string, { name: string; alias: string; contextWindow: string }>
+    Record<
+      string,
+      {
+        name: string;
+        alias: string;
+        contextWindow: string;
+        pricingTier?: "free" | "paid";
+        originalInputCost?: string;
+        originalCacheCost?: string;
+        originalOutputCost?: string;
+        inputCost?: string;
+        cacheCost?: string;
+        outputCost?: string;
+      }
+    >
   >({});
   const [savingAlias, setSavingAlias] = useState<string | null>(null);
+  const [savingSelectionsProviderId, setSavingSelectionsProviderId] = useState<string | null>(null);
+  const [savedFeedbackProviderId, setSavedFeedbackProviderId] = useState<string | null>(null);
+
+  // ── Combos Management State ──
+  const [combos, setCombos] = useState<ManagedCombo[]>([]);
+  const [comboDrafts, setComboDrafts] = useState<
+    Record<
+      string,
+      {
+        displayName: string;
+        customAlias: string;
+        contextWindow: string;
+        pricingTier: "free" | "paid";
+        originalInputCost: string;
+        originalCacheCost: string;
+        originalOutputCost: string;
+        inputCost: string;
+        cacheCost: string;
+        outputCost: string;
+      }
+    >
+  >({});
+  const [savingComboId, setSavingComboId] = useState<string | null>(null);
+  const [combosExpanded, setCombosExpanded] = useState<boolean>(true);
 
   // ── Global Test Prompt State (Modal in Header) ───────────────────────────
   const [showCapabilityPrompt, setShowCapabilityPrompt] = useState(false);
@@ -268,18 +346,29 @@ export default function ManageModelsPanel() {
     []
   );
 
-  const refresh = useCallback(async () => {
-    setLoading(true);
-    setLoadError(null);
-    try {
-      const payload = await fetchCurationPayload();
-      applyPayload(payload);
-    } catch (err) {
-      setLoadError(err instanceof Error ? err.message : "Failed to load model curation");
-    } finally {
-      setLoading(false);
-    }
-  }, [applyPayload]);
+  const refresh = useCallback(
+    async (showLoading = false) => {
+      if (showLoading) {
+        setLoading(true);
+        setLoadError(null);
+      }
+      try {
+        const [payload, loadedCombos] = await Promise.all([
+          fetchCurationPayload(),
+          fetchCombosPayload(),
+        ]);
+        applyPayload(payload);
+        setCombos(loadedCombos);
+      } catch (err) {
+        setLoadError(err instanceof Error ? err.message : "Failed to load model curation");
+      } finally {
+        if (showLoading) {
+          setLoading(false);
+        }
+      }
+    },
+    [applyPayload]
+  );
 
   // Initial load: async work runs after the await inside the effect, so no
   // setState fires synchronously in the effect body (react-hooks rule).
@@ -287,9 +376,13 @@ export default function ManageModelsPanel() {
     let cancelled = false;
     const run = async () => {
       try {
-        const payload = await fetchCurationPayload();
+        const [payload, loadedCombos] = await Promise.all([
+          fetchCurationPayload(),
+          fetchCombosPayload(),
+        ]);
         if (cancelled) return;
         applyPayload(payload);
+        setCombos(loadedCombos);
         setLoadError(null);
       } catch (err) {
         if (cancelled) return;
@@ -356,6 +449,35 @@ export default function ManageModelsPanel() {
 
   const handleToggleActive = useCallback(
     async (providerId: string, modelId: string, active: boolean) => {
+      // Optimistic in-place update for instant switch flip
+      setCustomizations((prev) => {
+        const idx = prev.findIndex(
+          (c) => c.providerId === providerId && c.originalModelId === modelId
+        );
+        if (idx === -1) {
+          return [
+            ...prev,
+            {
+              providerId,
+              originalModelId: modelId,
+              customName: null,
+              customAlias: null,
+              isActive: active,
+              isTested: false,
+              testStatus: null,
+              testHttpStatus: null,
+              testLatencyMs: null,
+              testResponse: null,
+              contextWindow: null,
+              capabilities: null,
+            },
+          ];
+        }
+        const next = [...prev];
+        next[idx] = { ...next[idx], isActive: active };
+        return next;
+      });
+
       const row = await postCuration({
         action: "setActive",
         providerId,
@@ -363,7 +485,7 @@ export default function ManageModelsPanel() {
         active,
       });
       if (row) patchCustomization(row);
-      else void refresh();
+      else void refresh(false);
     },
     [patchCustomization, refresh]
   );
@@ -373,42 +495,207 @@ export default function ManageModelsPanel() {
       const models = modelsByProvider[providerId] ?? [];
       if (models.length === 0) return;
       const modelIds = models.map((m) => m.id);
-      await postCuration({
-        action: "setAllActive",
-        providerId,
-        modelIds,
-        active,
+
+      // Optimistic in-place update for instant UI feedback without refresh
+      setCustomizations((prev) => {
+        const modelIdSet = new Set(modelIds);
+        const updated = prev.map((c) =>
+          c.providerId === providerId && modelIdSet.has(c.originalModelId)
+            ? { ...c, isActive: active }
+            : c
+        );
+        for (const mId of modelIds) {
+          if (!updated.some((c) => c.providerId === providerId && c.originalModelId === mId)) {
+            updated.push({
+              providerId,
+              originalModelId: mId,
+              customName: null,
+              customAlias: null,
+              isActive: active,
+              isTested: false,
+              testStatus: null,
+              testHttpStatus: null,
+              testLatencyMs: null,
+              testResponse: null,
+              contextWindow: null,
+              capabilities: null,
+            });
+          }
+        }
+        return updated;
       });
-      void refresh();
+
+      try {
+        await postCuration({
+          action: "setAllActive",
+          providerId,
+          modelIds,
+          active,
+        });
+      } finally {
+        void refresh(false);
+      }
     },
     [modelsByProvider, refresh]
   );
 
-  const handleActivateWorking = useCallback(
+  const handleSaveSelections = useCallback(
     async (providerId: string) => {
       const models = modelsByProvider[providerId] ?? [];
       if (models.length === 0) return;
-      const workingModelIds = models
-        .filter((m) => {
+
+      setSavingSelectionsProviderId(providerId);
+
+      const activeModelIds: string[] = [];
+      const inactiveModelIds: string[] = [];
+
+      for (const m of models) {
+        const cust = customizationByModel.get(`${providerId}::${m.id}`);
+        if (cust?.isActive === true) {
+          activeModelIds.push(m.id);
+        } else {
+          inactiveModelIds.push(m.id);
+        }
+      }
+
+      try {
+        if (activeModelIds.length > 0) {
+          await postCuration({
+            action: "setAllActive",
+            providerId,
+            modelIds: activeModelIds,
+            active: true,
+          });
+        }
+        if (inactiveModelIds.length > 0) {
+          await postCuration({
+            action: "setAllActive",
+            providerId,
+            modelIds: inactiveModelIds,
+            active: false,
+          });
+        }
+        // Also persist any pending draft changes for this provider's models
+        for (const m of models) {
           const key = `${providerId}::${m.id}`;
-          const t = testResults[key];
-          if (t && t.ok) return true;
-          const cust = customizationByModel.get(key);
-          return cust?.testStatus === "verified";
-        })
-        .map((m) => m.id);
+          const draft = aliasDrafts[key];
+          if (draft) {
+            const cust = customizationByModel.get(key);
+            const nameChanged = draft.name !== (cust?.customName ?? "");
+            const aliasChanged = draft.alias !== (cust?.customAlias ?? "");
+            const ctxChanged =
+              draft.contextWindow !== (cust?.contextWindow ? String(cust.contextWindow) : "");
+            const autoFree = m.isFree === true || isCatalogFreeModel(providerId, m.id);
+            const defaultTier: "free" | "paid" =
+              cust?.pricingTier ??
+              (cust?.isFreeOverride === false
+                ? "paid"
+                : cust?.isFreeOverride === true
+                  ? "free"
+                  : autoFree
+                    ? "free"
+                    : "paid");
+            const tier = draft.pricingTier ?? defaultTier;
+            const tierChanged =
+              draft.pricingTier !== undefined && draft.pricingTier !== defaultTier;
+            const origInputStr =
+              cust?.inputCost != null && cust.inputCost > 0 ? String(cust.inputCost) : "";
+            const origCacheStr =
+              cust?.cacheCost != null && cust.cacheCost > 0 ? String(cust.cacheCost) : "";
+            const origOutputStr =
+              cust?.outputCost != null && cust.outputCost > 0 ? String(cust.outputCost) : "";
+            const origInputCostStr =
+              cust?.originalInputCost != null && cust.originalInputCost > 0
+                ? String(cust.originalInputCost)
+                : "";
+            const origCacheCostStr =
+              cust?.originalCacheCost != null && cust.originalCacheCost > 0
+                ? String(cust.originalCacheCost)
+                : "";
+            const origOutputCostStr =
+              cust?.originalOutputCost != null && cust.originalOutputCost > 0
+                ? String(cust.originalOutputCost)
+                : "";
+            const origInputCostChanged =
+              draft.originalInputCost !== undefined && draft.originalInputCost !== origInputCostStr;
+            const origCacheCostChanged =
+              draft.originalCacheCost !== undefined && draft.originalCacheCost !== origCacheCostStr;
+            const origOutputCostChanged =
+              draft.originalOutputCost !== undefined &&
+              draft.originalOutputCost !== origOutputCostStr;
+            const inputCostChanged =
+              draft.inputCost !== undefined && draft.inputCost !== origInputStr;
+            const cacheCostChanged =
+              draft.cacheCost !== undefined && draft.cacheCost !== origCacheStr;
+            const outputCostChanged =
+              draft.outputCost !== undefined && draft.outputCost !== origOutputStr;
 
-      if (workingModelIds.length === 0) return;
+            if (
+              nameChanged ||
+              aliasChanged ||
+              ctxChanged ||
+              tierChanged ||
+              origInputCostChanged ||
+              origCacheCostChanged ||
+              origOutputCostChanged ||
+              inputCostChanged ||
+              cacheCostChanged ||
+              outputCostChanged
+            ) {
+              const parsedCtx = parseContextWindowInput(draft.contextWindow);
+              const origInputCostNum = (draft.originalInputCost ?? "").trim()
+                ? Math.max(0, Number(draft.originalInputCost))
+                : 0;
+              const origCacheCostNum = (draft.originalCacheCost ?? "").trim()
+                ? Math.max(0, Number(draft.originalCacheCost))
+                : 0;
+              const origOutputCostNum = (draft.originalOutputCost ?? "").trim()
+                ? Math.max(0, Number(draft.originalOutputCost))
+                : 0;
+              const inputCostNum =
+                tier === "paid" && (draft.inputCost ?? "").trim()
+                  ? Math.max(0, Number(draft.inputCost))
+                  : 0;
+              const cacheCostNum =
+                tier === "paid" && (draft.cacheCost ?? "").trim()
+                  ? Math.max(0, Number(draft.cacheCost))
+                  : 0;
+              const outputCostNum =
+                tier === "paid" && (draft.outputCost ?? "").trim()
+                  ? Math.max(0, Number(draft.outputCost))
+                  : 0;
 
-      await postCuration({
-        action: "setAllActive",
-        providerId,
-        modelIds: workingModelIds,
-        active: true,
-      });
-      void refresh();
+              const row = await postCuration({
+                action: "save",
+                providerId,
+                originalModelId: m.id,
+                customName: draft.name.trim() || null,
+                customAlias: draft.alias.trim() || null,
+                contextWindow: parsedCtx,
+                isActive: cust?.isActive === true,
+                isFreeOverride: tier === "free",
+                pricingTier: tier,
+                originalInputCost: origInputCostNum,
+                originalCacheCost: origCacheCostNum,
+                originalOutputCost: origOutputCostNum,
+                inputCost: inputCostNum,
+                cacheCost: cacheCostNum,
+                outputCost: outputCostNum,
+              });
+              if (row) patchCustomization(row);
+            }
+          }
+        }
+        setSavedFeedbackProviderId(providerId);
+        setTimeout(() => {
+          setSavedFeedbackProviderId((cur) => (cur === providerId ? null : cur));
+        }, 2000);
+      } finally {
+        setSavingSelectionsProviderId(null);
+        void refresh(false);
+      }
     },
-    [modelsByProvider, testResults, customizationByModel, refresh]
+    [aliasDrafts, customizationByModel, modelsByProvider, patchCustomization, refresh]
   );
 
   const handleCopy = useCallback((modelId: string) => {
@@ -424,9 +711,31 @@ export default function ManageModelsPanel() {
   }, []);
 
   const handleTest = useCallback(
-    async (providerId: string, modelId: string) => {
+    async (providerId: string, modelId: string, capOverride?: string) => {
       const key = `${providerId}::${modelId}`;
-      const selectedCap = selectedCapabilities[key] || "text";
+      const model = modelsByProvider[providerId]?.find((m) => m.id === modelId);
+      const cust = customizationByModel.get(key);
+      const capsMeta = model ? getSyncedModelCapabilities(model, cust) : null;
+      const defaultCap = capsMeta?.hasChat
+        ? "text"
+        : capsMeta?.hasCode
+          ? "code"
+          : capsMeta?.hasReasoning
+            ? "reasoning"
+            : capsMeta?.hasVision
+              ? "vision"
+              : capsMeta?.hasImageGen
+                ? "image_gen"
+                : capsMeta?.hasAudio
+                  ? "audio"
+                  : capsMeta?.hasVideo
+                    ? "video"
+                    : capsMeta?.hasSearch
+                      ? "search"
+                      : capsMeta?.hasEmbedding
+                        ? "embedding"
+                        : "text";
+      const selectedCap = capOverride || selectedCapabilities[key] || defaultCap;
       const promptToRun = getPromptForCapability(selectedCap, testPrompt);
       setTestingId(key);
       try {
@@ -454,16 +763,42 @@ export default function ManageModelsPanel() {
 
         // 💡 Idea 2: Auto-activate model on successful test
         if (isOk) {
-          await postCuration({
+          const row = await postCuration({
             action: "setActive",
             providerId,
             originalModelId: modelId,
             active: true,
           });
+          if (row) {
+            patchCustomization({
+              ...row,
+              testStatus: "verified",
+              isTested: true,
+              testHttpStatus: data?.httpStatus ?? 200,
+              testLatencyMs: data?.latencyMs,
+              testResponse: data?.responsePreview ?? null,
+            });
+          }
+        } else {
+          setCustomizations((prev) => {
+            const idx = prev.findIndex(
+              (c) => c.providerId === providerId && c.originalModelId === modelId
+            );
+            if (idx === -1) return prev;
+            const next = [...prev];
+            next[idx] = {
+              ...next[idx],
+              isTested: true,
+              testStatus: "failed",
+              testHttpStatus: data?.httpStatus ?? 500,
+              testResponse: data?.error ?? "Test failed",
+            };
+            return next;
+          });
         }
 
-        // The API persists the result onto the curation row — refresh badges.
-        void refresh();
+        // The API persists the result onto the curation row — silent refresh without page flicker.
+        void refresh(false);
       } catch {
         setTestResults((prev) => ({
           ...prev,
@@ -473,7 +808,14 @@ export default function ManageModelsPanel() {
         setTestingId(null);
       }
     },
-    [refresh, testPrompt, selectedCapabilities]
+    [
+      refresh,
+      testPrompt,
+      selectedCapabilities,
+      modelsByProvider,
+      customizationByModel,
+      patchCustomization,
+    ]
   );
 
   const handleFetchModelsForProvider = useCallback(
@@ -522,7 +864,7 @@ export default function ManageModelsPanel() {
             }),
           });
         }
-        await refresh();
+        await refresh(false);
       } catch (err: unknown) {
         const msg = err instanceof Error ? err.message : "Failed to fetch models from API";
         setFetchErrorByProvider((prev) => ({ ...prev, [pId]: msg }));
@@ -536,10 +878,75 @@ export default function ManageModelsPanel() {
   const handleSaveAlias = useCallback(
     async (providerId: string, modelId: string) => {
       const key = `${providerId}::${modelId}`;
-      const draft = aliasDrafts[key] ?? { name: "", alias: "", contextWindow: "" };
+      const cust = customizationByModel.get(key);
+      const autoFree = isCatalogFreeModel(providerId, modelId);
+      const defaultTier: "free" | "paid" =
+        cust?.pricingTier ??
+        (cust?.isFreeOverride === false
+          ? "paid"
+          : cust?.isFreeOverride === true
+            ? "free"
+            : autoFree
+              ? "free"
+              : "paid");
+      const catPricing = getPricingForModel(providerId, modelId) as {
+        inputCost?: number;
+        cacheCost?: number;
+        outputCost?: number;
+      } | null;
+      const draft = aliasDrafts[key] ?? {
+        name: cust?.customName ?? "",
+        alias: cust?.customAlias ?? "",
+        contextWindow: cust?.contextWindow ? String(cust.contextWindow) : "",
+        pricingTier: defaultTier,
+        originalInputCost:
+          cust?.originalInputCost != null && cust.originalInputCost > 0
+            ? String(cust.originalInputCost)
+            : catPricing?.inputCost != null && catPricing.inputCost > 0
+              ? String(catPricing.inputCost)
+              : "",
+        originalCacheCost:
+          cust?.originalCacheCost != null && cust.originalCacheCost > 0
+            ? String(cust.originalCacheCost)
+            : catPricing?.cacheCost != null && catPricing.cacheCost > 0
+              ? String(catPricing.cacheCost)
+              : "",
+        originalOutputCost:
+          cust?.originalOutputCost != null && cust.originalOutputCost > 0
+            ? String(cust.originalOutputCost)
+            : catPricing?.outputCost != null && catPricing.outputCost > 0
+              ? String(catPricing.outputCost)
+              : "",
+        inputCost: cust?.inputCost != null && cust.inputCost > 0 ? String(cust.inputCost) : "",
+        cacheCost: cust?.cacheCost != null && cust.cacheCost > 0 ? String(cust.cacheCost) : "",
+        outputCost: cust?.outputCost != null && cust.outputCost > 0 ? String(cust.outputCost) : "",
+      };
+      const tier = draft.pricingTier ?? defaultTier;
       setSavingAlias(key);
       try {
         const parsedCtx = parseContextWindowInput(draft.contextWindow);
+        const origInputCostNum = (draft.originalInputCost ?? "").trim()
+          ? Math.max(0, Number(draft.originalInputCost))
+          : 0;
+        const origCacheCostNum = (draft.originalCacheCost ?? "").trim()
+          ? Math.max(0, Number(draft.originalCacheCost))
+          : 0;
+        const origOutputCostNum = (draft.originalOutputCost ?? "").trim()
+          ? Math.max(0, Number(draft.originalOutputCost))
+          : 0;
+        const inputCostNum =
+          tier === "paid" && (draft.inputCost ?? "").trim()
+            ? Math.max(0, Number(draft.inputCost))
+            : 0;
+        const cacheCostNum =
+          tier === "paid" && (draft.cacheCost ?? "").trim()
+            ? Math.max(0, Number(draft.cacheCost))
+            : 0;
+        const outputCostNum =
+          tier === "paid" && (draft.outputCost ?? "").trim()
+            ? Math.max(0, Number(draft.outputCost))
+            : 0;
+
         const row = await postCuration({
           action: "save",
           providerId,
@@ -547,17 +954,149 @@ export default function ManageModelsPanel() {
           customName: draft.name.trim() || null,
           customAlias: draft.alias.trim() || null,
           contextWindow: parsedCtx,
+          isFreeOverride: tier === "free",
+          pricingTier: tier,
+          originalInputCost: origInputCostNum,
+          originalCacheCost: origCacheCostNum,
+          originalOutputCost: origOutputCostNum,
+          inputCost: inputCostNum,
+          cacheCost: cacheCostNum,
+          outputCost: outputCostNum,
         });
         if (row) patchCustomization(row);
       } finally {
         setSavingAlias(null);
       }
     },
-    [aliasDrafts, patchCustomization]
+    [aliasDrafts, customizationByModel, patchCustomization]
   );
 
-  const handleFreeOverride = useCallback(
+  const handleToggleComboActive = useCallback(
+    async (comboId: string, active: boolean) => {
+      setCombos((prev) =>
+        prev.map((c) => (c.id === comboId ? { ...c, isActive: active } : c))
+      );
+      try {
+        await fetch(`/api/combos/${encodeURIComponent(comboId)}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ isActive: active }),
+        });
+      } catch {
+        void refresh(false);
+      }
+    },
+    [refresh]
+  );
+
+  const handleSaveCombo = useCallback(
+    async (comboId: string) => {
+      const combo = combos.find((c) => c.id === comboId);
+      if (!combo) return;
+      const draft = comboDrafts[comboId] ?? {
+        displayName: combo.displayName ?? "",
+        customAlias: combo.customAlias ?? "",
+        contextWindow: combo.context_length ? String(combo.context_length) : "",
+        pricingTier: combo.pricing?.tier ?? "paid",
+        originalInputCost:
+          combo.pricing?.originalInputCost != null && combo.pricing.originalInputCost > 0
+            ? String(combo.pricing.originalInputCost)
+            : "",
+        originalCacheCost:
+          combo.pricing?.originalCacheCost != null && combo.pricing.originalCacheCost > 0
+            ? String(combo.pricing.originalCacheCost)
+            : "",
+        originalOutputCost:
+          combo.pricing?.originalOutputCost != null && combo.pricing.originalOutputCost > 0
+            ? String(combo.pricing.originalOutputCost)
+            : "",
+        inputCost:
+          combo.pricing?.inputCost != null && combo.pricing.inputCost > 0
+            ? String(combo.pricing.inputCost)
+            : "",
+        cacheCost:
+          combo.pricing?.cacheCost != null && combo.pricing.cacheCost > 0
+            ? String(combo.pricing.cacheCost)
+            : "",
+        outputCost:
+          combo.pricing?.outputCost != null && combo.pricing.outputCost > 0
+            ? String(combo.pricing.outputCost)
+            : "",
+      };
+
+      setSavingComboId(comboId);
+      try {
+        const parsedCtx = parseContextWindowInput(draft.contextWindow);
+        const origInputCostNum = (draft.originalInputCost ?? "").trim()
+          ? Math.max(0, Number(draft.originalInputCost))
+          : 0;
+        const origCacheCostNum = (draft.originalCacheCost ?? "").trim()
+          ? Math.max(0, Number(draft.originalCacheCost))
+          : 0;
+        const origOutputCostNum = (draft.originalOutputCost ?? "").trim()
+          ? Math.max(0, Number(draft.originalOutputCost))
+          : 0;
+        const inputCostNum =
+          draft.pricingTier === "paid" && (draft.inputCost ?? "").trim()
+            ? Math.max(0, Number(draft.inputCost))
+            : 0;
+        const cacheCostNum =
+          draft.pricingTier === "paid" && (draft.cacheCost ?? "").trim()
+            ? Math.max(0, Number(draft.cacheCost))
+            : 0;
+        const outputCostNum =
+          draft.pricingTier === "paid" && (draft.outputCost ?? "").trim()
+            ? Math.max(0, Number(draft.outputCost))
+            : 0;
+
+        const payload = {
+          displayName: draft.displayName.trim() || null,
+          customAlias: draft.customAlias.trim() || null,
+          context_length: parsedCtx,
+          pricing: {
+            tier: draft.pricingTier,
+            originalInputCost: origInputCostNum,
+            originalCacheCost: origCacheCostNum,
+            originalOutputCost: origOutputCostNum,
+            inputCost: inputCostNum,
+            cacheCost: cacheCostNum,
+            outputCost: outputCostNum,
+          },
+        };
+
+        const res = await fetch(`/api/combos/${encodeURIComponent(comboId)}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+        if (res.ok) {
+          const data = await res.json().catch(() => null);
+          const updatedCombo = data?.combo;
+          if (updatedCombo) {
+            setCombos((prev) =>
+              prev.map((c) => (c.id === comboId ? { ...c, ...updatedCombo } : c))
+            );
+          }
+        }
+      } finally {
+        setSavingComboId(null);
+      }
+    },
+    [comboDrafts, combos]
+  );
+
+  const _handleFreeOverride = useCallback(
     async (providerId: string, modelId: string, value: boolean | null) => {
+      // Optimistic in-place update for instant badge change
+      setCustomizations((prev) => {
+        const idx = prev.findIndex(
+          (c) => c.providerId === providerId && c.originalModelId === modelId
+        );
+        if (idx === -1) return prev;
+        const next = [...prev];
+        next[idx] = { ...next[idx], isFreeOverride: value };
+        return next;
+      });
       const row = await postCuration({
         action: "save",
         providerId,
@@ -565,7 +1104,7 @@ export default function ManageModelsPanel() {
         isFreeOverride: value,
       });
       if (row) patchCustomization(row);
-      else void refresh();
+      else void refresh(false);
     },
     [patchCustomization, refresh]
   );
@@ -586,7 +1125,7 @@ export default function ManageModelsPanel() {
           <span className="material-symbols-outlined text-[18px] text-red-500">error</span>
           <div className="flex-1">
             <p className="font-medium text-red-600 dark:text-red-300">
-              Failed to load Manage Models: {loadError}
+              Failed to load Pipe Models: {loadError}
             </p>
             <button
               type="button"
@@ -603,15 +1142,15 @@ export default function ManageModelsPanel() {
 
   if (providerIds.length === 0) {
     return (
-      <div className="flex flex-col gap-5">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-white/10">
+      <div className="flex flex-col gap-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-border">
           <div className="flex items-center gap-2.5">
-            <div className="size-8 rounded-xl bg-cyan-500/15 border border-cyan-400/25 flex items-center justify-center text-cyan-400 shadow-sm shadow-cyan-500/10">
-              <span className="material-symbols-outlined text-[20px]">tune</span>
+            <div className="size-8 rounded-lg bg-surface border border-border flex items-center justify-center text-text-main shadow-xs">
+              <span className="material-symbols-outlined text-[18px]">tune</span>
             </div>
             <div>
-              <h1 className="text-xl font-bold tracking-tight text-white">Manage Models</h1>
-              <p className="text-xs text-zinc-400">
+              <h1 className="text-lg font-bold tracking-tight text-text-main">Pipe Models</h1>
+              <p className="text-xs text-text-muted">
                 Configure active models, custom aliases, live capability verification, and billing
                 tiers.
               </p>
@@ -626,8 +1165,8 @@ export default function ManageModelsPanel() {
             />
           </div>
         </div>
-        <div className="p-6 rounded-2xl border border-white/10 bg-[#161618]/80 backdrop-blur-xl shadow-lg">
-          <p className="text-xs text-zinc-400">
+        <div className="p-6 rounded-xl border border-border bg-surface shadow-xs">
+          <p className="text-xs text-text-muted">
             No active connected providers found. Connect a provider first — its models will appear
             here for activation, aliasing, and testing.
           </p>
@@ -638,20 +1177,23 @@ export default function ManageModelsPanel() {
 
   return (
     <div className="flex flex-col gap-3">
-      {/* ── Top Header Bar with Cupertino Outline Trigger Button ── */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-white/10">
+      {/* ── Top Header Bar with OpenCode Trigger Button ── */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-border">
         <div className="flex items-center gap-2.5 min-w-0">
-          <div className="size-8 rounded-xl bg-cyan-500/15 border border-cyan-400/25 flex items-center justify-center text-cyan-400 shadow-sm shadow-cyan-500/10 shrink-0">
-            <span className="material-symbols-outlined text-[20px]">tune</span>
+          <div className="size-8 rounded-lg bg-surface border border-border flex items-center justify-center text-text-main shadow-xs shrink-0">
+            <span className="material-symbols-outlined text-[18px]">tune</span>
           </div>
           <div className="min-w-0">
-            <h1 className="text-xl font-bold tracking-tight text-white truncate">Manage Models</h1>
-            <p className="text-xs text-zinc-400 truncate">
-              Cupertino studio for active connected models, custom aliases & capability tests.
+            <h1 className="text-lg font-bold tracking-tight text-text-main truncate">
+              Pipe Models
+            </h1>
+            <p className="text-xs text-text-muted">
+              Rename the alias models name, ID, and context limits for selected models only. Empty
+              fields will be by default original model names and IDs.
             </p>
           </div>
         </div>
-        <div className="self-end sm:self-auto shrink-0">
+        <div className="self-start sm:self-auto shrink-0">
           <DefaultCapabilitiesPromptModal
             testPrompt={testPrompt}
             onPromptChange={setTestPrompt}
@@ -661,59 +1203,548 @@ export default function ManageModelsPanel() {
         </div>
       </div>
 
-      {/* ── Cupertino Inset Search & Modality Segmented Bar ── */}
-      <div className="flex flex-col sm:flex-row sm:items-center gap-2.5">
-        <div className="relative flex-1 min-w-[200px]">
-          <span className="material-symbols-outlined absolute left-2.5 top-1/2 -translate-y-1/2 text-[16px] text-zinc-400">
+      {/* ── OpenCode Search & Modality Segmented Bar ── */}
+      <div className="flex flex-col lg:flex-row lg:items-center gap-2 w-full min-w-0 max-w-full">
+        <div className="relative w-full lg:w-64 xl:w-72 shrink-0">
+          <span className="material-symbols-outlined absolute left-2.5 top-1/2 -translate-y-1/2 text-[16px] text-text-muted">
             search
           </span>
           <input
             value={filter}
             onChange={(e) => setFilter(e.target.value)}
             placeholder="Filter models by id or name…"
-            className="w-full h-8 rounded-xl border border-white/10 bg-white/[0.04] pl-8 pr-7 py-1 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-cyan-400/60 focus:ring-1 focus:ring-cyan-400/30 transition-all font-mono"
+            className="w-full h-8 rounded-lg border border-border bg-bg-subtle pl-8 pr-7 py-1 text-xs text-text-main placeholder:text-text-muted focus:outline-none focus:border-border-strong transition-all font-mono"
           />
           {filter && (
             <button
               type="button"
               onClick={() => setFilter("")}
-              className="absolute right-2 top-1/2 -translate-y-1/2 size-4 rounded-full bg-white/20 hover:bg-white/30 text-white flex items-center justify-center transition-colors cursor-pointer"
+              className="absolute right-2 top-1/2 -translate-y-1/2 size-4 rounded-full bg-white/10 hover:bg-white/20 text-text-muted hover:text-white flex items-center justify-center transition-colors cursor-pointer"
             >
               <span className="material-symbols-outlined text-[12px]">close</span>
             </button>
           )}
         </div>
 
-        {/* Capability Segmented Control Pills */}
-        <div className="flex items-center gap-1 overflow-x-auto p-0.5 rounded-xl bg-black/40 border border-white/10 scrollbar-none shrink-0">
-          {CAPABILITY_FILTER_BUTTONS.map((opt) => {
-            const isActive = capabilityFilter === opt.key;
-            const count = filterCounts[opt.key] ?? 0;
-            return (
-              <button
-                key={opt.key}
-                type="button"
-                onClick={() => setCapabilityFilter(opt.key)}
-                className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-medium transition-all cursor-pointer shrink-0 ${
-                  isActive
-                    ? "bg-cyan-500/25 text-cyan-300 border border-cyan-400/40 shadow-xs font-semibold"
-                    : "text-zinc-400 hover:text-white hover:bg-white/5"
-                }`}
-              >
-                {opt.icon && (
-                  <span className="material-symbols-outlined text-[13px] leading-none">
-                    {opt.icon}
+        {/* Capability Segmented Control Pills with smooth horizontal scrolling */}
+        <div className="flex-1 min-w-0 max-w-full overflow-x-auto p-1 rounded-lg bg-bg-subtle border border-border [scrollbar-width:thin] [scrollbar-color:rgba(255,255,255,0.18)_transparent] [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-thumb]:bg-white/20 [&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-thumb]:bg-white/30">
+          <div className="flex items-center gap-1 min-w-max">
+            {CAPABILITY_FILTER_BUTTONS.map((opt) => {
+              const isActive = capabilityFilter === opt.key;
+              const count = filterCounts[opt.key] ?? 0;
+              return (
+                <button
+                  key={opt.key}
+                  type="button"
+                  onClick={() => setCapabilityFilter(opt.key)}
+                  className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-medium transition-all cursor-pointer shrink-0 ${
+                    isActive
+                      ? "bg-surface text-text-main border border-border shadow-xs font-semibold"
+                      : "text-text-muted hover:text-text-main hover:bg-white/[0.04]"
+                  }`}
+                >
+                  {opt.icon && (
+                    <span className="material-symbols-outlined text-[13px] leading-none">
+                      {opt.icon}
+                    </span>
+                  )}
+                  <span>{opt.label}</span>
+                  <span className="text-[9px] px-1 py-0.2 rounded font-mono bg-bg border border-border/60 text-text-muted">
+                    {count}
                   </span>
-                )}
-                <span>{opt.label}</span>
-                <span className="text-[9px] px-1 py-0.2 rounded-full font-mono bg-white/10 text-zinc-300">
-                  {count}
-                </span>
-              </button>
-            );
-          })}
+                </button>
+              );
+            })}
+          </div>
         </div>
       </div>
+
+      {/* ── Combos Inset Group Card ── */}
+      {combos.length > 0 && (
+        <div className="rounded-xl border border-border bg-surface shadow-xs overflow-hidden transition-all mb-2.5">
+          {/* Combos Group Header */}
+          <div className="w-full flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 px-3 sm:px-4 py-2.5 bg-surface hover:bg-bg-subtle/40 transition-colors border-b border-border/40">
+            <button
+              type="button"
+              onClick={() => setCombosExpanded((prev) => !prev)}
+              className="flex items-center gap-2 text-left w-full sm:w-auto sm:flex-1 cursor-pointer min-w-0"
+            >
+              <span
+                className={`material-symbols-outlined text-[16px] text-text-muted transition-transform duration-200 ${
+                  combosExpanded ? "rotate-90" : ""
+                }`}
+              >
+                chevron_right
+              </span>
+              <span className="material-symbols-outlined text-[16px] text-purple-400">
+                layers
+              </span>
+              <span className="font-mono font-semibold text-xs tracking-tight text-text-main truncate">
+                Routing Combos
+              </span>
+              <span className="text-[10px] font-mono px-2 py-0.5 rounded-md bg-purple-500/10 border border-purple-500/20 text-purple-300 shrink-0">
+                {combos.filter((c) => c.isActive !== false).length}/{combos.length} active
+              </span>
+            </button>
+          </div>
+
+          {/* Combos List */}
+          {combosExpanded && (
+            <div className="border-t border-border/40">
+              {combos
+                .filter((c) => {
+                  const targetName = c.displayName || c.name || c.id;
+                  const targetAlias = c.customAlias || "";
+                  return matchesSearch(targetName, filter) || matchesSearch(targetAlias, filter);
+                })
+                .map((combo, index, arr) => {
+                  const draft = comboDrafts[combo.id] ?? {
+                    displayName: combo.displayName ?? "",
+                    customAlias: combo.customAlias ?? "",
+                    contextWindow: combo.context_length ? String(combo.context_length) : "",
+                    pricingTier: combo.pricing?.tier ?? "paid",
+                    originalInputCost:
+                      combo.pricing?.originalInputCost != null && combo.pricing.originalInputCost > 0
+                        ? String(combo.pricing.originalInputCost)
+                        : "",
+                    originalCacheCost:
+                      combo.pricing?.originalCacheCost != null && combo.pricing.originalCacheCost > 0
+                        ? String(combo.pricing.originalCacheCost)
+                        : "",
+                    originalOutputCost:
+                      combo.pricing?.originalOutputCost != null && combo.pricing.originalOutputCost > 0
+                        ? String(combo.pricing.originalOutputCost)
+                        : "",
+                    inputCost:
+                      combo.pricing?.inputCost != null && combo.pricing.inputCost > 0
+                        ? String(combo.pricing.inputCost)
+                        : "",
+                    cacheCost:
+                      combo.pricing?.cacheCost != null && combo.pricing.cacheCost > 0
+                        ? String(combo.pricing.cacheCost)
+                        : "",
+                    outputCost:
+                      combo.pricing?.outputCost != null && combo.pricing.outputCost > 0
+                        ? String(combo.pricing.outputCost)
+                        : "",
+                  };
+                  const isComboActive = combo.isActive !== false;
+                  const isComboFree = draft.pricingTier === "free";
+
+                  return (
+                    <Fragment key={combo.id}>
+                      <div className="px-3 sm:px-4 py-2.5 space-y-2 hover:bg-bg-subtle/30 transition-colors">
+                        {/* Header Row */}
+                        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-2.5">
+                          <div className="flex flex-wrap items-center gap-2 min-w-0">
+                            {/* Active Toggle Switch */}
+                            <label
+                              className="relative inline-flex items-center cursor-pointer shrink-0"
+                              title={isComboActive ? "Active" : "Disabled"}
+                            >
+                              <input
+                                type="checkbox"
+                                checked={isComboActive}
+                                onChange={(e) =>
+                                  void handleToggleComboActive(combo.id, e.target.checked)
+                                }
+                                aria-label={`Activate combo ${combo.name}`}
+                                className="sr-only"
+                              />
+                              <div
+                                className={`w-7.5 h-4.5 rounded-full transition-colors duration-200 ease-in-out p-0.5 flex items-center ${
+                                  isComboActive ? "bg-purple-500 shadow-xs" : "bg-zinc-700"
+                                }`}
+                              >
+                                <div
+                                  className={`size-3.5 rounded-full bg-white shadow-xs transform transition-transform duration-200 ease-in-out ${
+                                    isComboActive ? "translate-x-3" : "translate-x-0"
+                                  }`}
+                                />
+                              </div>
+                            </label>
+
+                            <span className="font-mono text-xs font-semibold text-text-main break-all select-all">
+                              {combo.name || combo.id}
+                            </span>
+
+                            {combo.strategy && (
+                              <span className="text-[9px] font-mono px-2 py-0.5 rounded bg-bg-subtle border border-border text-text-muted shrink-0">
+                                {combo.strategy}
+                              </span>
+                            )}
+
+                            {/* Free / Paid Toggle Button */}
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setComboDrafts((prev) => ({
+                                  ...prev,
+                                  [combo.id]: {
+                                    ...draft,
+                                    pricingTier: draft.pricingTier === "free" ? "paid" : "free",
+                                  },
+                                }))
+                              }
+                              title="Click to toggle Free / Paid"
+                              className={`text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded border select-none shrink-0 cursor-pointer transition-all active:scale-95 flex items-center gap-1 ${
+                                isComboFree
+                                  ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/25"
+                                  : "bg-amber-500/15 text-amber-400 border-amber-500/30 hover:bg-amber-500/25"
+                              }`}
+                            >
+                              <span className="material-symbols-outlined text-[11px]">
+                                {isComboFree ? "check_circle" : "payments"}
+                              </span>
+                              <span>{isComboFree ? "FREE" : "PAID"}</span>
+                            </button>
+                          </div>
+
+                          {/* Save Button for this Combo */}
+                          <div className="flex items-center gap-2 shrink-0">
+                            <button
+                              type="button"
+                              onClick={() => void handleSaveCombo(combo.id)}
+                              disabled={savingComboId === combo.id}
+                              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-semibold bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 active:scale-95 transition-all disabled:opacity-50 cursor-pointer shadow-xs shrink-0"
+                              title="Save combo configuration and pricing"
+                            >
+                              <span
+                                className={`material-symbols-outlined text-[13px] ${
+                                  savingComboId === combo.id ? "animate-spin" : ""
+                                }`}
+                              >
+                                {savingComboId === combo.id ? "progress_activity" : "save"}
+                              </span>
+                              <span>{savingComboId === combo.id ? "Saving…" : "Save"}</span>
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Manageable Fields when combo is active */}
+                        {isComboActive && (
+                          <div className="flex flex-col gap-2.5 pt-2 border-t border-border/40">
+                            {/* Original Read-Only Info */}
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 px-2.5 py-1.5 rounded-lg bg-bg-subtle/30 border border-border/40 text-[11px]">
+                              <div className="flex items-center gap-1.5 min-w-0">
+                                <span className="text-[10px] uppercase font-mono tracking-wider text-text-muted shrink-0">
+                                  Orig Name:
+                                </span>
+                                <span className="font-mono text-zinc-300 truncate">{combo.name}</span>
+                              </div>
+                              <div className="flex items-center gap-1.5 min-w-0">
+                                <span className="text-[10px] uppercase font-mono tracking-wider text-text-muted shrink-0">
+                                  Orig ID:
+                                </span>
+                                <span className="font-mono text-zinc-300 truncate">{combo.id}</span>
+                              </div>
+                              <div className="flex items-center gap-1.5 min-w-0">
+                                <span className="text-[10px] uppercase font-mono tracking-wider text-text-muted shrink-0">
+                                  Strategy:
+                                </span>
+                                <span className="font-mono text-zinc-300 truncate">{combo.strategy}</span>
+                              </div>
+                            </div>
+
+                            {/* Modern Columnar Grid: Original on top, Custom below for every property */}
+                            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-2">
+                              {/* 1. Combo Name */}
+                              <div className="flex flex-col gap-1.5 p-2 rounded-lg bg-bg-subtle/50 border border-border/60">
+                                <div className="flex items-center justify-between text-[11px] font-medium text-text-main pb-1 border-b border-border/40">
+                                  <span className="flex items-center gap-1">
+                                    <span className="material-symbols-outlined text-[13px] text-text-muted">alt_route</span>
+                                    Combo Name
+                                  </span>
+                                </div>
+                                <div className="flex flex-col gap-0.5">
+                                  <span className="text-[9px] font-mono uppercase tracking-wider text-amber-400/90 flex items-center gap-1">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
+                                    Original
+                                  </span>
+                                  <div
+                                    className="h-7 px-2 py-1 text-[11px] font-mono bg-bg-base/60 border border-border/40 rounded text-text-muted truncate flex items-center select-all"
+                                    title={combo.name || combo.id}
+                                  >
+                                    {combo.name || combo.id}
+                                  </div>
+                                </div>
+                                <div className="flex flex-col gap-0.5">
+                                  <span className="text-[9px] font-mono uppercase tracking-wider text-emerald-400/90 flex items-center gap-1">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                                    Custom
+                                  </span>
+                                  <input
+                                    value={draft.displayName}
+                                    onChange={(e) =>
+                                      setComboDrafts((prev) => ({
+                                        ...prev,
+                                        [combo.id]: { ...draft, displayName: e.target.value },
+                                      }))
+                                    }
+                                    placeholder={combo.name || combo.id}
+                                    className="h-7 px-2 py-1 text-[11px] font-mono bg-bg-base border border-border rounded text-text-main placeholder:text-zinc-600 focus:outline-none focus:border-emerald-500/70 transition-all"
+                                  />
+                                </div>
+                              </div>
+
+                              {/* 2. Combo Alias */}
+                              <div className="flex flex-col gap-1.5 p-2 rounded-lg bg-bg-subtle/50 border border-border/60">
+                                <div className="flex items-center justify-between text-[11px] font-medium text-text-main pb-1 border-b border-border/40">
+                                  <span className="flex items-center gap-1">
+                                    <span className="material-symbols-outlined text-[13px] text-text-muted">fingerprint</span>
+                                    Combo ID / Alias
+                                  </span>
+                                </div>
+                                <div className="flex flex-col gap-0.5">
+                                  <span className="text-[9px] font-mono uppercase tracking-wider text-amber-400/90 flex items-center gap-1">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
+                                    Original
+                                  </span>
+                                  <div
+                                    className="h-7 px-2 py-1 text-[11px] font-mono bg-bg-base/60 border border-border/40 rounded text-text-muted truncate flex items-center select-all"
+                                    title={combo.id}
+                                  >
+                                    {combo.id}
+                                  </div>
+                                </div>
+                                <div className="flex flex-col gap-0.5">
+                                  <span className="text-[9px] font-mono uppercase tracking-wider text-emerald-400/90 flex items-center gap-1">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                                    Custom
+                                  </span>
+                                  <input
+                                    value={draft.customAlias}
+                                    onChange={(e) =>
+                                      setComboDrafts((prev) => ({
+                                        ...prev,
+                                        [combo.id]: { ...draft, customAlias: e.target.value },
+                                      }))
+                                    }
+                                    placeholder={combo.id}
+                                    className="h-7 px-2 py-1 text-[11px] font-mono bg-bg-base border border-border rounded text-text-main placeholder:text-zinc-600 focus:outline-none focus:border-emerald-500/70 transition-all"
+                                  />
+                                </div>
+                              </div>
+
+                              {/* 3. Context Window */}
+                              <div className="flex flex-col gap-1.5 p-2 rounded-lg bg-bg-subtle/50 border border-border/60">
+                                <div className="flex items-center justify-between text-[11px] font-medium text-text-main pb-1 border-b border-border/40">
+                                  <span className="flex items-center gap-1">
+                                    <span className="material-symbols-outlined text-[13px] text-text-muted">memory</span>
+                                    Context Window
+                                  </span>
+                                </div>
+                                <div className="flex flex-col gap-0.5">
+                                  <span className="text-[9px] font-mono uppercase tracking-wider text-amber-400/90 flex items-center gap-1">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
+                                    Original
+                                  </span>
+                                  <div
+                                    className="h-7 px-2 py-1 text-[11px] font-mono bg-bg-base/60 border border-border/40 rounded text-text-muted truncate flex items-center"
+                                  >
+                                    {combo.context_length
+                                      ? `${combo.context_length >= 1000 ? Math.round(combo.context_length / 1000) + "K" : combo.context_length}`
+                                      : "Inherited"}
+                                  </div>
+                                </div>
+                                <div className="flex flex-col gap-0.5">
+                                  <span className="text-[9px] font-mono uppercase tracking-wider text-emerald-400/90 flex items-center gap-1">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                                    Custom
+                                  </span>
+                                  <input
+                                    value={draft.contextWindow}
+                                    onChange={(e) =>
+                                      setComboDrafts((prev) => ({
+                                        ...prev,
+                                        [combo.id]: { ...draft, contextWindow: e.target.value },
+                                      }))
+                                    }
+                                    placeholder="e.g. 500k"
+                                    className="h-7 px-2 py-1 text-[11px] font-mono bg-bg-base border border-border rounded text-text-main placeholder:text-zinc-600 focus:outline-none focus:border-emerald-500/70 transition-all"
+                                  />
+                                </div>
+                              </div>
+
+                              {/* 4. Input Cost */}
+                              <div className="flex flex-col gap-1.5 p-2 rounded-lg bg-bg-subtle/50 border border-border/60">
+                                <div className="flex items-center justify-between text-[11px] font-medium text-text-main pb-1 border-b border-border/40">
+                                  <span className="flex items-center gap-1">
+                                    <span className="material-symbols-outlined text-[13px] text-text-muted">arrow_downward</span>
+                                    Input ($/1M)
+                                  </span>
+                                </div>
+                                <div className="flex flex-col gap-0.5">
+                                  <span className="text-[9px] font-mono uppercase tracking-wider text-amber-400/90 flex items-center gap-1">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
+                                    Orig (Cut-Bal)
+                                  </span>
+                                  <input
+                                    type="number"
+                                    step="0.0001"
+                                    min="0"
+                                    value={draft.originalInputCost}
+                                    onChange={(e) =>
+                                      setComboDrafts((prev) => ({
+                                        ...prev,
+                                        [combo.id]: { ...draft, originalInputCost: e.target.value },
+                                      }))
+                                    }
+                                    placeholder="e.g. 1.00"
+                                    className="h-7 px-2 py-1 text-[11px] font-mono bg-bg-base border border-border rounded text-amber-300 placeholder:text-zinc-600 focus:outline-none focus:border-amber-400/70 transition-all"
+                                  />
+                                </div>
+                                <div className="flex flex-col gap-0.5">
+                                  <span className="text-[9px] font-mono uppercase tracking-wider text-emerald-400/90 flex items-center justify-between">
+                                    <span className="flex items-center gap-1">
+                                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                                      Custom (Rate)
+                                    </span>
+                                    {isComboFree && (
+                                      <span className="text-[8.5px] text-emerald-400 font-semibold">$0 Free</span>
+                                    )}
+                                  </span>
+                                  <input
+                                    type="number"
+                                    step="0.0001"
+                                    min="0"
+                                    disabled={isComboFree}
+                                    value={isComboFree ? "0" : draft.inputCost}
+                                    onChange={(e) =>
+                                      setComboDrafts((prev) => ({
+                                        ...prev,
+                                        [combo.id]: { ...draft, inputCost: e.target.value },
+                                      }))
+                                    }
+                                    placeholder={isComboFree ? "0 (Free)" : "e.g. 0.50"}
+                                    className="h-7 px-2 py-1 text-[11px] font-mono bg-bg-base border border-border rounded text-text-main placeholder:text-zinc-600 disabled:opacity-50 disabled:bg-bg-subtle focus:outline-none focus:border-emerald-500/70 transition-all"
+                                  />
+                                </div>
+                              </div>
+
+                              {/* 5. Cache Read Cost */}
+                              <div className="flex flex-col gap-1.5 p-2 rounded-lg bg-bg-subtle/50 border border-border/60">
+                                <div className="flex items-center justify-between text-[11px] font-medium text-text-main pb-1 border-b border-border/40">
+                                  <span className="flex items-center gap-1">
+                                    <span className="material-symbols-outlined text-[13px] text-text-muted">cached</span>
+                                    Cache ($/1M)
+                                  </span>
+                                </div>
+                                <div className="flex flex-col gap-0.5">
+                                  <span className="text-[9px] font-mono uppercase tracking-wider text-amber-400/90 flex items-center gap-1">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
+                                    Orig (Cut-Bal)
+                                  </span>
+                                  <input
+                                    type="number"
+                                    step="0.0001"
+                                    min="0"
+                                    value={draft.originalCacheCost}
+                                    onChange={(e) =>
+                                      setComboDrafts((prev) => ({
+                                        ...prev,
+                                        [combo.id]: { ...draft, originalCacheCost: e.target.value },
+                                      }))
+                                    }
+                                    placeholder="e.g. 0.25"
+                                    className="h-7 px-2 py-1 text-[11px] font-mono bg-bg-base border border-border rounded text-amber-300 placeholder:text-zinc-600 focus:outline-none focus:border-amber-400/70 transition-all"
+                                  />
+                                </div>
+                                <div className="flex flex-col gap-0.5">
+                                  <span className="text-[9px] font-mono uppercase tracking-wider text-emerald-400/90 flex items-center justify-between">
+                                    <span className="flex items-center gap-1">
+                                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                                      Custom (Rate)
+                                    </span>
+                                    {isComboFree && (
+                                      <span className="text-[8.5px] text-emerald-400 font-semibold">$0 Free</span>
+                                    )}
+                                  </span>
+                                  <input
+                                    type="number"
+                                    step="0.0001"
+                                    min="0"
+                                    disabled={isComboFree}
+                                    value={isComboFree ? "0" : draft.cacheCost}
+                                    onChange={(e) =>
+                                      setComboDrafts((prev) => ({
+                                        ...prev,
+                                        [combo.id]: { ...draft, cacheCost: e.target.value },
+                                      }))
+                                    }
+                                    placeholder={isComboFree ? "0 (Free)" : "e.g. 0.125"}
+                                    className="h-7 px-2 py-1 text-[11px] font-mono bg-bg-base border border-border rounded text-text-main placeholder:text-zinc-600 disabled:opacity-50 disabled:bg-bg-subtle focus:outline-none focus:border-emerald-500/70 transition-all"
+                                  />
+                                </div>
+                              </div>
+
+                              {/* 6. Output Cost */}
+                              <div className="flex flex-col gap-1.5 p-2 rounded-lg bg-bg-subtle/50 border border-border/60">
+                                <div className="flex items-center justify-between text-[11px] font-medium text-text-main pb-1 border-b border-border/40">
+                                  <span className="flex items-center gap-1">
+                                    <span className="material-symbols-outlined text-[13px] text-text-muted">arrow_upward</span>
+                                    Output ($/1M)
+                                  </span>
+                                </div>
+                                <div className="flex flex-col gap-0.5">
+                                  <span className="text-[9px] font-mono uppercase tracking-wider text-amber-400/90 flex items-center gap-1">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
+                                    Orig (Cut-Bal)
+                                  </span>
+                                  <input
+                                    type="number"
+                                    step="0.0001"
+                                    min="0"
+                                    value={draft.originalOutputCost}
+                                    onChange={(e) =>
+                                      setComboDrafts((prev) => ({
+                                        ...prev,
+                                        [combo.id]: { ...draft, originalOutputCost: e.target.value },
+                                      }))
+                                    }
+                                    placeholder="e.g. 3.00"
+                                    className="h-7 px-2 py-1 text-[11px] font-mono bg-bg-base border border-border rounded text-amber-300 placeholder:text-zinc-600 focus:outline-none focus:border-amber-400/70 transition-all"
+                                  />
+                                </div>
+                                <div className="flex flex-col gap-0.5">
+                                  <span className="text-[9px] font-mono uppercase tracking-wider text-emerald-400/90 flex items-center justify-between">
+                                    <span className="flex items-center gap-1">
+                                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                                      Custom (Rate)
+                                    </span>
+                                    {isComboFree && (
+                                      <span className="text-[8.5px] text-emerald-400 font-semibold">$0 Free</span>
+                                    )}
+                                  </span>
+                                  <input
+                                    type="number"
+                                    step="0.0001"
+                                    min="0"
+                                    disabled={isComboFree}
+                                    value={isComboFree ? "0" : draft.outputCost}
+                                    onChange={(e) =>
+                                      setComboDrafts((prev) => ({
+                                        ...prev,
+                                        [combo.id]: { ...draft, outputCost: e.target.value },
+                                      }))
+                                    }
+                                    placeholder={isComboFree ? "0 (Free)" : "e.g. 1.50"}
+                                    className="h-7 px-2 py-1 text-[11px] font-mono bg-bg-base border border-border rounded text-text-main placeholder:text-zinc-600 disabled:opacity-50 disabled:bg-bg-subtle focus:outline-none focus:border-emerald-500/70 transition-all"
+                                  />
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                      {index < arr.length - 1 && <div className="w-full h-px bg-zinc-600" />}
+                    </Fragment>
+                  );
+                })}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* ── Connected Provider Inset Group Cards ── */}
       <div className="space-y-2.5">
@@ -739,38 +1770,38 @@ export default function ManageModelsPanel() {
           return (
             <div
               key={providerId}
-              className="rounded-2xl border border-white/10 bg-[#161618]/85 backdrop-blur-xl shadow-md overflow-hidden transition-all"
+              className="rounded-xl border border-border bg-surface shadow-xs overflow-hidden transition-all"
             >
               {/* Group Header */}
-              <div className="w-full flex items-center justify-between px-3.5 py-2 hover:bg-white/[0.03] transition-colors">
+              <div className="w-full flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 px-3 sm:px-4 py-2.5 bg-surface hover:bg-bg-subtle/40 transition-colors border-b border-border/40">
                 <button
                   type="button"
                   onClick={() => setExpanded((prev) => ({ ...prev, [providerId]: !isOpen }))}
-                  className="flex items-center gap-2.5 text-left flex-1 cursor-pointer min-w-0"
+                  className="flex items-center gap-2 text-left w-full sm:w-auto sm:flex-1 cursor-pointer min-w-0"
                 >
                   <span
-                    className={`material-symbols-outlined text-[18px] text-zinc-400 transition-transform duration-200 ${
+                    className={`material-symbols-outlined text-[16px] text-text-muted transition-transform duration-200 ${
                       isOpen ? "rotate-90" : ""
                     }`}
                   >
                     chevron_right
                   </span>
-                  <span className="font-semibold text-xs tracking-tight text-white truncate">
+                  <span className="font-mono font-semibold text-xs tracking-tight text-text-main truncate">
                     {providerId}
                   </span>
-                  <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-white/5 border border-white/10 text-zinc-400 shrink-0">
+                  <span className="text-[10px] font-mono px-2 py-0.5 rounded-md bg-bg-subtle border border-border text-text-muted shrink-0">
                     {activeCount}/{all.length} active
                   </span>
                 </button>
 
-                <div className="flex items-center gap-1.5 shrink-0">
+                <div className="flex flex-wrap items-center gap-1.5 w-full sm:w-auto justify-start sm:justify-end shrink-0">
                   <button
                     type="button"
                     onClick={(e) => {
                       e.stopPropagation();
                       void handleToggleAll(providerId, true);
                     }}
-                    className="inline-flex items-center gap-1 px-2 py-1 rounded-lg border border-white/10 bg-white/5 hover:bg-white/10 text-zinc-300 text-[10px] font-medium transition-all cursor-pointer active:scale-95"
+                    className="inline-flex items-center gap-1 px-2 py-1 rounded-md border border-border bg-bg-subtle hover:bg-bg text-text-muted hover:text-text-main text-[10px] font-medium transition-all cursor-pointer active:scale-95"
                     title={`Select all models for ${providerId}`}
                   >
                     <span className="material-symbols-outlined text-[12px] text-emerald-400">
@@ -784,27 +1815,46 @@ export default function ManageModelsPanel() {
                       e.stopPropagation();
                       void handleToggleAll(providerId, false);
                     }}
-                    className="inline-flex items-center gap-1 px-2 py-1 rounded-lg border border-white/10 bg-white/5 hover:bg-white/10 text-zinc-300 text-[10px] font-medium transition-all cursor-pointer active:scale-95"
+                    className="inline-flex items-center gap-1 px-2 py-1 rounded-md border border-border bg-bg-subtle hover:bg-bg text-text-muted hover:text-text-main text-[10px] font-medium transition-all cursor-pointer active:scale-95"
                     title={`Deselect all models for ${providerId}`}
                   >
-                    <span className="material-symbols-outlined text-[12px] text-zinc-400">
+                    <span className="material-symbols-outlined text-[12px] text-text-muted">
                       remove_done
                     </span>
                     <span>Deselect All</span>
                   </button>
                   <button
                     type="button"
+                    disabled={savingSelectionsProviderId === providerId}
                     onClick={(e) => {
                       e.stopPropagation();
-                      void handleActivateWorking(providerId);
+                      void handleSaveSelections(providerId);
                     }}
-                    className="inline-flex items-center gap-1 px-2 py-1 rounded-lg border border-emerald-500/25 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300 text-[10px] font-medium transition-all cursor-pointer active:scale-95"
-                    title={`Activate all models that passed tests for ${providerId}`}
+                    className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-md border text-[10px] font-medium transition-all cursor-pointer active:scale-95 disabled:opacity-50 ${
+                      savedFeedbackProviderId === providerId
+                        ? "border-emerald-500/40 bg-emerald-500/20 text-emerald-300"
+                        : "border-primary/40 bg-primary/10 hover:bg-primary/20 text-primary"
+                    }`}
+                    title={`Save all selected models for ${providerId}`}
                   >
-                    <span className="material-symbols-outlined text-[12px] text-emerald-400">
-                      check_circle
+                    <span
+                      className={`material-symbols-outlined text-[12px] ${
+                        savingSelectionsProviderId === providerId ? "animate-spin" : ""
+                      }`}
+                    >
+                      {savingSelectionsProviderId === providerId
+                        ? "progress_activity"
+                        : savedFeedbackProviderId === providerId
+                          ? "check"
+                          : "save"}
                     </span>
-                    <span>Activate Working</span>
+                    <span>
+                      {savingSelectionsProviderId === providerId
+                        ? "Saving…"
+                        : savedFeedbackProviderId === providerId
+                          ? "Saved!"
+                          : "Save Selections"}
+                    </span>
                   </button>
                   <button
                     type="button"
@@ -813,11 +1863,11 @@ export default function ManageModelsPanel() {
                       e.stopPropagation();
                       void handleFetchModelsForProvider(providerId);
                     }}
-                    className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-white/15 bg-white/5 hover:bg-white/10 text-zinc-200 text-[11px] font-medium transition-all disabled:opacity-50 cursor-pointer active:scale-95 shrink-0"
+                    className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md border border-border hover:border-primary/40 bg-bg-subtle hover:bg-bg text-text-main text-[11px] font-medium transition-all disabled:opacity-50 cursor-pointer active:scale-95 shrink-0"
                     title={`Fetch live models for ${providerId} from /v1/models`}
                   >
                     <span
-                      className={`material-symbols-outlined text-[14px] ${
+                      className={`material-symbols-outlined text-[13px] ${
                         fetchingProviderId === providerId ? "animate-spin" : ""
                       }`}
                     >
@@ -830,7 +1880,7 @@ export default function ManageModelsPanel() {
 
               {/* Provider Fetch Error Alert */}
               {fetchErrorByProvider[providerId] && (
-                <div className="px-3.5 py-2 bg-red-950/40 border-y border-red-800/40 text-red-200 text-xs flex items-start gap-2">
+                <div className="px-3.5 py-2 bg-red-950/30 border-y border-red-800/30 text-red-200 text-xs flex items-start gap-2">
                   <span className="material-symbols-outlined text-red-400 text-[16px] shrink-0 mt-0.5">
                     error
                   </span>
@@ -845,451 +1895,754 @@ export default function ManageModelsPanel() {
 
               {/* Models List */}
               {isOpen && (
-                <div className="border-t border-white/[0.06] divide-y divide-white/[0.04]">
+                <div className="border-t border-border/40">
                   {models.length === 0 && (
-                    <p className="px-4 py-3 text-xs text-zinc-400 font-mono">
+                    <p className="px-4 py-3 text-xs text-text-muted font-mono">
                       {all.length === 0
                         ? "No synced models for this provider yet — click Fetch Models above."
                         : "No models match your search."}
                     </p>
                   )}
-                  {models.map((m) => {
+                  {models.map((m, index) => {
                     const key = `${providerId}::${m.id}`;
                     const cust = customizationByModel.get(key);
                     const isActive = cust ? cust.isActive === true : false;
+                    const autoFree = m.isFree === true || isCatalogFreeModel(providerId, m.id);
+                    const defaultTier: "free" | "paid" =
+                      cust?.pricingTier ??
+                      (cust?.isFreeOverride === false
+                        ? "paid"
+                        : cust?.isFreeOverride === true
+                          ? "free"
+                          : autoFree
+                            ? "free"
+                            : "paid");
+                    const catPricing = getPricingForModel(providerId, m.id) as {
+                      inputCost?: number;
+                      cacheCost?: number;
+                      outputCost?: number;
+                    } | null;
                     const draft = aliasDrafts[key] ?? {
                       name: cust?.customName ?? "",
                       alias: cust?.customAlias ?? "",
                       contextWindow: cust?.contextWindow ? String(cust.contextWindow) : "",
+                      pricingTier: defaultTier,
+                      originalInputCost:
+                        cust?.originalInputCost != null && cust.originalInputCost > 0
+                          ? String(cust.originalInputCost)
+                          : catPricing?.inputCost != null && catPricing.inputCost > 0
+                            ? String(catPricing.inputCost)
+                            : "",
+                      originalCacheCost:
+                        cust?.originalCacheCost != null && cust.originalCacheCost > 0
+                          ? String(cust.originalCacheCost)
+                          : catPricing?.cacheCost != null && catPricing.cacheCost > 0
+                            ? String(catPricing.cacheCost)
+                            : "",
+                      originalOutputCost:
+                        cust?.originalOutputCost != null && cust.originalOutputCost > 0
+                          ? String(cust.originalOutputCost)
+                          : catPricing?.outputCost != null && catPricing.outputCost > 0
+                            ? String(catPricing.outputCost)
+                            : "",
+                      inputCost:
+                        cust?.inputCost != null && cust.inputCost > 0 ? String(cust.inputCost) : "",
+                      cacheCost:
+                        cust?.cacheCost != null && cust.cacheCost > 0 ? String(cust.cacheCost) : "",
+                      outputCost:
+                        cust?.outputCost != null && cust.outputCost > 0
+                          ? String(cust.outputCost)
+                          : "",
                     };
+                    const currentTier: "free" | "paid" = draft.pricingTier ?? defaultTier;
                     const ctxTokens = cust?.contextWindow ?? m.contextWindow ?? m.inputTokenLimit;
                     const ctxLabel = formatContextWindow(ctxTokens ?? null);
+                    const origCtxTokens = m.contextWindow ?? m.inputTokenLimit;
+                    const origCtxLabel = formatContextWindow(origCtxTokens ?? null);
                     const capsMeta = getSyncedModelCapabilities(m, cust);
-                    const selectedCap = selectedCapabilities[key] || "text";
-                    const autoFree = m.isFree === true || isCatalogFreeModel(providerId, m.id);
+                    const defaultCap = capsMeta.hasChat
+                      ? "text"
+                      : capsMeta.hasCode
+                        ? "code"
+                        : capsMeta.hasReasoning
+                          ? "reasoning"
+                          : capsMeta.hasVision
+                            ? "vision"
+                            : capsMeta.hasImageGen
+                              ? "image_gen"
+                              : capsMeta.hasAudio
+                                ? "audio"
+                                : capsMeta.hasVideo
+                                  ? "video"
+                                  : capsMeta.hasSearch
+                                    ? "search"
+                                    : capsMeta.hasEmbedding
+                                      ? "embedding"
+                                      : "text";
+                    const selectedCap = selectedCapabilities[key] || defaultCap;
                     const isFree =
-                      cust?.isFreeOverride === true
+                      currentTier === "free"
                         ? true
-                        : cust?.isFreeOverride === false
+                        : currentTier === "paid"
                           ? false
-                          : autoFree;
+                          : cust?.isFreeOverride === true
+                            ? true
+                            : cust?.isFreeOverride === false
+                              ? false
+                              : autoFree;
                     const test = testResults[key];
                     const cachedBadge = !test && cust?.isTested && cust.testStatus;
 
                     return (
-                      <div
-                        key={m.id}
-                        className="px-3.5 py-2 space-y-1.5 hover:bg-white/[0.015] transition-colors"
-                      >
-                        {/* Compact Top Bar: Toggle, ID, Badges, Modality Pills, Test Button */}
-                        <div className="flex flex-wrap items-center gap-2">
-                          {/* Cupertino iOS Switch for Active Status */}
-                          <label
-                            className="relative inline-flex items-center cursor-pointer shrink-0"
-                            title={isActive ? "Active (downstream accessible)" : "Disabled"}
-                          >
-                            <input
-                              type="checkbox"
-                              checked={isActive}
-                              onChange={(e) =>
-                                void handleToggleActive(providerId, m.id, e.target.checked)
-                              }
-                              aria-label={`Activate ${m.id}`}
-                              className="sr-only"
-                            />
-                            <div
-                              className={`w-7.5 h-4.5 rounded-full transition-colors duration-200 ease-in-out p-0.5 flex items-center ${
-                                isActive
-                                  ? "bg-cyan-500 shadow-sm shadow-cyan-500/30"
-                                  : "bg-white/20"
-                              }`}
-                            >
-                              <div
-                                className={`size-3.5 rounded-full bg-white shadow-sm transform transition-transform duration-200 ease-in-out ${
-                                  isActive ? "translate-x-3" : "translate-x-0"
-                                }`}
-                              />
-                            </div>
-                          </label>
-
-                          <span className="font-mono text-xs font-semibold text-white break-all select-all">
-                            {m.id}
-                          </span>
-
-                          <button
-                            type="button"
-                            onClick={() => handleCopy(m.id)}
-                            title="Copy model ID"
-                            aria-label={`Copy model ID ${m.id}`}
-                            className="size-5 rounded hover:bg-white/10 text-zinc-400 hover:text-white flex items-center justify-center transition-colors cursor-pointer"
-                          >
-                            <span className="material-symbols-outlined text-[14px]">
-                              {copiedId === m.id ? "check" : "content_copy"}
-                            </span>
-                          </button>
-
-                          {/* Cupertino FREE / PAID pill button */}
-                          <button
-                            type="button"
-                            title="Toggle FREE/PAID tier override"
-                            onClick={() =>
-                              void handleFreeOverride(
-                                providerId,
-                                m.id,
-                                cust?.isFreeOverride == null
-                                  ? true
-                                  : cust.isFreeOverride === true
-                                    ? false
-                                    : null
-                              )
-                            }
-                            className={`text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border transition-all cursor-pointer active:scale-95 ${
-                              isFree
-                                ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/25"
-                                : "bg-amber-500/15 text-amber-400 border-amber-500/30 hover:bg-amber-500/25"
-                            }`}
-                          >
-                            {isFree ? "FREE" : "PAID"}
-                            {cust?.isFreeOverride != null && (
-                              <span className="ml-1 opacity-70 normal-case text-[8px]">manual</span>
-                            )}
-                          </button>
-
-                          {ctxLabel && (
-                            <span
-                              title={
-                                cust?.contextWindow
-                                  ? `Custom context window override: ${cust.contextWindow} tokens`
-                                  : `Context window: ${ctxTokens} tokens`
-                              }
-                              className={`text-[9px] font-mono px-2 py-0.5 rounded-full border ${
-                                cust?.contextWindow
-                                  ? "bg-purple-500/15 text-purple-300 border-purple-500/30"
-                                  : "bg-white/5 border border-white/10 text-zinc-400"
-                              }`}
-                            >
-                              {ctxLabel} ctx{cust?.contextWindow ? " (custom)" : ""}
-                            </span>
-                          )}
-
-                          {/* Cupertino Capability Selector Segmented Control */}
-                          <div className="inline-flex items-center p-0.5 rounded-full bg-black/40 border border-white/10 gap-0.5">
-                            {capsMeta.hasChat && (
-                              <button
-                                type="button"
-                                onClick={() => handleSelectCapability(key, "text")}
-                                title={`Text / Chat: Conversational dialogue & instructions (${
-                                  selectedCap === "text"
-                                    ? "Active for test"
-                                    : "Click to select for test"
-                                })`}
-                                className={`size-5.5 rounded-full text-[9px] font-medium transition-all inline-flex items-center justify-center cursor-pointer ${
-                                  selectedCap === "text"
-                                    ? "bg-cyan-500/25 text-cyan-300 border border-cyan-400/40 ring-1 ring-cyan-400/20 shadow-xs"
-                                    : "text-zinc-400 hover:text-white"
-                                }`}
+                      <Fragment key={m.id}>
+                        <div className="px-3 sm:px-4 py-2.5 space-y-2 hover:bg-bg-subtle/30 transition-colors">
+                          {/* Responsive Model Row Header */}
+                          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-2.5">
+                            {/* Left: Model Identity & Badges */}
+                            <div className="flex flex-wrap items-center gap-2 min-w-0">
+                              {/* OpenCode Toggle for Active Status */}
+                              <label
+                                className="relative inline-flex items-center cursor-pointer shrink-0"
+                                title={isActive ? "Active (downstream accessible)" : "Disabled"}
                               >
-                                <span className="material-symbols-outlined text-[12px] leading-none">
-                                  chat
-                                </span>
-                              </button>
-                            )}
-                            {capsMeta.hasVision && (
-                              <button
-                                type="button"
-                                onClick={() => handleSelectCapability(key, "vision")}
-                                title={`Vision: Multimodal visual input & image analysis (${
-                                  selectedCap === "vision"
-                                    ? "Active for test"
-                                    : "Click to select for test"
-                                })`}
-                                className={`size-5.5 rounded-full text-[9px] font-medium transition-all inline-flex items-center justify-center cursor-pointer ${
-                                  selectedCap === "vision"
-                                    ? "bg-cyan-500/25 text-cyan-300 border border-cyan-400/40 ring-1 ring-cyan-400/20 shadow-xs"
-                                    : "text-zinc-400 hover:text-white"
-                                }`}
-                              >
-                                <span className="material-symbols-outlined text-[12px] leading-none">
-                                  visibility
-                                </span>
-                              </button>
-                            )}
-                            {capsMeta.hasReasoning && (
-                              <button
-                                type="button"
-                                onClick={() => handleSelectCapability(key, "reasoning")}
-                                title={`Reasoning: Chain-of-thought logic & deep thinking (${
-                                  selectedCap === "reasoning"
-                                    ? "Active for test"
-                                    : "Click to select for test"
-                                })`}
-                                className={`size-5.5 rounded-full text-[9px] font-medium transition-all inline-flex items-center justify-center cursor-pointer ${
-                                  selectedCap === "reasoning"
-                                    ? "bg-cyan-500/25 text-cyan-300 border border-cyan-400/40 ring-1 ring-cyan-400/20 shadow-xs"
-                                    : "text-zinc-400 hover:text-white"
-                                }`}
-                              >
-                                <span className="material-symbols-outlined text-[12px] leading-none">
-                                  psychology
-                                </span>
-                              </button>
-                            )}
-                            {capsMeta.hasCode && (
-                              <button
-                                type="button"
-                                onClick={() => handleSelectCapability(key, "code")}
-                                title={`Code: Programming, debugging & syntax (${
-                                  selectedCap === "code"
-                                    ? "Active for test"
-                                    : "Click to select for test"
-                                })`}
-                                className={`size-5.5 rounded-full text-[9px] font-medium transition-all inline-flex items-center justify-center cursor-pointer ${
-                                  selectedCap === "code"
-                                    ? "bg-cyan-500/25 text-cyan-300 border border-cyan-400/40 ring-1 ring-cyan-400/20 shadow-xs"
-                                    : "text-zinc-400 hover:text-white"
-                                }`}
-                              >
-                                <span className="material-symbols-outlined text-[12px] leading-none">
-                                  code
-                                </span>
-                              </button>
-                            )}
-                            {capsMeta.hasImageGen && (
-                              <button
-                                type="button"
-                                onClick={() => handleSelectCapability(key, "image_gen")}
-                                title={`Image Generation: Text-to-image synthesis (${
-                                  selectedCap === "image_gen" || selectedCap === "image"
-                                    ? "Active for test"
-                                    : "Click to select for test"
-                                })`}
-                                className={`size-5.5 rounded-full text-[9px] font-medium transition-all inline-flex items-center justify-center cursor-pointer ${
-                                  selectedCap === "image_gen" || selectedCap === "image"
-                                    ? "bg-cyan-500/25 text-cyan-300 border border-cyan-400/40 ring-1 ring-cyan-400/20 shadow-xs"
-                                    : "text-zinc-400 hover:text-white"
-                                }`}
-                              >
-                                <span className="material-symbols-outlined text-[12px] leading-none">
-                                  palette
-                                </span>
-                              </button>
-                            )}
-                            {capsMeta.hasVideo && (
-                              <button
-                                type="button"
-                                onClick={() => handleSelectCapability(key, "video")}
-                                title={`Video: Temporal motion & video understanding (${
-                                  selectedCap === "video"
-                                    ? "Active for test"
-                                    : "Click to select for test"
-                                })`}
-                                className={`size-5.5 rounded-full text-[9px] font-medium transition-all inline-flex items-center justify-center cursor-pointer ${
-                                  selectedCap === "video"
-                                    ? "bg-cyan-500/25 text-cyan-300 border border-cyan-400/40 ring-1 ring-cyan-400/20 shadow-xs"
-                                    : "text-zinc-400 hover:text-white"
-                                }`}
-                              >
-                                <span className="material-symbols-outlined text-[12px] leading-none">
-                                  videocam
-                                </span>
-                              </button>
-                            )}
-                            {capsMeta.hasAudio && (
-                              <button
-                                type="button"
-                                onClick={() => handleSelectCapability(key, "audio")}
-                                title={`Audio: Speech transcription & audio understanding (${
-                                  selectedCap === "audio"
-                                    ? "Active for test"
-                                    : "Click to select for test"
-                                })`}
-                                className={`size-5.5 rounded-full text-[9px] font-medium transition-all inline-flex items-center justify-center cursor-pointer ${
-                                  selectedCap === "audio"
-                                    ? "bg-cyan-500/25 text-cyan-300 border border-cyan-400/40 ring-1 ring-cyan-400/20 shadow-xs"
-                                    : "text-zinc-400 hover:text-white"
-                                }`}
-                              >
-                                <span className="material-symbols-outlined text-[12px] leading-none">
-                                  volume_up
-                                </span>
-                              </button>
-                            )}
-                            {capsMeta.hasSearch && (
-                              <button
-                                type="button"
-                                onClick={() => handleSelectCapability(key, "search")}
-                                title={`Search: Grounded web search & real-time info (${
-                                  selectedCap === "search"
-                                    ? "Active for test"
-                                    : "Click to select for test"
-                                })`}
-                                className={`size-5.5 rounded-full text-[9px] font-medium transition-all inline-flex items-center justify-center cursor-pointer ${
-                                  selectedCap === "search"
-                                    ? "bg-cyan-500/25 text-cyan-300 border border-cyan-400/40 ring-1 ring-cyan-400/20 shadow-xs"
-                                    : "text-zinc-400 hover:text-white"
-                                }`}
-                              >
-                                <span className="material-symbols-outlined text-[12px] leading-none">
-                                  travel_explore
-                                </span>
-                              </button>
-                            )}
-                            {capsMeta.hasEmbedding && (
-                              <span
-                                title="Embedding: Vector semantic representations"
-                                className="size-5.5 rounded-full text-zinc-500 inline-flex items-center justify-center cursor-default"
-                              >
-                                <span className="material-symbols-outlined text-[12px] leading-none">
-                                  hub
-                                </span>
-                              </span>
-                            )}
-                          </div>
-
-                          <div className="flex-1" />
-
-                          {/* Test Status Badge */}
-                          {(test || cachedBadge) && (
-                            <span
-                              className={`text-[9px] font-bold uppercase px-2 py-0.5 rounded-full border ${
-                                (test ? test.ok : cust?.testStatus === "verified")
-                                  ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/30"
-                                  : "bg-red-500/15 text-red-400 border-red-500/30"
-                              }`}
-                            >
-                              {(test ? test.ok : cust?.testStatus === "verified")
-                                ? "Verified"
-                                : "Failed"}
-                              {(test?.httpStatus ?? cust?.testHttpStatus) != null &&
-                                ` · ${test?.httpStatus ?? cust?.testHttpStatus}`}
-                            </span>
-                          )}
-
-                          {/* Cupertino Test Button */}
-                          <button
-                            type="button"
-                            onClick={() => void handleTest(providerId, m.id)}
-                            disabled={testingId === key}
-                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-white/10 hover:bg-white/15 active:scale-95 text-white border border-white/15 transition-all disabled:opacity-50 cursor-pointer shadow-xs"
-                            title={`Test model with ${selectedCap.toUpperCase()} prompt`}
-                          >
-                            <span
-                              className={`material-symbols-outlined text-[13px] ${
-                                testingId === key ? "animate-spin" : ""
-                              }`}
-                            >
-                              {testingId === key ? "progress_activity" : "play_arrow"}
-                            </span>
-                            <span>{testingId === key ? `Testing…` : `Test (${selectedCap})`}</span>
-                          </button>
-                        </div>
-
-                        {/* Test Response Preview */}
-                        {(() => {
-                          const previewText = (test?.preview ?? cust?.testResponse ?? "").slice(
-                            0,
-                            500
-                          );
-                          if (!previewText) return null;
-                          const hasImg = isImageResponse(previewText);
-                          return (
-                            <div className="p-2 rounded-xl bg-black/50 border border-white/10 text-[11px] font-mono text-zinc-300 break-words leading-relaxed flex items-start gap-2.5">
-                              {hasImg && (
-                                <a
-                                  href={extractImageUrl(previewText)}
-                                  target="_blank"
-                                  rel="noreferrer"
-                                  title="Click to view full image in new tab"
-                                  className="shrink-0 group/img"
+                                <input
+                                  type="checkbox"
+                                  checked={isActive}
+                                  onChange={(e) =>
+                                    void handleToggleActive(providerId, m.id, e.target.checked)
+                                  }
+                                  aria-label={`Activate ${m.id}`}
+                                  className="sr-only"
+                                />
+                                <div
+                                  className={`w-7.5 h-4.5 rounded-full transition-colors duration-200 ease-in-out p-0.5 flex items-center ${
+                                    isActive ? "bg-emerald-500 shadow-xs" : "bg-zinc-700"
+                                  }`}
                                 >
-                                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                                  <img
-                                    src={extractImageUrl(previewText)}
-                                    alt="Generated output"
-                                    className="size-12 rounded-lg object-cover border border-white/20 group-hover/img:scale-110 transition-transform shadow-md"
+                                  <div
+                                    className={`size-3.5 rounded-full bg-white shadow-xs transform transition-transform duration-200 ease-in-out ${
+                                      isActive ? "translate-x-3" : "translate-x-0"
+                                    }`}
                                   />
-                                </a>
-                              )}
-                              <div className="flex-1 min-w-0">
-                                <span>{previewText}</span>
-                                {(test?.latencyMs ?? cust?.testLatencyMs) != null && (
-                                  <span className="text-zinc-500 font-sans ml-2 text-[10px]">
-                                    · {test?.latencyMs ?? cust?.testLatencyMs}ms
+                                </div>
+                              </label>
+
+                              <span className="font-mono text-xs font-semibold text-text-main break-all select-all">
+                                {m.id}
+                              </span>
+
+                              <button
+                                type="button"
+                                onClick={() => handleCopy(m.id)}
+                                title="Copy model ID"
+                                aria-label={`Copy model ID ${m.id}`}
+                                className="size-5 rounded hover:bg-bg-subtle text-text-muted hover:text-text-main flex items-center justify-center transition-colors cursor-pointer shrink-0"
+                              >
+                                <span className="material-symbols-outlined text-[13px]">
+                                  {copiedId === m.id ? "check" : "content_copy"}
+                                </span>
+                              </button>
+
+                              {/* Interactive FREE / PAID toggle button */}
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setAliasDrafts((prev) => ({
+                                    ...prev,
+                                    [key]: {
+                                      ...draft,
+                                      pricingTier: currentTier === "free" ? "paid" : "free",
+                                    },
+                                  }))
+                                }
+                                title="Click to toggle Free / Paid"
+                                className={`text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded border select-none shrink-0 cursor-pointer transition-all active:scale-95 flex items-center gap-1 ${
+                                  isFree
+                                    ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/25"
+                                    : "bg-amber-500/15 text-amber-400 border-amber-500/30 hover:bg-amber-500/25"
+                                }`}
+                              >
+                                <span className="material-symbols-outlined text-[11px]">
+                                  {isFree ? "check_circle" : "payments"}
+                                </span>
+                                <span>{isFree ? "FREE" : "PAID"}</span>
+                                {cust?.isFreeOverride != null && (
+                                  <span className="ml-0.5 opacity-70 normal-case text-[8px]">
+                                    manual
                                   </span>
                                 )}
+                              </button>
+
+                              {ctxLabel && (
+                                <span
+                                  title={
+                                    cust?.contextWindow
+                                      ? `Custom context window override: ${cust.contextWindow} tokens`
+                                      : `Context window: ${ctxTokens} tokens`
+                                  }
+                                  className={`text-[9px] font-mono px-2 py-0.5 rounded border shrink-0 ${
+                                    cust?.contextWindow
+                                      ? "bg-purple-500/10 text-purple-300 border-purple-500/20"
+                                      : "bg-bg-subtle border-border text-text-muted"
+                                  }`}
+                                >
+                                  {ctxLabel} ctx{cust?.contextWindow ? " (custom)" : ""}
+                                </span>
+                              )}
+                            </div>
+
+                            {/* Right: Capability Selector, Test Action & SINGLE Model Save Button */}
+                            <div className="flex flex-wrap items-center gap-2 shrink-0 justify-between sm:justify-end">
+                              {/* Compact & Selectable Capability Icon Buttons */}
+                              <div className="inline-flex items-center p-1 rounded-lg bg-bg-subtle/50 border border-border/60 gap-1.5 shrink-0 max-w-full overflow-x-auto">
+                                {capsMeta.hasChat && (
+                                  <button
+                                    type="button"
+                                    onClick={() => handleSelectCapability(key, "text")}
+                                    title="Chat"
+                                    className={`size-6 rounded-md shrink-0 transition-all duration-150 inline-flex items-center justify-center cursor-pointer ${
+                                      selectedCap === "text"
+                                        ? "bg-emerald-500/15 text-emerald-400 border border-emerald-500 shadow-xs ring-1 ring-emerald-500/30 font-bold"
+                                        : "bg-bg-subtle/40 text-text-muted hover:text-text-main border border-border/80 hover:border-zinc-500"
+                                    }`}
+                                  >
+                                    <span className="material-symbols-outlined text-[11px] scale-[0.55] origin-center leading-none select-none flex items-center justify-center">
+                                      chat
+                                    </span>
+                                  </button>
+                                )}
+                                {capsMeta.hasVision && (
+                                  <button
+                                    type="button"
+                                    onClick={() => handleSelectCapability(key, "vision")}
+                                    title="Vision"
+                                    className={`size-6 rounded-md shrink-0 transition-all duration-150 inline-flex items-center justify-center cursor-pointer ${
+                                      selectedCap === "vision"
+                                        ? "bg-emerald-500/15 text-emerald-400 border border-emerald-500 shadow-xs ring-1 ring-emerald-500/30 font-bold"
+                                        : "bg-bg-subtle/40 text-text-muted hover:text-text-main border border-border/80 hover:border-zinc-500"
+                                    }`}
+                                  >
+                                    <span className="material-symbols-outlined text-[11px] scale-[0.55] origin-center leading-none select-none flex items-center justify-center">
+                                      visibility
+                                    </span>
+                                  </button>
+                                )}
+                                {capsMeta.hasReasoning && (
+                                  <button
+                                    type="button"
+                                    onClick={() => handleSelectCapability(key, "reasoning")}
+                                    title="Reasoning"
+                                    className={`size-6 rounded-md shrink-0 transition-all duration-150 inline-flex items-center justify-center cursor-pointer ${
+                                      selectedCap === "reasoning"
+                                        ? "bg-emerald-500/15 text-emerald-400 border border-emerald-500 shadow-xs ring-1 ring-emerald-500/30 font-bold"
+                                        : "bg-bg-subtle/40 text-text-muted hover:text-text-main border border-border/80 hover:border-zinc-500"
+                                    }`}
+                                  >
+                                    <span className="material-symbols-outlined text-[11px] scale-[0.55] origin-center leading-none select-none flex items-center justify-center">
+                                      psychology
+                                    </span>
+                                  </button>
+                                )}
+                                {capsMeta.hasCode && (
+                                  <button
+                                    type="button"
+                                    onClick={() => handleSelectCapability(key, "code")}
+                                    title="Code"
+                                    className={`size-6 rounded-md shrink-0 transition-all duration-150 inline-flex items-center justify-center cursor-pointer ${
+                                      selectedCap === "code"
+                                        ? "bg-emerald-500/15 text-emerald-400 border border-emerald-500 shadow-xs ring-1 ring-emerald-500/30 font-bold"
+                                        : "bg-bg-subtle/40 text-text-muted hover:text-text-main border border-border/80 hover:border-zinc-500"
+                                    }`}
+                                  >
+                                    <span className="material-symbols-outlined text-[11px] scale-[0.55] origin-center leading-none select-none flex items-center justify-center">
+                                      code
+                                    </span>
+                                  </button>
+                                )}
+                                {capsMeta.hasImageGen && (
+                                  <button
+                                    type="button"
+                                    onClick={() => handleSelectCapability(key, "image_gen")}
+                                    title="Image Gen"
+                                    className={`size-6 rounded-md shrink-0 transition-all duration-150 inline-flex items-center justify-center cursor-pointer ${
+                                      selectedCap === "image_gen" || selectedCap === "image"
+                                        ? "bg-emerald-500/15 text-emerald-400 border border-emerald-500 shadow-xs ring-1 ring-emerald-500/30 font-bold"
+                                        : "bg-bg-subtle/40 text-text-muted hover:text-text-main border border-border/80 hover:border-zinc-500"
+                                    }`}
+                                  >
+                                    <span className="material-symbols-outlined text-[11px] scale-[0.55] origin-center leading-none select-none flex items-center justify-center">
+                                      palette
+                                    </span>
+                                  </button>
+                                )}
+                                {capsMeta.hasVideo && (
+                                  <button
+                                    type="button"
+                                    onClick={() => handleSelectCapability(key, "video")}
+                                    title="Video"
+                                    className={`size-6 rounded-md shrink-0 transition-all duration-150 inline-flex items-center justify-center cursor-pointer ${
+                                      selectedCap === "video"
+                                        ? "bg-emerald-500/15 text-emerald-400 border border-emerald-500 shadow-xs ring-1 ring-emerald-500/30 font-bold"
+                                        : "bg-bg-subtle/40 text-text-muted hover:text-text-main border border-border/80 hover:border-zinc-500"
+                                    }`}
+                                  >
+                                    <span className="material-symbols-outlined text-[11px] scale-[0.55] origin-center leading-none select-none flex items-center justify-center">
+                                      videocam
+                                    </span>
+                                  </button>
+                                )}
+                                {capsMeta.hasAudio && (
+                                  <button
+                                    type="button"
+                                    onClick={() => handleSelectCapability(key, "audio")}
+                                    title="Audio"
+                                    className={`size-6 rounded-md shrink-0 transition-all duration-150 inline-flex items-center justify-center cursor-pointer ${
+                                      selectedCap === "audio"
+                                        ? "bg-emerald-500/15 text-emerald-400 border border-emerald-500 shadow-xs ring-1 ring-emerald-500/30 font-bold"
+                                        : "bg-bg-subtle/40 text-text-muted hover:text-text-main border border-border/80 hover:border-zinc-500"
+                                    }`}
+                                  >
+                                    <span className="material-symbols-outlined text-[11px] scale-[0.55] origin-center leading-none select-none flex items-center justify-center">
+                                      volume_up
+                                    </span>
+                                  </button>
+                                )}
+                                {capsMeta.hasSearch && (
+                                  <button
+                                    type="button"
+                                    onClick={() => handleSelectCapability(key, "search")}
+                                    title="Search"
+                                    className={`size-6 rounded-md shrink-0 transition-all duration-150 inline-flex items-center justify-center cursor-pointer ${
+                                      selectedCap === "search"
+                                        ? "bg-emerald-500/15 text-emerald-400 border border-emerald-500 shadow-xs ring-1 ring-emerald-500/30 font-bold"
+                                        : "bg-bg-subtle/40 text-text-muted hover:text-text-main border border-border/80 hover:border-zinc-500"
+                                    }`}
+                                  >
+                                    <span className="material-symbols-outlined text-[11px] scale-[0.55] origin-center leading-none select-none flex items-center justify-center">
+                                      travel_explore
+                                    </span>
+                                  </button>
+                                )}
+                                {capsMeta.hasEmbedding && (
+                                  <button
+                                    type="button"
+                                    onClick={() => handleSelectCapability(key, "embedding")}
+                                    title="Embedding"
+                                    className={`size-6 rounded-md shrink-0 transition-all duration-150 inline-flex items-center justify-center cursor-pointer ${
+                                      selectedCap === "embedding"
+                                        ? "bg-emerald-500/15 text-emerald-400 border border-emerald-500 shadow-xs ring-1 ring-emerald-500/30 font-bold"
+                                        : "bg-bg-subtle/40 text-text-muted hover:text-text-main border border-border/80 hover:border-zinc-500"
+                                    }`}
+                                  >
+                                    <span className="material-symbols-outlined text-[11px] scale-[0.55] origin-center leading-none select-none flex items-center justify-center">
+                                      hub
+                                    </span>
+                                  </button>
+                                )}
+                              </div>
+
+                              <div className="flex items-center gap-1.5 shrink-0">
+                                {/* Test Status Badge */}
+                                {(test || cachedBadge) && (
+                                  <span
+                                    className={`text-[9px] font-bold uppercase px-2 py-0.5 rounded border ${
+                                      (test ? test.ok : cust?.testStatus === "verified")
+                                        ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
+                                        : "bg-red-500/10 text-red-400 border-red-500/20"
+                                    }`}
+                                  >
+                                    {(test ? test.ok : cust?.testStatus === "verified")
+                                      ? "Verified"
+                                      : "Failed"}
+                                    {(test?.httpStatus ?? cust?.testHttpStatus) != null &&
+                                      ` · ${test?.httpStatus ?? cust?.testHttpStatus}`}
+                                  </span>
+                                )}
+
+                                {/* OpenCode Test Button with selected capability */}
+                                <button
+                                  type="button"
+                                  onClick={() => void handleTest(providerId, m.id, selectedCap)}
+                                  disabled={testingId === key}
+                                  className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-medium bg-bg-subtle hover:bg-bg active:scale-95 text-text-main border border-border hover:border-emerald-500/50 hover:text-emerald-400 transition-all disabled:opacity-50 cursor-pointer shadow-xs shrink-0"
+                                  title={`Test model with ${selectedCap.toUpperCase()} prompt`}
+                                >
+                                  <span
+                                    className={`material-symbols-outlined text-[13px] ${
+                                      testingId === key ? "animate-spin text-emerald-400" : ""
+                                    }`}
+                                  >
+                                    {testingId === key ? "progress_activity" : "play_arrow"}
+                                  </span>
+                                  <span>
+                                    {testingId === key
+                                      ? `Testing (${selectedCap})…`
+                                      : `Test (${selectedCap})`}
+                                  </span>
+                                </button>
+
+                                {/* ONLY Save Button for this Model - Right Next to Test Button */}
+                                <button
+                                  type="button"
+                                  onClick={() => void handleSaveAlias(providerId, m.id)}
+                                  disabled={savingAlias === key}
+                                  className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-semibold bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 active:scale-95 transition-all disabled:opacity-50 cursor-pointer shadow-xs shrink-0"
+                                  title="Save this model's custom names and pricing"
+                                >
+                                  <span
+                                    className={`material-symbols-outlined text-[13px] ${
+                                      savingAlias === key ? "animate-spin" : ""
+                                    }`}
+                                  >
+                                    {savingAlias === key ? "progress_activity" : "save"}
+                                  </span>
+                                  <span>{savingAlias === key ? "Saving…" : "Save"}</span>
+                                </button>
                               </div>
                             </div>
-                          );
-                        })()}
-
-                        {/* Cupertino Inset Manageable Fields with Display, Alias ID & Context Window */}
-                        {isActive && (
-                          <div className="grid grid-cols-1 md:grid-cols-3 gap-2 pt-1 border-t border-white/[0.04]">
-                            <div className="flex items-center gap-1.5 min-w-0">
-                              <span className="text-[10px] uppercase font-mono tracking-wider text-zinc-500 shrink-0">
-                                Display:
-                              </span>
-                              <input
-                                value={draft.name}
-                                onChange={(e) =>
-                                  setAliasDrafts((prev) => ({
-                                    ...prev,
-                                    [key]: { ...draft, name: e.target.value },
-                                  }))
-                                }
-                                placeholder={m.name || m.id}
-                                className="flex-1 h-6.5 px-2 py-0.5 text-[11px] bg-black/40 border border-white/10 rounded-md text-white font-mono placeholder:text-zinc-600 focus:outline-none focus:border-cyan-400/60 focus:ring-1 focus:ring-cyan-400/30 transition-all"
-                              />
-                            </div>
-
-                            <div className="flex items-center gap-1.5 min-w-0">
-                              <span className="text-[10px] uppercase font-mono tracking-wider text-zinc-500 shrink-0">
-                                Alias ID:
-                              </span>
-                              <input
-                                value={draft.alias}
-                                onChange={(e) =>
-                                  setAliasDrafts((prev) => ({
-                                    ...prev,
-                                    [key]: { ...draft, alias: e.target.value },
-                                  }))
-                                }
-                                placeholder={m.id}
-                                className="flex-1 h-6.5 px-2 py-0.5 text-[11px] bg-black/40 border border-white/10 rounded-md text-white font-mono placeholder:text-zinc-600 focus:outline-none focus:border-cyan-400/60 focus:ring-1 focus:ring-cyan-400/30 transition-all"
-                              />
-                            </div>
-
-                            <div className="flex items-center gap-1.5 min-w-0">
-                              <span className="text-[10px] uppercase font-mono tracking-wider text-zinc-500 shrink-0">
-                                Context:
-                              </span>
-                              <input
-                                value={draft.contextWindow}
-                                onChange={(e) =>
-                                  setAliasDrafts((prev) => ({
-                                    ...prev,
-                                    [key]: { ...draft, contextWindow: e.target.value },
-                                  }))
-                                }
-                                placeholder={
-                                  (m.contextWindow ?? m.inputTokenLimit)
-                                    ? `${m.contextWindow ?? m.inputTokenLimit} (e.g. 500k)`
-                                    : "e.g. 500k"
-                                }
-                                className="flex-1 h-6.5 px-2 py-0.5 text-[11px] bg-black/40 border border-white/10 rounded-md text-white font-mono placeholder:text-zinc-600 focus:outline-none focus:border-cyan-400/60 focus:ring-1 focus:ring-cyan-400/30 transition-all"
-                              />
-                              <button
-                                type="button"
-                                onClick={() => void handleSaveAlias(providerId, m.id)}
-                                disabled={savingAlias === key}
-                                className="h-6.5 px-2.5 rounded-md text-[11px] font-semibold bg-cyan-500/20 text-cyan-300 hover:bg-cyan-500/30 border border-cyan-400/30 active:scale-95 transition-all disabled:opacity-50 cursor-pointer shrink-0"
-                              >
-                                {savingAlias === key ? "Saving…" : "Save"}
-                              </button>
-                            </div>
                           </div>
-                        )}
-                      </div>
+
+                          {/* Test Response Preview */}
+                          {(() => {
+                            const previewText = (test?.preview ?? cust?.testResponse ?? "").slice(
+                              0,
+                              500
+                            );
+                            if (!previewText) return null;
+                            const hasImg = isImageResponse(previewText);
+                            return (
+                              <div className="p-2.5 rounded-lg bg-black/40 border border-border text-[11px] font-mono text-zinc-300 break-words leading-relaxed flex items-start gap-2.5 min-w-0 overflow-hidden">
+                                {hasImg && (
+                                  <a
+                                    href={extractImageUrl(previewText)}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    title="Click to view full image in new tab"
+                                    className="shrink-0 group/img"
+                                  >
+                                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                                    <img
+                                      src={extractImageUrl(previewText)}
+                                      alt="Generated output"
+                                      className="size-12 rounded-lg object-cover border border-white/20 group-hover/img:scale-110 transition-transform shadow-md"
+                                    />
+                                  </a>
+                                )}
+                                <div className="flex-1 min-w-0 break-words overflow-hidden">
+                                  <span className="break-all sm:break-words">{previewText}</span>
+                                  {(test?.latencyMs ?? cust?.testLatencyMs) != null && (
+                                    <span className="text-zinc-500 font-sans ml-2 text-[10px] whitespace-nowrap">
+                                      · {test?.latencyMs ?? cust?.testLatencyMs}ms
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                            );
+                          })()}
+
+                          {/* OpenCode Manageable Fields: Original vs Custom + Pricing */}
+                          {isActive && (
+                            <div className="flex flex-col gap-2 pt-2 border-t border-border/40">
+                              {/* Modern Columnar Grid: Original on top, Custom below for every property */}
+                              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-2">
+                                {/* 1. Model Name */}
+                                <div className="flex flex-col gap-1.5 p-2 rounded-lg bg-bg-subtle/50 border border-border/60">
+                                  <div className="flex items-center justify-between text-[11px] font-medium text-text-main pb-1 border-b border-border/40">
+                                    <span className="flex items-center gap-1">
+                                      <span className="material-symbols-outlined text-[13px] text-text-muted">badge</span>
+                                      Model Name
+                                    </span>
+                                  </div>
+                                  <div className="flex flex-col gap-0.5">
+                                    <span className="text-[9px] font-mono uppercase tracking-wider text-amber-400/90 flex items-center gap-1">
+                                      <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
+                                      Original
+                                    </span>
+                                    <div
+                                      className="h-7 px-2 py-1 text-[11px] font-mono bg-bg-base/60 border border-border/40 rounded text-text-muted truncate flex items-center select-all"
+                                      title={m.name || m.id}
+                                    >
+                                      {m.name || m.id}
+                                    </div>
+                                  </div>
+                                  <div className="flex flex-col gap-0.5">
+                                    <span className="text-[9px] font-mono uppercase tracking-wider text-emerald-400/90 flex items-center gap-1">
+                                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                                      Custom
+                                    </span>
+                                    <input
+                                      value={draft.name}
+                                      onChange={(e) =>
+                                        setAliasDrafts((prev) => ({
+                                          ...prev,
+                                          [key]: { ...draft, name: e.target.value },
+                                        }))
+                                      }
+                                      placeholder={m.name || m.id}
+                                      className="h-7 px-2 py-1 text-[11px] font-mono bg-bg-base border border-border rounded text-text-main placeholder:text-zinc-600 focus:outline-none focus:border-emerald-500/70 transition-all"
+                                    />
+                                  </div>
+                                </div>
+
+                                {/* 2. Model ID / Alias */}
+                                <div className="flex flex-col gap-1.5 p-2 rounded-lg bg-bg-subtle/50 border border-border/60">
+                                  <div className="flex items-center justify-between text-[11px] font-medium text-text-main pb-1 border-b border-border/40">
+                                    <span className="flex items-center gap-1">
+                                      <span className="material-symbols-outlined text-[13px] text-text-muted">fingerprint</span>
+                                      Model ID / Alias
+                                    </span>
+                                  </div>
+                                  <div className="flex flex-col gap-0.5">
+                                    <span className="text-[9px] font-mono uppercase tracking-wider text-amber-400/90 flex items-center gap-1">
+                                      <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
+                                      Original
+                                    </span>
+                                    <div
+                                      className="h-7 px-2 py-1 text-[11px] font-mono bg-bg-base/60 border border-border/40 rounded text-text-muted truncate flex items-center select-all"
+                                      title={m.id}
+                                    >
+                                      {m.id}
+                                    </div>
+                                  </div>
+                                  <div className="flex flex-col gap-0.5">
+                                    <span className="text-[9px] font-mono uppercase tracking-wider text-emerald-400/90 flex items-center gap-1">
+                                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                                      Custom
+                                    </span>
+                                    <input
+                                      value={draft.alias}
+                                      onChange={(e) =>
+                                        setAliasDrafts((prev) => ({
+                                          ...prev,
+                                          [key]: { ...draft, alias: e.target.value },
+                                        }))
+                                      }
+                                      placeholder={m.id}
+                                      className="h-7 px-2 py-1 text-[11px] font-mono bg-bg-base border border-border rounded text-text-main placeholder:text-zinc-600 focus:outline-none focus:border-emerald-500/70 transition-all"
+                                    />
+                                  </div>
+                                </div>
+
+                                {/* 3. Context Window */}
+                                <div className="flex flex-col gap-1.5 p-2 rounded-lg bg-bg-subtle/50 border border-border/60">
+                                  <div className="flex items-center justify-between text-[11px] font-medium text-text-main pb-1 border-b border-border/40">
+                                    <span className="flex items-center gap-1">
+                                      <span className="material-symbols-outlined text-[13px] text-text-muted">memory</span>
+                                      Context Window
+                                    </span>
+                                  </div>
+                                  <div className="flex flex-col gap-0.5">
+                                    <span className="text-[9px] font-mono uppercase tracking-wider text-amber-400/90 flex items-center gap-1">
+                                      <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
+                                      Original
+                                    </span>
+                                    <div
+                                      className="h-7 px-2 py-1 text-[11px] font-mono bg-bg-base/60 border border-border/40 rounded text-text-muted truncate flex items-center"
+                                      title={origCtxLabel || "N/A"}
+                                    >
+                                      {origCtxLabel || "N/A"}
+                                    </div>
+                                  </div>
+                                  <div className="flex flex-col gap-0.5">
+                                    <span className="text-[9px] font-mono uppercase tracking-wider text-emerald-400/90 flex items-center gap-1">
+                                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                                      Custom
+                                    </span>
+                                    <input
+                                      value={draft.contextWindow}
+                                      onChange={(e) =>
+                                        setAliasDrafts((prev) => ({
+                                          ...prev,
+                                          [key]: { ...draft, contextWindow: e.target.value },
+                                        }))
+                                      }
+                                      placeholder={
+                                        origCtxTokens
+                                          ? `${origCtxTokens} (e.g. 500k)`
+                                          : "e.g. 500k"
+                                      }
+                                      className="h-7 px-2 py-1 text-[11px] font-mono bg-bg-base border border-border rounded text-text-main placeholder:text-zinc-600 focus:outline-none focus:border-emerald-500/70 transition-all"
+                                    />
+                                  </div>
+                                </div>
+
+                                {/* 4. Input Cost */}
+                                <div className="flex flex-col gap-1.5 p-2 rounded-lg bg-bg-subtle/50 border border-border/60">
+                                  <div className="flex items-center justify-between text-[11px] font-medium text-text-main pb-1 border-b border-border/40">
+                                    <span className="flex items-center gap-1">
+                                      <span className="material-symbols-outlined text-[13px] text-text-muted">arrow_downward</span>
+                                      Input ($/1M)
+                                    </span>
+                                  </div>
+                                  <div className="flex flex-col gap-0.5">
+                                    <span className="text-[9px] font-mono uppercase tracking-wider text-amber-400/90 flex items-center gap-1">
+                                      <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
+                                      Orig (Cut-Bal)
+                                    </span>
+                                    <input
+                                      type="number"
+                                      step="0.0001"
+                                      min="0"
+                                      value={draft.originalInputCost ?? ""}
+                                      onChange={(e) =>
+                                        setAliasDrafts((prev) => ({
+                                          ...prev,
+                                          [key]: { ...draft, originalInputCost: e.target.value },
+                                        }))
+                                      }
+                                      placeholder="e.g. 1.00"
+                                      className="h-7 px-2 py-1 text-[11px] font-mono bg-bg-base border border-border rounded text-amber-300 placeholder:text-zinc-600 focus:outline-none focus:border-amber-400/70 transition-all"
+                                    />
+                                  </div>
+                                  <div className="flex flex-col gap-0.5">
+                                    <span className="text-[9px] font-mono uppercase tracking-wider text-emerald-400/90 flex items-center justify-between">
+                                      <span className="flex items-center gap-1">
+                                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                                        Custom (Rate)
+                                      </span>
+                                      {currentTier === "free" && (
+                                        <span className="text-[8.5px] text-emerald-400 font-semibold">$0 Free</span>
+                                      )}
+                                    </span>
+                                    <input
+                                      type="number"
+                                      step="0.0001"
+                                      min="0"
+                                      disabled={currentTier === "free"}
+                                      value={currentTier === "free" ? "0" : (draft.inputCost ?? "")}
+                                      onChange={(e) =>
+                                        setAliasDrafts((prev) => ({
+                                          ...prev,
+                                          [key]: { ...draft, inputCost: e.target.value },
+                                        }))
+                                      }
+                                      placeholder={currentTier === "free" ? "0 (Free)" : "e.g. 0.50"}
+                                      className="h-7 px-2 py-1 text-[11px] font-mono bg-bg-base border border-border rounded text-text-main placeholder:text-zinc-600 disabled:opacity-50 disabled:bg-bg-subtle focus:outline-none focus:border-emerald-500/70 transition-all"
+                                    />
+                                  </div>
+                                </div>
+
+                                {/* 5. Cache Read Cost */}
+                                <div className="flex flex-col gap-1.5 p-2 rounded-lg bg-bg-subtle/50 border border-border/60">
+                                  <div className="flex items-center justify-between text-[11px] font-medium text-text-main pb-1 border-b border-border/40">
+                                    <span className="flex items-center gap-1">
+                                      <span className="material-symbols-outlined text-[13px] text-text-muted">cached</span>
+                                      Cache ($/1M)
+                                    </span>
+                                  </div>
+                                  <div className="flex flex-col gap-0.5">
+                                    <span className="text-[9px] font-mono uppercase tracking-wider text-amber-400/90 flex items-center gap-1">
+                                      <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
+                                      Orig (Cut-Bal)
+                                    </span>
+                                    <input
+                                      type="number"
+                                      step="0.0001"
+                                      min="0"
+                                      value={draft.originalCacheCost ?? ""}
+                                      onChange={(e) =>
+                                        setAliasDrafts((prev) => ({
+                                          ...prev,
+                                          [key]: { ...draft, originalCacheCost: e.target.value },
+                                        }))
+                                      }
+                                      placeholder="e.g. 0.25"
+                                      className="h-7 px-2 py-1 text-[11px] font-mono bg-bg-base border border-border rounded text-amber-300 placeholder:text-zinc-600 focus:outline-none focus:border-amber-400/70 transition-all"
+                                    />
+                                  </div>
+                                  <div className="flex flex-col gap-0.5">
+                                    <span className="text-[9px] font-mono uppercase tracking-wider text-emerald-400/90 flex items-center justify-between">
+                                      <span className="flex items-center gap-1">
+                                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                                        Custom (Rate)
+                                      </span>
+                                      {currentTier === "free" && (
+                                        <span className="text-[8.5px] text-emerald-400 font-semibold">$0 Free</span>
+                                      )}
+                                    </span>
+                                    <input
+                                      type="number"
+                                      step="0.0001"
+                                      min="0"
+                                      disabled={currentTier === "free"}
+                                      value={currentTier === "free" ? "0" : (draft.cacheCost ?? "")}
+                                      onChange={(e) =>
+                                        setAliasDrafts((prev) => ({
+                                          ...prev,
+                                          [key]: { ...draft, cacheCost: e.target.value },
+                                        }))
+                                      }
+                                      placeholder={currentTier === "free" ? "0 (Free)" : "e.g. 0.125"}
+                                      className="h-7 px-2 py-1 text-[11px] font-mono bg-bg-base border border-border rounded text-text-main placeholder:text-zinc-600 disabled:opacity-50 disabled:bg-bg-subtle focus:outline-none focus:border-emerald-500/70 transition-all"
+                                    />
+                                  </div>
+                                </div>
+
+                                {/* 6. Output Cost */}
+                                <div className="flex flex-col gap-1.5 p-2 rounded-lg bg-bg-subtle/50 border border-border/60">
+                                  <div className="flex items-center justify-between text-[11px] font-medium text-text-main pb-1 border-b border-border/40">
+                                    <span className="flex items-center gap-1">
+                                      <span className="material-symbols-outlined text-[13px] text-text-muted">arrow_upward</span>
+                                      Output ($/1M)
+                                    </span>
+                                  </div>
+                                  <div className="flex flex-col gap-0.5">
+                                    <span className="text-[9px] font-mono uppercase tracking-wider text-amber-400/90 flex items-center gap-1">
+                                      <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
+                                      Orig (Cut-Bal)
+                                    </span>
+                                    <input
+                                      type="number"
+                                      step="0.0001"
+                                      min="0"
+                                      value={draft.originalOutputCost ?? ""}
+                                      onChange={(e) =>
+                                        setAliasDrafts((prev) => ({
+                                          ...prev,
+                                          [key]: { ...draft, originalOutputCost: e.target.value },
+                                        }))
+                                      }
+                                      placeholder="e.g. 3.00"
+                                      className="h-7 px-2 py-1 text-[11px] font-mono bg-bg-base border border-border rounded text-amber-300 placeholder:text-zinc-600 focus:outline-none focus:border-amber-400/70 transition-all"
+                                    />
+                                  </div>
+                                  <div className="flex flex-col gap-0.5">
+                                    <span className="text-[9px] font-mono uppercase tracking-wider text-emerald-400/90 flex items-center justify-between">
+                                      <span className="flex items-center gap-1">
+                                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                                        Custom (Rate)
+                                      </span>
+                                      {currentTier === "free" && (
+                                        <span className="text-[8.5px] text-emerald-400 font-semibold">$0 Free</span>
+                                      )}
+                                    </span>
+                                    <input
+                                      type="number"
+                                      step="0.0001"
+                                      min="0"
+                                      disabled={currentTier === "free"}
+                                      value={
+                                        currentTier === "free" ? "0" : (draft.outputCost ?? "")
+                                      }
+                                      onChange={(e) =>
+                                        setAliasDrafts((prev) => ({
+                                          ...prev,
+                                          [key]: { ...draft, outputCost: e.target.value },
+                                        }))
+                                      }
+                                      placeholder={currentTier === "free" ? "0 (Free)" : "e.g. 1.50"}
+                                      className="h-7 px-2 py-1 text-[11px] font-mono bg-bg-base border border-border rounded text-text-main placeholder:text-zinc-600 disabled:opacity-50 disabled:bg-bg-subtle focus:outline-none focus:border-emerald-500/70 transition-all"
+                                    />
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Full-Width Visible Grey Divider Between Models */}
+                        {index < models.length - 1 && <div className="w-full h-px bg-zinc-600" />}
+                      </Fragment>
                     );
                   })}
                 </div>

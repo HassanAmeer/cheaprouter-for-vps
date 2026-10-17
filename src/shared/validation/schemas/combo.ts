@@ -400,9 +400,13 @@ export const createComboSchema = z
       .regex(/^\d+$/, "dimensions must be a positive integer string")
       .optional()
       .nullable(),
+    customAlias: z.string().trim().max(200).optional().nullable(),
     pricing: z
       .object({
         tier: z.enum(["free", "paid"]).optional().default("free"),
+        originalInputCost: z.number().nonnegative().optional().nullable(),
+        originalCacheCost: z.number().nonnegative().optional().nullable(),
+        originalOutputCost: z.number().nonnegative().optional().nullable(),
         inputCost: z.number().nonnegative().optional().nullable(),
         cacheCost: z.number().nonnegative().optional().nullable(),
         outputCost: z.number().nonnegative().optional().nullable(),
@@ -486,9 +490,13 @@ export const updateComboSchema = z
       .regex(/^\d+$/, "dimensions must be a positive integer string")
       .optional()
       .nullable(),
+    customAlias: z.string().trim().max(200).optional().nullable(),
     pricing: z
       .object({
         tier: z.enum(["free", "paid"]).optional().default("free"),
+        originalInputCost: z.number().nonnegative().optional().nullable(),
+        originalCacheCost: z.number().nonnegative().optional().nullable(),
+        originalOutputCost: z.number().nonnegative().optional().nullable(),
         inputCost: z.number().nonnegative().optional().nullable(),
         cacheCost: z.number().nonnegative().optional().nullable(),
         outputCost: z.number().nonnegative().optional().nullable(),
@@ -501,6 +509,7 @@ export const updateComboSchema = z
       value.name === undefined &&
       value.description === undefined &&
       value.displayName === undefined &&
+      value.customAlias === undefined &&
       value.models === undefined &&
       value.strategy === undefined &&
       value.config === undefined &&

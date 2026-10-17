@@ -13,8 +13,6 @@ const getPlatformIsMacServer = () => false;
 import ThemeToggle from "./ThemeToggle";
 import TokenHealthBadge from "./TokenHealthBadge";
 import DegradationBadge from "./DegradationBadge";
-import OperatorHealthBadge from "./OperatorHealthBadge";
-import LanguageSelector from "./LanguageSelector";
 import ProviderIcon from "./ProviderIcon";
 import { useTranslations } from "next-intl";
 import {
@@ -223,9 +221,7 @@ export default function Header({
             <span className="material-symbols-outlined text-[24px]">menu</span>
           </button>
         )}
-        {title && (
-          <h1 className="text-base font-semibold text-text-main truncate">{title}</h1>
-        )}
+        {title && <h1 className="text-base font-semibold text-text-main truncate">{title}</h1>}
       </div>
 
       {/* Page title with icon - desktop */}
@@ -274,9 +270,7 @@ export default function Header({
             </button>
           </>
         )}
-        <LanguageSelector />
         <ThemeToggle />
-        <OperatorHealthBadge />
         {!isE2EMode && <DegradationBadge />}
         {!isE2EMode && <TokenHealthBadge />}
         <button

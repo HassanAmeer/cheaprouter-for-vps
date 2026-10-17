@@ -3,7 +3,7 @@
 import Navbar from "./Navbar";
 import HeroSection from "./HeroSection";
 import ModelsTable from "./ModelsTable";
-import PricingSection from "./PricingSection";
+import PricingSection, { type Plan } from "./PricingSection";
 import Footer from "./Footer";
 import type { PublicCombo, PublicProvider } from "@/lib/cheaproute";
 
@@ -11,12 +11,15 @@ interface LandingPageClientProps {
   providers: PublicProvider[];
   combos: PublicCombo[];
   live: boolean;
+  settings?: Record<string, string>;
+  plans?: Plan[];
 }
 
 export default function LandingPageClient({
   providers,
   combos,
-  live,
+  settings,
+  plans,
 }: LandingPageClientProps) {
   // Compute counts from live catalog if available, or fallback to screenshot counts
   const publishedProvidersCount = providers.length > 0 ? providers.length : 37;
@@ -33,26 +36,42 @@ export default function LandingPageClient({
   return (
     <div style={{ background: "var(--uno-bg)", minHeight: "100vh", color: "#ffffff" }}>
       {/* Top Navbar */}
-      <Navbar />
+      <Navbar
+        initialSiteName={settings?.site_name}
+        initialSiteLogo={settings?.site_logo}
+        initialDiscordUrl={settings?.discord_url}
+      />
 
       <main>
-        {/* Hero Section matching UnoRouter */}
+        {/* Hero Section matching UnoRouter with dynamic headline and CTA */}
         <HeroSection
           providersCount={publishedProvidersCount}
           modelsCount={displayModelsCount}
           freeCount={freeCount}
           paidCount={paidCount}
+          heroTitle={settings?.hero_title}
+          heroSubtitle={settings?.hero_subtitle}
+          heroCtaText={settings?.hero_cta_text}
         />
 
         {/* Routable Models Table directly below Hero */}
         <ModelsTable providers={providers} combos={combos} />
 
-        {/* Pricing Plans Cards directly after Models Table */}
-        <PricingSection />
+        {/* Dynamic Pricing Plans Cards directly after Models Table */}
+        <PricingSection
+          initialPlans={plans}
+          initialCurrencySymbol={settings?.currency_symbol}
+          initialDiscordUrl={settings?.discord_url}
+        />
       </main>
 
-      {/* Footer */}
-      <Footer />
+      {/* Dynamic Footer */}
+      <Footer
+        initialSiteName={settings?.site_name}
+        initialSiteLogo={settings?.site_logo}
+        initialFooterText={settings?.footer_text}
+        initialDiscordUrl={settings?.discord_url}
+      />
     </div>
   );
 }

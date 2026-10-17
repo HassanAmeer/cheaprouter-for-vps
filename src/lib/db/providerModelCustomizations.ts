@@ -35,6 +35,16 @@ export interface ProviderModelCustomization {
    * the shipped free-model catalog; true forces FREE, false forces PAID.
    */
   isFreeOverride: boolean | null;
+  /**
+   * Pricing & Tier Label (migration 210 & 211)
+   */
+  originalInputCost?: number | null;
+  originalCacheCost?: number | null;
+  originalOutputCost?: number | null;
+  pricingTier?: "free" | "paid" | null;
+  inputCost?: number | null;
+  cacheCost?: number | null;
+  outputCost?: number | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -175,6 +185,13 @@ export function upsertCustomization(params: {
   contextWindow?: number | null;
   capabilities?: string[] | null;
   isFreeOverride?: boolean | null;
+  pricingTier?: "free" | "paid" | null;
+  originalInputCost?: number | null;
+  originalCacheCost?: number | null;
+  originalOutputCost?: number | null;
+  inputCost?: number | null;
+  cacheCost?: number | null;
+  outputCost?: number | null;
 }): ProviderModelCustomization {
   const db = getDbInstance();
   const now = new Date().toISOString();
@@ -195,7 +212,27 @@ export function upsertCustomization(params: {
   const testResponse = params.testResponse ?? existing?.testResponse ?? null;
   const contextWindow =
     params.contextWindow !== undefined ? params.contextWindow : (existing?.contextWindow ?? null);
-  const freeOverride = params.isFreeOverride ?? existing?.isFreeOverride ?? null;
+
+  const pricingTier =
+    params.pricingTier !== undefined
+      ? params.pricingTier
+      : (existing?.pricingTier ?? (params.isFreeOverride === false ? "paid" : "free"));
+  const originalInputCost =
+    params.originalInputCost !== undefined ? params.originalInputCost : (existing?.originalInputCost ?? null);
+  const originalCacheCost =
+    params.originalCacheCost !== undefined ? params.originalCacheCost : (existing?.originalCacheCost ?? null);
+  const originalOutputCost =
+    params.originalOutputCost !== undefined ? params.originalOutputCost : (existing?.originalOutputCost ?? null);
+  const inputCost = params.inputCost !== undefined ? params.inputCost : (existing?.inputCost ?? 0);
+  const cacheCost = params.cacheCost !== undefined ? params.cacheCost : (existing?.cacheCost ?? 0);
+  const outputCost = params.outputCost !== undefined ? params.outputCost : (existing?.outputCost ?? 0);
+
+  const freeOverride =
+    params.isFreeOverride !== undefined
+      ? params.isFreeOverride
+      : params.pricingTier
+        ? params.pricingTier === "free"
+        : (existing?.isFreeOverride ?? null);
 
   backupDbFile("pre-write");
 
@@ -204,7 +241,9 @@ export function upsertCustomization(params: {
       `UPDATE provider_model_customizations
          SET custom_name = ?, custom_alias = ?, is_active = ?, is_tested = ?, test_status = ?,
              test_http_status = ?, test_latency_ms = ?, test_response = ?,
-             context_window = ?, capabilities = ?, is_free_override = ?, updated_at = ?
+             context_window = ?, capabilities = ?, is_free_override = ?,
+             pricing_tier = ?, input_cost = ?, cache_cost = ?, output_cost = ?,
+             original_input_cost = ?, original_cache_cost = ?, original_output_cost = ?, updated_at = ?
        WHERE provider_id = ? AND original_model_id = ?`
     ).run(
       customName,
@@ -218,6 +257,13 @@ export function upsertCustomization(params: {
       contextWindow,
       caps ? JSON.stringify(caps) : null,
       freeOverride === null ? null : freeOverride ? 1 : 0,
+      pricingTier,
+      inputCost,
+      cacheCost,
+      outputCost,
+      originalInputCost,
+      originalCacheCost,
+      originalOutputCost,
       now,
       params.providerId,
       params.originalModelId
@@ -227,8 +273,9 @@ export function upsertCustomization(params: {
       `INSERT INTO provider_model_customizations
          (provider_id, original_model_id, custom_name, custom_alias, is_active, is_tested,
           test_status, test_http_status, test_latency_ms, test_response, context_window,
-          capabilities, is_free_override, created_at, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+          capabilities, is_free_override, pricing_tier, input_cost, cache_cost, output_cost,
+          original_input_cost, original_cache_cost, original_output_cost, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
     ).run(
       params.providerId,
       params.originalModelId,
@@ -243,6 +290,13 @@ export function upsertCustomization(params: {
       contextWindow,
       caps ? JSON.stringify(caps) : null,
       freeOverride === null ? null : freeOverride ? 1 : 0,
+      pricingTier,
+      inputCost,
+      cacheCost,
+      outputCost,
+      originalInputCost,
+      originalCacheCost,
+      originalOutputCost,
       now,
       now
     );
@@ -400,6 +454,13 @@ type RowShape = {
   context_window: number | null;
   capabilities: string | null;
   is_free_override: number | null;
+  pricing_tier?: string | null;
+  original_input_cost?: number | null;
+  original_cache_cost?: number | null;
+  original_output_cost?: number | null;
+  input_cost?: number | null;
+  cache_cost?: number | null;
+  output_cost?: number | null;
   created_at: string;
   updated_at: string;
 };
@@ -420,6 +481,15 @@ function fromRow(row: RowShape): ProviderModelCustomization {
     contextWindow: row.context_window,
     capabilities: row.capabilities ? JSON.parse(row.capabilities) : null,
     isFreeOverride: row.is_free_override === 1 ? true : row.is_free_override === 0 ? false : null,
+    pricingTier:
+      (row.pricing_tier as "free" | "paid" | null) ??
+      (row.is_free_override === 0 ? "paid" : "free"),
+    originalInputCost: row.original_input_cost != null ? Number(row.original_input_cost) : null,
+    originalCacheCost: row.original_cache_cost != null ? Number(row.original_cache_cost) : null,
+    originalOutputCost: row.original_output_cost != null ? Number(row.original_output_cost) : null,
+    inputCost: row.input_cost != null ? Number(row.input_cost) : 0,
+    cacheCost: row.cache_cost != null ? Number(row.cache_cost) : 0,
+    outputCost: row.output_cost != null ? Number(row.output_cost) : 0,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };

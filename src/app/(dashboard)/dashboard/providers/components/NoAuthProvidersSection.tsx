@@ -82,6 +82,10 @@ export default function NoAuthProvidersSection({
     }
   };
 
+  if (visibleEntries.length === 0 && blockedEntries.length === 0) {
+    return null;
+  }
+
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-center gap-2">
@@ -90,37 +94,43 @@ export default function NoAuthProvidersSection({
           <span className="size-2.5 rounded-full bg-stone-500" title={t("noAuthLabel")} />
           <ProviderCountBadge {...count} />
         </h2>
-        <button
-          onClick={() => onBatchTest("no-auth")}
-          disabled={!!testingMode}
-          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
-            testingMode === "no-auth"
-              ? "bg-primary/20 border-primary/40 text-primary animate-pulse"
-              : "bg-bg-subtle border-border text-text-muted hover:text-text-primary hover:border-primary/40"
-          }`}
-          title={t("testAll")}
-        >
-          <span
-            className={`material-symbols-outlined text-[14px]${testingMode === "no-auth" ? " animate-spin" : ""}`}
+        {visibleEntries.length > 0 && (
+          <button
+            onClick={() => onBatchTest("no-auth")}
+            disabled={!!testingMode}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
+              testingMode === "no-auth"
+                ? "bg-primary/20 border-primary/40 text-primary animate-pulse"
+                : "bg-bg-subtle border-border text-text-muted hover:text-text-primary hover:border-primary/40"
+            }`}
+            title={t("testAll")}
           >
-            play_arrow
-          </span>
-          {testingMode === "no-auth" ? t("testing") : t("testAll")}
-        </button>
+            <span
+              className={`material-symbols-outlined text-[14px]${testingMode === "no-auth" ? " animate-spin" : ""}`}
+            >
+              play_arrow
+            </span>
+            {testingMode === "no-auth" ? t("testing") : t("testAll")}
+          </button>
+        )}
       </div>
-      <p className="text-sm text-text-muted -mt-2">{t("noAuthProvidersDesc")}</p>
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 gap-3">
-        {visibleEntries.map(({ providerId, provider, stats, toggleAuthType }) => (
-          <ProviderCard
-            key={providerId}
-            providerId={providerId}
-            provider={provider}
-            stats={stats}
-            authType="no-auth"
-            onToggle={(active) => onToggleProvider(providerId, toggleAuthType, active)}
-          />
-        ))}
-      </div>
+      {visibleEntries.length > 0 && (
+        <>
+          <p className="text-sm text-text-muted -mt-2">{t("noAuthProvidersDesc")}</p>
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 gap-3">
+            {visibleEntries.map(({ providerId, provider, stats, toggleAuthType }) => (
+              <ProviderCard
+                key={providerId}
+                providerId={providerId}
+                provider={provider}
+                stats={stats}
+                authType="no-auth"
+                onToggle={(active) => onToggleProvider(providerId, toggleAuthType, active)}
+              />
+            ))}
+          </div>
+        </>
+      )}
       {blockedEntries.length > 0 && (
         <div className="flex flex-col gap-2">
           <p className="text-xs font-medium uppercase tracking-wide text-text-muted">

@@ -1,10 +1,9 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, Fragment } from "react";
 import Card from "@/shared/components/Card";
 import { useNotificationStore } from "@/store/notificationStore";
 import { matchesSearch } from "@/shared/utils/turkishText";
-import { toNumber } from "@/shared/utils/numeric";
 
 export type LimitTargetType = "model" | "combo";
 export type LimitResetWindow = "lifetime" | "monthly" | "weekly" | "daily";
@@ -33,23 +32,22 @@ export interface ModelLimitPolicy {
   updatedAt: string;
 }
 
-interface TargetItem {
+export interface UnifiedTargetItem {
   id: string;
+  type: LimitTargetType;
   name: string;
+  originalName: string;
+  customName: string | null;
+  customAlias: string | null;
   provider?: string;
   strategy?: string;
+  modelsCount?: number;
+  isActive: boolean;
+  contextWindow?: number | null;
+  policy: ModelLimitPolicy | null;
 }
 
-const PRESET_POOLS = [
-  { label: "10M", value: 10_000_000 },
-  { label: "50M", value: 50_000_000 },
-  { label: "100M", value: 100_000_000 },
-  { label: "500M", value: 500_000_000 },
-  { label: "1 Billion", value: 1_000_000_000 },
-  { label: "5 Billion", value: 5_000_000_000 },
-];
-
-function formatTokens(n: number): string {
+export function formatTokens(n: number): string {
   if (n >= 1_000_000_000) {
     const val = n / 1_000_000_000;
     return `${val.toFixed(val % 1 === 0 ? 0 : 2)}B`;
@@ -65,51 +63,75 @@ function formatTokens(n: number): string {
   return n.toLocaleString();
 }
 
-export default function LimitsPage() {
+export function parseTokenInput(val: string | number): number {
+  if (typeof val === "number") return Math.max(0, Math.floor(val));
+  const s = String(val || "").trim().toLowerCase();
+  if (!s) return 0;
+  if (s.endsWith("b") || s.endsWith("billion")) {
+    const num = parseFloat(s.replace(/b(illion)?/, ""));
+    return isNaN(num) ? 0 : Math.floor(num * 1_000_000_000);
+  }
+  if (s.endsWith("m") || s.endsWith("million")) {
+    const num = parseFloat(s.replace(/m(illion)?/, ""));
+    return isNaN(num) ? 0 : Math.floor(num * 1_000_000);
+  }
+  if (s.endsWith("k") || s.endsWith("thousand")) {
+    const num = parseFloat(s.replace(/k(thousand)?/, ""));
+    return isNaN(num) ? 0 : Math.floor(num * 1_000);
+  }
+  const n = Number(s.replace(/,/g, ""));
+  return isNaN(n) ? 0 : Math.max(0, Math.floor(n));
+}
+
+const PRESET_QUICK_LIMITS = ["1B", "2B", "10B", "34B", "50B", "80B"];
+
+export default function LimitsBankPage() {
   const notify = useNotificationStore();
 
   const [limits, setLimits] = useState<ModelLimitPolicy[]>([]);
-  const [availableModels, setAvailableModels] = useState<TargetItem[]>([]);
-  const [availableCombos, setAvailableCombos] = useState<TargetItem[]>([]);
+  const [rawModels, setRawModels] = useState<any[]>([]);
+  const [rawCombos, setRawCombos] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   // Filters
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState<"all" | "model" | "combo">("all");
-  const [statusFilter, setStatusFilter] = useState<"all" | "healthy" | "near_limit" | "exhausted" | "paused">("all");
+  const [statusFilter, setStatusFilter] = useState<
+    "all" | "configured" | "unlimited" | "healthy" | "near_limit" | "exhausted" | "paused"
+  >("all");
 
-  // Modal State
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingId, setEditingId] = useState<string | null>(null);
+  // Inline Drafts per Target: key = `${target.type}::${target.id}`
+  const [drafts, setDrafts] = useState<
+    Record<
+      string,
+      {
+        poolInput: string;
+        customError: string;
+        resetWindow: LimitResetWindow;
+        onExhaustion: LimitExhaustionAction;
+        fallbackTarget: string;
+      }
+    >
+  >({});
 
-  // Form Fields
-  const [formTargetType, setFormTargetType] = useState<LimitTargetType>("model");
-  const [formTargetId, setFormTargetId] = useState("");
-  const [formTotalPool, setFormTotalPool] = useState<number>(1_000_000_000);
-  const [formRpmLimit, setFormRpmLimit] = useState<string>("");
-  const [formTpmLimit, setFormTpmLimit] = useState<string>("");
-  const [formResetWindow, setFormResetWindow] = useState<LimitResetWindow>("lifetime");
-  const [formOnExhaustion, setFormOnExhaustion] = useState<LimitExhaustionAction>("error");
-  const [formFallbackTarget, setFormFallbackTarget] = useState<string>("");
-  const [formCustomError, setFormCustomError] = useState<string>("");
-  const [saving, setSaving] = useState(false);
+  // Expanded row IDs
+  const [expandedRows, setExpandedRows] = useState<Record<string, boolean>>({});
 
-  // Add Tokens Modal
-  const [addTokensTarget, setAddTokensTarget] = useState<ModelLimitPolicy | null>(null);
-  const [tokensToAdd, setTokensToAdd] = useState<number>(100_000_000);
+  // Row saving feedback
+  const [savingKey, setSavingKey] = useState<string | null>(null);
+  const [savedKey, setSavedKey] = useState<string | null>(null);
 
   // Fetch Limits
   const loadLimits = useCallback(async () => {
     try {
-      setLoading(true);
       const res = await fetch("/api/limits");
       if (!res.ok) throw new Error("Failed to load limit policies");
       const data = await res.json();
       if (data.success) {
         setLimits(data.limits || []);
         if (data.availableTargets) {
-          setAvailableModels(data.availableTargets.models || []);
-          setAvailableCombos(data.availableTargets.combos || []);
+          setRawModels(data.availableTargets.models || []);
+          setRawCombos(data.availableTargets.combos || []);
         }
       }
     } catch (err) {
@@ -130,8 +152,8 @@ export default function LimitsPage() {
         if (data.success) {
           setLimits(data.limits || []);
           if (data.availableTargets) {
-            setAvailableModels(data.availableTargets.models || []);
-            setAvailableCombos(data.availableTargets.combos || []);
+            setRawModels(data.availableTargets.models || []);
+            setRawCombos(data.availableTargets.combos || []);
           }
         }
       } catch {
@@ -146,191 +168,304 @@ export default function LimitsPage() {
     };
   }, []);
 
-  // Filtered limits
-  const filteredLimits = useMemo(() => {
-    return limits.filter((item) => {
-      if (typeFilter !== "all" && item.targetType !== typeFilter) return false;
-      if (statusFilter !== "all" && item.status !== statusFilter) return false;
-      if (search.trim()) {
-        const term = search.trim();
-        const matchesName = matchesSearch(item.targetName, term);
-        const matchesId = matchesSearch(item.targetId, term);
-        const matchesProvider = item.providerId ? matchesSearch(item.providerId, term) : false;
-        if (!matchesName && !matchesId && !matchesProvider) return false;
-      }
-      return true;
-    });
-  }, [limits, typeFilter, statusFilter, search]);
+  // Combine Combos & Models into unified targets
+  const unifiedTargets: UnifiedTargetItem[] = useMemo(() => {
+    const list: UnifiedTargetItem[] = [];
 
-  // Overall Statistics
+    // 1. Combos
+    for (const c of rawCombos) {
+      const id = String(c.id || c.name);
+      const originalName = String(c.originalName || c.name || c.id);
+      const customName = c.customName || null;
+      const customAlias = c.customAlias || null;
+      const name = customName || originalName;
+      const matchedLimit =
+        limits.find(
+          (l) =>
+            l.targetType === "combo" &&
+            (l.targetId === id ||
+              l.targetId === originalName ||
+              (customAlias && l.targetId === customAlias))
+        ) || null;
+
+      list.push({
+        id,
+        type: "combo",
+        name,
+        originalName,
+        customName,
+        customAlias,
+        strategy: c.strategy || "priority",
+        modelsCount: c.modelsCount || 0,
+        isActive: c.isActive !== false,
+        policy: matchedLimit,
+      });
+    }
+
+    // 2. Models
+    for (const m of rawModels) {
+      const id = m.id;
+      const originalName = m.originalName || m.name || m.id;
+      const customName = m.customName || null;
+      const customAlias = m.customAlias || null;
+      const name = customName || originalName;
+      const matchedLimit =
+        limits.find(
+          (l) =>
+            l.targetType === "model" &&
+            (l.targetId === m.id ||
+              l.targetId === `${m.provider}/${m.id}` ||
+              (customAlias && l.targetId === customAlias))
+        ) || null;
+
+      list.push({
+        id,
+        type: "model",
+        name,
+        originalName,
+        customName,
+        customAlias,
+        provider: m.provider,
+        isActive: m.isActive !== false,
+        contextWindow: m.contextWindow,
+        policy: matchedLimit,
+      });
+    }
+
+    return list;
+  }, [rawCombos, rawModels, limits]);
+
+  // Overall Statistics for 4 Cards
   const stats = useMemo(() => {
     let totalPool = 0;
     let totalConsumed = 0;
-    let activeRpm = 0;
     let nearLimitCount = 0;
     let exhaustedCount = 0;
+    let activeLimitCount = 0;
 
     for (const l of limits) {
-      totalPool += l.totalTokenPool;
-      totalConsumed += l.consumedTokens;
-      if (l.rpmLimit && l.rpmLimit > 0) activeRpm += 1;
-      if (l.status === "near_limit") nearLimitCount += 1;
-      if (l.status === "exhausted") exhaustedCount += 1;
+      if (l.isActive) {
+        activeLimitCount += 1;
+        totalPool += l.totalTokenPool;
+        totalConsumed += l.consumedTokens;
+        if (l.status === "near_limit") nearLimitCount += 1;
+        if (l.status === "exhausted") exhaustedCount += 1;
+      }
     }
 
+    // Top Limit Bank allocated models/combos (Card 2)
+    const topAllocated = [...unifiedTargets]
+      .filter((t) => t.policy && t.policy.totalTokenPool > 0)
+      .sort((a, b) => (b.policy?.totalTokenPool ?? 0) - (a.policy?.totalTokenPool ?? 0))
+      .slice(0, 4);
+
+    // Top Usage Tokens Bank models/combos (Card 3)
+    const topUsage = [...unifiedTargets]
+      .filter((t) => t.policy && t.policy.consumedTokens > 0)
+      .sort((a, b) => (b.policy?.consumedTokens ?? 0) - (a.policy?.consumedTokens ?? 0))
+      .slice(0, 3);
+
     const overallPercent = totalPool > 0 ? (totalConsumed / totalPool) * 100 : 0;
+
     return {
       totalPool,
       totalConsumed,
       overallPercent: Math.min(100, Math.round(overallPercent * 10) / 10),
-      activeRpm,
+      activeLimitCount,
       nearLimitCount,
       exhaustedCount,
-      totalCount: limits.length,
+      topAllocated,
+      topUsage,
+      totalConfigured: limits.length,
     };
-  }, [limits]);
+  }, [limits, unifiedTargets]);
 
-  // Open Create Modal
-  const handleOpenCreate = () => {
-    setEditingId(null);
-    setFormTargetType("model");
-    setFormTargetId(availableModels[0]?.id || "");
-    setFormTotalPool(1_000_000_000);
-    setFormRpmLimit("60");
-    setFormTpmLimit("500000");
-    setFormResetWindow("lifetime");
-    setFormOnExhaustion("error");
-    setFormFallbackTarget("");
-    setFormCustomError("");
-    setIsModalOpen(true);
-  };
+  // Filtered list
+  const filteredTargets = useMemo(() => {
+    return unifiedTargets.filter((item) => {
+      if (typeFilter !== "all" && item.type !== typeFilter) return false;
 
-  // Open Edit Modal
-  const handleOpenEdit = (item: ModelLimitPolicy) => {
-    setEditingId(item.id);
-    setFormTargetType(item.targetType);
-    setFormTargetId(item.targetId);
-    setFormTotalPool(item.totalTokenPool);
-    setFormRpmLimit(item.rpmLimit ? String(item.rpmLimit) : "");
-    setFormTpmLimit(item.tpmLimit ? String(item.tpmLimit) : "");
-    setFormResetWindow(item.resetWindow);
-    setFormOnExhaustion(item.onExhaustion);
-    setFormFallbackTarget(item.fallbackTarget || "");
-    setFormCustomError(item.customErrorMessage || "");
-    setIsModalOpen(true);
-  };
+      if (statusFilter === "configured" && !item.policy) return false;
+      if (statusFilter === "unlimited" && item.policy) return false;
+      if (statusFilter === "healthy" && item.policy?.status !== "healthy") return false;
+      if (statusFilter === "near_limit" && item.policy?.status !== "near_limit") return false;
+      if (statusFilter === "exhausted" && item.policy?.status !== "exhausted") return false;
+      if (statusFilter === "paused" && item.policy?.status !== "paused") return false;
 
-  // Save Limit Policy
-  const handleSavePolicy = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!formTargetId.trim()) {
-      notify.error("Please select a target model or combo");
-      return;
-    }
-    if (formTotalPool <= 0) {
-      notify.error("Token pool must be greater than 0");
-      return;
-    }
+      if (search.trim()) {
+        const term = search.trim();
+        const matchesCustom = matchesSearch(item.name, term);
+        const matchesOriginal = matchesSearch(item.originalName, term);
+        const matchesId = matchesSearch(item.id, term);
+        const matchesAlias = item.customAlias ? matchesSearch(item.customAlias, term) : false;
+        const matchesProvider = item.provider ? matchesSearch(item.provider, term) : false;
+        const matchesStrategy = item.strategy ? matchesSearch(item.strategy, term) : false;
 
-    const targetList = formTargetType === "model" ? availableModels : availableCombos;
-    const matchedTarget = targetList.find((t) => t.id === formTargetId);
-    const targetName = matchedTarget?.name || formTargetId;
-    const providerId = formTargetType === "model" ? matchedTarget?.provider || null : null;
-
-    setSaving(true);
-    try {
-      const res = await fetch("/api/limits", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          id: editingId || undefined,
-          targetType: formTargetType,
-          targetId: formTargetId,
-          targetName,
-          providerId,
-          totalTokenPool: formTotalPool,
-          rpmLimit: formRpmLimit.trim() ? toNumber(formRpmLimit) : null,
-          tpmLimit: formTpmLimit.trim() ? toNumber(formTpmLimit) : null,
-          resetWindow: formResetWindow,
-          onExhaustion: formOnExhaustion,
-          fallbackTarget: formOnExhaustion === "fallback" ? formFallbackTarget || null : null,
-          customErrorMessage: formCustomError.trim() ? formCustomError.trim() : null,
-        }),
-      });
-
-      const data = await res.json();
-      if (!res.ok || !data.success) {
-        throw new Error(data.error || "Failed to save limit policy");
+        if (
+          !matchesCustom &&
+          !matchesOriginal &&
+          !matchesId &&
+          !matchesAlias &&
+          !matchesProvider &&
+          !matchesStrategy
+        ) {
+          return false;
+        }
       }
+      return true;
+    });
+  }, [unifiedTargets, typeFilter, statusFilter, search]);
 
-      notify.success(
-        editingId ? "Limit policy updated successfully" : "New limit policy created"
-      );
-      setIsModalOpen(false);
-      await loadLimits();
-    } catch (err) {
-      notify.error(err instanceof Error ? err.message : "Error saving limit policy");
-    } finally {
-      setSaving(false);
-    }
+  // Toggle Row Expand / Collapse
+  const toggleRowCollapse = (key: string) => {
+    setExpandedRows((prev) => ({ ...prev, [key]: !prev[key] }));
   };
 
-  // Toggle Active
-  const handleToggleActive = async (id: string, current: boolean) => {
+  // Toggle Policy Active
+  const handleToggleActive = async (target: UnifiedTargetItem) => {
+    if (!target.policy) return;
     try {
       const res = await fetch("/api/limits", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          id,
+          id: target.policy.id,
           action: "toggleActive",
-          isActive: !current,
+          isActive: !target.policy.isActive,
         }),
       });
       if (!res.ok) throw new Error("Failed to toggle status");
-      notify.success(!current ? "Limit policy enabled" : "Limit policy paused");
+      notify.success(
+        !target.policy.isActive ? "Limits Bank policy enabled" : "Limits Bank policy paused"
+      );
       await loadLimits();
     } catch (err) {
       notify.error(err instanceof Error ? err.message : "Error updating status");
     }
   };
 
-  // Add Tokens
-  const handleAddTokens = async () => {
-    if (!addTokensTarget || tokensToAdd <= 0) return;
+  // Quick Add Tokens
+  const handleAddTokens = async (target: UnifiedTargetItem, tokens: number) => {
+    if (!target.policy || tokens <= 0) return;
     try {
       const res = await fetch("/api/limits", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          id: addTokensTarget.id,
+          id: target.policy.id,
           action: "addTokens",
-          tokens: tokensToAdd,
+          tokens,
         }),
       });
       if (!res.ok) throw new Error("Failed to add tokens");
-      notify.success(`Added ${formatTokens(tokensToAdd)} tokens to ${addTokensTarget.targetName}`);
-      setAddTokensTarget(null);
+      notify.success(`Added ${formatTokens(tokens)} tokens to ${target.name} limit bank`);
       await loadLimits();
     } catch (err) {
       notify.error(err instanceof Error ? err.message : "Error adding tokens");
     }
   };
 
-  // Delete Policy
-  const handleDelete = async (id: string, name: string) => {
-    if (!window.confirm(`Are you sure you want to remove the limit policy for "${name}"?`)) {
+  // Reset Consumed Tokens
+  const handleResetTokens = async (target: UnifiedTargetItem) => {
+    if (!target.policy) return;
+    if (!window.confirm(`Reset consumed token counter for "${target.name}" back to 0?`)) {
       return;
     }
     try {
-      const res = await fetch(`/api/limits?id=${encodeURIComponent(id)}`, {
-        method: "DELETE",
+      const res = await fetch("/api/limits", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: target.policy.id,
+          action: "resetTokens",
+        }),
       });
-      if (!res.ok) throw new Error("Failed to delete policy");
-      notify.success(`Removed limit policy for "${name}"`);
+      if (!res.ok) throw new Error("Failed to reset tokens");
+      notify.success(`Consumed tokens reset for "${target.name}"`);
       await loadLimits();
     } catch (err) {
-      notify.error(err instanceof Error ? err.message : "Error deleting policy");
+      notify.error(err instanceof Error ? err.message : "Error resetting tokens");
+    }
+  };
+
+  // Delete Policy (Revert to Unlimited)
+  const handleDeletePolicy = async (target: UnifiedTargetItem) => {
+    if (!target.policy) return;
+    if (
+      !window.confirm(
+        `Remove Limit Bank for "${target.name}"? It will become unlimited with no hard ceiling.`
+      )
+    ) {
+      return;
+    }
+    try {
+      const res = await fetch(`/api/limits?id=${encodeURIComponent(target.policy.id)}`, {
+        method: "DELETE",
+      });
+      if (!res.ok) throw new Error("Failed to remove limit policy");
+      notify.success(`Limit bank removed for "${target.name}". Now unlimited.`);
+      await loadLimits();
+    } catch (err) {
+      notify.error(err instanceof Error ? err.message : "Error removing limit policy");
+    }
+  };
+
+  // Save Limit Policy from row
+  const handleSaveRow = async (target: UnifiedTargetItem) => {
+    const key = `${target.type}::${target.id}`;
+    const draft = drafts[key];
+    const rawInput = draft?.poolInput ?? (target.policy ? formatTokens(target.policy.totalTokenPool) : "");
+    const parsedPool = parseTokenInput(rawInput);
+
+    if (parsedPool <= 0) {
+      notify.error("Please enter a valid token limit greater than 0 (e.g. 10B, 34B, 50B)");
+      return;
+    }
+
+    setSavingKey(key);
+    try {
+      const payload = {
+        id: target.policy?.id || undefined,
+        targetType: target.type,
+        targetId: target.id,
+        targetName: target.name,
+        providerId: target.provider || null,
+        totalTokenPool: parsedPool,
+        resetWindow: draft?.resetWindow || target.policy?.resetWindow || "lifetime",
+        onExhaustion: draft?.onExhaustion || target.policy?.onExhaustion || "error",
+        fallbackTarget:
+          draft?.onExhaustion === "fallback"
+            ? draft.fallbackTarget || null
+            : target.policy?.fallbackTarget || null,
+        customErrorMessage:
+          draft?.customError !== undefined
+            ? draft.customError.trim() || null
+            : target.policy?.customErrorMessage || null,
+        isActive: target.policy ? target.policy.isActive : true,
+      };
+
+      const res = await fetch("/api/limits", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || "Failed to save limit bank");
+      }
+
+      setSavedKey(key);
+      setTimeout(() => {
+        setSavedKey((cur) => (cur === key ? null : cur));
+      }, 2000);
+
+      notify.success(`Limit Bank set to ${formatTokens(parsedPool)} tokens for "${target.name}"`);
+      await loadLimits();
+    } catch (err) {
+      notify.error(err instanceof Error ? err.message : "Error saving limit bank");
+    } finally {
+      setSavingKey(null);
     }
   };
 
@@ -340,11 +475,13 @@ export default function LimitsPage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-text-main flex items-center gap-2">
-            <span className="material-symbols-outlined text-[30px] text-[#F43F5E]">speed</span>
-            Quota & Rate Limits
+            <span className="material-symbols-outlined text-[30px] text-amber-500">
+              account_balance
+            </span>
+            Limits Bank (لمٹس بینک)
           </h1>
           <p className="text-sm text-text-muted mt-0.5">
-            Configure shared token pool budgets, RPM/TPM velocity throttles, and limit exhaustion behaviors.
+            Configure global hard token limits bank for AI models and combos across all API users.
           </p>
         </div>
 
@@ -356,60 +493,52 @@ export default function LimitsPage() {
             className="p-2 rounded-lg bg-bg-card border border-border text-text-muted hover:text-text-main hover:bg-bg-subtle transition-all cursor-pointer"
             title="Refresh limits"
           >
-            <span className={`material-symbols-outlined text-[20px] ${loading ? "animate-spin" : ""}`}>
+            <span
+              className={`material-symbols-outlined text-[20px] ${loading ? "animate-spin" : ""}`}
+            >
               refresh
             </span>
-          </button>
-
-          <button
-            type="button"
-            onClick={handleOpenCreate}
-            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-[#F43F5E] hover:bg-[#e11d48] text-white font-medium text-sm shadow-sm transition-all cursor-pointer"
-          >
-            <span className="material-symbols-outlined text-[18px]">add</span>
-            <span>Create Limit Policy</span>
           </button>
         </div>
       </div>
 
-      {/* ── Overview Metrics Grid ── */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {/* Card 1: Total Pools */}
-        <Card className="p-4 bg-bg-card/70 border border-border flex flex-col justify-between">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-text-muted uppercase tracking-wider">
-              Total Token Pools
-            </span>
-            <span className="size-8 rounded-lg bg-[#F43F5E]/15 text-[#F43F5E] flex items-center justify-center">
-              <span className="material-symbols-outlined text-[18px]">database</span>
-            </span>
-          </div>
-          <div className="mt-2">
-            <div className="text-2xl font-bold font-mono text-text-main">
-              {formatTokens(stats.totalPool)}
-            </div>
-            <p className="text-xs text-text-muted mt-1">Across {stats.totalCount} configured targets</p>
-          </div>
-        </Card>
+      {/* ── Orange Alert Banner (Custom Name Explanation & Hard Global Ceilings) ── */}
+      <div className="flex items-start gap-3 p-3.5 rounded-xl border border-amber-500/30 bg-amber-500/10 text-amber-200">
+        <span className="material-symbols-outlined text-amber-400 text-[20px] shrink-0 mt-0.5">
+          info
+        </span>
+        <div className="flex-1 text-xs leading-relaxed">
+          <span className="font-semibold text-amber-300">
+            Here all AI models &amp; combos are displayed by their custom names.
+          </span>{" "}
+          If a custom name was set in Pipe Models, it is shown here. If you haven&apos;t renamed a
+          model, its original name/ID is displayed. All limits set in this Limits Bank act as a
+          hard token bank ceiling across all API consumers regardless of how many users or keys
+          access it. When a model&apos;s bank is exhausted, further calls are blocked with a
+          customizable limit exceeded error.
+        </div>
+      </div>
 
-        {/* Card 2: Consumed Tokens */}
+      {/* ── 4 Top Overview Metrics Cards ── */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {/* Card 1: Total Limits Bank */}
         <Card className="p-4 bg-bg-card/70 border border-border flex flex-col justify-between">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-text-muted uppercase tracking-wider">
-              Total Consumed
+            <span className="text-xs font-semibold text-text-muted uppercase tracking-wider">
+              Total Limits Bank
             </span>
-            <span className="size-8 rounded-lg bg-emerald-500/15 text-emerald-400 flex items-center justify-center">
-              <span className="material-symbols-outlined text-[18px]">data_usage</span>
+            <span className="size-8 rounded-lg bg-amber-500/15 text-amber-400 flex items-center justify-center">
+              <span className="material-symbols-outlined text-[18px]">account_balance</span>
             </span>
           </div>
           <div className="mt-2">
             <div className="text-2xl font-bold font-mono text-text-main">
-              {formatTokens(stats.totalConsumed)}
+              {stats.totalPool > 0 ? formatTokens(stats.totalPool) : "0"}
             </div>
-            <div className="flex items-center gap-2 mt-1">
+            <div className="flex items-center gap-2 mt-2">
               <div className="flex-1 h-1.5 bg-bg-subtle rounded-full overflow-hidden">
                 <div
-                  className="h-full bg-emerald-500 rounded-full"
+                  className="h-full bg-amber-500 rounded-full transition-all duration-300"
                   style={{ width: `${stats.overallPercent}%` }}
                 />
               </div>
@@ -417,51 +546,140 @@ export default function LimitsPage() {
                 {stats.overallPercent}%
               </span>
             </div>
+            <p className="text-[11px] text-text-muted mt-1.5">
+              Consumed: <strong className="text-text-main font-mono">{formatTokens(stats.totalConsumed)}</strong> across {stats.activeLimitCount} active banks
+            </p>
           </div>
         </Card>
 
-        {/* Card 3: Velocity Controls */}
+        {/* Card 2: Top Allocated Limits Bank (Top 3-4 Models/Combos) */}
         <Card className="p-4 bg-bg-card/70 border border-border flex flex-col justify-between">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-text-muted uppercase tracking-wider">
-              Active Velocity Limits
+            <span className="text-xs font-semibold text-text-muted uppercase tracking-wider">
+              Top Limit Banks
             </span>
-            <span className="size-8 rounded-lg bg-blue-500/15 text-blue-400 flex items-center justify-center">
-              <span className="material-symbols-outlined text-[18px]">speed</span>
+            <span className="size-8 rounded-lg bg-purple-500/15 text-purple-400 flex items-center justify-center">
+              <span className="material-symbols-outlined text-[18px]">military_tech</span>
+            </span>
+          </div>
+          <div className="mt-2 space-y-1.5">
+            {stats.topAllocated.length === 0 ? (
+              <p className="text-xs text-text-muted py-2">No limit banks assigned yet</p>
+            ) : (
+              stats.topAllocated.map((item, idx) => (
+                <div key={item.id} className="flex items-center justify-between text-xs min-w-0">
+                  <div className="flex items-center gap-1.5 min-w-0 flex-1 pr-2">
+                    <span className="size-4 rounded-full bg-bg-subtle text-[10px] font-mono font-bold flex items-center justify-center text-text-muted shrink-0">
+                      {idx + 1}
+                    </span>
+                    <span className="font-semibold text-text-main truncate text-[11px]" title={item.name}>
+                      {item.name}
+                    </span>
+                  </div>
+                  <span className="font-mono font-bold text-purple-400 shrink-0 text-[11px]">
+                    {formatTokens(item.policy?.totalTokenPool || 0)}
+                  </span>
+                </div>
+              ))
+            )}
+          </div>
+        </Card>
+
+        {/* Card 3: Top Usage Tokens Bank (Top 2-3 Most Used) */}
+        <Card className="p-4 bg-bg-card/70 border border-border flex flex-col justify-between">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold text-text-muted uppercase tracking-wider">
+              Top Usage Tokens Bank
+            </span>
+            <span className="size-8 rounded-lg bg-emerald-500/15 text-emerald-400 flex items-center justify-center">
+              <span className="material-symbols-outlined text-[18px]">trending_up</span>
+            </span>
+          </div>
+          <div className="mt-2 space-y-1.5">
+            {stats.topUsage.length === 0 ? (
+              <p className="text-xs text-text-muted py-2">No token consumption recorded yet</p>
+            ) : (
+              stats.topUsage.map((item, idx) => {
+                const consumed = item.policy?.consumedTokens || 0;
+                const pool = item.policy?.totalTokenPool || 1;
+                const pct = Math.min(100, Math.round((consumed / pool) * 100));
+                return (
+                  <div key={item.id} className="flex items-center justify-between text-xs min-w-0">
+                    <div className="flex items-center gap-1.5 min-w-0 flex-1 pr-2">
+                      <span className="size-4 rounded-full bg-emerald-500/20 text-emerald-400 text-[10px] font-mono font-bold flex items-center justify-center shrink-0">
+                        {idx + 1}
+                      </span>
+                      <span className="font-semibold text-text-main truncate text-[11px]" title={item.name}>
+                        {item.name}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-1.5 shrink-0 text-[11px]">
+                      <span className="font-mono font-bold text-emerald-400">
+                        {formatTokens(consumed)}
+                      </span>
+                      <span className="text-[10px] text-text-muted font-mono">({pct}%)</span>
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
+        </Card>
+
+        {/* Card 4: Limits Bank Health & Exhaustion */}
+        <Card className="p-4 bg-bg-card/70 border border-border flex flex-col justify-between">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold text-text-muted uppercase tracking-wider">
+              Bank Quota Health
+            </span>
+            <span
+              className={`size-8 rounded-lg flex items-center justify-center ${
+                stats.exhaustedCount > 0
+                  ? "bg-red-500/20 text-red-400 animate-pulse"
+                  : "bg-blue-500/15 text-blue-400"
+              }`}
+            >
+              <span className="material-symbols-outlined text-[18px]">
+                {stats.exhaustedCount > 0 ? "error" : "verified_user"}
+              </span>
             </span>
           </div>
           <div className="mt-2">
-            <div className="text-2xl font-bold font-mono text-text-main">
-              {stats.activeRpm} Targets
+            <div className="flex items-baseline gap-3">
+              <div>
+                <span className="text-2xl font-bold font-mono text-text-main">
+                  {stats.activeLimitCount}
+                </span>
+                <span className="text-xs text-text-muted ml-1">active</span>
+              </div>
+              <span className="text-border">/</span>
+              <div>
+                <span className="text-2xl font-bold font-mono text-amber-400">
+                  {stats.nearLimitCount}
+                </span>
+                <span className="text-xs text-text-muted ml-1">&gt;85%</span>
+              </div>
+              <span className="text-border">/</span>
+              <div>
+                <span
+                  className={`text-2xl font-bold font-mono ${
+                    stats.exhaustedCount > 0 ? "text-red-400 font-extrabold" : "text-text-muted"
+                  }`}
+                >
+                  {stats.exhaustedCount}
+                </span>
+                <span className="text-xs text-text-muted ml-1">exceeded</span>
+              </div>
             </div>
-            <p className="text-xs text-text-muted mt-1">Protected with RPM / TPM rate limits</p>
-          </div>
-        </Card>
-
-        {/* Card 4: Health Status */}
-        <Card className="p-4 bg-bg-card/70 border border-border flex flex-col justify-between">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-text-muted uppercase tracking-wider">
-              Quota Health
-            </span>
-            <span className="size-8 rounded-lg bg-amber-500/15 text-amber-400 flex items-center justify-center">
-              <span className="material-symbols-outlined text-[18px]">warning</span>
-            </span>
-          </div>
-          <div className="mt-2 flex items-baseline gap-3">
-            <div>
-              <span className="text-2xl font-bold font-mono text-amber-400">
-                {stats.nearLimitCount}
-              </span>
-              <span className="text-xs text-text-muted ml-1">&gt;85%</span>
-            </div>
-            <span className="text-border">/</span>
-            <div>
-              <span className="text-2xl font-bold font-mono text-red-400">
-                {stats.exhaustedCount}
-              </span>
-              <span className="text-xs text-text-muted ml-1">exhausted</span>
-            </div>
+            <p className="text-[11px] text-text-muted mt-1.5">
+              {stats.exhaustedCount > 0 ? (
+                <span className="text-red-400 font-semibold">
+                  {stats.exhaustedCount} model(s) reached token ceiling &amp; blocked!
+                </span>
+              ) : (
+                "All model token banks operating within thresholds"
+              )}
+            </p>
           </div>
         </Card>
       </div>
@@ -478,8 +696,8 @@ export default function LimitsPage() {
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Filter by model, combo, or provider..."
-              className="w-full pl-9 pr-3 py-1.5 rounded-lg bg-bg-subtle border border-border text-xs text-text-main placeholder:text-text-muted focus:outline-none focus:border-[#F43F5E]"
+              placeholder="Filter by custom name, original ID, provider..."
+              className="w-full pl-9 pr-3 py-1.5 rounded-lg bg-bg-subtle border border-border text-xs text-text-main placeholder:text-text-muted focus:outline-none focus:border-amber-500"
             />
           </div>
 
@@ -489,7 +707,9 @@ export default function LimitsPage() {
               type="button"
               onClick={() => setTypeFilter("all")}
               className={`px-2.5 py-1 rounded-md font-medium transition-all cursor-pointer ${
-                typeFilter === "all" ? "bg-bg-card text-text-main shadow-xs" : "text-text-muted hover:text-text-main"
+                typeFilter === "all"
+                  ? "bg-bg-card text-text-main shadow-xs"
+                  : "text-text-muted hover:text-text-main"
               }`}
             >
               All Types
@@ -498,7 +718,9 @@ export default function LimitsPage() {
               type="button"
               onClick={() => setTypeFilter("model")}
               className={`px-2.5 py-1 rounded-md font-medium transition-all cursor-pointer ${
-                typeFilter === "model" ? "bg-bg-card text-text-main shadow-xs" : "text-text-muted hover:text-text-main"
+                typeFilter === "model"
+                  ? "bg-bg-card text-text-main shadow-xs"
+                  : "text-text-muted hover:text-text-main"
               }`}
             >
               Models
@@ -507,7 +729,9 @@ export default function LimitsPage() {
               type="button"
               onClick={() => setTypeFilter("combo")}
               className={`px-2.5 py-1 rounded-md font-medium transition-all cursor-pointer ${
-                typeFilter === "combo" ? "bg-bg-card text-text-main shadow-xs" : "text-text-muted hover:text-text-main"
+                typeFilter === "combo"
+                  ? "bg-bg-card text-text-main shadow-xs"
+                  : "text-text-muted hover:text-text-main"
               }`}
             >
               Combos
@@ -521,235 +745,553 @@ export default function LimitsPage() {
             className="px-2.5 py-1.5 rounded-lg bg-bg-subtle border border-border text-xs text-text-main focus:outline-none cursor-pointer"
           >
             <option value="all">All Statuses</option>
+            <option value="configured">Configured (Limit Set)</option>
+            <option value="unlimited">Unlimited (No Limit)</option>
             <option value="healthy">Healthy (&lt;85%)</option>
             <option value="near_limit">Near Limit (&gt;85%)</option>
-            <option value="exhausted">Exhausted (100%)</option>
+            <option value="exhausted">Exhausted / Exceeded (100%)</option>
             <option value="paused">Paused</option>
           </select>
         </div>
 
         <span className="text-xs text-text-muted font-medium">
-          Showing {filteredLimits.length} of {limits.length} policies
+          Showing {filteredTargets.length} of {unifiedTargets.length} models &amp; combos
         </span>
       </Card>
 
-      {/* ── Limits Table ── */}
+      {/* ── Models & Combos Table ── */}
       <Card className="overflow-hidden border border-border bg-bg-card">
-        {filteredLimits.length === 0 ? (
+        {filteredTargets.length === 0 ? (
           <div className="py-14 text-center flex flex-col items-center justify-center gap-3">
             <div className="size-12 rounded-full bg-bg-subtle border border-border flex items-center justify-center text-text-muted">
-              <span className="material-symbols-outlined text-2xl">speed</span>
+              <span className="material-symbols-outlined text-2xl">account_balance</span>
             </div>
-            <h3 className="text-base font-semibold text-text-main">No Limit Policies Configured</h3>
+            <h3 className="text-base font-semibold text-text-main">No Models or Combos Found</h3>
             <p className="text-xs text-text-muted max-w-sm">
-              Click &quot;Create Limit Policy&quot; above to set up token pool budgets, RPM throttles, or fallback rules for models and combos.
+              No synced models match your filter. Check Pipe Models or clear your search query.
             </p>
-            <button
-              type="button"
-              onClick={handleOpenCreate}
-              className="mt-2 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#F43F5E] text-white text-xs font-medium hover:bg-[#e11d48] cursor-pointer"
-            >
-              <span className="material-symbols-outlined text-[16px]">add</span>
-              <span>Create First Limit Policy</span>
-            </button>
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse text-xs">
               <thead>
                 <tr className="border-b border-border bg-bg-subtle/60 text-text-muted text-[11px] font-semibold uppercase tracking-wider">
-                  <th className="py-3 px-4">Target (Model / Combo)</th>
-                  <th className="py-3 px-4 min-w-[240px]">Token Pool & Progress</th>
-                  <th className="py-3 px-4 text-center">Velocity (RPM / TPM)</th>
-                  <th className="py-3 px-4 text-center">Renewal & Exhaustion</th>
+                  <th className="py-3 px-3 w-10 text-center"></th>
+                  <th className="py-3 px-4 min-w-[220px]">Target (Custom &amp; Original Name)</th>
+                  <th className="py-3 px-4 min-w-[240px]">Limit Bank Setting</th>
+                  <th className="py-3 px-4 min-w-[220px]">Used / Total Limit Bank</th>
                   <th className="py-3 px-4 text-center">Status</th>
-                  <th className="py-3 px-4 text-right">Actions</th>
+                  <th className="py-3 px-4 text-right min-w-[130px]">Action</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border/60">
-                {filteredLimits.map((policy) => {
-                  const percent = policy.consumptionPercent;
+                {filteredTargets.map((target) => {
+                  const key = `${target.type}::${target.id}`;
+                  const isExpanded = Boolean(expandedRows[key]);
+                  const policy = target.policy;
+                  const draft = drafts[key];
+                  const currentPoolInput =
+                    draft?.poolInput !== undefined
+                      ? draft.poolInput
+                      : policy
+                        ? formatTokens(policy.totalTokenPool)
+                        : "";
+
+                  const consumed = policy?.consumedTokens || 0;
+                  const totalPool = policy?.totalTokenPool || 0;
+                  const remaining = policy ? policy.remainingTokens : 0;
+                  const percent = policy ? policy.consumptionPercent : 0;
+
                   let barColor = "bg-emerald-500";
                   let percentColor = "text-emerald-400";
-                  if (policy.status === "exhausted") {
+                  if (policy?.status === "exhausted") {
                     barColor = "bg-red-500";
                     percentColor = "text-red-400";
-                  } else if (policy.status === "near_limit") {
+                  } else if (policy?.status === "near_limit") {
                     barColor = "bg-amber-500";
                     percentColor = "text-amber-400";
                   }
 
+                  const isSavingThis = savingKey === key;
+                  const isSavedThis = savedKey === key;
+
                   return (
-                    <tr key={policy.id} className="hover:bg-bg-subtle/40 transition-colors">
-                      {/* Column 1: Target info */}
-                      <td className="py-3.5 px-4 align-middle">
-                        <div className="flex flex-col gap-1">
-                          <div className="flex items-center gap-2">
+                    <Fragment key={key}>
+                      <tr className="hover:bg-bg-subtle/40 transition-colors">
+                        {/* 0. Expand/Collapse Chevron Button */}
+                        <td className="py-3 px-2 text-center align-middle">
+                          <button
+                            type="button"
+                            onClick={() => toggleRowCollapse(key)}
+                            className="p-1 rounded text-text-muted hover:text-text-main hover:bg-bg-subtle transition-transform cursor-pointer"
+                            title={isExpanded ? "Collapse details" : "Uncollapse full details"}
+                          >
                             <span
-                              className={`px-1.5 py-0.5 rounded text-[10px] font-bold uppercase ${
-                                policy.targetType === "combo"
-                                  ? "bg-purple-500/15 text-purple-400 border border-purple-500/30"
-                                  : "bg-blue-500/15 text-blue-400 border border-blue-500/30"
+                              className={`material-symbols-outlined text-[18px] transition-transform duration-200 ${
+                                isExpanded ? "rotate-90 text-amber-400" : ""
                               }`}
                             >
-                              {policy.targetType}
+                              chevron_right
                             </span>
-                            <span className="font-semibold text-text-main text-sm">
-                              {policy.targetName}
-                            </span>
+                          </button>
+                        </td>
+
+                        {/* 1. Target Identity (Custom Name prominent + Original Name/ID) */}
+                        <td className="py-3 px-4 align-middle">
+                          <div className="flex flex-col gap-0.5">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              {/* Type Icon Badge */}
+                              <span
+                                className={`size-6 rounded-md flex items-center justify-center shrink-0 ${
+                                  target.type === "combo"
+                                    ? "bg-purple-500/15 text-purple-400 border border-purple-500/30"
+                                    : "bg-cyan-500/15 text-cyan-400 border border-cyan-500/30"
+                                }`}
+                                title={target.type === "combo" ? "Routing Combo" : "AI Model"}
+                              >
+                                <span className="material-symbols-outlined text-[14px]">
+                                  {target.type === "combo" ? "layers" : "smart_toy"}
+                                </span>
+                              </span>
+
+                              {/* Prominent Custom Display Name */}
+                              <span className="font-bold text-text-main text-sm">
+                                {target.name}
+                              </span>
+
+                              {target.customName && (
+                                <span className="text-[9px] px-1.5 py-0.2 rounded bg-amber-500/15 text-amber-300 border border-amber-500/30 font-mono font-medium">
+                                  custom
+                                </span>
+                              )}
+                            </div>
+
+                            {/* Subtitle with Original ID and Provider/Strategy */}
+                            <div className="flex items-center gap-2 flex-wrap text-[11px] text-text-muted mt-0.5">
+                              <span className="font-mono text-zinc-400 select-all" title={target.id}>
+                                {target.id}
+                              </span>
+                              {target.provider && (
+                                <span className="text-[10px] px-1.5 py-0.2 rounded bg-bg-subtle border border-border text-text-muted font-mono">
+                                  {target.provider}
+                                </span>
+                              )}
+                              {target.strategy && (
+                                <span className="text-[10px] px-1.5 py-0.2 rounded bg-purple-500/10 border border-purple-500/20 text-purple-300 font-mono">
+                                  {target.strategy}
+                                </span>
+                              )}
+                              {target.customAlias && (
+                                <span className="text-[10px] text-zinc-400 font-mono">
+                                  alias: {target.customAlias}
+                                </span>
+                              )}
+                            </div>
                           </div>
-                          <span className="font-mono text-[11px] text-text-muted">
-                            {policy.targetId}
-                          </span>
-                        </div>
-                      </td>
+                        </td>
 
-                      {/* Column 2: Token Pool & Progress */}
-                      <td className="py-3.5 px-4 align-middle">
-                        <div className="flex flex-col gap-1.5">
-                          <div className="flex items-center justify-between text-[11px]">
-                            <span className="text-text-muted">
-                              <span className="font-bold font-mono text-text-main">
-                                {formatTokens(policy.consumedTokens)}
-                              </span>{" "}
-                              / {formatTokens(policy.totalTokenPool)}
-                            </span>
-                            <span className={`font-mono font-bold ${percentColor}`}>
-                              {percent}%
-                            </span>
+                        {/* 2. Limit Bank Setting Input & Quick Presets */}
+                        <td className="py-3 px-4 align-middle">
+                          <div className="flex flex-col gap-1.5 max-w-[240px]">
+                            <div className="relative flex items-center">
+                              <span className="material-symbols-outlined absolute left-2 text-text-muted text-[15px] pointer-events-none">
+                                account_balance
+                              </span>
+                              <input
+                                type="text"
+                                value={currentPoolInput}
+                                onChange={(e) =>
+                                  setDrafts((prev) => ({
+                                    ...prev,
+                                    [key]: {
+                                      poolInput: e.target.value,
+                                      customError:
+                                        prev[key]?.customError ??
+                                        policy?.customErrorMessage ??
+                                        "",
+                                      resetWindow:
+                                        prev[key]?.resetWindow ??
+                                      policy?.resetWindow ??
+                                        "lifetime",
+                                      onExhaustion:
+                                        prev[key]?.onExhaustion ??
+                                        policy?.onExhaustion ??
+                                        "error",
+                                      fallbackTarget:
+                                        prev[key]?.fallbackTarget ??
+                                        policy?.fallbackTarget ??
+                                        "",
+                                    },
+                                  }))
+                                }
+                                placeholder="e.g. 10B, 34B, 50B"
+                                className="w-full pl-7 pr-2.5 py-1 rounded bg-bg-subtle border border-border font-mono text-xs text-text-main focus:outline-none focus:border-amber-500 placeholder:text-zinc-600"
+                              />
+                            </div>
+
+                            {/* Quick Preset Buttons */}
+                            <div className="flex items-center gap-1 flex-wrap">
+                              {PRESET_QUICK_LIMITS.map((preset) => (
+                                <button
+                                  key={preset}
+                                  type="button"
+                                  onClick={() =>
+                                    setDrafts((prev) => ({
+                                      ...prev,
+                                      [key]: {
+                                        poolInput: preset,
+                                        customError:
+                                          prev[key]?.customError ??
+                                          policy?.customErrorMessage ??
+                                          "",
+                                        resetWindow:
+                                          prev[key]?.resetWindow ??
+                                          policy?.resetWindow ??
+                                          "lifetime",
+                                        onExhaustion:
+                                          prev[key]?.onExhaustion ??
+                                          policy?.onExhaustion ??
+                                          "error",
+                                        fallbackTarget:
+                                          prev[key]?.fallbackTarget ??
+                                          policy?.fallbackTarget ??
+                                          "",
+                                      },
+                                    }))
+                                  }
+                                  className={`px-1.5 py-0.5 rounded text-[10px] font-mono font-medium transition-all cursor-pointer border ${
+                                    currentPoolInput.toUpperCase() === preset
+                                      ? "bg-amber-500/20 text-amber-300 border-amber-500/40"
+                                      : "bg-bg-subtle hover:bg-bg border-border text-text-muted hover:text-text-main"
+                                  }`}
+                                >
+                                  {preset}
+                                </button>
+                              ))}
+                            </div>
                           </div>
+                        </td>
 
-                          <div className="w-full h-2 rounded-full bg-bg-subtle overflow-hidden border border-border/50">
-                            <div
-                              className={`h-full rounded-full transition-all duration-300 ${barColor}`}
-                              style={{ width: `${percent}%` }}
-                            />
-                          </div>
+                        {/* 3. Used / Total Limit Bank Column */}
+                        <td className="py-3 px-4 align-middle">
+                          {policy && totalPool > 0 ? (
+                            <div className="flex flex-col gap-1.5 min-w-[200px]">
+                              <div className="flex items-center justify-between text-[11px]">
+                                <span className="text-text-muted">
+                                  <span className="font-bold font-mono text-text-main">
+                                    {formatTokens(consumed)}
+                                  </span>{" "}
+                                  /{" "}
+                                  <span className="font-bold font-mono text-amber-400">
+                                    {formatTokens(totalPool)}
+                                  </span>
+                                </span>
+                                <span className={`font-mono font-bold ${percentColor}`}>
+                                  {percent}%
+                                </span>
+                              </div>
 
-                          <div className="text-[10px] text-text-muted flex justify-between">
-                            <span>Remaining: <strong className="text-text-main font-mono">{formatTokens(policy.remainingTokens)}</strong></span>
-                            {policy.status === "exhausted" && (
-                              <span className="text-red-400 font-semibold">Exhausted</span>
-                            )}
-                          </div>
-                        </div>
-                      </td>
+                              <div className="w-full h-2 rounded-full bg-bg-subtle overflow-hidden border border-border/50">
+                                <div
+                                  className={`h-full rounded-full transition-all duration-300 ${barColor}`}
+                                  style={{ width: `${percent}%` }}
+                                />
+                              </div>
 
-                      {/* Column 3: Velocity RPM / TPM */}
-                      <td className="py-3.5 px-4 text-center align-middle">
-                        <div className="inline-flex flex-col gap-1 items-center">
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-bg-subtle border border-border text-[11px] font-mono text-text-main">
-                            <span className="material-symbols-outlined text-[13px] text-blue-400">speed</span>
-                            {policy.rpmLimit ? `${policy.rpmLimit} req/min` : "Unlimited RPM"}
-                          </span>
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-bg-subtle border border-border text-[10px] font-mono text-text-muted">
-                            {policy.tpmLimit ? `${formatTokens(policy.tpmLimit)} tpm` : "Unlimited TPM"}
-                          </span>
-                        </div>
-                      </td>
-
-                      {/* Column 4: Reset & Exhaustion */}
-                      <td className="py-3.5 px-4 text-center align-middle">
-                        <div className="inline-flex flex-col gap-1 items-center">
-                          <span className="px-2 py-0.5 rounded bg-bg-subtle text-[11px] font-medium text-text-muted capitalize">
-                            {policy.resetWindow} reset
-                          </span>
-                          {policy.onExhaustion === "fallback" ? (
-                            <span
-                              className="px-2 py-0.5 rounded bg-purple-500/15 text-purple-400 border border-purple-500/30 text-[10px] font-medium max-w-[130px] truncate"
-                              title={`Fallback target: ${policy.fallbackTarget}`}
-                            >
-                              Fallback: {policy.fallbackTarget || "auto"}
-                            </span>
+                              <div className="text-[10px] text-text-muted flex justify-between items-center">
+                                <span>
+                                  Remaining:{" "}
+                                  <strong className="text-text-main font-mono">
+                                    {formatTokens(remaining)}
+                                  </strong>
+                                </span>
+                                {policy.status === "exhausted" && (
+                                  <span className="text-red-400 font-extrabold uppercase text-[9px] animate-pulse">
+                                    Exceeded!
+                                  </span>
+                                )}
+                              </div>
+                            </div>
                           ) : (
-                            <span
-                              className="px-2 py-0.5 rounded bg-red-500/10 text-red-400 border border-red-500/20 text-[10px] font-medium max-w-[130px] truncate"
-                              title={policy.customErrorMessage || "Standard 429 Error"}
-                            >
-                              429 Block
+                            <div className="flex flex-col gap-1 text-text-muted">
+                              <span className="text-xs font-mono">
+                                Used: {consumed > 0 ? formatTokens(consumed) : "0"} / Unlimited
+                              </span>
+                              <span className="text-[10px] text-zinc-500">
+                                No ceiling set · Set limit &amp; click Save
+                              </span>
+                            </div>
+                          )}
+                        </td>
+
+                        {/* 4. Status Badge */}
+                        <td className="py-3 px-4 text-center align-middle">
+                          {policy ? (
+                            policy.status === "healthy" ? (
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 text-[11px] font-medium">
+                                <span className="size-1.5 rounded-full bg-emerald-400" />
+                                Healthy
+                              </span>
+                            ) : policy.status === "near_limit" ? (
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-400 border border-amber-500/30 text-[11px] font-medium">
+                                <span className="size-1.5 rounded-full bg-amber-400 animate-pulse" />
+                                Near Limit
+                              </span>
+                            ) : policy.status === "exhausted" ? (
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-red-500/15 text-red-400 border border-red-500/30 text-[11px] font-bold">
+                                <span className="size-1.5 rounded-full bg-red-400" />
+                                Exhausted
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-gray-500/15 text-gray-400 border border-gray-500/30 text-[11px] font-medium">
+                                <span className="size-1.5 rounded-full bg-gray-400" />
+                                Paused
+                              </span>
+                            )
+                          ) : (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-zinc-800 text-zinc-400 border border-zinc-700 text-[11px]">
+                              Unlimited
                             </span>
                           )}
-                        </div>
-                      </td>
+                        </td>
 
-                      {/* Column 5: Status */}
-                      <td className="py-3.5 px-4 text-center align-middle">
-                        {policy.status === "healthy" && (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 text-[11px] font-medium">
-                            <span className="size-1.5 rounded-full bg-emerald-400" />
-                            Healthy
-                          </span>
-                        )}
-                        {policy.status === "near_limit" && (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-400 border border-amber-500/30 text-[11px] font-medium">
-                            <span className="size-1.5 rounded-full bg-amber-400 animate-pulse" />
-                            Near Limit
-                          </span>
-                        )}
-                        {policy.status === "exhausted" && (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-red-500/15 text-red-400 border border-red-500/30 text-[11px] font-medium">
-                            <span className="size-1.5 rounded-full bg-red-400" />
-                            Exhausted
-                          </span>
-                        )}
-                        {policy.status === "paused" && (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-gray-500/15 text-gray-400 border border-gray-500/30 text-[11px] font-medium">
-                            <span className="size-1.5 rounded-full bg-gray-400" />
-                            Paused
-                          </span>
-                        )}
-                      </td>
-
-                      {/* Column 6: Actions */}
-                      <td className="py-3.5 px-4 text-right align-middle">
-                        <div className="inline-flex items-center gap-1">
-                          {/* Quick Add Tokens */}
+                        {/* 5. SINGLE Save Button on Every Row */}
+                        <td className="py-3 px-4 text-right align-middle">
                           <button
                             type="button"
-                            onClick={() => {
-                              setAddTokensTarget(policy);
-                              setTokensToAdd(100_000_000);
-                            }}
-                            className="p-1.5 rounded hover:bg-bg-subtle text-text-muted hover:text-emerald-400 transition-colors cursor-pointer"
-                            title="Add Tokens to Pool"
+                            onClick={() => void handleSaveRow(target)}
+                            disabled={isSavingThis}
+                            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold shadow-xs transition-all cursor-pointer active:scale-95 disabled:opacity-50 ${
+                              isSavedThis
+                                ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/40"
+                                : "bg-amber-500 hover:bg-amber-600 text-black font-bold"
+                            }`}
+                            title="Save Limit Bank for this model/combo"
                           >
-                            <span className="material-symbols-outlined text-[18px]">add_circle</span>
-                          </button>
-
-                          {/* Pause / Resume */}
-                          <button
-                            type="button"
-                            onClick={() => handleToggleActive(policy.id, policy.isActive)}
-                            className="p-1.5 rounded hover:bg-bg-subtle text-text-muted hover:text-text-main transition-colors cursor-pointer"
-                            title={policy.isActive ? "Pause Policy" : "Resume Policy"}
-                          >
-                            <span className="material-symbols-outlined text-[18px]">
-                              {policy.isActive ? "pause" : "play_arrow"}
+                            <span
+                              className={`material-symbols-outlined text-[15px] ${
+                                isSavingThis ? "animate-spin" : ""
+                              }`}
+                            >
+                              {isSavingThis
+                                ? "progress_activity"
+                                : isSavedThis
+                                  ? "check"
+                                  : "save"}
                             </span>
+                            <span>{isSavingThis ? "Saving…" : isSavedThis ? "Saved!" : "Save"}</span>
                           </button>
+                        </td>
+                      </tr>
 
-                          {/* Edit */}
-                          <button
-                            type="button"
-                            onClick={() => handleOpenEdit(policy)}
-                            className="p-1.5 rounded hover:bg-bg-subtle text-text-muted hover:text-text-main transition-colors cursor-pointer"
-                            title="Edit Policy"
-                          >
-                            <span className="material-symbols-outlined text-[18px]">edit</span>
-                          </button>
+                      {/* ── Uncollapsed Row Details Drawer ── */}
+                      {isExpanded && (
+                        <tr className="bg-bg-subtle/20 border-b border-border/80">
+                          <td colSpan={6} className="p-4">
+                            <div className="rounded-xl border border-border/80 bg-surface/70 p-4 space-y-4">
+                              <div className="flex items-center justify-between border-b border-border/40 pb-2">
+                                <div className="flex items-center gap-2">
+                                  <span className="material-symbols-outlined text-amber-400 text-[18px]">
+                                    tune
+                                  </span>
+                                  <h4 className="text-xs font-bold uppercase tracking-wider text-text-main">
+                                    Limit Bank Policy Details &amp; Actions for &ldquo;{target.name}&rdquo;
+                                  </h4>
+                                </div>
+                                {policy && (
+                                  <div className="flex items-center gap-2">
+                                    {/* Pause / Resume switch */}
+                                    <button
+                                      type="button"
+                                      onClick={() => void handleToggleActive(target)}
+                                      className={`inline-flex items-center gap-1 px-2.5 py-1 rounded text-[11px] font-medium border transition-all cursor-pointer ${
+                                        policy.isActive
+                                          ? "bg-amber-500/10 text-amber-400 border-amber-500/30 hover:bg-amber-500/20"
+                                          : "bg-emerald-500/10 text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/20"
+                                      }`}
+                                    >
+                                      <span className="material-symbols-outlined text-[14px]">
+                                        {policy.isActive ? "pause" : "play_arrow"}
+                                      </span>
+                                      <span>{policy.isActive ? "Pause Policy" : "Resume Policy"}</span>
+                                    </button>
 
-                          {/* Delete */}
-                          <button
-                            type="button"
-                            onClick={() => handleDelete(policy.id, policy.targetName)}
-                            className="p-1.5 rounded hover:bg-bg-subtle text-text-muted hover:text-red-400 transition-colors cursor-pointer"
-                            title="Delete Policy"
-                          >
-                            <span className="material-symbols-outlined text-[18px]">delete</span>
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
+                                    {/* Delete / Clear Limit */}
+                                    <button
+                                      type="button"
+                                      onClick={() => void handleDeletePolicy(target)}
+                                      className="inline-flex items-center gap-1 px-2.5 py-1 rounded text-[11px] font-medium bg-red-500/10 text-red-400 border border-red-500/30 hover:bg-red-500/20 transition-all cursor-pointer"
+                                      title="Remove limit policy"
+                                    >
+                                      <span className="material-symbols-outlined text-[14px]">
+                                        delete
+                                      </span>
+                                      <span>Remove Limit</span>
+                                    </button>
+                                  </div>
+                                )}
+                              </div>
+
+                              {/* Detailed Metrics Breakdown */}
+                              {policy ? (
+                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                  <div className="p-3 rounded-lg bg-bg-card border border-border">
+                                    <span className="text-[10px] uppercase font-semibold text-text-muted">
+                                      Total Limit Bank
+                                    </span>
+                                    <div className="text-lg font-mono font-bold text-text-main mt-0.5">
+                                      {formatTokens(policy.totalTokenPool)}
+                                    </div>
+                                    <span className="text-[10px] text-text-muted font-mono">
+                                      {policy.totalTokenPool.toLocaleString()} tokens
+                                    </span>
+                                  </div>
+
+                                  <div className="p-3 rounded-lg bg-bg-card border border-border">
+                                    <span className="text-[10px] uppercase font-semibold text-text-muted">
+                                      Consumed Tokens
+                                    </span>
+                                    <div className="text-lg font-mono font-bold text-emerald-400 mt-0.5">
+                                      {formatTokens(policy.consumedTokens)}
+                                    </div>
+                                    <div className="flex items-center justify-between text-[10px] text-text-muted font-mono mt-0.5">
+                                      <span>{policy.consumedTokens.toLocaleString()} tokens</span>
+                                      <button
+                                        type="button"
+                                        onClick={() => void handleResetTokens(target)}
+                                        className="text-amber-400 hover:underline cursor-pointer"
+                                      >
+                                        Reset to 0
+                                      </button>
+                                    </div>
+                                  </div>
+
+                                  <div className="p-3 rounded-lg bg-bg-card border border-border">
+                                    <span className="text-[10px] uppercase font-semibold text-text-muted">
+                                      Remaining in Bank
+                                    </span>
+                                    <div className="text-lg font-mono font-bold text-amber-400 mt-0.5">
+                                      {formatTokens(policy.remainingTokens)}
+                                    </div>
+                                    <span className="text-[10px] text-text-muted font-mono">
+                                      {policy.remainingTokens.toLocaleString()} tokens ({100 - percent}%)
+                                    </span>
+                                  </div>
+                                </div>
+                              ) : (
+                                <p className="text-xs text-text-muted italic">
+                                  No limit bank set yet. Enter a limit (e.g. 10B, 34B, 50B) and click Save above to activate.
+                                </p>
+                              )}
+
+                              {/* Quick Add Tokens & Fine-tune Controls */}
+                              {policy && (
+                                <div className="p-3 rounded-lg bg-bg-subtle/50 border border-border/60 space-y-2">
+                                  <span className="text-[11px] font-semibold text-text-main flex items-center gap-1.5">
+                                    <span className="material-symbols-outlined text-[15px] text-emerald-400">
+                                      add_circle
+                                    </span>
+                                    Quick Top-Up (Add Tokens to Bank):
+                                  </span>
+                                  <div className="flex items-center gap-2 flex-wrap">
+                                    {[100_000_000, 500_000_000, 1_000_000_000, 5_000_000_000, 10_000_000_000].map(
+                                      (amount) => (
+                                        <button
+                                          key={amount}
+                                          type="button"
+                                          onClick={() => void handleAddTokens(target, amount)}
+                                          className="px-2.5 py-1 rounded bg-bg-card border border-border text-text-main hover:border-emerald-500/50 hover:text-emerald-400 text-xs font-mono font-semibold transition-all cursor-pointer shadow-xs"
+                                        >
+                                          +{formatTokens(amount)}
+                                        </button>
+                                      )
+                                    )}
+                                  </div>
+                                </div>
+                              )}
+
+                              {/* Policy Custom Error Message & Reset Window */}
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                                <label className="flex flex-col gap-1 text-xs text-text-muted">
+                                  <span className="font-semibold text-text-main">
+                                    Custom Limit Exceeded Error Message:
+                                  </span>
+                                  <input
+                                    type="text"
+                                    value={
+                                      draft?.customError !== undefined
+                                        ? draft.customError
+                                        : policy?.customErrorMessage ?? ""
+                                    }
+                                    onChange={(e) =>
+                                      setDrafts((prev) => ({
+                                        ...prev,
+                                        [key]: {
+                                          poolInput: currentPoolInput,
+                                          customError: e.target.value,
+                                          resetWindow:
+                                            prev[key]?.resetWindow ??
+                                            policy?.resetWindow ??
+                                            "lifetime",
+                                          onExhaustion:
+                                            prev[key]?.onExhaustion ??
+                                            policy?.onExhaustion ??
+                                            "error",
+                                          fallbackTarget:
+                                            prev[key]?.fallbackTarget ??
+                                            policy?.fallbackTarget ??
+                                            "",
+                                        },
+                                      }))
+                                    }
+                                    placeholder="Leave empty to use .env LIMIT_BANK_EXCEEDED_MESSAGE"
+                                    className="px-3 py-1.5 rounded-lg bg-bg-subtle border border-border text-xs text-text-main placeholder:text-zinc-600 focus:outline-none focus:border-amber-500"
+                                  />
+                                </label>
+
+                                <label className="flex flex-col gap-1 text-xs text-text-muted">
+                                  <span className="font-semibold text-text-main">
+                                    Bank Reset Window:
+                                  </span>
+                                  <select
+                                    value={
+                                      draft?.resetWindow ?? policy?.resetWindow ?? "lifetime"
+                                    }
+                                    onChange={(e) =>
+                                      setDrafts((prev) => ({
+                                        ...prev,
+                                        [key]: {
+                                          poolInput: currentPoolInput,
+                                          customError:
+                                            prev[key]?.customError ??
+                                            policy?.customErrorMessage ??
+                                            "",
+                                          resetWindow: e.target.value as LimitResetWindow,
+                                          onExhaustion:
+                                            prev[key]?.onExhaustion ??
+                                            policy?.onExhaustion ??
+                                            "error",
+                                          fallbackTarget:
+                                            prev[key]?.fallbackTarget ??
+                                            policy?.fallbackTarget ??
+                                            "",
+                                        },
+                                      }))
+                                    }
+                                    className="px-3 py-1.5 rounded-lg bg-bg-subtle border border-border text-xs text-text-main focus:outline-none cursor-pointer"
+                                  >
+                                    <option value="lifetime">Lifetime (Hard manual ceiling)</option>
+                                    <option value="monthly">Monthly Auto-Reset</option>
+                                    <option value="weekly">Weekly Auto-Reset</option>
+                                    <option value="daily">Daily Auto-Reset</option>
+                                  </select>
+                                </label>
+                              </div>
+                            </div>
+                          </td>
+                        </tr>
+                      )}
+                    </Fragment>
                   );
                 })}
               </tbody>
@@ -757,358 +1299,6 @@ export default function LimitsPage() {
           </div>
         )}
       </Card>
-
-      {/* ── Modal: Create / Edit Limit Policy ── */}
-      {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-xs">
-          <div className="bg-bg-card border border-border rounded-xl w-full max-w-xl shadow-2xl max-h-[90vh] flex flex-col">
-            <div className="px-6 py-4 border-b border-border flex items-center justify-between">
-              <h2 className="text-lg font-bold text-text-main flex items-center gap-2">
-                <span className="material-symbols-outlined text-[#F43F5E] text-[22px]">speed</span>
-                {editingId ? "Edit Limit Policy" : "Create Limit Policy"}
-              </h2>
-              <button
-                type="button"
-                onClick={() => setIsModalOpen(false)}
-                className="text-text-muted hover:text-text-main p-1 rounded-md"
-              >
-                <span className="material-symbols-outlined text-[20px]">close</span>
-              </button>
-            </div>
-
-            <form onSubmit={handleSavePolicy} className="p-6 space-y-4 overflow-y-auto flex-1">
-              {/* Target Type & Target Selector */}
-              <div className="space-y-3">
-                <label className="text-xs font-semibold text-text-muted uppercase tracking-wider block">
-                  Select Target Type
-                </label>
-                <div className="grid grid-cols-2 gap-2">
-                  <button
-                    type="button"
-                    disabled={Boolean(editingId)}
-                    onClick={() => {
-                      setFormTargetType("model");
-                      setFormTargetId(availableModels[0]?.id || "");
-                    }}
-                    className={`p-2.5 rounded-lg border text-xs font-semibold flex items-center justify-center gap-2 transition-all cursor-pointer ${
-                      formTargetType === "model"
-                        ? "bg-[#F43F5E]/15 border-[#F43F5E] text-[#F43F5E]"
-                        : "bg-bg-subtle border-border text-text-muted hover:text-text-main"
-                    }`}
-                  >
-                    <span className="material-symbols-outlined text-[18px]">neurology</span>
-                    <span>AI Model</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    disabled={Boolean(editingId)}
-                    onClick={() => {
-                      setFormTargetType("combo");
-                      setFormTargetId(availableCombos[0]?.id || "");
-                    }}
-                    className={`p-2.5 rounded-lg border text-xs font-semibold flex items-center justify-center gap-2 transition-all cursor-pointer ${
-                      formTargetType === "combo"
-                        ? "bg-purple-500/15 border-purple-500 text-purple-400"
-                        : "bg-bg-subtle border-border text-text-muted hover:text-text-main"
-                    }`}
-                  >
-                    <span className="material-symbols-outlined text-[18px]">layers</span>
-                    <span>Smart Combo Pipeline</span>
-                  </button>
-                </div>
-
-                {/* Target Dropdown */}
-                <div>
-                  <label className="text-xs font-medium text-text-muted block mb-1">
-                    Choose {formTargetType === "model" ? "Model" : "Combo"}
-                  </label>
-                  <select
-                    value={formTargetId}
-                    disabled={Boolean(editingId)}
-                    onChange={(e) => setFormTargetId(e.target.value)}
-                    className="w-full px-3 py-2 rounded-lg bg-bg-subtle border border-border text-sm text-text-main focus:outline-none focus:border-[#F43F5E]"
-                  >
-                    {formTargetType === "model" ? (
-                      availableModels.map((m) => (
-                        <option key={m.id} value={m.id}>
-                          {m.name || m.id} {m.provider ? `(${m.provider})` : ""}
-                        </option>
-                      ))
-                    ) : (
-                      availableCombos.map((c) => (
-                        <option key={c.id} value={c.id}>
-                          {c.name || c.id} ({c.strategy || "pipeline"})
-                        </option>
-                      ))
-                    )}
-                  </select>
-                </div>
-              </div>
-
-              {/* Total Token Budget Pool */}
-              <div className="space-y-2 pt-2 border-t border-border">
-                <div className="flex items-center justify-between">
-                  <label className="text-xs font-semibold text-text-muted uppercase tracking-wider block">
-                    Total Token Pool Budget
-                  </label>
-                  <span className="font-mono text-xs font-bold text-emerald-400">
-                    {formatTokens(formTotalPool)} Tokens
-                  </span>
-                </div>
-
-                {/* Presets */}
-                <div className="flex flex-wrap items-center gap-1.5">
-                  {PRESET_POOLS.map((p) => (
-                    <button
-                      key={p.label}
-                      type="button"
-                      onClick={() => setFormTotalPool(p.value)}
-                      className={`px-2.5 py-1 rounded text-xs font-medium transition-all cursor-pointer ${
-                        formTotalPool === p.value
-                          ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/50"
-                          : "bg-bg-subtle text-text-muted border border-border hover:text-text-main"
-                      }`}
-                    >
-                      {p.label}
-                    </button>
-                  ))}
-                </div>
-
-                <input
-                  type="number"
-                  min="1"
-                  value={formTotalPool}
-                  onChange={(e) => setFormTotalPool(Math.max(1, toNumber(e.target.value, 1)))}
-                  className="w-full px-3 py-2 rounded-lg bg-bg-subtle border border-border text-sm text-text-main font-mono focus:outline-none focus:border-[#F43F5E]"
-                  placeholder="e.g. 1000000000"
-                />
-              </div>
-
-              {/* Velocity Controls: RPM & TPM */}
-              <div className="grid grid-cols-2 gap-3 pt-2 border-t border-border">
-                <div>
-                  <label className="text-xs font-semibold text-text-muted block mb-1">
-                    RPM (Requests Per Min)
-                  </label>
-                  <input
-                    type="number"
-                    min="1"
-                    value={formRpmLimit}
-                    onChange={(e) => setFormRpmLimit(e.target.value)}
-                    placeholder="e.g. 60 (leave empty for unlimited)"
-                    className="w-full px-3 py-1.5 rounded-lg bg-bg-subtle border border-border text-xs text-text-main font-mono focus:outline-none focus:border-[#F43F5E]"
-                  />
-                  <span className="text-[10px] text-text-muted">Protects against spam spikes</span>
-                </div>
-
-                <div>
-                  <label className="text-xs font-semibold text-text-muted block mb-1">
-                    TPM (Tokens Per Min)
-                  </label>
-                  <input
-                    type="number"
-                    min="1000"
-                    value={formTpmLimit}
-                    onChange={(e) => setFormTpmLimit(e.target.value)}
-                    placeholder="e.g. 500000 (leave empty for unlimited)"
-                    className="w-full px-3 py-1.5 rounded-lg bg-bg-subtle border border-border text-xs text-text-main font-mono focus:outline-none focus:border-[#F43F5E]"
-                  />
-                  <span className="text-[10px] text-text-muted">Throughput velocity cap</span>
-                </div>
-              </div>
-
-              {/* Reset Window */}
-              <div className="pt-2 border-t border-border">
-                <label className="text-xs font-semibold text-text-muted uppercase tracking-wider block mb-1.5">
-                  Quota Renewal Window
-                </label>
-                <select
-                  value={formResetWindow}
-                  onChange={(e) => setFormResetWindow(e.target.value as LimitResetWindow)}
-                  className="w-full px-3 py-2 rounded-lg bg-bg-subtle border border-border text-xs text-text-main focus:outline-none focus:border-[#F43F5E]"
-                >
-                  <option value="lifetime">Lifetime / Fixed Pool (No Auto Reset)</option>
-                  <option value="monthly">Monthly Calendar Reset (1st of each month)</option>
-                  <option value="weekly">Weekly Reset (Every Monday)</option>
-                  <option value="daily">Daily Reset (Midnight UTC)</option>
-                </select>
-              </div>
-
-              {/* On Exhaustion Action */}
-              <div className="pt-2 border-t border-border space-y-2">
-                <label className="text-xs font-semibold text-text-muted uppercase tracking-wider block">
-                  Action on Limit Exhaustion (Jab Limit Khatam Ho Jaye)
-                </label>
-
-                <div className="grid grid-cols-2 gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setFormOnExhaustion("error")}
-                    className={`p-2 rounded-lg border text-xs font-medium flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
-                      formOnExhaustion === "error"
-                        ? "bg-red-500/15 border-red-500 text-red-400 font-semibold"
-                        : "bg-bg-subtle border-border text-text-muted hover:text-text-main"
-                    }`}
-                  >
-                    <span className="material-symbols-outlined text-[16px]">block</span>
-                    <span>Block (HTTP 429)</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setFormOnExhaustion("fallback")}
-                    className={`p-2 rounded-lg border text-xs font-medium flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
-                      formOnExhaustion === "fallback"
-                        ? "bg-purple-500/15 border-purple-500 text-purple-400 font-semibold"
-                        : "bg-bg-subtle border-border text-text-muted hover:text-text-main"
-                    }`}
-                  >
-                    <span className="material-symbols-outlined text-[16px]">alt_route</span>
-                    <span>Auto-Fallback Target</span>
-                  </button>
-                </div>
-
-                {formOnExhaustion === "fallback" ? (
-                  <div>
-                    <label className="text-xs text-text-muted block mb-1">
-                      Select Backup Target for Fallback:
-                    </label>
-                    <select
-                      value={formFallbackTarget}
-                      onChange={(e) => setFormFallbackTarget(e.target.value)}
-                      className="w-full px-3 py-1.5 rounded-lg bg-bg-subtle border border-border text-xs text-text-main focus:outline-none"
-                    >
-                      <option value="">-- Choose Fallback Model or Combo --</option>
-                      <optgroup label="Models">
-                        {availableModels.map((m) => (
-                          <option key={`fb-m-${m.id}`} value={m.id}>
-                            Model: {m.name || m.id}
-                          </option>
-                        ))}
-                      </optgroup>
-                      <optgroup label="Combos">
-                        {availableCombos.map((c) => (
-                          <option key={`fb-c-${c.id}`} value={c.id}>
-                            Combo: {c.name || c.id}
-                          </option>
-                        ))}
-                      </optgroup>
-                    </select>
-                  </div>
-                ) : (
-                  <div>
-                    <label className="text-xs text-text-muted block mb-1">
-                      Custom 429 Error Message (Optional):
-                    </label>
-                    <input
-                      type="text"
-                      value={formCustomError}
-                      onChange={(e) => setFormCustomError(e.target.value)}
-                      placeholder="e.g. Quota limit of 1 Billion tokens has been exhausted. Contact admin."
-                      className="w-full px-3 py-1.5 rounded-lg bg-bg-subtle border border-border text-xs text-text-main placeholder:text-text-muted focus:outline-none"
-                    />
-                  </div>
-                )}
-              </div>
-
-              {/* Submit Buttons */}
-              <div className="pt-4 border-t border-border flex items-center justify-end gap-2">
-                <button
-                  type="button"
-                  onClick={() => setIsModalOpen(false)}
-                  className="px-4 py-2 rounded-lg bg-bg-subtle border border-border text-xs font-medium text-text-muted hover:text-text-main cursor-pointer"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={saving}
-                  className="px-4 py-2 rounded-lg bg-[#F43F5E] hover:bg-[#e11d48] text-white text-xs font-semibold shadow-xs disabled:opacity-50 cursor-pointer"
-                >
-                  {saving ? "Saving Policy..." : editingId ? "Update Policy" : "Create Policy"}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* ── Modal: Quick Add Tokens ── */}
-      {addTokensTarget && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-xs">
-          <div className="bg-bg-card border border-border rounded-xl w-full max-w-md shadow-2xl p-6 space-y-4">
-            <div className="flex items-center justify-between border-b border-border pb-3">
-              <h3 className="text-base font-bold text-text-main flex items-center gap-2">
-                <span className="material-symbols-outlined text-emerald-400 text-[20px]">add_circle</span>
-                Add Tokens to Pool
-              </h3>
-              <button
-                type="button"
-                onClick={() => setAddTokensTarget(null)}
-                className="text-text-muted hover:text-text-main"
-              >
-                <span className="material-symbols-outlined text-[18px]">close</span>
-              </button>
-            </div>
-
-            <div className="space-y-1">
-              <span className="text-xs text-text-muted">Target Policy:</span>
-              <div className="text-sm font-semibold text-text-main">{addTokensTarget.targetName}</div>
-              <div className="text-xs text-text-muted">
-                Current Pool: <strong className="font-mono text-text-main">{formatTokens(addTokensTarget.totalTokenPool)}</strong> (Consumed: {formatTokens(addTokensTarget.consumedTokens)})
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-xs font-semibold text-text-muted block">
-                Select Amount to Add:
-              </label>
-              <div className="grid grid-cols-3 gap-2">
-                {[50_000_000, 100_000_000, 500_000_000, 1_000_000_000, 2_000_000_000, 5_000_000_000].map((num) => (
-                  <button
-                    key={num}
-                    type="button"
-                    onClick={() => setTokensToAdd(num)}
-                    className={`py-1.5 px-2 rounded-lg border text-xs font-mono font-medium transition-all cursor-pointer ${
-                      tokensToAdd === num
-                        ? "bg-emerald-500/20 text-emerald-400 border-emerald-500/50 font-bold"
-                        : "bg-bg-subtle text-text-muted border-border hover:text-text-main"
-                    }`}
-                  >
-                    +{formatTokens(num)}
-                  </button>
-                ))}
-              </div>
-
-              <input
-                type="number"
-                min="1000"
-                value={tokensToAdd}
-                onChange={(e) => setTokensToAdd(Math.max(1, toNumber(e.target.value, 1)))}
-                className="w-full px-3 py-1.5 rounded-lg bg-bg-subtle border border-border text-xs text-text-main font-mono focus:outline-none focus:border-emerald-500"
-              />
-            </div>
-
-            <div className="flex items-center justify-end gap-2 pt-2 border-t border-border">
-              <button
-                type="button"
-                onClick={() => setAddTokensTarget(null)}
-                className="px-3 py-1.5 rounded-lg bg-bg-subtle border border-border text-xs text-text-muted hover:text-text-main cursor-pointer"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={handleAddTokens}
-                className="px-4 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold shadow-xs cursor-pointer"
-              >
-                Add {formatTokens(tokensToAdd)} Tokens
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

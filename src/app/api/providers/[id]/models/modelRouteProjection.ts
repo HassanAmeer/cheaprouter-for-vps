@@ -18,19 +18,25 @@ export function filterModelsForRoute<
   return chatOnly ? filterChatSelectableModels(provider, selectable) : selectable;
 }
 
-function toLiveModel(item: Record<string, unknown>): { id: string; name: string } | null {
+function toLiveModel(item: unknown): { id: string; name: string } | null {
+  if (typeof item === "string") {
+    const trimmed = item.trim();
+    return trimmed ? { id: trimmed, name: trimmed } : null;
+  }
+  if (!item || typeof item !== "object") return null;
+  const obj = item as Record<string, unknown>;
   const itemId =
-    typeof item.id === "string" && item.id.trim().length > 0
-      ? item.id.trim()
-      : typeof item.name === "string" && item.name.trim().length > 0
-        ? item.name.trim()
+    typeof obj.id === "string" && obj.id.trim().length > 0
+      ? obj.id.trim()
+      : typeof obj.name === "string" && obj.name.trim().length > 0
+        ? obj.name.trim()
         : "";
   if (!itemId) return null;
   const itemName =
-    typeof item.display_name === "string"
-      ? item.display_name
-      : typeof item.name === "string"
-        ? item.name
+    typeof obj.display_name === "string"
+      ? obj.display_name
+      : typeof obj.name === "string"
+        ? obj.name
         : itemId;
   return { id: itemId, name: itemName };
 }
@@ -58,10 +64,10 @@ async function fetchLiveNoAuthModels(
         ? data.data
         : Array.isArray(data?.models)
           ? data.models
-          : [];
-    const liveModels: Array<{ id: string; name: string }> = (
-      rawList as Array<Record<string, unknown>>
-    )
+          : Array.isArray(data?.result)
+            ? data.result
+            : [];
+    const liveModels: Array<{ id: string; name: string }> = (rawList as Array<unknown>)
       .map(toLiveModel)
       .filter((model): model is { id: string; name: string } => model !== null);
     if (liveModels.length === 0) return null;

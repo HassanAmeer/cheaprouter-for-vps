@@ -472,7 +472,7 @@ function buildOpencodeModelsDiscoveryEntry(url: string): ProviderModelsConfigEnt
     headers: { Accept: "application/json" },
     buildHeaders: (token, connection) => ({
       Accept: "application/json",
-      Authorization: `Bearer ${token}`,
+      ...(token && token !== "anonymous" ? { Authorization: `Bearer ${token}` } : {}),
       ...buildOpencodeBackgroundHeaders({ seed: readOpencodeBackgroundSeed(connection) }),
     }),
     parseResponse: OPENCODE_DISCOVERY_PARSE,
@@ -521,6 +521,78 @@ export function getXaiOauthLiveModelsConfig(): ProviderModelsConfigEntry | undef
     return undefined;
   }
 }
+
+const CLOUDFLARE_MODELS_CONFIG: ProviderModelsConfigEntry = {
+  url: "https://api.cloudflare.com/client/v4/accounts/{accountId}/ai/models/search?per_page=1000",
+  method: "GET",
+  headers: { "Content-Type": "application/json" },
+  authHeader: "Authorization",
+  authPrefix: "Bearer ",
+  // #4259: Cloudflare's `/ai/models/search` returns `{ id: "<uuid>", name: "@cf/..." }`.
+  // `name` is the usable model slug; `id` is an internal UUID. Map `name`→id so the
+  // dashboard/import surfaces callable model ids (`@cf/...`) instead of UUIDs.
+  buildHeaders: (token, context) => {
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json",
+    };
+    const psd = (
+      context?.providerSpecificData && typeof context.providerSpecificData === "object"
+        ? (context.providerSpecificData as Record<string, unknown>)
+        : {}
+    ) as Record<string, unknown>;
+    const email =
+      (typeof context?.email === "string" && context.email) ||
+      (typeof psd.email === "string" && psd.email) ||
+      process.env.CLOUDFLARE_EMAIL ||
+      "";
+
+    if (token.startsWith("cfk_") && email) {
+      headers["X-Auth-Key"] = token;
+      headers["X-Auth-Email"] = email;
+    } else {
+      headers["Authorization"] = `Bearer ${token}`;
+    }
+    return headers;
+  },
+  parseResponse: (data) =>
+    (data.result || [])
+      .map((model: any) => {
+        const slug = typeof model?.name === "string" ? model.name : "";
+        if (!slug) return null;
+        const taskName = typeof model?.task?.name === "string" ? model.task.name : "";
+        const props = Array.isArray(model.properties) ? model.properties : [];
+        const ctxWindowProp = props.find((p: any) => p?.property_id === "context_window");
+        const inputTokenLimit = ctxWindowProp?.value ? Number(ctxWindowProp.value) : undefined;
+        const reasoningProp = props.find((p: any) => p?.property_id === "reasoning");
+        const reasoning = reasoningProp?.value === "true";
+
+        let supportedEndpoints: string[] = ["chat"];
+        if (taskName === "Text Embeddings") {
+          supportedEndpoints = ["embeddings"];
+        } else if (taskName === "Text-to-Image") {
+          supportedEndpoints = ["images"];
+        } else if (taskName === "Text-to-Speech") {
+          supportedEndpoints = ["speech"];
+        } else if (taskName === "Automatic Speech Recognition") {
+          supportedEndpoints = ["audio", "transcriptions"];
+        } else if (taskName === "Image-to-Text" || taskName === "Text Generation") {
+          supportedEndpoints = ["chat", "completions"];
+        }
+
+        return {
+          id: slug,
+          name: slug,
+          ...(typeof model?.description === "string" && model.description
+            ? { description: model.description }
+            : {}),
+          ...(inputTokenLimit && !Number.isNaN(inputTokenLimit) ? { inputTokenLimit } : {}),
+          ...(reasoning ? { reasoning: true } : {}),
+          ...(taskName ? { task: taskName } : {}),
+          supportedEndpoints,
+        };
+      })
+      .filter(Boolean),
+};
 
 // Provider models endpoints configuration
 export const PROVIDER_MODELS_CONFIG: Record<string, ProviderModelsConfigEntry> = {
@@ -860,77 +932,8 @@ export const PROVIDER_MODELS_CONFIG: Record<string, ProviderModelsConfigEntry> =
     authPrefix: "Bearer ",
     parseResponse: (data) => data.models || data.data || [],
   },
-  "cloudflare-ai": {
-    url: "https://api.cloudflare.com/client/v4/accounts/{accountId}/ai/models/search?per_page=1000",
-    method: "GET",
-    headers: { "Content-Type": "application/json" },
-    authHeader: "Authorization",
-    authPrefix: "Bearer ",
-    // #4259: Cloudflare's `/ai/models/search` returns `{ id: "<uuid>", name: "@cf/..." }`.
-    // `name` is the usable model slug; `id` is an internal UUID. Map `name`→id so the
-    // dashboard/import surfaces callable model ids (`@cf/...`) instead of UUIDs.
-    buildHeaders: (token, context) => {
-      const headers: Record<string, string> = {
-        "Content-Type": "application/json",
-      };
-      const psd = (
-        context?.providerSpecificData && typeof context.providerSpecificData === "object"
-          ? (context.providerSpecificData as Record<string, unknown>)
-          : {}
-      ) as Record<string, unknown>;
-      const email =
-        (typeof context?.email === "string" && context.email) ||
-        (typeof psd.email === "string" && psd.email) ||
-        process.env.CLOUDFLARE_EMAIL ||
-        "";
-
-      if (token.startsWith("cfk_") && email) {
-        headers["X-Auth-Key"] = token;
-        headers["X-Auth-Email"] = email;
-      } else {
-        headers["Authorization"] = `Bearer ${token}`;
-      }
-      return headers;
-    },
-    parseResponse: (data) =>
-      (data.result || [])
-        .map((model: any) => {
-          const slug = typeof model?.name === "string" ? model.name : "";
-          if (!slug) return null;
-          const taskName = typeof model?.task?.name === "string" ? model.task.name : "";
-          const props = Array.isArray(model.properties) ? model.properties : [];
-          const ctxWindowProp = props.find((p: any) => p?.property_id === "context_window");
-          const inputTokenLimit = ctxWindowProp?.value ? Number(ctxWindowProp.value) : undefined;
-          const reasoningProp = props.find((p: any) => p?.property_id === "reasoning");
-          const reasoning = reasoningProp?.value === "true";
-
-          let supportedEndpoints: string[] = ["chat"];
-          if (taskName === "Text Embeddings") {
-            supportedEndpoints = ["embeddings"];
-          } else if (taskName === "Text-to-Image") {
-            supportedEndpoints = ["images"];
-          } else if (taskName === "Text-to-Speech") {
-            supportedEndpoints = ["speech"];
-          } else if (taskName === "Automatic Speech Recognition") {
-            supportedEndpoints = ["audio", "transcriptions"];
-          } else if (taskName === "Image-to-Text" || taskName === "Text Generation") {
-            supportedEndpoints = ["chat", "completions"];
-          }
-
-          return {
-            id: slug,
-            name: slug,
-            ...(typeof model?.description === "string" && model.description
-              ? { description: model.description }
-              : {}),
-            ...(inputTokenLimit && !Number.isNaN(inputTokenLimit) ? { inputTokenLimit } : {}),
-            ...(reasoning ? { reasoning: true } : {}),
-            ...(taskName ? { task: taskName } : {}),
-            supportedEndpoints,
-          };
-        })
-        .filter(Boolean),
-  },
+  "cloudflare-ai": CLOUDFLARE_MODELS_CONFIG,
+  cloudflare: CLOUDFLARE_MODELS_CONFIG,
   synthetic: {
     url: "https://api.synthetic.new/openai/v1/models",
     method: "GET",

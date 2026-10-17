@@ -6,18 +6,16 @@ import {
   useCallback,
   useMemo,
   useRef,
-  useSyncExternalStore,
   memo,
   Suspense,
 } from "react";
 import dynamic from "next/dynamic";
-import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import Button from "@/shared/components/Button";
 import GlobalModelSearchPanel from "./GlobalModelSearchPanel";
 import QuickComboCreator from "./QuickComboCreator";
 import Card from "@/shared/components/Card";
-import { CardSkeleton, ShimmerPageLoader } from "@/shared/components";
+import { ShimmerPageLoader } from "@/shared/components";
 import EmptyState from "@/shared/components/EmptyState";
 import Input from "@/shared/components/Input";
 import Modal from "@/shared/components/Modal";
@@ -29,7 +27,6 @@ import { FieldLabelWithHelp, WeightTotalBar } from "./parts";
 import { ComboTargetOptions } from "./ComboQuotaOnlyFallbackToggle";
 import { applyQuotaOnlyFallbackConfig, setQuotaOnlyFallback } from "./comboQuotaOnlyFallback";
 import { buildAgentFeaturePatch } from "./comboAgentFeatures";
-import { useComboProxyAssignments } from "./useComboProxyAssignments";
 import { ResponseValidationEditor, type ResponseValidationValue } from "./ResponseValidationEditor";
 import ReasoningTokenBufferToggle from "./ReasoningTokenBufferToggle";
 import ComboTimeoutFields from "./ComboTimeoutFields";
@@ -64,10 +61,7 @@ import {
   resolveComboBuilderProviderId,
 } from "@/lib/combos/builderDraft";
 import { normalizeComboConfigMode } from "@/shared/constants/comboConfigMode";
-import AutoComboCatalog from "./AutoComboCatalog";
 import { AutoComboTruncatedNote, getI18nOrFallback } from "./comboPageHelpers";
-import KimiComboPresetCard from "./KimiComboPresetCard";
-import { KIMI_CODING_PRESET, hasKimiCodingPreset } from "./kimiComboPreset";
 import BuilderIntelligentStep from "./BuilderIntelligentStep";
 import IntelligentComboPanel from "./IntelligentComboPanel";
 import { ComboSortSelect } from "./ComboSortSelect";
@@ -82,7 +76,6 @@ import {
 import type { ComboStep } from "@/lib/combos/steps";
 import {
   filterCombosByStrategyCategory,
-  getStrategyCategory,
   isIntelligentStrategy,
   normalizeIntelligentRoutingFilter,
   normalizeIntelligentRoutingConfig,
@@ -95,9 +88,6 @@ import { resolveServerErrorMessage } from "@/lib/api/serverErrorMessage";
 import { useTranslations } from "next-intl";
 
 const ModelSelectModal = dynamic(() => import("@/shared/components/ModelSelectModal"), {
-  ssr: false,
-});
-const ProxyConfigModal = dynamic(() => import("@/shared/components/ProxyConfigModal"), {
   ssr: false,
 });
 
@@ -394,43 +384,6 @@ const STRATEGY_RECOMMENDATIONS_FALLBACK = {
   },
 };
 
-const COMBO_USAGE_GUIDE_STORAGE_KEY = "cheaproute:combos:hide-usage-guide";
-
-// The dismissal lives in localStorage, which SSR cannot read: a lazy useState
-// initializer would render "not dismissed" on the server and the real value on
-// the client, and correcting that in an effect is a synchronous setState inside
-// an effect (react-hooks/set-state-in-effect) that costs an extra commit of this
-// whole tree. useSyncExternalStore is the sanctioned shape for exactly this —
-// getServerSnapshot supplies the SSR-safe default, getSnapshot reads the store
-// after hydration, and the two handlers below notify subscribers instead of
-// setting state. The `storage` listener keeps other tabs in sync for free.
-const usageGuideListeners = new Set<() => void>();
-
-function subscribeUsageGuide(onStoreChange: () => void): () => void {
-  usageGuideListeners.add(onStoreChange);
-  globalThis.addEventListener?.("storage", onStoreChange);
-  return () => {
-    usageGuideListeners.delete(onStoreChange);
-    globalThis.removeEventListener?.("storage", onStoreChange);
-  };
-}
-
-function emitUsageGuideChange(): void {
-  for (const listener of usageGuideListeners) listener();
-}
-
-function getUsageGuideSnapshot(): boolean {
-  try {
-    return globalThis.localStorage?.getItem(COMBO_USAGE_GUIDE_STORAGE_KEY) !== "1";
-  } catch {
-    // Storage access errors (privacy mode / restricted environments) show the guide.
-    return true;
-  }
-}
-
-function getUsageGuideServerSnapshot(): boolean {
-  return true;
-}
 
 // Pure predicate hoisted out of the page component to keep its cyclomatic budget flat
 // (check:complexity new-code mode).
@@ -833,12 +786,10 @@ function formatComboEntryDisplay(
 
 function CombosPageContent() {
   const t = useTranslations("combos");
-  const tc = useTranslations("common");
   const router = useRouter();
   const searchParams = useSearchParams();
   const [combos, setCombos] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [showCreateModal, setShowCreateModal] = useState(false);
   const [editingCombo, setEditingCombo] = useState(null);
   const [activeProviders, setActiveProviders] = useState([]);
   const [metrics, setMetrics] = useState({});
@@ -846,9 +797,6 @@ function CombosPageContent() {
   const [testingCombo, setTestingCombo] = useState(null);
   const { copied, copy } = useCopyToClipboard();
   const notify = useNotificationStore();
-  const [proxyTargetCombo, setProxyTargetCombo] = useState(null);
-  const [proxyConfig, setProxyConfig] = useState(null);
-  const { comboProxyAssignedIds, fetchComboProxyAssignments } = useComboProxyAssignments();
   const [providerNodes, setProviderNodes] = useState([]);
   // SSR has no localStorage, so a lazy initializer reading it here returns a
   // different value server-side (always "not dismissed") than the client's
@@ -858,17 +806,6 @@ function CombosPageContent() {
   // effects below had already populated. useSyncExternalStore renders the
   // SSR-safe default on both passes and switches to the stored value at
   // hydration, without a second commit — see the store helpers above.
-  const usageGuideNotDismissed = useSyncExternalStore(
-    subscribeUsageGuide,
-    getUsageGuideSnapshot,
-    getUsageGuideServerSnapshot
-  );
-  // "Hide" (as opposed to "hide forever") is intentionally per-mount: it is not
-  // persisted, and remounting the page brings the guide back — same as before.
-  const [usageGuideHiddenForNow, setUsageGuideHiddenForNow] = useState(false);
-  const showUsageGuide = usageGuideNotDismissed && !usageGuideHiddenForNow;
-  const [recentlyCreatedCombo, setRecentlyCreatedCombo] = useState("");
-  const [creatingKimiPreset, setCreatingKimiPreset] = useState(false);
   const [comboDragIndex, setComboDragIndex] = useState(null);
   const [comboDragOverIndex, setComboDragOverIndex] = useState(null);
   const [savingComboOrder, setSavingComboOrder] = useState(false);
@@ -876,7 +813,6 @@ function CombosPageContent() {
   const [routingSettings, setRoutingSettings] = useState(null);
   const [promptCompressionEnabled, setPromptCompressionEnabled] = useState(false);
   const [selectedIntelligentComboId, setSelectedIntelligentComboId] = useState<string | null>(null);
-  const [showAdvancedWorkbench, setShowAdvancedWorkbench] = useState(false);
   const comboDragIndexRef = useRef<number | null>(null);
   const activeFilter = normalizeIntelligentRoutingFilter(searchParams.get("filter"));
   const intelligentCombos = useMemo(
@@ -967,8 +903,6 @@ function CombosPageContent() {
       });
       if (res.ok) {
         await fetchData();
-        setShowCreateModal(false);
-        setRecentlyCreatedCombo(data.name?.trim() || "");
         notify.success(t("comboCreated"));
       } else {
         const err = await res.json();
@@ -1044,18 +978,6 @@ function CombosPageContent() {
     await handleCreate(data);
   };
 
-  // Kimi Coding preset (2026-07 partnership) — one-click create, mirrors
-  // handleDuplicate's directness (no separate confirmation modal). See
-  // KimiComboPresetCard.tsx for why this bypasses the combo builder wizard.
-  const handleCreateKimiPreset = async () => {
-    setCreatingKimiPreset(true);
-    try {
-      await handleCreate(KIMI_CODING_PRESET);
-    } finally {
-      setCreatingKimiPreset(false);
-    }
-  };
-
   const handleTestCombo = async (combo) => {
     setTestingCombo(combo.name);
     setTestResults(null);
@@ -1102,23 +1024,7 @@ function CombosPageContent() {
     }
   };
 
-  const handleHideUsageGuideForever = () => {
-    try {
-      globalThis.localStorage?.setItem(COMBO_USAGE_GUIDE_STORAGE_KEY, "1");
-    } catch {}
-    emitUsageGuideChange();
-  };
-
-  const handleShowUsageGuide = () => {
-    try {
-      globalThis.localStorage?.removeItem(COMBO_USAGE_GUIDE_STORAGE_KEY);
-    } catch {}
-    setUsageGuideHiddenForNow(false);
-    setShowAdvancedWorkbench(true);
-    emitUsageGuideChange();
-  };
-
-  const handleFilterChange = (nextFilter) => {
+  const _handleFilterChange = (nextFilter) => {
     const params = new URLSearchParams(searchParams.toString());
 
     if (nextFilter === "all") {
@@ -1219,172 +1125,11 @@ function CombosPageContent() {
         <div>
           <h1 className="text-2xl font-semibold">{t("title")}</h1>
           <p className="text-sm text-text-muted mt-1">{t("description")}</p>
-          <p className="text-xs text-amber-500 font-medium mt-1.5 flex items-center gap-1.5">
-            <span className="material-symbols-outlined text-[15px]">info</span>
-            Models and combos configured here are available via the /v1/models API endpoint.
-          </p>
-        </div>
-
-        <div className="flex flex-wrap items-center gap-2">
-          {!showUsageGuide && (
-            <Button size="sm" variant="ghost" onClick={handleShowUsageGuide}>
-              {getI18nOrFallback(t, "usageGuideShow", "Show guide")}
-            </Button>
-          )}
-          <Button icon="add" onClick={() => setShowCreateModal(true)}>
-            {t("createCombo")}
-          </Button>
         </div>
       </div>
 
       {/* Hero / Primary Section: QuickComboCreator */}
       <QuickComboCreator onCreated={handleComboCreated} />
-
-      {/* Advanced Tools Collapsible Section */}
-      <Card padding="none" className="overflow-hidden border border-border/80">
-        <button
-          type="button"
-          onClick={() => setShowAdvancedWorkbench((prev) => !prev)}
-          className="w-full flex items-center justify-between p-4 bg-bg-surface hover:bg-bg-subtle/50 transition-colors text-left focus:outline-none cursor-pointer"
-          aria-expanded={showAdvancedWorkbench}
-        >
-          <div className="flex items-center gap-3 min-w-0">
-            <div className="size-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary shrink-0">
-              <span className="material-symbols-outlined text-[20px]">tune</span>
-            </div>
-            <div className="min-w-0">
-              <h2 className="text-sm font-semibold text-text-primary">
-                Advanced Combo Workbench (20 Strategies, Fusion, Cost Optimization)
-              </h2>
-              <p className="text-xs text-text-muted truncate">
-                Zero-config templates, fusion synthesis, cost-aware routing & Kimi coding presets
-              </p>
-            </div>
-          </div>
-          <div className="flex items-center gap-2 shrink-0">
-            <span className="text-xs text-text-muted px-2 py-0.5 rounded-full bg-bg-subtle border border-border/60">
-              {showAdvancedWorkbench ? "Hide" : "Show"}
-            </span>
-            <span className="material-symbols-outlined text-[20px] text-text-muted transition-transform duration-200">
-              {showAdvancedWorkbench ? "expand_less" : "expand_more"}
-            </span>
-          </div>
-        </button>
-
-        {showAdvancedWorkbench && (
-          <div className="p-4 pt-0 border-t border-border/40 flex flex-col gap-4 bg-bg-subtle/20">
-            <AutoComboCatalog
-              onComboCreated={handleComboCreated}
-              onTestCombo={handleTestCombo}
-              testingName={testingCombo}
-            />
-
-            <KimiComboPresetCard
-              alreadyCreated={hasKimiCodingPreset(combos)}
-              creating={creatingKimiPreset}
-              onCreate={handleCreateKimiPreset}
-            />
-
-            {showUsageGuide && (
-              <ComboUsageGuide
-                onHide={() => setUsageGuideHiddenForNow(true)}
-                onHideForever={handleHideUsageGuideForever}
-                onCreateCombo={() => setShowCreateModal(true)}
-              />
-            )}
-          </div>
-        )}
-      </Card>
-
-      {recentlyCreatedCombo && (
-        <Card
-          padding="sm"
-          className="border border-emerald-500/20 bg-emerald-500/[0.04] dark:bg-emerald-500/[0.08]"
-        >
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <div className="min-w-0">
-              <p className="text-sm font-medium text-emerald-700 dark:text-emerald-300">
-                {getI18nOrFallback(
-                  t,
-                  "quickTestTitle",
-                  `Combo "${recentlyCreatedCombo}" ready to validate`
-                )}
-              </p>
-              <code className="inline-block text-[11px] mt-0.5 px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-700 dark:text-emerald-300">
-                {recentlyCreatedCombo}
-              </code>
-              <p className="text-xs text-text-muted mt-0.5">
-                {getI18nOrFallback(
-                  t,
-                  "quickTestDescription",
-                  "Run a test now to confirm fallback and latency behavior."
-                )}
-              </p>
-            </div>
-            <div className="flex items-center gap-2">
-              <Button
-                size="sm"
-                variant="secondary"
-                icon="play_arrow"
-                onClick={() => {
-                  handleTestCombo({ name: recentlyCreatedCombo });
-                  setRecentlyCreatedCombo("");
-                }}
-              >
-                {getI18nOrFallback(t, "testNow", "Test now")}
-              </Button>
-              <Button size="sm" variant="ghost" onClick={() => setRecentlyCreatedCombo("")}>
-                {tc("close")}
-              </Button>
-            </div>
-          </div>
-        </Card>
-      )}
-      <div className="flex flex-wrap items-center gap-2 rounded-xl border border-black/8 dark:border-white/8 bg-black/[0.02] dark:bg-white/[0.02] p-1">
-        {[
-          {
-            id: "all",
-            icon: "layers",
-            label: getI18nOrFallback(t, "filterAll", "All"),
-            count: combos.length,
-          },
-          {
-            id: "intelligent",
-            icon: "auto_awesome",
-            label: getI18nOrFallback(t, "filterIntelligent", "Intelligent"),
-            count: combos.filter((combo) => getStrategyCategory(combo?.strategy) === "intelligent")
-              .length,
-          },
-          {
-            id: "deterministic",
-            icon: "sort",
-            label: getI18nOrFallback(t, "filterDeterministic", "Deterministic"),
-            count: combos.filter(
-              (combo) => getStrategyCategory(combo?.strategy) === "deterministic"
-            ).length,
-          },
-        ].map((tab) => {
-          const isActive = activeFilter === tab.id;
-          return (
-            <button
-              key={tab.id}
-              type="button"
-              onClick={() => handleFilterChange(tab.id)}
-              className={`inline-flex items-center gap-2 rounded-lg px-3 py-2 text-sm transition-all ${
-                isActive
-                  ? "border border-primary/20 bg-primary/10 text-primary"
-                  : "border border-transparent text-text-muted hover:bg-black/5 dark:hover:bg-white/5 hover:text-text-main"
-              }`}
-            >
-              <span className="material-symbols-outlined text-[16px]">{tab.icon}</span>
-              <span>{tab.label}</span>
-              <span className="rounded-full bg-black/5 dark:bg-white/5 px-1.5 py-0.5 text-[11px] text-text-muted">
-                {tab.count}
-              </span>
-            </button>
-          );
-        })}
-      </div>
 
       {activeFilter === "intelligent" && selectedIntelligentCombo && (
         <IntelligentComboPanel
@@ -1401,8 +1146,6 @@ function CombosPageContent() {
           icon="🧩"
           title={t("noCombosYet")}
           description={t("description")}
-          actionLabel={t("createCombo")}
-          onAction={() => setShowCreateModal(true)}
         />
       ) : filteredCombos.length === 0 ? (
         <Card padding="sm">
@@ -1426,11 +1169,6 @@ function CombosPageContent() {
                     "Only auto and LKGP combos exist right now. Switch back to All or create a deterministic combo."
                   )}
             </p>
-            <div>
-              <Button size="sm" icon="add" onClick={() => setShowCreateModal(true)}>
-                {t("createCombo")}
-              </Button>
-            </div>
           </div>
         </Card>
       ) : (
@@ -1459,8 +1197,6 @@ function CombosPageContent() {
                 onDuplicate={() => handleDuplicate(combo)}
                 onTest={() => handleTestCombo(combo)}
                 testing={testingCombo === combo.name}
-                onProxy={() => setProxyTargetCombo(combo)}
-                hasProxy={comboProxyAssignedIds.has(combo.id) || !!proxyConfig?.combos?.[combo.id]}
                 onToggle={() => handleToggleCombo(combo)}
                 dragDisabled={savingComboOrder || activeFilter !== "all" || combos.length < 2}
                 isDragged={comboDragIndex === index}
@@ -1488,17 +1224,6 @@ function CombosPageContent() {
       )}
 
       <ComboFormModal
-        key="create"
-        isOpen={showCreateModal}
-        onClose={() => setShowCreateModal(false)}
-        onSave={handleCreate}
-        activeProviders={activeProviders}
-        combo={null}
-        comboConfigMode={comboConfigMode}
-        routingSettings={routingSettings}
-      />
-
-      <ComboFormModal
         key={editingCombo?.id || "new"}
         isOpen={!!editingCombo}
         combo={editingCombo}
@@ -1508,16 +1233,6 @@ function CombosPageContent() {
         comboConfigMode={comboConfigMode}
         routingSettings={routingSettings}
       />
-
-      {proxyTargetCombo && (
-        <ProxyConfigModal
-          isOpen={!!proxyTargetCombo}
-          onClose={() => (setProxyTargetCombo(null), fetchComboProxyAssignments())}
-          level="combo"
-          levelId={proxyTargetCombo.id}
-          levelLabel={proxyTargetCombo.name}
-        />
-      )}
     </div>
   );
 }
@@ -1527,143 +1242,6 @@ export default function CombosPage() {
     <Suspense fallback={null}>
       <CombosPageContent />
     </Suspense>
-  );
-}
-
-const COMBO_WIZARD_STEPS = [
-  {
-    step: 1,
-    icon: "badge",
-    titleKey: "wizardStep1Title",
-    descKey: "wizardStep1Desc",
-  },
-  {
-    step: 2,
-    icon: "hub",
-    titleKey: "wizardStep2Title",
-    descKey: "wizardStep2Desc",
-  },
-  {
-    step: 3,
-    icon: "route",
-    titleKey: "wizardStep3Title",
-    descKey: "wizardStep3Desc",
-  },
-  {
-    step: 4,
-    icon: "check_circle",
-    titleKey: "wizardStep4Title",
-    descKey: "wizardStep4Desc",
-  },
-];
-
-function ComboUsageGuide({ onHide, onHideForever, onCreateCombo }) {
-  const t = useTranslations("combos");
-
-  return (
-    <Card padding="sm">
-      <div className="flex items-start justify-between gap-2">
-        <div className="flex items-center gap-2 min-w-0">
-          <div className="size-7 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-            <span className="material-symbols-outlined text-primary text-[16px]">
-              tips_and_updates
-            </span>
-          </div>
-          <div className="min-w-0">
-            <h2 className="text-sm font-semibold">
-              {getI18nOrFallback(t, "wizardGuideTitle", "Getting Started with Combos")}
-            </h2>
-            <p className="text-xs text-text-muted mt-0.5">
-              {getI18nOrFallback(
-                t,
-                "wizardGuideDesc",
-                "Create model combos to route AI traffic intelligently"
-              )}
-            </p>
-          </div>
-        </div>
-        <div className="flex items-center gap-1 shrink-0">
-          <Button size="sm" variant="ghost" onClick={onHide} className="!h-6 px-2 text-[10px]">
-            {getI18nOrFallback(t, "usageGuideHide", "Hide")}
-          </Button>
-          <Button
-            size="sm"
-            variant="ghost"
-            onClick={onHideForever}
-            className="!h-6 px-2 text-[10px]"
-          >
-            {getI18nOrFallback(t, "usageGuideDontShowAgain", "Don't show again")}
-          </Button>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mt-3">
-        {COMBO_WIZARD_STEPS.map((step, index) => {
-          return (
-            <div
-              key={step.step}
-              className="relative rounded-lg border border-black/10 dark:border-white/10 bg-black/[0.02] dark:bg-white/[0.02] p-2.5"
-            >
-              <div className="flex items-center gap-1.5 mb-1.5">
-                <span className="inline-flex size-5 items-center justify-center rounded-full bg-primary/10 text-[10px] font-bold text-primary">
-                  {step.step}
-                </span>
-                <span className="material-symbols-outlined text-[14px] text-primary">
-                  {step.icon}
-                </span>
-              </div>
-              <p className="text-xs font-medium">
-                {getI18nOrFallback(t, step.titleKey, step.titleKey)}
-              </p>
-              <p className="mt-1 text-[11px] leading-4 text-text-muted">
-                {getI18nOrFallback(t, step.descKey, step.descKey)}
-              </p>
-              {index < COMBO_WIZARD_STEPS.length - 1 && (
-                <span className="absolute -right-2.5 top-1/2 z-10 hidden -translate-y-1/2 text-text-muted md:block">
-                  <span className="material-symbols-outlined text-[14px]">arrow_forward</span>
-                </span>
-              )}
-            </div>
-          );
-        })}
-      </div>
-
-      <div className="mt-3 rounded-lg border border-primary/20 bg-primary/5 px-3 py-2">
-        <p className="text-[11px] font-semibold text-primary">
-          {getI18nOrFallback(t, "usageGuideInvokeTitle", "How to call this combo")}
-        </p>
-        <p className="mt-1 text-[11px] leading-4 text-text-muted">
-          {getI18nOrFallback(
-            t,
-            "usageGuideInvokeDesc",
-            'Send the combo\'s exact name as the model, e.g. model: "my-combo" (or combo/my-combo).'
-          )}
-        </p>
-        <p className="mt-1 text-[11px] leading-4 text-text-muted">
-          {getI18nOrFallback(
-            t,
-            "usageGuideInvokeAutoNote",
-            "auto and auto/* are a separate zero-config router that does not use your combos (unless a combo is literally named auto)."
-          )}
-        </p>
-        <p className="mt-1 text-[11px] leading-4 text-text-muted">
-          {getI18nOrFallback(
-            t,
-            "usageGuideInvokeOpenrouterNote",
-            "openrouter/auto is a real paid OpenRouter product (Auto Best Available), not an CheapRouter alias — exclude it via Settings → Routing → Hide paid models."
-          )}
-        </p>
-      </div>
-
-      <div className="mt-3 flex items-center gap-2">
-        <Button size="sm" icon="add" onClick={onCreateCombo}>
-          {getI18nOrFallback(t, "createFirstCombo", "Create Your First Combo")}
-        </Button>
-        <span className="text-[10px] text-text-muted">
-          {getI18nOrFallback(t, "wizardGuideHint", "or click + Create Combo above")}
-        </span>
-      </div>
-    </Card>
   );
 }
 
@@ -1846,8 +1424,6 @@ function ComboCardInner({
   onDuplicate,
   onTest,
   testing,
-  onProxy,
-  hasProxy,
   onToggle,
   providerNodes,
   dragDisabled,
@@ -1908,39 +1484,6 @@ function ComboCardInner({
                   {getStrategyLabel(t, strategy)}
                 </span>
               </Tooltip>
-              {hasProxy && (
-                <span
-                  className="text-[9px] uppercase font-semibold px-1.5 py-0.5 rounded-full bg-primary/15 text-primary flex items-center gap-0.5"
-                  title={t("proxyConfigured")}
-                >
-                  <span className="material-symbols-outlined text-[11px]">vpn_lock</span>
-                  proxy
-                </span>
-              )}
-              {combo.pricing && (
-                <Tooltip
-                  content={
-                    combo.pricing.tier === "paid"
-                      ? `Paid Tier — Input: $${combo.pricing.inputCost ?? 0}/1M | Cache: $${combo.pricing.cacheCost ?? 0}/1M | Output: $${combo.pricing.outputCost ?? 0}/1M`
-                      : "Free Tier — $0 / 1M tokens"
-                  }
-                >
-                  <span
-                    className={`text-[9px] uppercase font-semibold px-1.5 py-0.5 rounded-full flex items-center gap-0.5 ${
-                      combo.pricing.tier === "paid"
-                        ? "bg-amber-500/15 text-amber-500 border border-amber-500/30"
-                        : "bg-emerald-500/15 text-emerald-500 border border-emerald-500/30"
-                    }`}
-                  >
-                    <span className="material-symbols-outlined text-[10px]">
-                      {combo.pricing.tier === "paid" ? "payments" : "check_circle"}
-                    </span>
-                    {combo.pricing.tier === "paid"
-                      ? `Paid ($${combo.pricing.inputCost ?? 0}/$${combo.pricing.outputCost ?? 0})`
-                      : "Free"}
-                  </span>
-                </Tooltip>
-              )}
               <button
                 onClick={(e) => {
                   e.stopPropagation();
@@ -2023,14 +1566,6 @@ function ComboCardInner({
                 className="text-xs py-1 px-2 rounded border border-black/10 dark:border-white/10 bg-surface text-text-main focus:border-primary focus:outline-none transition-colors disabled:opacity-50 max-w-[130px] md:max-w-none"
               />
             )}
-            <Link
-              href={`/dashboard/combos/${combo.id}`}
-              onClick={(e) => e.stopPropagation()}
-              className="p-1.5 hover:bg-black/5 dark:hover:bg-white/5 rounded text-text-muted hover:text-primary transition-colors"
-              title={getI18nOrFallback(t, "controlCenter", "Control Center")}
-            >
-              <span className="material-symbols-outlined text-[16px]">monitoring</span>
-            </Link>
             <button
               onClick={onTest}
               disabled={testing}
@@ -2049,13 +1584,6 @@ function ComboCardInner({
               title={t("duplicate")}
             >
               <span className="material-symbols-outlined text-[16px]">content_copy</span>
-            </button>
-            <button
-              onClick={onProxy}
-              className="p-1.5 hover:bg-black/5 dark:hover:bg-white/5 rounded text-text-muted hover:text-primary transition-colors"
-              title={t("proxyConfig")}
-            >
-              <span className="material-symbols-outlined text-[16px]">vpn_lock</span>
             </button>
             <button
               onClick={onEdit}

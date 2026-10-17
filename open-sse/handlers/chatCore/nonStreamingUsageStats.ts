@@ -15,6 +15,7 @@ import { recordKeyQuotaUsage } from "@/domain/keyQuota";
 import { formatUsageLog } from "@/lib/usage/tokenAccounting";
 import { COLORS } from "../../utils/stream.ts";
 import { recordTokenUsage } from "../../services/tokenLimitCounter.ts";
+import { recordTokenConsumption } from "@/lib/db/modelLimits";
 import { computeBillableTokens } from "./upstreamTimeouts.ts";
 import { type EffectiveServiceTier } from "./serviceTier.ts";
 
@@ -74,19 +75,27 @@ function persistUsageRow(usage: object, ctx: RecordNonStreamingUsageStatsContext
 
 function recordBillableTokens(
   usage: object,
-  apiKeyInfo: RecordNonStreamingUsageStatsContext["apiKeyInfo"],
-  provider: string | null | undefined,
-  model: string | null | undefined
+  ctx: RecordNonStreamingUsageStatsContext
 ): void {
-  if (!apiKeyInfo?.id) return;
   try {
     const billable = computeBillableTokens(usage);
+    if (billable > 0) {
+      try {
+        recordTokenConsumption("model", ctx.model || "unknown", billable, ctx.provider);
+        if (ctx.isCombo && ctx.comboStrategy) {
+          recordTokenConsumption("combo", ctx.comboStrategy, billable);
+        }
+      } catch {
+        // never block the response on limit bank recording
+      }
+    }
+    if (!ctx.apiKeyInfo?.id) return;
     // Key-quota tpm/rpm counters advance for every successful call regardless
     // of token count (rpm always +1), so the gate in apiKeyPolicy sees current
     // usage. Mirrors recordTokenUsage's swallow-and-continue.
-    recordKeyQuotaUsage(apiKeyInfo.id, billable);
+    recordKeyQuotaUsage(ctx.apiKeyInfo.id, billable);
     if (billable > 0)
-      recordTokenUsage(apiKeyInfo.id, provider || "unknown", model || "unknown", billable);
+      recordTokenUsage(ctx.apiKeyInfo.id, ctx.provider || "unknown", ctx.model || "unknown", billable);
   } catch {
     // never block the response on counter recording
   }
@@ -102,5 +111,5 @@ export function recordNonStreamingUsageStats(
   persistUsageRow(usage, ctx);
   // §9b: BYOK pass-through rides the user's own upstream key — persist the
   // audit row above, but deduct 0 tokens from the reseller plan.
-  if (!ctx.byokUsed) recordBillableTokens(usage, ctx.apiKeyInfo, ctx.provider, ctx.model);
+  if (!ctx.byokUsed) recordBillableTokens(usage, ctx);
 }

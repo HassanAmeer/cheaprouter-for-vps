@@ -227,7 +227,7 @@ export default function AvailableModelsTable({
     }
   };
 
-  const handleToggleFree = async (modelId: string, currentFree: boolean) => {
+  const _handleToggleFree = async (modelId: string, currentFree: boolean) => {
     try {
       const res = await fetch(
         `/api/provider-models?provider=${encodeURIComponent(providerId)}&modelId=${encodeURIComponent(modelId)}`,
@@ -752,21 +752,18 @@ export default function AvailableModelsTable({
                       </div>
                     </td>
 
-                    {/* FREE / PAID Toggle */}
+                    {/* FREE / PAID Badge (Non-clickable) */}
                     <td className="py-3 px-4 text-center align-middle">
-                      <button
-                        type="button"
-                        onClick={() => handleToggleFree(model.id, isFree)}
-                        className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded text-[11px] font-semibold border transition-all cursor-pointer ${
+                      <span
+                        className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded text-[11px] font-semibold border select-none cursor-default pointer-events-none ${
                           isFree
-                            ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/25"
-                            : "bg-blue-500/15 text-blue-400 border-blue-500/30 hover:bg-blue-500/25"
+                            ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/30"
+                            : "bg-blue-500/15 text-blue-400 border-blue-500/30"
                         }`}
-                        title="Click to toggle Free/Paid tier"
                       >
                         <span className="size-1.5 rounded-full bg-current" />
                         <span>{isFree ? "FREE" : "PAID"}</span>
-                      </button>
+                      </span>
                     </td>
 
                     {/* Test Button & Status */}
@@ -828,6 +825,7 @@ export default function AvailableModelsTable({
                                 title="Click to view full image in new tab"
                                 className="shrink-0 group/img"
                               >
+                                {/* eslint-disable-next-line @next/next/no-img-element */}
                                 <img
                                   src={extractImageUrl(testResult.snippet)}
                                   alt="Generated output"

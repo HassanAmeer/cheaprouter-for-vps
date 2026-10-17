@@ -1,7 +1,9 @@
 import { NextResponse } from "next/server";
 import { getDb, rowToPlan } from "@/lib/db";
 import { requireAdmin } from "@/lib/auth";
-import { provisionApiKey } from "@/lib/cheaproute";
+import { gatewayUrl, provisionApiKey } from "@/lib/cheaproute";
+
+export const dynamic = "force-dynamic";
 
 /**
  * POST /api/admin/assign-plan — set a user's plan and (re)provision their
@@ -68,12 +70,31 @@ export async function POST(request: Request) {
        expires_at = excluded.expires_at`
   ).run(userId, planId, cheaprouterApiKey, expiresAt);
 
+  // Sync quota to CheapRoute gateway
+  try {
+    await fetch(`${gatewayUrl()}/api/v1/reseller/users`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        action: "updateQuota",
+        userId: String(userId),
+        userEmail: user.email,
+        userName: user.name,
+        plan: plan.name,
+        tokenBudget: plan.token_budget,
+        rpmLimit: plan.rpm_limit,
+      }),
+      signal: AbortSignal.timeout(2000),
+    });
+  } catch {}
+
   const status = provisionError ? 502 : 200;
   return NextResponse.json(
     {
       ok: !provisionError,
       plan: plan.name,
       keyProvisioned: !provisionError,
+      apiKey: cheaprouterApiKey,
       ...(provisionError ? { provisionError } : {}),
     },
     { status }

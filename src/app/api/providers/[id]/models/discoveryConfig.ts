@@ -1,4 +1,5 @@
 import { getRegistryEntry } from "@cheaproute/open-sse/config/providerRegistry.ts";
+import { resolveProviderAlias } from "@cheaproute/open-sse/services/providerAlias.ts";
 import type { ProviderModelsConfigEntry } from "./discovery/providerModelsConfig";
 
 function parseRegistryModelsResponse(data: unknown): unknown[] {
@@ -24,7 +25,8 @@ function parseRegistryModelsResponse(data: unknown): unknown[] {
 export function deriveConfigFromRegistryModelsUrl(
   provider: string
 ): ProviderModelsConfigEntry | undefined {
-  const entry = getRegistryEntry(provider);
+  const entry =
+    getRegistryEntry(provider) || getRegistryEntry(resolveProviderAlias(provider) || "");
   if (typeof entry?.modelsUrl === "string" && entry.modelsUrl.length > 0) {
     return {
       url: entry.modelsUrl,

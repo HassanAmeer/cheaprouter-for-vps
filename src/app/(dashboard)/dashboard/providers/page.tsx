@@ -847,6 +847,7 @@ function ProvidersPageContent() {
       .map((id) => entryMap.get(id))
       .filter((e): e is (typeof dashboardProviderEntriesAll)[number] => Boolean(e));
   })();
+  const filteredRecentEntries = filterEntries(recentEntries);
 
   // IDE providers: subset of oauth/apikey providers that are editors/IDEs with
   // built-in AI subscription. Rendered in a dedicated "IDE Providers" section
@@ -917,7 +918,11 @@ function ProvidersPageContent() {
     (showSectionFromTab("oauth")
       ? oauthProviderEntries.filter((e) => !IDE_PROVIDER_IDS.has(e.providerId)).length
       : 0) +
-    (showSectionFromTab("noauth") ? noAuthEntries.length : 0) +
+    (showSectionFromTab("noauth")
+      ? activeTab === "unconnected"
+        ? blockedNoAuthEntries.length
+        : noAuthEntries.length
+      : 0) +
     (showSectionFromTab("apikey")
       ? llmProviderEntries.length +
         aggregatorProviderEntries.length +
@@ -1167,96 +1172,92 @@ function ProvidersPageContent() {
             ) : (
               <>
                 {/* Recent Providers section directly above Custom Providers */}
-                {activeTab !== "recent" &&
-                  recentEntries.length > 0 &&
-                  (!searchQuery.trim() || filterEntries(recentEntries).length > 0) && (
-                    <div className="flex flex-col gap-4">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <h2 className="text-xl font-semibold flex items-center gap-2 flex-1 min-w-0">
-                          <button
-                            type="button"
-                            onClick={() => setIsRecentCollapsed((prev) => !prev)}
-                            className="flex items-center gap-2 hover:text-primary transition-colors cursor-pointer text-left focus:outline-none"
-                            title={
-                              isRecentCollapsed
-                                ? "Expand Recent Providers"
-                                : "Collapse Recent Providers"
-                            }
-                          >
-                            <span className="material-symbols-outlined text-primary text-[22px]">
-                              history
-                            </span>
-                            <span>Recent</span>
-                            <span
-                              className="size-2.5 rounded-full bg-primary"
-                              title="Recently checked / tested"
-                            />
-                            <span className="material-symbols-outlined text-[20px] text-text-muted transition-transform duration-200">
-                              {isRecentCollapsed ? "expand_more" : "expand_less"}
-                            </span>
-                          </button>
-                          <span className="px-2 py-0.5 rounded-full bg-primary/10 text-primary text-xs font-semibold">
-                            {searchQuery.trim()
-                              ? filterEntries(recentEntries).length
-                              : recentEntries.length}
+                {filteredRecentEntries.length > 0 && (
+                  <div className="flex flex-col gap-4">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <h2 className="text-xl font-semibold flex items-center gap-2 flex-1 min-w-0">
+                        <button
+                          type="button"
+                          onClick={() => setIsRecentCollapsed((prev) => !prev)}
+                          className="flex items-center gap-2 hover:text-primary transition-colors cursor-pointer text-left focus:outline-none"
+                          title={
+                            isRecentCollapsed
+                              ? "Expand Recent Providers"
+                              : "Collapse Recent Providers"
+                          }
+                        >
+                          <span className="material-symbols-outlined text-primary text-[22px]">
+                            history
                           </span>
-                        </h2>
-                        <div className="flex items-center gap-2">
-                          <p className="text-xs text-text-muted hidden sm:block">
-                            Providers you recently opened or tested
-                          </p>
-                          {recentEntries.length > 8 && !searchQuery.trim() && (
-                            <button
-                              type="button"
-                              onClick={() => setShowAllRecent((prev) => !prev)}
-                              className="text-xs text-primary hover:underline px-2 py-1 rounded hover:bg-primary/10 transition-colors"
-                            >
-                              {showAllRecent ? "Show Less" : `View All (${recentEntries.length})`}
-                            </button>
-                          )}
+                          <span>Recent</span>
+                          <span
+                            className="size-2.5 rounded-full bg-primary"
+                            title="Recently checked / tested"
+                          />
+                          <span className="material-symbols-outlined text-[20px] text-text-muted transition-transform duration-200">
+                            {isRecentCollapsed ? "expand_more" : "expand_less"}
+                          </span>
+                        </button>
+                        <span className="px-2 py-0.5 rounded-full bg-primary/10 text-primary text-xs font-semibold">
+                          {filteredRecentEntries.length}
+                        </span>
+                      </h2>
+                      <div className="flex items-center gap-2">
+                        <p className="text-xs text-text-muted hidden sm:block">
+                          Providers you recently opened or tested
+                        </p>
+                        {filteredRecentEntries.length > 8 && (
                           <button
                             type="button"
-                            onClick={() => {
-                              localStorage.removeItem("cheaproute_recent_providers");
-                              window.dispatchEvent(
-                                new CustomEvent("cheaproute:recent_providers_updated", {
-                                  detail: { recentIds: [] },
-                                })
-                              );
-                            }}
-                            className="text-xs text-text-muted hover:text-red-500 transition-colors px-2 py-1 rounded hover:bg-bg-subtle"
-                            title="Clear recent history"
+                            onClick={() => setShowAllRecent((prev) => !prev)}
+                            className="text-xs text-primary hover:underline px-2 py-1 rounded hover:bg-primary/10 transition-colors"
                           >
-                            Clear
+                            {showAllRecent
+                              ? "Show Less"
+                              : `View All (${filteredRecentEntries.length})`}
                           </button>
-                        </div>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            localStorage.removeItem("cheaproute_recent_providers");
+                            window.dispatchEvent(
+                              new CustomEvent("cheaproute:recent_providers_updated", {
+                                detail: { recentIds: [] },
+                              })
+                            );
+                          }}
+                          className="text-xs text-text-muted hover:text-red-500 transition-colors px-2 py-1 rounded hover:bg-bg-subtle"
+                          title="Clear recent history"
+                        >
+                          Clear
+                        </button>
                       </div>
-                      {!isRecentCollapsed && (
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                          {(searchQuery.trim()
-                            ? filterEntries(recentEntries)
-                            : showAllRecent
-                              ? recentEntries
-                              : recentEntries.slice(0, 8)
-                          ).map((entry) => (
-                            <HighlightableProviderCard
-                              key={`recent-top-${entry.providerId}`}
-                              providerId={entry.providerId}
-                              provider={entry.provider}
-                              stats={entry.stats}
-                              authType={getCompactProviderAuthType(entry, showFreeOnly)}
-                              onToggle={(active) =>
-                                handleToggleProvider(entry.providerId, entry.toggleAuthType, active)
-                              }
-                              onEdit={handleEditCustomProvider}
-                              onDelete={handleDeleteCustomProvider}
-                              onOpenGuide={(id, name) => setGuideModalProvider({ id, name })}
-                            />
-                          ))}
-                        </div>
-                      )}
                     </div>
-                  )}
+                    {!isRecentCollapsed && (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                        {(showAllRecent
+                          ? filteredRecentEntries
+                          : filteredRecentEntries.slice(0, 8)
+                        ).map((entry) => (
+                          <HighlightableProviderCard
+                            key={`recent-top-${entry.providerId}`}
+                            providerId={entry.providerId}
+                            provider={entry.provider}
+                            stats={entry.stats}
+                            authType={getCompactProviderAuthType(entry, showFreeOnly)}
+                            onToggle={(active) =>
+                              handleToggleProvider(entry.providerId, entry.toggleAuthType, active)
+                            }
+                            onEdit={handleEditCustomProvider}
+                            onDelete={handleDeleteCustomProvider}
+                            onOpenGuide={(id, name) => setGuideModalProvider({ id, name })}
+                          />
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
 
                 {/* API Key Compatible Providers — dynamic (OpenAI/Anthropic compatible) */}
                 {showSectionFromTab("compatible") &&
@@ -1692,9 +1693,11 @@ function ProvidersPageContent() {
                 {showSectionFromTab("noauth") &&
                   activeTab !== "connected" &&
                   !showFreeOnly &&
-                  (noAuthEntriesAll.length > 0 || blockedNoAuthEntries.length > 0) && (
+                  (activeTab === "unconnected"
+                    ? blockedNoAuthEntries.length > 0
+                    : noAuthEntries.length > 0 || blockedNoAuthEntries.length > 0) && (
                     <NoAuthProvidersSection
-                      visibleEntries={noAuthEntries}
+                      visibleEntries={activeTab === "unconnected" ? [] : noAuthEntries}
                       count={countConfigured(noAuthEntriesAll)}
                       blockedEntries={blockedNoAuthEntries}
                       blockedProviders={blockedProviders}

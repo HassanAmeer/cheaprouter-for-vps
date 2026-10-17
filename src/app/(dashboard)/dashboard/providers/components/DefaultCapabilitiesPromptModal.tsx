@@ -182,27 +182,27 @@ export default function DefaultCapabilitiesPromptModal({
         aria-hidden="true"
       />
 
-      {/* ── Cupertino iOS Right-Side Sheet ── */}
+      {/* ── OpenCode Right-Side Sheet ── */}
       <div
-        className={`fixed inset-y-0 right-0 z-[10001] w-[90vw] sm:w-[500px] md:w-[540px] max-w-[90vw] sm:max-w-[540px] flex flex-col bg-[#161618]/95 dark:bg-[#121214]/95 text-white backdrop-blur-2xl border-l border-white/10 shadow-[-16px_0px_48px_rgba(0,0,0,0.7)] rounded-l-[28px] sm:rounded-l-[32px] overflow-hidden transform transition-transform duration-300 ease-out ${
+        className={`fixed inset-y-0 right-0 z-[10001] w-[90vw] sm:w-[500px] md:w-[540px] max-w-[90vw] sm:max-w-[540px] flex flex-col bg-[#0E0E10] text-white border-l border-border shadow-2xl rounded-l-2xl overflow-hidden transform transition-transform duration-300 ease-out ${
           isOpen ? "translate-x-0" : "translate-x-full"
         }`}
       >
         {/* iOS Pull / Grabber Bar */}
-        <div className="w-10 h-1.2 rounded-full bg-white/20 mx-auto mt-2.5 mb-1 shrink-0" />
+        <div className="w-10 h-1 rounded-full bg-white/20 mx-auto mt-2.5 mb-1 shrink-0" />
 
-        {/* ── Cupertino Header ── */}
-        <div className="flex items-center justify-between px-5 py-3 border-b border-white/10 shrink-0">
+        {/* ── OpenCode Header ── */}
+        <div className="flex items-center justify-between px-5 py-3 border-b border-border shrink-0 bg-[#0E0E10]">
           <div className="flex items-center gap-3 min-w-0">
-            <div className="size-9 rounded-2xl bg-cyan-500/15 border border-cyan-400/25 flex items-center justify-center text-cyan-400 shrink-0 shadow-sm shadow-cyan-500/10">
-              <span className="material-symbols-outlined text-[20px]">psychology_alt</span>
+            <div className="size-8 rounded-lg bg-white/5 border border-border flex items-center justify-center text-text-main shrink-0 shadow-xs">
+              <span className="material-symbols-outlined text-[18px]">psychology_alt</span>
             </div>
             <div className="min-w-0">
-              <h3 className="text-sm font-semibold tracking-tight text-white truncate">
+              <h3 className="text-sm font-semibold tracking-tight text-text-main truncate">
                 Capabilities Test Suite
               </h3>
-              <p className="text-[11px] text-zinc-400 truncate">
-                Cupertino model capability verification studio
+              <p className="text-[11px] text-text-muted truncate">
+                Model capability verification & prompt presets studio
               </p>
             </div>
           </div>
@@ -220,13 +220,13 @@ export default function DefaultCapabilitiesPromptModal({
         </div>
 
         {/* ── Scrollable Presets & Config Area ── */}
-        <div className="flex-1 overflow-y-auto px-5 py-4 space-y-5 pb-24">
+        <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4 pb-20">
           {/* Information Banner */}
-          <div className="p-3.5 rounded-2xl bg-white/[0.04] border border-white/8 backdrop-blur-md flex items-start gap-3">
-            <span className="material-symbols-outlined text-cyan-400 text-[18px] shrink-0 mt-0.5">
+          <div className="p-3 rounded-xl bg-white/[0.02] border border-border flex items-start gap-2.5">
+            <span className="material-symbols-outlined text-text-muted text-[17px] shrink-0 mt-0.5">
               info
             </span>
-            <p className="text-xs text-zinc-300 leading-relaxed">
+            <p className="text-xs text-text-muted leading-relaxed">
               Select a capability preset below or edit the prompt. When clicking{" "}
               <strong className="text-white font-medium">Test</strong> on any model row, this
               payload is sent upstream to verify capabilities.
@@ -234,15 +234,15 @@ export default function DefaultCapabilitiesPromptModal({
           </div>
 
           {/* Preset Cards Section */}
-          <div className="space-y-2.5">
+          <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold text-zinc-300 tracking-wider uppercase text-[10px]">
+              <span className="text-[10px] font-semibold text-text-muted tracking-wider uppercase font-mono">
                 Modality Presets ({CAPABILITY_PRESETS.length})
               </span>
-              <span className="text-[10px] text-zinc-400 font-mono">Tap to apply</span>
+              <span className="text-[10px] text-text-muted font-mono">Tap to apply</span>
             </div>
 
-            <div className="grid grid-cols-1 gap-2.5">
+            <div className="grid grid-cols-1 gap-2">
               {CAPABILITY_PRESETS.map((preset) => {
                 const isSelected =
                   testPrompt === preset.prompt || selectedPresetId === preset.id;
@@ -251,15 +251,15 @@ export default function DefaultCapabilitiesPromptModal({
                     key={preset.id}
                     type="button"
                     onClick={() => handleSelectPreset(preset)}
-                    className={`flex items-start gap-3 p-3 rounded-2xl border text-left transition-all duration-150 cursor-pointer relative overflow-hidden group active:scale-[0.99] ${
+                    className={`flex items-start gap-3 p-2.5 rounded-xl border text-left transition-all duration-150 cursor-pointer relative overflow-hidden group active:scale-[0.99] ${
                       isSelected
-                        ? "bg-white/[0.12] border-cyan-400/50 text-white shadow-lg shadow-cyan-500/10 ring-1 ring-cyan-400/30"
-                        : "bg-white/[0.03] border-white/8 text-zinc-300 hover:bg-white/[0.07] hover:border-white/15 hover:text-white"
+                        ? "bg-white/10 border-white/30 text-white shadow-sm ring-1 ring-white/20"
+                        : "bg-white/[0.02] border-border text-zinc-300 hover:bg-white/[0.05] hover:border-zinc-700 hover:text-white"
                     }`}
                   >
                     {/* Optional Image Thumbnail Preview */}
                     {preset.imageUrl ? (
-                      <div className="relative size-12 rounded-xl overflow-hidden flex-shrink-0 border border-white/10 bg-[#0A0A0A]">
+                      <div className="relative size-11 rounded-lg overflow-hidden flex-shrink-0 border border-white/10 bg-[#0A0A0A]">
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img
                           src={preset.imageUrl}
@@ -267,15 +267,15 @@ export default function DefaultCapabilitiesPromptModal({
                           className="size-full object-cover group-hover:scale-105 transition-transform duration-200"
                           loading="lazy"
                         />
-                        <span className="absolute bottom-0 right-0 p-0.5 bg-black/75 rounded-tl-md text-[10px]">
-                          <span className="material-symbols-outlined text-[11px] leading-none text-white">
+                        <span className="absolute bottom-0 right-0 p-0.5 bg-black/80 rounded-tl-md text-[9px]">
+                          <span className="material-symbols-outlined text-[10px] leading-none text-white">
                             {preset.icon}
                           </span>
                         </span>
                       </div>
                     ) : (
-                      <div className="size-12 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center flex-shrink-0 text-zinc-300">
-                        <span className="material-symbols-outlined text-[20px]">{preset.icon}</span>
+                      <div className="size-11 rounded-lg bg-white/5 border border-border flex items-center justify-center flex-shrink-0 text-zinc-300">
+                        <span className="material-symbols-outlined text-[18px]">{preset.icon}</span>
                       </div>
                     )}
 
@@ -284,18 +284,18 @@ export default function DefaultCapabilitiesPromptModal({
                         <span className="text-xs font-semibold truncate text-white">
                           {preset.label}
                         </span>
-                        <span className="text-[9px] font-mono uppercase px-2 py-0.5 rounded-full bg-white/8 border border-white/10 text-zinc-400">
+                        <span className="text-[9px] font-mono uppercase px-1.5 py-0.2 rounded-md bg-white/5 border border-border text-text-muted">
                           {preset.category}
                         </span>
                       </div>
-                      <p className="text-[11px] text-zinc-400 mt-1 line-clamp-2 leading-relaxed">
+                      <p className="text-[11px] text-text-muted mt-0.5 line-clamp-2 leading-relaxed">
                         {preset.description}
                       </p>
                     </div>
 
                     {isSelected && (
-                      <div className="absolute top-3 right-3">
-                        <span className="material-symbols-outlined text-cyan-400 text-[18px]">
+                      <div className="absolute top-2.5 right-2.5">
+                        <span className="material-symbols-outlined text-emerald-400 text-[16px]">
                           check_circle
                         </span>
                       </div>
@@ -307,11 +307,11 @@ export default function DefaultCapabilitiesPromptModal({
           </div>
 
           {/* Active Prompt Textarea */}
-          <div className="p-4 rounded-2xl bg-white/[0.03] border border-white/8 space-y-2.5">
+          <div className="p-3.5 rounded-xl bg-white/[0.02] border border-border space-y-2">
             <div className="flex items-center justify-between">
-              <label className="text-xs font-semibold text-zinc-200 flex items-center gap-1.5">
+              <label className="text-xs font-semibold text-text-main flex items-center gap-1.5">
                 <span>Active Test Prompt</span>
-                <span className="text-[10px] font-mono text-zinc-400">
+                <span className="text-[10px] font-mono text-text-muted">
                   ({testPrompt.length} chars)
                 </span>
               </label>
@@ -319,7 +319,7 @@ export default function DefaultCapabilitiesPromptModal({
               <button
                 type="button"
                 onClick={() => onPromptChange("Hi")}
-                className="text-[11px] text-cyan-400 hover:text-cyan-300 font-medium underline underline-offset-2 transition-colors cursor-pointer"
+                className="text-[11px] text-text-muted hover:text-text-main font-medium underline underline-offset-2 transition-colors cursor-pointer"
               >
                 Reset to &ldquo;Hi&rdquo;
               </button>
@@ -330,11 +330,11 @@ export default function DefaultCapabilitiesPromptModal({
               onChange={(e) => onPromptChange(e.target.value)}
               rows={3}
               placeholder="Enter custom prompt to verify model capabilities..."
-              className="w-full p-3.5 text-xs bg-black/40 text-white border border-white/10 rounded-xl font-mono focus:outline-none focus:border-cyan-400/60 focus:ring-1 focus:ring-cyan-400/40 transition-all resize-y placeholder-zinc-500 shadow-inner"
+              className="w-full p-3 text-xs bg-black/40 text-text-main border border-border rounded-lg font-mono focus:outline-none focus:border-border-strong transition-all resize-y placeholder:text-zinc-600 shadow-inner"
             />
 
-            <div className="flex items-center gap-1.5 text-[11px] text-zinc-400">
-              <span className="material-symbols-outlined text-[14px] text-emerald-400">
+            <div className="flex items-center gap-1.5 text-[11px] text-text-muted">
+              <span className="material-symbols-outlined text-[13px] text-emerald-400">
                 check_circle
               </span>
               <span>Automatically applied when running tests on models table.</span>
@@ -342,25 +342,24 @@ export default function DefaultCapabilitiesPromptModal({
           </div>
         </div>
 
-        {/* ── Cupertino Bottom Bar with Right-Bottom Close Button ── */}
-        <div className="p-4 border-t border-white/10 bg-[#161618]/90 backdrop-blur-xl shrink-0 flex items-center justify-between">
+        {/* ── OpenCode Bottom Bar ── */}
+        <div className="p-3.5 border-t border-border bg-[#0E0E10] shrink-0 flex items-center justify-between">
           <button
             type="button"
             onClick={onToggle}
-            className="px-4 py-2 rounded-xl bg-white/10 hover:bg-white/15 active:scale-95 text-xs font-semibold text-white transition-all cursor-pointer"
+            className="px-3.5 py-1.5 rounded-lg bg-white/10 hover:bg-white/15 active:scale-95 text-xs font-medium text-white transition-all cursor-pointer"
           >
             Done
           </button>
 
-          {/* User-requested: Right bottom side par close ka icon button in Cupertino iOS style */}
           <button
             type="button"
             onClick={onToggle}
-            className="group size-11 rounded-full bg-white/15 hover:bg-white/25 active:scale-90 border border-white/25 backdrop-blur-xl shadow-lg shadow-black/50 flex items-center justify-center text-white transition-all duration-200 cursor-pointer"
+            className="size-8 rounded-lg bg-white/5 hover:bg-white/10 active:scale-90 border border-border flex items-center justify-center text-text-muted hover:text-white transition-all cursor-pointer"
             title="Close Capabilities Sheet"
             aria-label="Close"
           >
-            <span className="material-symbols-outlined text-[22px] group-hover:rotate-90 transition-transform duration-200">
+            <span className="material-symbols-outlined text-[17px]">
               close
             </span>
           </button>
@@ -371,23 +370,23 @@ export default function DefaultCapabilitiesPromptModal({
 
   return (
     <>
-      {/* ── Top-Right Header Trigger Button (Cupertino iOS Outline Style) ── */}
+      {/* ── Top-Right Header Trigger Button (OpenCode Style) ── */}
       <button
         type="button"
         onClick={onToggle}
-        className={`inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-semibold border transition-all cursor-pointer shadow-sm active:scale-95 ${
+        className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium border transition-all cursor-pointer shadow-xs active:scale-95 ${
           isOpen
-            ? "bg-cyan-500/20 text-cyan-300 border-cyan-400/80 ring-2 ring-cyan-400/30"
-            : "border-cyan-500/40 bg-cyan-500/[0.06] text-cyan-400 hover:bg-cyan-500/15 hover:border-cyan-400/70"
+            ? "bg-white/10 text-white border-white/30 ring-1 ring-white/15"
+            : "border-border bg-bg-subtle text-text-main hover:bg-bg hover:border-border-strong"
         }`}
         title="Configure the global capabilities prompt sent during model verification"
       >
-        <span className="material-symbols-outlined text-[17px] text-cyan-400">psychology_alt</span>
+        <span className="material-symbols-outlined text-[16px] text-text-muted">psychology_alt</span>
         <span>Default Capabilities Prompt</span>
-        <span className="material-symbols-outlined text-[15px] opacity-70">tune</span>
+        <span className="material-symbols-outlined text-[14px] text-text-muted">tune</span>
       </button>
 
-      {/* ── Render Cupertino Right-Side Sheet into Portal ── */}
+      {/* ── Render OpenCode Right-Side Sheet into Portal ── */}
       {isMounted && typeof document !== "undefined" && createPortal(sheetContent, document.body)}
     </>
   );

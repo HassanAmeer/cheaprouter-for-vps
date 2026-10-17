@@ -14,7 +14,7 @@ import { getStaticModelsForProvider } from "@/lib/providers/staticModels";
 import { providerUsesCuratedModelsOnly } from "@/lib/providers/modelListingCapability";
 import { mergeModelsWithCustomPrecedence } from "@/lib/providers/modelMetadataPrecedence";
 import { addModelsSuffix } from "@/lib/providers/validation/urlHelpers";
-import { getCachedProviderConnectionById } from "@/lib/db/readCache";
+import { getCachedProviderConnectionById, invalidateDbCache } from "@/lib/db/readCache";
 import { resolveProxyForProvider } from "@/lib/db/proxies";
 import { resolveProxyForConnection } from "@/lib/db/settings";
 import {
@@ -28,6 +28,7 @@ import {
   getProviderValidationGuard,
 } from "@/shared/network/outboundUrlGuardPolicy";
 import { errorResponse, sanitizeErrorMessage } from "@cheaproute/open-sse/utils/error";
+import { resolveProviderAlias } from "@cheaproute/open-sse/services/providerAlias.ts";
 import "@cheaproute/open-sse/services/qoderCli.ts";
 import { deriveConfigFromRegistryModelsUrl } from "./discoveryConfig";
 import {
@@ -169,7 +170,26 @@ export async function GET(
       searchParams.get("chatOnly") === "true" ||
       request.headers.get("x-cheaproute-model-surface")?.toLowerCase() === "chat";
 
-    let connection = await getCachedProviderConnectionById(id);
+    if (refresh) {
+      try {
+        invalidateDbCache("connections");
+      } catch {
+        // ignore cache invalidation failure
+      }
+    }
+
+    let connection: any = null;
+    if (!refresh) {
+      connection = await getCachedProviderConnectionById(id);
+    } else {
+      try {
+        const { getProviderConnectionById } = await import("@/lib/db/providers");
+        connection = await getProviderConnectionById(id);
+      } catch (err) {
+        console.warn(`[Models Route] Could not read provider connection by id directly:`, err);
+      }
+    }
+
     let matchedNode: any = null;
     try {
       const { getProviderNodes, getProviderNodeById } = await import("@/lib/db/providers");
@@ -184,16 +204,68 @@ export async function GET(
 
     if (!connection) {
       try {
-        const { getProviderConnections } = await import("@/lib/db/providers");
-        let conns = await getProviderConnections({ provider: id });
+        const { getProviderConnections, getRawProviderConnections } =
+          await import("@/lib/db/providers");
+        const { createLazyRowProxy } = await import("@/lib/db/providers/lazyConnectionView");
+
+        const fetchConns = async (filter: Record<string, any>) => {
+          if (!refresh) {
+            return (await getProviderConnections(filter)) || [];
+          }
+          const raw = (await getRawProviderConnections(filter)) || [];
+          return raw.map(createLazyRowProxy);
+        };
+
+        let conns = await fetchConns({ provider: id });
+        if (!conns || conns.length === 0) {
+          const aliasId = resolveProviderAlias(id);
+          if (aliasId && aliasId !== id) {
+            conns = (await fetchConns({ provider: aliasId })) || [];
+          }
+        }
+        if (!conns || conns.length === 0) {
+          const reverseAlias =
+            id === "cloudflare-ai" ? "cloudflare" : id === "cloudflare" ? "cloudflare-ai" : null;
+          if (reverseAlias) {
+            conns = (await fetchConns({ provider: reverseAlias })) || [];
+          }
+        }
+        if (!conns || conns.length === 0) {
+          const provDef = getProviderById(id);
+          if (provDef?.alias) {
+            conns = (await fetchConns({ provider: provDef.alias })) || [];
+          }
+        }
         if (!conns || conns.length === 0) {
           if (matchedNode) {
-            conns = (await getProviderConnections({ provider: matchedNode.id })) || [];
+            conns = (await fetchConns({ provider: matchedNode.id })) || [];
             if (conns.length === 0 && matchedNode.prefix) {
-              conns = (await getProviderConnections({ provider: matchedNode.prefix })) || [];
+              conns = (await fetchConns({ provider: matchedNode.prefix })) || [];
             }
           }
         }
+        if (!conns || conns.length === 0) {
+          // Broad fallback: check all connections in DB in case alias or naming mismatch
+          const allRaw = await getRawProviderConnections();
+          const targetNorm = id.toLowerCase().replace(/[-_]/g, "");
+          const aliasIdNorm = resolveProviderAlias(id)?.toLowerCase().replace(/[-_]/g, "");
+          const matched = allRaw.filter((c: any) => {
+            if (!c) return false;
+            if (c.id === id) return true;
+            if (!c.provider) return false;
+            const pNorm = String(c.provider).toLowerCase().replace(/[-_]/g, "");
+            return (
+              pNorm === targetNorm ||
+              (aliasIdNorm && pNorm === aliasIdNorm) ||
+              (id === "cloudflare-ai" && (pNorm === "cloudflare" || pNorm === "cf")) ||
+              (id === "cloudflare" && (pNorm === "cloudflareai" || pNorm === "cf"))
+            );
+          });
+          if (matched.length > 0) {
+            conns = matched.map(createLazyRowProxy);
+          }
+        }
+
         if (conns && conns.length > 0) {
           connection = conns.find((c: any) => c.isActive !== false) || conns[0];
         } else if (matchedNode) {
@@ -234,8 +306,11 @@ export async function GET(
             };
           }
         }
-      } catch {
-        // Fall through to 404 if not found
+      } catch (lookupErr) {
+        console.error(
+          `[GET /api/providers/${id}/models] Error during connection lookup:`,
+          lookupErr
+        );
       }
     }
 
@@ -967,21 +1042,29 @@ export async function GET(
       }
     }
 
+    const hasSpecializedDiscoveryConfig =
+      !matchedNode &&
+      (provider in PROVIDER_MODELS_CONFIG ||
+        (Boolean(resolveProviderAlias(provider)) &&
+          resolveProviderAlias(provider)! in PROVIDER_MODELS_CONFIG));
+
     const isCustomOpenAiCompatible =
-      Boolean(matchedNode && matchedNode.type !== "anthropic-compatible") ||
-      isOpenAICompatibleProvider(provider) ||
-      isOpenAICompatibleProvider(connection.id) ||
-      Boolean(
-        connection.providerSpecificData &&
-        getProviderBaseUrl(connection.providerSpecificData) &&
-        !isAnthropicCompatibleProvider(provider)
-      );
+      !hasSpecializedDiscoveryConfig &&
+      (Boolean(matchedNode && matchedNode.type !== "anthropic-compatible") ||
+        isOpenAICompatibleProvider(provider) ||
+        isOpenAICompatibleProvider(connection.id) ||
+        Boolean(
+          connection.providerSpecificData &&
+          getProviderBaseUrl(connection.providerSpecificData) &&
+          !isAnthropicCompatibleProvider(provider)
+        ));
 
     if (
-      isCustomOpenAiCompatible ||
-      isOpenAICompatibleProvider(provider) ||
-      isLocalOpenAIStyleProvider(provider) ||
-      isNamedOpenAIStyleProvider(provider)
+      !hasSpecializedDiscoveryConfig &&
+      (isCustomOpenAiCompatible ||
+        isOpenAICompatibleProvider(provider) ||
+        isLocalOpenAIStyleProvider(provider) ||
+        isNamedOpenAIStyleProvider(provider))
     ) {
       const cachedResponse = maybeReturnCachedDiscovery();
       if (cachedResponse) return cachedResponse;
@@ -2341,10 +2424,17 @@ export async function GET(
       });
     }
 
+    const configKey =
+      provider in PROVIDER_MODELS_CONFIG
+        ? provider
+        : resolveProviderAlias(provider) &&
+            resolveProviderAlias(provider)! in PROVIDER_MODELS_CONFIG
+          ? resolveProviderAlias(provider)!
+          : provider;
     const config =
       xaiOauthLiveConfig ??
-      (provider in PROVIDER_MODELS_CONFIG
-        ? PROVIDER_MODELS_CONFIG[provider as keyof typeof PROVIDER_MODELS_CONFIG]
+      (configKey in PROVIDER_MODELS_CONFIG
+        ? PROVIDER_MODELS_CONFIG[configKey as keyof typeof PROVIDER_MODELS_CONFIG]
         : deriveConfigFromRegistryModelsUrl(provider));
     if (provider === "codex") {
       const staticCodexCatalog = mergeLocalCatalogModels(
@@ -2578,7 +2668,7 @@ export async function GET(
         url = addModelsSuffix(customBaseUrl) || url;
       }
     }
-    if (provider === "cloudflare-ai") {
+    if (provider === "cloudflare-ai" || provider === "cloudflare") {
       const pData = asRecord(connection.providerSpecificData);
       let accountId =
         (typeof pData.accountId === "string" && pData.accountId) ||
@@ -2625,7 +2715,7 @@ export async function GET(
           { status: 400 }
         );
       }
-      url = url.replace("{accountId}", accountId);
+      url = url.replace("{accountId}", String(accountId));
     }
     const paginationBaseUrl = url;
     if (config.authQuery) {

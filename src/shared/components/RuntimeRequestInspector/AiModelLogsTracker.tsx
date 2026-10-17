@@ -37,6 +37,10 @@ export interface AiModelLogItem {
   responseHeaders?: Record<string, string>;
   rawResponseBody?: any;
 
+  // Stream details
+  isStreaming?: boolean;
+  streamChunks?: { provider?: string[]; openai?: string[]; client?: string[] } | null;
+
   // Status
   detailsLoaded?: boolean;
 }
@@ -44,6 +48,8 @@ export interface AiModelLogItem {
 interface AiModelLogsTrackerProps {
   clientLogs: CapturedRequestLog[];
 }
+
+type DetailTab = "response" | "request" | "headers" | "raw";
 
 function parseServerCallLogs(data: any[]): AiModelLogItem[] {
   return data.map((row: any) => {
@@ -63,14 +69,18 @@ function parseServerCallLogs(data: any[]): AiModelLogItem[] {
     const tokensOut = row.tokens?.out ?? row.tokensOut ?? 0;
     const status = Number(row.status || 0);
 
+    const isStreaming = Boolean(
+      row.isStreaming ||
+      (row.requestBody && typeof row.requestBody === "object" && row.requestBody.stream) ||
+      (row.streamChunks && (row.streamChunks.provider?.length || row.streamChunks.client?.length))
+    );
+
     return {
       id: String(row.id || Math.random()),
       timestamp: String(row.timestamp || new Date().toISOString()),
       timeDisplay,
       status,
-      statusText:
-        row.statusText ||
-        (status === 200 ? "OK" : status ? `HTTP ${status}` : "Pending"),
+      statusText: row.statusText || (status === 200 ? "OK" : status ? `HTTP ${status}` : "Pending"),
       provider: String(row.provider || "unknown"),
       providerDisplay: String(row.providerDisplay || row.provider || "Unknown Provider"),
       model: String(row.model || row.requestedModel || "default-model"),
@@ -87,6 +97,8 @@ function parseServerCallLogs(data: any[]): AiModelLogItem[] {
       baseUrl: row.path || row.endpoint || null,
       rawRequestBody: row.requestBody ?? null,
       rawResponseBody: row.responseBody ?? null,
+      isStreaming,
+      streamChunks: row.streamChunks ?? null,
     };
   });
 }
@@ -97,12 +109,12 @@ export default function AiModelLogsTracker({ clientLogs }: AiModelLogsTrackerPro
   const [autoRefresh, setAutoRefresh] = useState(true);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState<"all" | "errors" | "success">("all");
+  const [activeTab, setActiveTab] = useState<DetailTab>("response");
   const [mobileView, setMobileView] = useState<"list" | "details">("details");
   const [revealApiKey, setRevealApiKey] = useState(false);
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
   const [detailedCache, setDetailedCache] = useState<Record<string, Partial<AiModelLogItem>>>({});
-  const [showReqHeaders, setShowReqHeaders] = useState(false);
-  const [showResHeaders, setShowResHeaders] = useState(false);
 
   const isMountedRef = useRef(true);
   useEffect(() => {
@@ -115,7 +127,7 @@ export default function AiModelLogsTracker({ clientLogs }: AiModelLogsTrackerPro
   // ── 1. Fetch Server Call Logs ──────────────────────────────────────────
   const loadServerLogs = useCallback(async () => {
     try {
-      const res = await fetch("/api/usage/call-logs?limit=40", {
+      const res = await fetch("/api/usage/call-logs?limit=50", {
         headers: { Accept: "application/json" },
       });
       if (!res.ok) return;
@@ -141,7 +153,7 @@ export default function AiModelLogsTracker({ clientLogs }: AiModelLogsTrackerPro
     let cancelled = false;
     const run = async () => {
       try {
-        const res = await fetch("/api/usage/call-logs?limit=40", {
+        const res = await fetch("/api/usage/call-logs?limit=50", {
           headers: { Accept: "application/json" },
         });
         if (!res.ok || cancelled) return;
@@ -235,8 +247,8 @@ export default function AiModelLogsTracker({ clientLogs }: AiModelLogsTrackerPro
             typeof m.content === "string"
               ? m.content
               : Array.isArray(m.content)
-              ? m.content.map((c: any) => c.text || JSON.stringify(c)).join("\n")
-              : JSON.stringify(m.content);
+                ? m.content.map((c: any) => c.text || JSON.stringify(c)).join("\n")
+                : JSON.stringify(m.content);
           messagesList.push({ role: m.role || "user", content });
           if (m.role === "user") userMsg = content;
           if (m.role === "system") sysMsg = content;
@@ -271,6 +283,11 @@ export default function AiModelLogsTracker({ clientLogs }: AiModelLogsTrackerPro
         assistantMsg = parsedRes;
       }
 
+      const isStreaming = Boolean(
+        (parsedReq && typeof parsedReq === "object" && parsedReq.stream === true) ||
+        (log.responseHeaders && log.responseHeaders["content-type"]?.includes("text/event-stream"))
+      );
+
       results.push({
         id: "client_" + log.id,
         timestamp: log.timestamp,
@@ -280,23 +297,20 @@ export default function AiModelLogsTracker({ clientLogs }: AiModelLogsTrackerPro
           log.statusText || (status === 200 ? "OK" : status ? `HTTP ${status}` : "Pending"),
         provider,
         providerDisplay: provider,
-        model: model || (isModelProbe ? "Model Probe / Test" : "Custom AI Model"),
+        model: model || "unknown-model",
         durationMs: log.durationMs,
         error: errorMsg,
-        errorType:
-          parsedRes?.error?.type ||
-          (status >= 500 ? "UPSTREAM_ERROR" : status === 429 ? "RATE_LIMITED" : null),
         source: "client-runtime",
         userMessage: userMsg,
         systemPrompt: sysMsg,
         messages: messagesList.length > 0 ? messagesList : undefined,
-        baseUrl: log.url,
+        assistantResponse: assistantMsg,
+        baseUrl: log.pathname || log.url,
         requestHeaders: log.requestHeaders,
         responseHeaders: log.responseHeaders,
         rawRequestBody: parsedReq,
         rawResponseBody: parsedRes,
-        assistantResponse: assistantMsg,
-        detailsLoaded: true,
+        isStreaming,
       });
     }
 
@@ -308,13 +322,13 @@ export default function AiModelLogsTracker({ clientLogs }: AiModelLogsTrackerPro
     const seen = new Set<string>();
     const merged: AiModelLogItem[] = [];
 
-    // Client logs first (live interactions from currently open browser)
+    // Client logs first
     for (const cl of clientAiLogs) {
       merged.push(cl);
       seen.add(cl.id);
     }
 
-    // Server logs next (from background, external apps, VPS curl, or past sessions)
+    // Server logs next
     for (const sl of serverLogs) {
       if (!seen.has(sl.id)) {
         merged.push(sl);
@@ -325,11 +339,28 @@ export default function AiModelLogsTracker({ clientLogs }: AiModelLogsTrackerPro
     return merged;
   }, [clientAiLogs, serverLogs]);
 
-  // Search filter
+  // Status Counts
+  const errorCount = useMemo(
+    () => allLogs.filter((l) => l.status >= 400 || Boolean(l.error)).length,
+    [allLogs]
+  );
+  const successCount = useMemo(
+    () => allLogs.filter((l) => l.status >= 200 && l.status < 300 && !l.error).length,
+    [allLogs]
+  );
+
+  // Filtered logs
   const filteredLogs = useMemo(() => {
-    if (!search.trim()) return allLogs;
+    let list = allLogs;
+    if (statusFilter === "errors") {
+      list = list.filter((l) => l.status >= 400 || Boolean(l.error));
+    } else if (statusFilter === "success") {
+      list = list.filter((l) => l.status >= 200 && l.status < 300 && !l.error);
+    }
+
+    if (!search.trim()) return list;
     const q = search.toLowerCase();
-    return allLogs.filter((log) => {
+    return list.filter((log) => {
       const matchModel = log.model.toLowerCase().includes(q);
       const matchProvider = (log.providerDisplay || log.provider).toLowerCase().includes(q);
       const matchUser = (log.userMessage || "").toLowerCase().includes(q);
@@ -338,18 +369,12 @@ export default function AiModelLogsTracker({ clientLogs }: AiModelLogsTrackerPro
       const matchStatus = String(log.status).includes(q);
       const matchUrl = (log.baseUrl || "").toLowerCase().includes(q);
       return (
-        matchModel ||
-        matchProvider ||
-        matchUser ||
-        matchAsst ||
-        matchErr ||
-        matchStatus ||
-        matchUrl
+        matchModel || matchProvider || matchUser || matchAsst || matchErr || matchStatus || matchUrl
       );
     });
-  }, [allLogs, search]);
+  }, [allLogs, search, statusFilter]);
 
-  // Active selected log (default to the very latest/first call if none selected)
+  // Active selected log (default to latest)
   const selectedLog: AiModelLogItem | null = useMemo(() => {
     const raw = selectedId
       ? allLogs.find((l) => l.id === selectedId) || filteredLogs[0] || null
@@ -439,6 +464,13 @@ export default function AiModelLogsTracker({ clientLogs }: AiModelLogsTrackerPro
           }
         }
 
+        const isStreaming = Boolean(
+          data.isStreaming ||
+          (bodyObj && typeof bodyObj === "object" && bodyObj.stream === true) ||
+          (data.streamChunks &&
+            (data.streamChunks.provider?.length || data.streamChunks.client?.length))
+        );
+
         const detailsPatch: Partial<AiModelLogItem> = {
           userMessage: uMsg,
           systemPrompt: sPrompt,
@@ -451,8 +483,7 @@ export default function AiModelLogsTracker({ clientLogs }: AiModelLogsTrackerPro
             data.endpoint ||
             null,
           requestHeaders: providerReq.headers || clientReq.headers || data.requestHeaders || {},
-          responseHeaders:
-            providerRes.headers || clientRes.headers || data.responseHeaders || {},
+          responseHeaders: providerRes.headers || clientRes.headers || data.responseHeaders || {},
           rawRequestBody: rawReq,
           rawResponseBody: rawRes,
           assistantResponse: asstMsg,
@@ -461,6 +492,8 @@ export default function AiModelLogsTracker({ clientLogs }: AiModelLogsTrackerPro
           status: data.status || selectedLog.status,
           model: data.model || selectedLog.model,
           provider: data.provider || selectedLog.provider,
+          isStreaming,
+          streamChunks: data.streamChunks ?? null,
           detailsLoaded: true,
         };
 
@@ -485,7 +518,7 @@ export default function AiModelLogsTracker({ clientLogs }: AiModelLogsTrackerPro
   };
 
   const formatJson = (val: any) => {
-    if (!val) return "No payload available";
+    if (!val) return "{}";
     if (typeof val === "string") {
       try {
         return JSON.stringify(JSON.parse(val), null, 2);
@@ -493,10 +526,14 @@ export default function AiModelLogsTracker({ clientLogs }: AiModelLogsTrackerPro
         return val;
       }
     }
-    return JSON.stringify(val, null, 2);
+    try {
+      return JSON.stringify(val, null, 2);
+    } catch {
+      return String(val);
+    }
   };
 
-  const maskKey = (keyStr?: string) => {
+  const maskKey = (keyStr: string) => {
     if (!keyStr) return "";
     if (revealApiKey) return keyStr;
     if (keyStr.length <= 10) return "sk-••••••••";
@@ -513,73 +550,137 @@ export default function AiModelLogsTracker({ clientLogs }: AiModelLogsTrackerPro
     return "bg-white/10 text-white/70 border-white/20";
   };
 
+  // Build complete unified log report for Copy All
+  const getFullLogReport = (log: AiModelLogItem) => {
+    return JSON.stringify(
+      {
+        telemetry: {
+          id: log.id,
+          timestamp: log.timestamp,
+          timeDisplay: log.timeDisplay,
+          provider: log.providerDisplay || log.provider,
+          model: log.model,
+          requestedModel: log.requestedModel,
+          comboName: log.comboName,
+          endpoint: log.baseUrl,
+          status: log.status,
+          statusText: log.statusText,
+          durationMs: log.durationMs,
+          isStreaming: Boolean(log.isStreaming),
+          tokens: {
+            in: log.tokensIn,
+            out: log.tokensOut,
+            total: log.tokensTotal,
+          },
+          error: log.error,
+          errorType: log.errorType,
+          source: log.source,
+        },
+        request: {
+          endpoint: log.baseUrl,
+          method: "POST",
+          model: log.model,
+          stream: Boolean(log.isStreaming),
+          userPrompt: log.userMessage,
+          systemPrompt: log.systemPrompt,
+          messages: log.messages,
+          headers: log.requestHeaders || {},
+          body: log.rawRequestBody || {},
+        },
+        response: {
+          status: log.status,
+          error: log.error,
+          assistantText: log.assistantResponse,
+          headers: log.responseHeaders || {},
+          body: log.rawResponseBody || {},
+          streamChunksCount:
+            log.streamChunks?.provider?.length || log.streamChunks?.client?.length || 0,
+        },
+      },
+      null,
+      2
+    );
+  };
+
   return (
     <div className="flex flex-1 min-h-0 flex-col overflow-hidden bg-[#141416] text-white">
-      {/* ── Top Header Controls: Search, Auto-Refresh & Mobile Toggle (Cupertino) ── */}
-      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 border-b border-white/[0.08] bg-[#1C1C1E]/80 backdrop-blur-xl p-3 sm:px-5 sm:py-3.5 shrink-0">
-        {/* Search Input */}
-        <div className="relative flex-1 min-w-0">
-          <span className="material-symbols-outlined absolute left-3 top-2.5 text-base text-white/40">
-            search
-          </span>
-          <input
-            type="text"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search recent calls by model, provider, prompt, error, status..."
-            className="w-full rounded-xl border border-white/10 bg-[#2C2C2E]/60 pl-9 pr-8 py-2 text-xs text-white placeholder-white/40 focus:border-white/30 focus:bg-[#2C2C2E] focus:outline-none transition-all"
-          />
-          {search && (
-            <button
-              type="button"
-              onClick={() => setSearch("")}
-              className="absolute right-2.5 top-2.5 size-4 rounded-full bg-white/20 flex items-center justify-center text-[10px] text-white/70 hover:bg-white/30 hover:text-white"
-            >
-              ×
-            </button>
-          )}
-        </div>
-
-        {/* Live Controls */}
-        <div className="flex items-center justify-between sm:justify-end gap-2 shrink-0">
-          {/* Mobile View Switcher (Cupertino Segmented Control) */}
-          <div className="flex md:hidden items-center rounded-xl border border-white/[0.08] bg-[#2C2C2E] p-1 shadow-inner">
-            <button
-              type="button"
-              onClick={() => setMobileView("list")}
-              className={`px-3 py-1 text-xs rounded-lg font-medium transition-all cursor-pointer ${
-                mobileView === "list"
-                  ? "bg-[#3A3A3C] text-white font-semibold shadow-xs"
-                  : "text-white/60 hover:text-white"
-              }`}
-            >
-              Calls ({filteredLogs.length})
-            </button>
-            <button
-              type="button"
-              onClick={() => setMobileView("details")}
-              className={`px-3 py-1 text-xs rounded-lg font-medium transition-all cursor-pointer ${
-                mobileView === "details"
-                  ? "bg-[#3A3A3C] text-white font-semibold shadow-xs"
-                  : "text-white/60 hover:text-white"
-              }`}
-            >
-              Details
-            </button>
+      {/* ── Compact Search & Micro-Filters Bar ── */}
+      <div className="flex flex-wrap items-center justify-between gap-1.5 border-b border-white/[0.08] bg-[#1C1C1E]/80 backdrop-blur-xl px-2.5 py-1.5 shrink-0">
+        <div className="flex items-center gap-1.5 flex-1 min-w-[160px]">
+          <div className="relative flex-1">
+            <span className="material-symbols-outlined absolute left-2 top-1.5 text-[14px] text-white/40">
+              search
+            </span>
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search by model, provider, error..."
+              className="w-full h-6 rounded-md border border-white/10 bg-[#2C2C2E]/60 pl-6 pr-5 text-[11px] text-white placeholder-white/40 focus:border-white/30 focus:bg-[#2C2C2E] focus:outline-none transition-all"
+            />
+            {search && (
+              <button
+                type="button"
+                onClick={() => setSearch("")}
+                className="absolute right-1.5 top-1 size-4 rounded-full bg-white/20 flex items-center justify-center text-[9px] text-white/70 hover:bg-white/30 hover:text-white"
+              >
+                ×
+              </button>
+            )}
           </div>
 
+          {/* Micro Status Filter Pills */}
+          <div className="flex items-center rounded-md bg-[#2C2C2E] p-0.5 border border-white/[0.06] text-[10px]">
+            <button
+              type="button"
+              onClick={() => setStatusFilter("all")}
+              className={`px-1.5 py-0.5 rounded transition-all ${
+                statusFilter === "all"
+                  ? "bg-white/20 text-white font-semibold"
+                  : "text-white/50 hover:text-white"
+              }`}
+            >
+              All ({allLogs.length})
+            </button>
+            <button
+              type="button"
+              onClick={() => setStatusFilter("errors")}
+              className={`px-1.5 py-0.5 rounded transition-all ${
+                statusFilter === "errors"
+                  ? "bg-red-500/30 text-red-300 font-semibold"
+                  : "text-red-400/60 hover:text-red-300"
+              }`}
+            >
+              Err ({errorCount})
+            </button>
+            <button
+              type="button"
+              onClick={() => setStatusFilter("success")}
+              className={`px-1.5 py-0.5 rounded transition-all ${
+                statusFilter === "success"
+                  ? "bg-emerald-500/30 text-emerald-300 font-semibold"
+                  : "text-emerald-400/60 hover:text-emerald-300"
+              }`}
+            >
+              200 ({successCount})
+            </button>
+          </div>
+        </div>
+
+        {/* Live & Refresh Micro Controls */}
+        <div className="flex items-center gap-1 shrink-0">
           <button
             type="button"
             onClick={() => setAutoRefresh((prev) => !prev)}
-            className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-all active:scale-95 cursor-pointer ${
+            className={`inline-flex items-center gap-1 h-6 rounded-md border px-2 text-[10px] font-medium transition-all active:scale-95 cursor-pointer ${
               autoRefresh
                 ? "border-emerald-500/30 bg-emerald-500/15 text-emerald-400"
-                : "border-white/10 bg-[#2C2C2E] text-white/60 hover:text-white"
+                : "border-white/10 bg-[#2C2C2E] text-white/50 hover:text-white"
             }`}
-            title={autoRefresh ? "Auto-refresh active (3s)" : "Auto-refresh paused"}
+            title={autoRefresh ? "Auto-refreshing every 3s" : "Auto-refresh paused"}
           >
             <span
-              className={`inline-block size-2 rounded-full ${
+              className={`inline-block size-1.5 rounded-full ${
                 autoRefresh ? "bg-emerald-400 animate-pulse" : "bg-white/40"
               }`}
             />
@@ -590,50 +691,43 @@ export default function AiModelLogsTracker({ clientLogs }: AiModelLogsTrackerPro
             type="button"
             onClick={() => handleManualRefresh()}
             disabled={loadingServerLogs}
-            className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-[#2C2C2E] px-3 py-1.5 text-xs font-medium text-white/80 hover:bg-[#3A3A3C] hover:text-white active:scale-95 disabled:opacity-40 cursor-pointer transition-all"
-            title="Refresh logs now"
+            className="inline-flex items-center gap-1 h-6 rounded-md border border-white/10 bg-[#2C2C2E] px-2 text-[10px] font-medium text-white/80 hover:bg-[#3A3A3C] hover:text-white active:scale-95 disabled:opacity-40 cursor-pointer transition-all"
+            title="Refresh now"
           >
             <span
-              className={`material-symbols-outlined text-[15px] ${
+              className={`material-symbols-outlined text-[12px] ${
                 loadingServerLogs ? "animate-spin" : ""
               }`}
             >
               refresh
             </span>
-            <span>Refresh</span>
+            <span className="hidden sm:inline">Refresh</span>
           </button>
         </div>
       </div>
 
-      {/* ── Main View: Responsive Left Calls List + Right Inspection ── */}
+      {/* ── Main Workspace: Compact Split View ── */}
       <div className="flex flex-1 min-h-0 flex-col md:flex-row overflow-hidden">
-        {/* Left Column: Recent AI Model Calls */}
+        {/* Left Column: Compact Cupertino List View */}
         <div
           className={`${
             mobileView === "list" ? "flex" : "hidden"
-          } md:flex flex-col md:w-[320px] lg:w-[360px] shrink-0 border-b md:border-b-0 md:border-r border-white/[0.08] overflow-y-auto bg-[#18181A] custom-scrollbar`}
+          } md:flex flex-col w-full md:w-[180px] lg:w-[200px] shrink-0 border-b md:border-b-0 md:border-r border-white/[0.08] overflow-y-auto bg-[#18181A] custom-scrollbar`}
         >
-          <div className="px-4 py-3 border-b border-white/[0.06] bg-[#1C1C1E]/60 backdrop-blur-md flex items-center justify-between text-xs text-white/60 shrink-0">
-            <span className="font-semibold uppercase tracking-wider text-[10px] text-white/50">
-              Recent AI Model Calls
+          <div className="px-2.5 py-1.5 border-b border-white/[0.06] bg-[#1C1C1E]/60 flex items-center justify-between text-[10px] text-white/50 shrink-0">
+            <span className="font-semibold uppercase tracking-wider text-[9px] text-white/40">
+              Calls List
             </span>
-            <span className="rounded-full bg-white/10 px-2 py-0.5 font-mono text-[10px] text-white/70">
-              {filteredLogs.length} total
-            </span>
+            <span className="font-mono text-white/60">{filteredLogs.length} total</span>
           </div>
 
           {filteredLogs.length === 0 ? (
-            <div className="flex flex-1 flex-col items-center justify-center p-8 text-center text-xs text-white/40">
-              <span className="material-symbols-outlined text-4xl mb-2 text-white/20">
-                psychology
-              </span>
-              <p className="font-medium text-white/60">No AI model calls found</p>
-              <p className="text-[11px] text-white/40 mt-1 max-w-[220px]">
-                Make an AI request or run model tests to see live requests and responses.
-              </p>
+            <div className="flex flex-1 flex-col items-center justify-center p-6 text-center text-xs text-white/40">
+              <span className="material-symbols-outlined text-2xl mb-1 text-white/20">inbox</span>
+              <p className="text-[11px] font-medium text-white/50">No calls found</p>
             </div>
           ) : (
-            <div className="p-2 space-y-1.5">
+            <div className="p-1 space-y-0.5">
               {filteredLogs.map((log) => {
                 const isSelected = selectedLog?.id === log.id;
                 const isError = log.status >= 400 || Boolean(log.error);
@@ -645,75 +739,43 @@ export default function AiModelLogsTracker({ clientLogs }: AiModelLogsTrackerPro
                       setSelectedId(log.id);
                       setMobileView("details");
                     }}
-                    className={`flex flex-col gap-2 p-3 rounded-2xl text-xs transition-all cursor-pointer active:scale-[0.99] border ${
+                    className={`group flex flex-col gap-0.5 px-2 py-1.5 rounded-lg text-xs transition-all cursor-pointer border ${
                       isSelected
-                        ? "bg-[#2C2C2E] border-white/20 shadow-md ring-1 ring-primary/40 text-white"
+                        ? "bg-white/[0.14] border-white/25 text-white shadow-xs ring-1 ring-primary/40"
                         : isError
-                        ? "bg-[#1C1C1E]/50 border-red-500/20 hover:bg-red-500/5 hover:border-red-500/30"
-                        : "bg-[#1C1C1E]/40 border-white/[0.04] hover:bg-[#242426] hover:border-white/10"
+                          ? "bg-red-500/[0.06] border-red-500/20 hover:bg-red-500/12 text-white/90"
+                          : "bg-transparent border-transparent hover:bg-white/[0.05] text-white/80"
                     }`}
                   >
-                    {/* Top Row: Provider & Status Badge */}
-                    <div className="flex items-center justify-between gap-1.5">
-                      <span className="inline-flex items-center gap-1 rounded-full bg-white/10 px-2 py-0.5 text-[10px] font-semibold text-white/90 truncate max-w-[170px]">
-                        <span className="material-symbols-outlined text-[11px] text-primary">
-                          hub
-                        </span>
-                        {log.providerDisplay || log.provider}
-                      </span>
-
-                      <div className="flex items-center gap-1.5 shrink-0">
+                    <div className="flex items-center justify-between gap-1">
+                      <div className="flex items-center gap-1 min-w-0">
                         <span
-                          className={`rounded-full px-2 py-0.5 font-mono text-[10px] font-bold border ${getStatusColor(
-                            log.status,
-                            log.error
-                          )}`}
-                        >
-                          {log.error ? "ERR" : log.status || "..."}
-                        </span>
-                        <span className="font-mono text-[10px] text-white/40">
-                          {log.timeDisplay}
+                          className={`size-1.5 rounded-full shrink-0 ${
+                            isError ? "bg-red-400" : "bg-emerald-400"
+                          }`}
+                        />
+                        <span className="font-semibold text-[11px] truncate text-white">
+                          {log.providerDisplay || log.provider}
                         </span>
                       </div>
-                    </div>
-
-                    {/* Middle Row: Model Name */}
-                    <div className="flex items-center gap-1.5 min-w-0">
-                      <span className="material-symbols-outlined text-[14px] text-white/50 shrink-0">
-                        smart_toy
-                      </span>
-                      <p
-                        className="font-mono text-[11px] font-semibold text-white truncate"
-                        title={log.model}
+                      <span
+                        className={`rounded px-1 py-0.2 font-mono text-[9px] font-bold border shrink-0 ${getStatusColor(
+                          log.status,
+                          log.error
+                        )}`}
                       >
-                        {log.model}
-                      </p>
+                        {log.error ? (log.status ? `${log.status}` : "ERR") : log.status || "..."}
+                      </span>
                     </div>
 
-                    {/* Excerpt: Prompt or Error */}
-                    {log.error ? (
-                      <div className="flex items-center gap-1 text-[10px] text-red-400 bg-red-500/10 border border-red-500/20 rounded-xl px-2 py-1 truncate">
-                        <span className="material-symbols-outlined text-[12px] shrink-0">
-                          warning
-                        </span>
-                        <span className="truncate">{log.error}</span>
-                      </div>
-                    ) : log.userMessage ? (
-                      <p className="text-[10px] text-white/60 truncate font-mono bg-black/40 border border-white/[0.04] rounded-xl px-2 py-1">
-                        &quot;{log.userMessage}&quot;
-                      </p>
-                    ) : null}
-
-                    {/* Footer Row: Latency & Source */}
-                    <div className="flex items-center justify-between text-[10px] text-white/40 pt-0.5">
-                      {log.durationMs !== undefined && (
-                        <span className="inline-flex items-center gap-0.5 font-mono text-white/60">
-                          <span className="material-symbols-outlined text-[11px]">timer</span>
-                          {log.durationMs}ms
-                        </span>
-                      )}
-                      <span className="text-[9px] uppercase tracking-wide opacity-50 ml-auto">
-                        {log.source === "client-runtime" ? "Client Event" : "Server Log"}
+                    <div className="flex items-center justify-between gap-1 text-[10px] text-white/50">
+                      <span className="font-mono truncate text-white/70 text-[10px]">
+                        {log.model}
+                      </span>
+                      <span className="font-mono text-[9px] text-white/40 shrink-0">
+                        {log.durationMs !== undefined
+                          ? `${log.durationMs}ms`
+                          : log.timeDisplay.slice(-8)}
                       </span>
                     </div>
                   </div>
@@ -723,72 +785,78 @@ export default function AiModelLogsTracker({ clientLogs }: AiModelLogsTrackerPro
           )}
         </div>
 
-        {/* Right Column: Complete Live Request & Actual Response Inspector (Cupertino) */}
+        {/* Right Column: Tabbed Inspector Details */}
         <div
           className={`${
             mobileView === "details" ? "flex" : "hidden"
-          } md:flex flex-1 flex-col overflow-y-auto bg-[#141416] p-3.5 sm:p-5 gap-4 custom-scrollbar`}
+          } md:flex flex-1 flex-col overflow-hidden bg-[#141416]`}
         >
-          {/* Back button for Mobile */}
-          <div className="md:hidden flex items-center justify-between pb-3 border-b border-white/[0.08]">
+          {/* Mobile Back Header */}
+          <div className="md:hidden flex items-center justify-between p-2 border-b border-white/[0.08] bg-[#1C1C1E]">
             <button
               type="button"
               onClick={() => setMobileView("list")}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#2C2C2E] hover:bg-[#3A3A3C] text-xs font-semibold text-primary transition-all active:scale-95 cursor-pointer shadow-xs"
+              className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-[#2C2C2E] text-[11px] font-semibold text-primary active:scale-95 cursor-pointer"
             >
-              <span className="material-symbols-outlined text-sm">arrow_back_ios_new</span>
-              <span>Back to Calls ({allLogs.length})</span>
+              <span className="material-symbols-outlined text-[13px]">arrow_back</span>
+              <span>Calls ({filteredLogs.length})</span>
             </button>
-            <span className="text-[11px] text-white/40 font-mono">
-              {selectedLog?.timeDisplay}
-            </span>
+            <span className="text-[10px] text-white/40 font-mono">{selectedLog?.timeDisplay}</span>
           </div>
 
           {!selectedLog ? (
-            <div className="flex flex-1 flex-col items-center justify-center p-12 text-center text-xs text-white/40">
-              <span className="material-symbols-outlined text-5xl mb-2 text-white/20">
+            <div className="flex flex-1 flex-col items-center justify-center p-8 text-center text-xs text-white/40">
+              <span className="material-symbols-outlined text-4xl mb-1 text-white/20">
                 receipt_long
               </span>
-              <p className="font-semibold text-white/60 text-sm">No request selected</p>
-              <p className="text-xs text-white/40 mt-1 max-w-sm">
-                Select an AI model call from the left list or send a request to inspect what was
-                sent and what came back.
+              <p className="font-semibold text-white/60 text-xs">No call selected</p>
+              <p className="text-[11px] text-white/40 mt-0.5 max-w-xs">
+                Select a call from the left list to inspect telemetry, request, response, and
+                headers.
               </p>
             </div>
           ) : (
-            <div className="flex flex-col gap-4">
-              {/* ── 1. Top Call Identity & Status Card (Cupertino) ── */}
-              <div className="rounded-3xl border border-white/[0.08] bg-[#1C1C1E]/90 backdrop-blur-xl p-4 sm:p-5 flex flex-col gap-3.5 shadow-sm">
-                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-                  <div className="flex flex-col gap-1.5 min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="rounded-full bg-primary/20 border border-primary/30 px-3 py-1 text-xs font-bold text-primary flex items-center gap-1.5 shadow-xs">
-                        <span className="material-symbols-outlined text-[14px]">hub</span>
-                        {selectedLog.providerDisplay || selectedLog.provider}
+            <div className="flex flex-1 min-h-0 flex-col overflow-hidden">
+              {/* ── 1. Top Identity & Metadata Bar (Cupertino Micro Header) ── */}
+              <div className="border-b border-white/[0.08] bg-[#1C1C1E]/90 px-3 py-2 flex flex-col gap-2 shrink-0">
+                {/* Row 1: Model & Provider Identification + Global Copy Action */}
+                <div className="flex items-center justify-between gap-2 min-w-0">
+                  <div className="flex items-center gap-1.5 min-w-0 flex-1">
+                    <span className="rounded-md bg-primary/20 border border-primary/30 px-2 py-0.5 text-[11px] font-bold text-primary flex items-center gap-1 shrink-0">
+                      <span className="material-symbols-outlined text-[12px]">hub</span>
+                      {selectedLog.providerDisplay || selectedLog.provider}
+                    </span>
+                    <span
+                      className="rounded-md bg-white/10 border border-white/10 px-2 py-0.5 text-[11px] font-mono font-semibold text-white flex items-center gap-1 truncate max-w-[240px]"
+                      title={selectedLog.model}
+                    >
+                      <span className="material-symbols-outlined text-[12px] shrink-0">
+                        smart_toy
                       </span>
-                      <span className="rounded-full bg-white/10 px-3 py-1 text-xs font-mono font-bold text-white flex items-center gap-1.5 shadow-xs">
-                        <span className="material-symbols-outlined text-[14px]">smart_toy</span>
-                        {selectedLog.model}
-                      </span>
-                    </div>
-
-                    {selectedLog.baseUrl && (
-                      <div className="flex items-center gap-1 text-xs text-white/50 font-mono mt-1 break-all">
-                        <span className="text-white/30 shrink-0">Endpoint:</span>
-                        <span className="text-white/80 select-all">{selectedLog.baseUrl}</span>
-                      </div>
-                    )}
+                      <span className="truncate">{selectedLog.model}</span>
+                    </span>
                   </div>
 
-                  {/* Status badge & Latency */}
-                  <div className="flex items-center gap-2 shrink-0">
-                    {selectedLog.durationMs !== undefined && (
-                      <span className="rounded-full bg-black/50 border border-white/10 px-3 py-1 font-mono text-xs text-white/70">
-                        {selectedLog.durationMs}ms
-                      </span>
-                    )}
+                  <button
+                    type="button"
+                    onClick={() =>
+                      copyToClipboard(getFullLogReport(selectedLog), "copy_all_report")
+                    }
+                    className="inline-flex items-center gap-1 h-6.5 rounded-md border border-primary/40 bg-primary/20 hover:bg-primary/30 px-2 text-[11px] font-semibold text-primary transition-all active:scale-95 cursor-pointer shadow-xs shrink-0"
+                    title="Copy full telemetry, request, response & headers JSON"
+                  >
+                    <span className="material-symbols-outlined text-[13px]">
+                      {copiedKey === "copy_all_report" ? "check" : "content_copy"}
+                    </span>
+                    <span>{copiedKey === "copy_all_report" ? "Copied All!" : "Copy All"}</span>
+                  </button>
+                </div>
+
+                {/* Row 2: Status & Telemetry Metrics + Timestamp */}
+                <div className="flex items-center justify-between gap-2 text-[10px] font-mono flex-wrap">
+                  <div className="flex items-center gap-1.5 flex-wrap min-w-0">
                     <span
-                      className={`rounded-full px-3.5 py-1 font-mono text-xs font-bold border shadow-xs ${getStatusColor(
+                      className={`rounded-md px-2 py-0.5 font-bold border shrink-0 ${getStatusColor(
                         selectedLog.status,
                         selectedLog.error
                       )}`}
@@ -796,241 +864,466 @@ export default function AiModelLogsTracker({ clientLogs }: AiModelLogsTrackerPro
                       {selectedLog.error
                         ? selectedLog.status
                           ? `HTTP ${selectedLog.status} Failed`
-                          : "Request Failed"
+                          : "Failed"
                         : `HTTP ${selectedLog.status || 200} ${selectedLog.statusText || "OK"}`}
                     </span>
-                  </div>
-                </div>
-              </div>
-
-              {/* ── 2. ACTUAL RESPONSE SECTION (Cupertino Card) ── */}
-              <div className="rounded-3xl border border-white/[0.08] bg-[#1C1C1E]/90 backdrop-blur-xl p-4 sm:p-5 flex flex-col gap-3.5 shadow-sm">
-                <div className="flex items-center justify-between border-b border-white/[0.08] pb-3">
-                  <div className="flex items-center gap-2">
-                    <span className="material-symbols-outlined text-lg text-emerald-400">
-                      arrow_downward
-                    </span>
-                    <h3 className="text-sm font-bold text-white tracking-wide">
-                      Actual Response from Upstream / Model
-                    </h3>
-                  </div>
-
-                  {selectedLog.rawResponseBody && (
-                    <button
-                      type="button"
-                      onClick={() =>
-                        copyToClipboard(formatJson(selectedLog.rawResponseBody), "copy_res_body")
-                      }
-                      className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-[#2C2C2E] hover:bg-[#3A3A3C] px-3 py-1.5 text-[11px] font-semibold text-white transition-all active:scale-95 cursor-pointer shadow-xs"
-                    >
-                      <span className="material-symbols-outlined text-[13px]">
-                        {copiedKey === "copy_res_body" ? "check" : "content_copy"}
-                      </span>
-                      <span>{copiedKey === "copy_res_body" ? "Copied" : "Copy Raw Response"}</span>
-                    </button>
-                  )}
-                </div>
-
-                {/* If there was an error, show it prominently in red */}
-                {selectedLog.error && (
-                  <div className="rounded-2xl border border-red-500/30 bg-red-500/10 p-3.5 text-red-300 flex flex-col gap-1.5 shadow-xs">
-                    <div className="flex items-center gap-1.5 font-bold text-red-400 text-xs">
-                      <span className="material-symbols-outlined text-base">error</span>
-                      <span>Error Message ({selectedLog.status ? `HTTP ${selectedLog.status}` : "Failed"}):</span>
-                    </div>
-                    <p className="font-mono text-xs select-all whitespace-pre-wrap break-all leading-relaxed">
-                      {selectedLog.error}
-                    </p>
-                    {selectedLog.errorType && (
-                      <span className="text-[10px] text-red-400/70 font-mono">
-                        Error Type: {selectedLog.errorType}
+                    {selectedLog.durationMs !== undefined && (
+                      <span className="rounded-md bg-black/40 border border-white/10 px-2 py-0.5 text-white/70 shrink-0">
+                        {selectedLog.durationMs}ms
                       </span>
                     )}
-                  </div>
-                )}
-
-                {/* Assistant Content preview if available */}
-                {selectedLog.assistantResponse && (
-                  <div className="flex flex-col gap-1.5">
-                    <span className="text-[11px] font-semibold text-emerald-400">
-                      Generated Assistant Text:
+                    <span className="rounded-md bg-white/5 border border-white/10 px-1.5 py-0.5 text-white/60 flex items-center gap-1 shrink-0">
+                      <span className="material-symbols-outlined text-[11px]">
+                        {selectedLog.isStreaming ? "stream" : "sync_alt"}
+                      </span>
+                      {selectedLog.isStreaming ? "SSE Stream" : "Sync"}
                     </span>
-                    <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/5 p-3.5 text-xs text-white/90 font-mono select-all whitespace-pre-wrap break-all max-h-56 overflow-y-auto leading-relaxed custom-scrollbar">
-                      {selectedLog.assistantResponse}
-                    </div>
+                    {selectedLog.tokensTotal ? (
+                      <span className="rounded-md bg-white/5 border border-white/10 px-1.5 py-0.5 text-white/50 shrink-0">
+                        {selectedLog.tokensIn} in / {selectedLog.tokensOut} out
+                      </span>
+                    ) : null}
                   </div>
-                )}
 
-                {/* Complete Raw Response Payload */}
-                <div className="flex flex-col gap-1.5">
-                  <span className="text-[11px] font-semibold text-white/60">
-                    Complete Raw Response Body:
+                  <span className="text-white/40 shrink-0 select-none">
+                    {selectedLog.timeDisplay}
                   </span>
-                  <pre className="rounded-2xl border border-white/[0.06] bg-[#121214] p-3.5 font-mono text-[11px] leading-relaxed text-white/90 overflow-x-auto max-h-72 select-all whitespace-pre break-all custom-scrollbar">
-                    {formatJson(selectedLog.rawResponseBody)}
-                  </pre>
                 </div>
 
-                {/* Response Headers (collapsible) */}
-                {selectedLog.responseHeaders &&
-                  Object.keys(selectedLog.responseHeaders).length > 0 && (
-                    <div className="border-t border-white/[0.06] pt-2.5">
-                      <button
-                        type="button"
-                        onClick={() => setShowResHeaders((prev) => !prev)}
-                        className="inline-flex items-center gap-1.5 text-xs text-white/60 hover:text-white transition-colors cursor-pointer"
-                      >
-                        <span className="material-symbols-outlined text-sm">
-                          {showResHeaders ? "expand_less" : "expand_more"}
-                        </span>
-                        <span>Response Headers ({Object.keys(selectedLog.responseHeaders).length})</span>
-                      </button>
-
-                      {showResHeaders && (
-                        <div className="rounded-2xl border border-white/[0.06] bg-[#121214] p-3 font-mono text-[11px] mt-2 max-h-40 overflow-y-auto divide-y divide-white/5 custom-scrollbar">
-                          {Object.entries(selectedLog.responseHeaders).map(([k, v]) => (
-                            <div key={k} className="flex gap-2 py-1">
-                              <span className="text-white/40 shrink-0 select-all">{k}:</span>
-                              <span className="text-white/90 select-all break-all">{v}</span>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
+                {/* Row 3: Endpoint URL */}
+                <div className="flex items-center gap-1 text-[10px] text-white/50 font-mono truncate min-w-0">
+                  <span className="text-white/30 shrink-0">Endpoint:</span>
+                  <span
+                    onClick={() => copyToClipboard(selectedLog.baseUrl || "", "copy_endpoint")}
+                    className="text-white/80 hover:text-primary transition-colors cursor-pointer truncate select-all"
+                    title="Click to copy endpoint"
+                  >
+                    {selectedLog.baseUrl || "/v1/chat/completions"}
+                  </span>
+                  {copiedKey === "copy_endpoint" && (
+                    <span className="text-[9px] text-emerald-400 shrink-0">Copied</span>
                   )}
+                </div>
               </div>
 
-              {/* ── 3. ACTUAL REQUEST SECTION (Cupertino Card) ── */}
-              <div className="rounded-3xl border border-white/[0.08] bg-[#1C1C1E]/90 backdrop-blur-xl p-4 sm:p-5 flex flex-col gap-3.5 shadow-sm">
-                <div className="flex items-center justify-between border-b border-white/[0.08] pb-3">
-                  <div className="flex items-center gap-2">
-                    <span className="material-symbols-outlined text-lg text-sky-400">
+              {/* ── 2. Cupertino Segmented Tabs Control ── */}
+              <div className="px-3 py-1.5 border-b border-white/[0.08] bg-[#18181A] shrink-0">
+                <div className="flex p-0.5 bg-[#2C2C2E]/90 rounded-lg border border-white/[0.06] gap-0.5 shadow-inner">
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab("response")}
+                    className={`flex-1 flex items-center justify-center gap-1 py-1 px-2 text-[11px] font-semibold rounded-md transition-all cursor-pointer ${
+                      activeTab === "response"
+                        ? "bg-[#3A3A3C] text-white shadow-xs border border-white/10"
+                        : "text-white/50 hover:text-white"
+                    }`}
+                  >
+                    <span className="material-symbols-outlined text-[13px] text-emerald-400">
+                      arrow_downward
+                    </span>
+                    <span>Response</span>
+                    {selectedLog.error && (
+                      <span className="size-1.5 rounded-full bg-red-400 animate-pulse" />
+                    )}
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab("request")}
+                    className={`flex-1 flex items-center justify-center gap-1 py-1 px-2 text-[11px] font-semibold rounded-md transition-all cursor-pointer ${
+                      activeTab === "request"
+                        ? "bg-[#3A3A3C] text-white shadow-xs border border-white/10"
+                        : "text-white/50 hover:text-white"
+                    }`}
+                  >
+                    <span className="material-symbols-outlined text-[13px] text-sky-400">
                       arrow_upward
                     </span>
-                    <h3 className="text-sm font-bold text-white tracking-wide">
-                      Actual Request Sent to Model / Provider
-                    </h3>
-                  </div>
+                    <span>Request</span>
+                  </button>
 
-                  {selectedLog.rawRequestBody && (
-                    <button
-                      type="button"
-                      onClick={() =>
-                        copyToClipboard(formatJson(selectedLog.rawRequestBody), "copy_req_body")
-                      }
-                      className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-[#2C2C2E] hover:bg-[#3A3A3C] px-3 py-1.5 text-[11px] font-semibold text-white transition-all active:scale-95 cursor-pointer shadow-xs"
-                    >
-                      <span className="material-symbols-outlined text-[13px]">
-                        {copiedKey === "copy_req_body" ? "check" : "content_copy"}
-                      </span>
-                      <span>{copiedKey === "copy_req_body" ? "Copied" : "Copy Raw Request"}</span>
-                    </button>
-                  )}
-                </div>
-
-                {/* User Input Prompt */}
-                {selectedLog.userMessage && (
-                  <div className="flex flex-col gap-1.5">
-                    <span className="text-[11px] font-semibold text-sky-400">
-                      User Prompt / Input Message:
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab("headers")}
+                    className={`flex-1 flex items-center justify-center gap-1 py-1 px-2 text-[11px] font-semibold rounded-md transition-all cursor-pointer ${
+                      activeTab === "headers"
+                        ? "bg-[#3A3A3C] text-white shadow-xs border border-white/10"
+                        : "text-white/50 hover:text-white"
+                    }`}
+                  >
+                    <span className="material-symbols-outlined text-[13px] text-amber-400">
+                      tune
                     </span>
-                    <div className="rounded-2xl border border-sky-500/20 bg-sky-500/5 p-3.5 text-xs text-white/90 font-mono select-all whitespace-pre-wrap break-all max-h-48 overflow-y-auto leading-relaxed custom-scrollbar">
-                      {selectedLog.userMessage}
-                    </div>
-                  </div>
-                )}
+                    <span>Headers</span>
+                  </button>
 
-                {/* System Prompt */}
-                {selectedLog.systemPrompt && (
-                  <div className="flex flex-col gap-1.5">
-                    <span className="text-[11px] font-semibold text-amber-400">
-                      System Instructions:
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab("raw")}
+                    className={`flex-1 flex items-center justify-center gap-1 py-1 px-2 text-[11px] font-semibold rounded-md transition-all cursor-pointer ${
+                      activeTab === "raw"
+                        ? "bg-[#3A3A3C] text-white shadow-xs border border-white/10"
+                        : "text-white/50 hover:text-white"
+                    }`}
+                  >
+                    <span className="material-symbols-outlined text-[13px] text-purple-400">
+                      code
                     </span>
-                    <div className="rounded-2xl border border-amber-500/20 bg-amber-500/5 p-3.5 text-xs text-white/80 font-mono select-all whitespace-pre-wrap break-all max-h-36 overflow-y-auto leading-relaxed custom-scrollbar">
-                      {selectedLog.systemPrompt}
-                    </div>
-                  </div>
-                )}
-
-                {/* Complete Raw Request Body */}
-                <div className="flex flex-col gap-1.5">
-                  <span className="text-[11px] font-semibold text-white/60">
-                    Complete Raw Request Body (JSON payload):
-                  </span>
-                  <pre className="rounded-2xl border border-white/[0.06] bg-[#121214] p-3.5 font-mono text-[11px] leading-relaxed text-white/90 overflow-x-auto max-h-72 select-all whitespace-pre break-all custom-scrollbar">
-                    {formatJson(selectedLog.rawRequestBody)}
-                  </pre>
+                    <span>Full JSON</span>
+                  </button>
                 </div>
+              </div>
 
-                {/* Request Headers & Auth */}
-                <div className="border-t border-white/[0.06] pt-2.5 flex flex-col gap-2">
-                  <div className="flex items-center justify-between">
-                    <button
-                      type="button"
-                      onClick={() => setShowReqHeaders((prev) => !prev)}
-                      className="inline-flex items-center gap-1.5 text-xs text-white/60 hover:text-white transition-colors cursor-pointer"
-                    >
-                      <span className="material-symbols-outlined text-sm">
-                        {showReqHeaders ? "expand_less" : "expand_more"}
-                      </span>
-                      <span>Request Headers & Auth ({selectedLog.requestHeaders ? Object.keys(selectedLog.requestHeaders).length : 0})</span>
-                    </button>
+              {/* ── 3. Tab Contents Workspace (Scrollable) ── */}
+              <div className="flex-1 overflow-y-auto p-3 custom-scrollbar space-y-2.5">
+                {/* ────── TAB 1: RESPONSE ────── */}
+                {activeTab === "response" && (
+                  <div className="space-y-2.5">
+                    {/* Error Banner */}
+                    {selectedLog.error && (
+                      <div className="rounded-xl border border-red-500/30 bg-red-500/10 p-2.5 text-red-300 flex flex-col gap-1 shadow-xs">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-1.5 font-bold text-red-400 text-xs">
+                            <span className="material-symbols-outlined text-[15px]">error</span>
+                            <span>
+                              Error ({selectedLog.status ? `HTTP ${selectedLog.status}` : "Failed"})
+                            </span>
+                            {selectedLog.errorType && (
+                              <span className="text-[10px] text-red-400/70 font-mono font-normal">
+                                [{selectedLog.errorType}]
+                              </span>
+                            )}
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              copyToClipboard(selectedLog.error || "", "copy_err_text")
+                            }
+                            className="text-[10px] text-red-400/80 hover:text-red-200 underline cursor-pointer"
+                          >
+                            {copiedKey === "copy_err_text" ? "Copied" : "Copy Error"}
+                          </button>
+                        </div>
+                        <p className="font-mono text-[11px] select-all whitespace-pre-wrap break-all leading-relaxed">
+                          {selectedLog.error}
+                        </p>
+                      </div>
+                    )}
 
-                    <div className="flex items-center gap-2">
-                      <button
-                        type="button"
-                        onClick={() => setRevealApiKey((prev) => !prev)}
-                        className="text-[11px] text-primary hover:underline cursor-pointer"
-                      >
-                        {revealApiKey ? "Mask Keys" : "Reveal API Keys"}
-                      </button>
-                      {selectedLog.requestHeaders && (
+                    {/* Assistant Generated Text */}
+                    {selectedLog.assistantResponse && (
+                      <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/[0.04] p-2.5 flex flex-col gap-1 shadow-xs">
+                        <div className="flex items-center justify-between">
+                          <span className="text-[11px] font-semibold text-emerald-400 flex items-center gap-1">
+                            <span className="material-symbols-outlined text-[13px]">smart_toy</span>
+                            Generated Assistant Output
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              copyToClipboard(selectedLog.assistantResponse || "", "copy_asst_text")
+                            }
+                            className="text-[10px] text-emerald-400 hover:text-emerald-200 underline cursor-pointer"
+                          >
+                            {copiedKey === "copy_asst_text" ? "Copied" : "Copy Text"}
+                          </button>
+                        </div>
+                        <div className="font-mono text-[11px] text-white/90 select-all whitespace-pre-wrap break-all max-h-48 overflow-y-auto leading-relaxed custom-scrollbar bg-black/30 p-2 rounded-lg border border-white/[0.04]">
+                          {selectedLog.assistantResponse}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Stream Info (if streamed) */}
+                    {selectedLog.isStreaming && (
+                      <div className="rounded-lg border border-white/[0.08] bg-[#1C1C1E] px-2.5 py-1.5 flex items-center justify-between text-[11px]">
+                        <span className="text-white/60 flex items-center gap-1">
+                          <span className="material-symbols-outlined text-[13px] text-primary">
+                            stream
+                          </span>
+                          Streaming Mode: Server-Sent Events (SSE)
+                        </span>
+                        {selectedLog.streamChunks && (
+                          <span className="text-[10px] font-mono text-white/40">
+                            {selectedLog.streamChunks.provider?.length ||
+                              selectedLog.streamChunks.client?.length ||
+                              0}{" "}
+                            chunks
+                          </span>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Complete Raw Response Body */}
+                    <div className="rounded-xl border border-white/[0.08] bg-[#1C1C1E] p-2.5 flex flex-col gap-1.5 shadow-xs">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[11px] font-semibold text-white/80 flex items-center gap-1">
+                          <span className="material-symbols-outlined text-[13px] text-white/50">
+                            data_object
+                          </span>
+                          Complete Raw Response Body (JSON)
+                        </span>
                         <button
                           type="button"
                           onClick={() =>
                             copyToClipboard(
-                              JSON.stringify(selectedLog.requestHeaders, null, 2),
-                              "copy_req_headers"
+                              formatJson(selectedLog.rawResponseBody),
+                              "copy_res_body"
                             )
                           }
-                          className="text-[11px] text-white/40 hover:text-white cursor-pointer"
+                          className="inline-flex items-center gap-1 h-5.5 px-2 rounded-md bg-[#2C2C2E] hover:bg-[#3A3A3C] text-[10px] font-medium text-white transition-all active:scale-95 cursor-pointer shadow-xs"
                         >
-                          {copiedKey === "copy_req_headers" ? "Copied" : "Copy"}
+                          <span className="material-symbols-outlined text-[11px]">
+                            {copiedKey === "copy_res_body" ? "check" : "content_copy"}
+                          </span>
+                          <span>{copiedKey === "copy_res_body" ? "Copied" : "Copy Response"}</span>
                         </button>
-                      )}
+                      </div>
+                      <pre className="rounded-lg border border-white/[0.04] bg-[#101012] p-2.5 font-mono text-[10px] leading-relaxed text-white/90 overflow-x-auto max-h-72 select-all whitespace-pre break-all custom-scrollbar">
+                        {formatJson(selectedLog.rawResponseBody)}
+                      </pre>
                     </div>
                   </div>
+                )}
 
-                  {showReqHeaders && (
-                    <div className="rounded-2xl border border-white/[0.06] bg-[#121214] p-3 font-mono text-[11px] max-h-48 overflow-y-auto divide-y divide-white/5 custom-scrollbar">
-                      {!selectedLog.requestHeaders ||
-                      Object.keys(selectedLog.requestHeaders).length === 0 ? (
-                        <span className="text-white/40 italic">No headers captured</span>
-                      ) : (
-                        Object.entries(selectedLog.requestHeaders).map(([k, v]) => {
-                          const isAuth =
-                            k.toLowerCase().includes("auth") ||
-                            k.toLowerCase().includes("key") ||
-                            k.toLowerCase().includes("token");
-                          const displayVal = isAuth ? maskKey(v) : v;
-
-                          return (
-                            <div key={k} className="flex gap-2 py-1">
-                              <span className="text-white/40 shrink-0 select-all">{k}:</span>
-                              <span
-                                className={`select-all break-all ${
-                                  isAuth ? "text-amber-300 font-semibold" : "text-white/90"
-                                }`}
-                              >
-                                {displayVal}
+                {/* ────── TAB 2: REQUEST ────── */}
+                {activeTab === "request" && (
+                  <div className="space-y-2.5">
+                    {/* User Prompt / Messages */}
+                    {selectedLog.messages && selectedLog.messages.length > 0 ? (
+                      <div className="rounded-xl border border-white/[0.08] bg-[#1C1C1E] p-2.5 flex flex-col gap-1.5 shadow-xs">
+                        <div className="flex items-center justify-between">
+                          <span className="text-[11px] font-semibold text-sky-400 flex items-center gap-1">
+                            <span className="material-symbols-outlined text-[13px]">chat</span>
+                            Messages Array ({selectedLog.messages.length})
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              copyToClipboard(
+                                JSON.stringify(selectedLog.messages, null, 2),
+                                "copy_messages"
+                              )
+                            }
+                            className="text-[10px] text-sky-400 hover:text-sky-200 underline cursor-pointer"
+                          >
+                            {copiedKey === "copy_messages" ? "Copied" : "Copy Messages"}
+                          </button>
+                        </div>
+                        <div className="space-y-1.5 max-h-60 overflow-y-auto custom-scrollbar">
+                          {selectedLog.messages.map((m, idx) => (
+                            <div
+                              key={idx}
+                              className={`rounded-lg p-2 text-[11px] font-mono leading-relaxed select-all ${
+                                m.role === "user"
+                                  ? "bg-sky-500/10 border border-sky-500/20 text-sky-100"
+                                  : m.role === "system"
+                                    ? "bg-amber-500/10 border border-amber-500/20 text-amber-100"
+                                    : "bg-white/5 border border-white/10 text-white/90"
+                              }`}
+                            >
+                              <span className="font-bold uppercase tracking-wider text-[9px] opacity-70 block mb-0.5">
+                                {m.role}:
                               </span>
+                              <p className="whitespace-pre-wrap break-all">{m.content}</p>
                             </div>
-                          );
-                        })
-                      )}
+                          ))}
+                        </div>
+                      </div>
+                    ) : selectedLog.userMessage ? (
+                      <div className="rounded-xl border border-white/[0.08] bg-[#1C1C1E] p-2.5 flex flex-col gap-1 shadow-xs">
+                        <div className="flex items-center justify-between">
+                          <span className="text-[11px] font-semibold text-sky-400">
+                            User Input Prompt
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              copyToClipboard(selectedLog.userMessage || "", "copy_user_prompt")
+                            }
+                            className="text-[10px] text-sky-400 hover:text-sky-200 underline cursor-pointer"
+                          >
+                            {copiedKey === "copy_user_prompt" ? "Copied" : "Copy Prompt"}
+                          </button>
+                        </div>
+                        <div className="rounded-lg bg-sky-500/10 border border-sky-500/20 p-2 font-mono text-[11px] text-sky-100 select-all whitespace-pre-wrap break-all leading-relaxed max-h-40 overflow-y-auto custom-scrollbar">
+                          {selectedLog.userMessage}
+                        </div>
+                      </div>
+                    ) : null}
+
+                    {/* System Prompt if available */}
+                    {selectedLog.systemPrompt && (
+                      <div className="rounded-xl border border-white/[0.08] bg-[#1C1C1E] p-2.5 flex flex-col gap-1 shadow-xs">
+                        <span className="text-[11px] font-semibold text-amber-400">
+                          System Instructions
+                        </span>
+                        <div className="rounded-lg bg-amber-500/10 border border-amber-500/20 p-2 font-mono text-[11px] text-amber-100 select-all whitespace-pre-wrap break-all leading-relaxed max-h-32 overflow-y-auto custom-scrollbar">
+                          {selectedLog.systemPrompt}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Complete Raw Request Body */}
+                    <div className="rounded-xl border border-white/[0.08] bg-[#1C1C1E] p-2.5 flex flex-col gap-1.5 shadow-xs">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[11px] font-semibold text-white/80 flex items-center gap-1">
+                          <span className="material-symbols-outlined text-[13px] text-white/50">
+                            payload
+                          </span>
+                          Complete Raw Request Body (JSON)
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            copyToClipboard(formatJson(selectedLog.rawRequestBody), "copy_req_body")
+                          }
+                          className="inline-flex items-center gap-1 h-5.5 px-2 rounded-md bg-[#2C2C2E] hover:bg-[#3A3A3C] text-[10px] font-medium text-white transition-all active:scale-95 cursor-pointer shadow-xs"
+                        >
+                          <span className="material-symbols-outlined text-[11px]">
+                            {copiedKey === "copy_req_body" ? "check" : "content_copy"}
+                          </span>
+                          <span>{copiedKey === "copy_req_body" ? "Copied" : "Copy Request"}</span>
+                        </button>
+                      </div>
+                      <pre className="rounded-lg border border-white/[0.04] bg-[#101012] p-2.5 font-mono text-[10px] leading-relaxed text-white/90 overflow-x-auto max-h-72 select-all whitespace-pre break-all custom-scrollbar">
+                        {formatJson(selectedLog.rawRequestBody)}
+                      </pre>
                     </div>
-                  )}
-                </div>
+                  </div>
+                )}
+
+                {/* ────── TAB 3: HEADERS ────── */}
+                {activeTab === "headers" && (
+                  <div className="space-y-2.5">
+                    {/* Header Controls Bar */}
+                    <div className="flex items-center justify-between text-xs pb-0.5">
+                      <span className="text-[11px] font-semibold text-white/80">
+                        Upstream HTTP Headers
+                      </span>
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          type="button"
+                          onClick={() => setRevealApiKey((prev) => !prev)}
+                          className="h-5.5 px-2 rounded bg-[#2C2C2E] text-[10px] font-medium text-primary hover:bg-[#3A3A3C] cursor-pointer transition-colors"
+                        >
+                          {revealApiKey ? "Mask Keys" : "Reveal API Keys"}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            copyToClipboard(
+                              JSON.stringify(
+                                {
+                                  requestHeaders: selectedLog.requestHeaders || {},
+                                  responseHeaders: selectedLog.responseHeaders || {},
+                                },
+                                null,
+                                2
+                              ),
+                              "copy_all_headers"
+                            )
+                          }
+                          className="h-5.5 px-2 rounded bg-[#2C2C2E] text-[10px] font-medium text-white/70 hover:text-white cursor-pointer transition-colors"
+                        >
+                          {copiedKey === "copy_all_headers" ? "Copied" : "Copy Headers"}
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Request Headers */}
+                    <div className="rounded-xl border border-white/[0.08] bg-[#1C1C1E] p-2.5 flex flex-col gap-1.5 shadow-xs">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-sky-400">
+                        Request Headers Sent (
+                        {selectedLog.requestHeaders
+                          ? Object.keys(selectedLog.requestHeaders).length
+                          : 0}
+                        )
+                      </span>
+                      <div className="rounded-lg border border-white/[0.04] bg-[#101012] p-2 font-mono text-[10px] max-h-48 overflow-y-auto divide-y divide-white/5 custom-scrollbar">
+                        {!selectedLog.requestHeaders ||
+                        Object.keys(selectedLog.requestHeaders).length === 0 ? (
+                          <span className="text-white/40 italic">No request headers captured</span>
+                        ) : (
+                          Object.entries(selectedLog.requestHeaders).map(([k, v]) => {
+                            const isAuth =
+                              k.toLowerCase().includes("auth") ||
+                              k.toLowerCase().includes("key") ||
+                              k.toLowerCase().includes("token");
+                            const displayVal = isAuth ? maskKey(v) : v;
+
+                            return (
+                              <div key={k} className="flex gap-2 py-0.5">
+                                <span className="text-white/40 shrink-0 select-all">{k}:</span>
+                                <span
+                                  className={`select-all break-all ${
+                                    isAuth ? "text-amber-300 font-semibold" : "text-white/90"
+                                  }`}
+                                >
+                                  {displayVal}
+                                </span>
+                              </div>
+                            );
+                          })
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Response Headers */}
+                    <div className="rounded-xl border border-white/[0.08] bg-[#1C1C1E] p-2.5 flex flex-col gap-1.5 shadow-xs">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-400">
+                        Response Headers Received (
+                        {selectedLog.responseHeaders
+                          ? Object.keys(selectedLog.responseHeaders).length
+                          : 0}
+                        )
+                      </span>
+                      <div className="rounded-lg border border-white/[0.04] bg-[#101012] p-2 font-mono text-[10px] max-h-48 overflow-y-auto divide-y divide-white/5 custom-scrollbar">
+                        {!selectedLog.responseHeaders ||
+                        Object.keys(selectedLog.responseHeaders).length === 0 ? (
+                          <span className="text-white/40 italic">No response headers captured</span>
+                        ) : (
+                          Object.entries(selectedLog.responseHeaders).map(([k, v]) => (
+                            <div key={k} className="flex gap-2 py-0.5">
+                              <span className="text-white/40 shrink-0 select-all">{k}:</span>
+                              <span className="text-white/90 select-all break-all">{v}</span>
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* ────── TAB 4: RAW FULL REPORT ────── */}
+                {activeTab === "raw" && (
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[11px] font-semibold text-white/80">
+                        Unified Call Report (Sender + Receiver)
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          copyToClipboard(getFullLogReport(selectedLog), "copy_raw_full")
+                        }
+                        className="inline-flex items-center gap-1 h-6 px-2.5 rounded-md bg-primary/20 text-primary border border-primary/30 text-[10px] font-semibold active:scale-95 cursor-pointer shadow-xs hover:bg-primary/30 transition-all"
+                      >
+                        <span className="material-symbols-outlined text-[12px]">
+                          {copiedKey === "copy_raw_full" ? "check" : "content_copy"}
+                        </span>
+                        <span>
+                          {copiedKey === "copy_raw_full"
+                            ? "Copied Full Report!"
+                            : "Copy Full Report"}
+                        </span>
+                      </button>
+                    </div>
+                    <pre className="rounded-xl border border-white/[0.06] bg-[#101012] p-3 font-mono text-[10px] leading-relaxed text-white/90 overflow-x-auto max-h-[420px] select-all whitespace-pre break-all custom-scrollbar">
+                      {getFullLogReport(selectedLog)}
+                    </pre>
+                  </div>
+                )}
               </div>
             </div>
           )}

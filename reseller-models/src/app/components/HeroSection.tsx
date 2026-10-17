@@ -8,6 +8,9 @@ interface HeroSectionProps {
   modelsCount?: number;
   freeCount?: number;
   paidCount?: number;
+  heroTitle?: string;
+  heroSubtitle?: string;
+  heroCtaText?: string;
 }
 
 export default function HeroSection({
@@ -15,6 +18,9 @@ export default function HeroSection({
   modelsCount = 226,
   freeCount = 93,
   paidCount = 133,
+  heroTitle = "UNIFIED CRTT",
+  heroSubtitle,
+  heroCtaText = "GET STARTED",
 }: HeroSectionProps) {
   // Animated live token counter
   const [tokensServed, setTokensServed] = useState<number>(944432915290);
@@ -27,6 +33,11 @@ export default function HeroSection({
   }, []);
 
   const formattedTokens = tokensServed.toLocaleString("en-US");
+
+  // Title formatting helper
+  const titleParts = (heroTitle || "UNIFIED CRTT").trim().split(" ");
+  const firstWord = titleParts[0] || "UNIFIED";
+  const secondWord = titleParts.slice(1).join(" ") || "CRTT";
 
   return (
     <section className="uno-hero-wrap">
@@ -91,18 +102,17 @@ export default function HeroSection({
 
             {/* Main Cyber Typography */}
             <h1 className="uno-hero-title">
-              UNIFIED
+              {firstWord}
               <br />
               <span className="title-accent">
-                CRTT<span className="uno-title-dot" />
+                {secondWord}<span className="uno-title-dot" />
               </span>
             </h1>
 
             {/* Description */}
             <p className="uno-hero-desc">
-              UnoRouter connects you to {modelsCount}+ AI models through one key. Build apps
-              and run agents with it, or skip the setup and chat with characters right
-              here on the site. Same key, same speed, same price.
+              {heroSubtitle ||
+                `Connect to ${modelsCount}+ AI models through one single unified key. Build apps and run agents with auto-failover, lowest latency, and pay-as-you-go pricing.`}
             </p>
 
             {/* CTA Buttons */}
@@ -111,7 +121,7 @@ export default function HeroSection({
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
                   <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
                 </svg>
-                GET STARTED
+                {heroCtaText}
               </Link>
               <Link href="/models" className="uno-btn-outline">
                 VIEW MODELS &gt;

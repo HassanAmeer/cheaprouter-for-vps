@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { Card, Button, CardSkeleton, ShimmerPageLoader } from "@/shared/components";
+import { Card, Button, ShimmerPageLoader } from "@/shared/components";
 import { useNotificationStore } from "@/store/notificationStore";
 import { getProviderDisplayName } from "@/lib/display/names";
 import { compareTr, matchesSearch } from "@/shared/utils/turkishText";
@@ -25,8 +25,8 @@ import BehaviourTab from "./tabs/BehaviourTab";
 
 const TABS: Array<{ id: AccessEditorTab; icon: string; labelKey: string }> = [
   { id: "general", icon: "tune", labelKey: "tabGeneral" },
-  { id: "models", icon: "psychology", labelKey: "tabModels" },
   { id: "combos", icon: "hub", labelKey: "tabCombos" },
+  { id: "models", icon: "psychology", labelKey: "tabModels" },
   { id: "connections", icon: "cable", labelKey: "tabConnections" },
   { id: "limits", icon: "speed", labelKey: "tabLimits" },
   { id: "behaviour", icon: "toggle_on", labelKey: "tabBehaviour" },

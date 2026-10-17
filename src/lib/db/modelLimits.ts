@@ -248,21 +248,82 @@ export function upsertModelLimit(input: UpsertModelLimitInput): ModelLimitPolicy
   return updated;
 }
 
+export function checkModelComboLimitExceeded(
+  targetType: LimitTargetType,
+  targetId: string,
+  providerId?: string | null
+): { exceeded: true; message: string; limit: ModelLimitPolicy } | null {
+  if (!targetId) return null;
+  ensureSchema();
+  const db = getDbInstance();
+  const bareId = targetId.includes("/") ? targetId.split("/").slice(1).join("/") : targetId;
+  const prefixedId = providerId && !targetId.includes("/") ? `${providerId}/${targetId}` : targetId;
+
+  const row = db
+    .prepare(
+      `SELECT * FROM model_combo_limits
+       WHERE target_type = ?
+         AND (target_id = ? OR target_id = ? OR target_id = ?)
+         AND is_active = 1
+       ORDER BY updated_at DESC LIMIT 1`
+    )
+    .get(targetType, targetId, bareId, prefixedId) as RawDbRow | undefined;
+
+  if (!row) return null;
+
+  const policy = mapRowToPolicy(row);
+  if (policy.consumedTokens >= policy.totalTokenPool) {
+    const envMsg = process.env.LIMIT_BANK_EXCEEDED_MESSAGE;
+    const message =
+      envMsg?.trim() ||
+      policy.customErrorMessage?.trim() ||
+      `Token limit bank exceeded for ${policy.targetType} "${policy.targetName || policy.targetId}". Please contact administrator.`;
+
+    return {
+      exceeded: true,
+      message,
+      limit: policy,
+    };
+  }
+
+  return null;
+}
+
 export function recordTokenConsumption(
   targetType: LimitTargetType,
   targetId: string,
-  tokens: number
+  tokens: number,
+  providerId?: string | null
 ): boolean {
-  if (tokens <= 0) return false;
+  if (tokens <= 0 || !targetId) return false;
   ensureSchema();
   const db = getDbInstance();
-  const result = db.prepare(`
-    UPDATE model_combo_limits
-    SET consumed_tokens = consumed_tokens + ?, updated_at = datetime('now')
-    WHERE target_type = ? AND target_id = ? AND is_active = 1
-  `).run(Math.floor(tokens), targetType, targetId);
+  const bareId = targetId.includes("/") ? targetId.split("/").slice(1).join("/") : targetId;
+  const prefixedId = providerId && !targetId.includes("/") ? `${providerId}/${targetId}` : targetId;
+
+  const result = db
+    .prepare(
+      `UPDATE model_combo_limits
+       SET consumed_tokens = consumed_tokens + ?, updated_at = datetime('now')
+       WHERE target_type = ?
+         AND (target_id = ? OR target_id = ? OR target_id = ?)
+         AND is_active = 1`
+    )
+    .run(Math.floor(tokens), targetType, targetId, bareId, prefixedId);
 
   return result.changes > 0;
+}
+
+export function resetConsumedTokens(id: string): ModelLimitPolicy | null {
+  ensureSchema();
+  const db = getDbInstance();
+  db.prepare(`
+    UPDATE model_combo_limits
+    SET consumed_tokens = 0, updated_at = datetime('now')
+    WHERE id = ?
+  `).run(id);
+
+  return getModelLimit(id);
 }
 
 export function addTokensToPool(id: string, additionalTokens: number): ModelLimitPolicy | null {
