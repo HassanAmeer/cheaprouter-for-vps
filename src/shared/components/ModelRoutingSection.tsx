@@ -261,8 +261,8 @@ export default function ModelRoutingSection({ combos: externalCombos }: { combos
             <button
               onClick={handleSave}
               disabled={!pattern.trim() || !comboId || patternIsPaidOnly}
-              className="px-3 py-1 text-xs font-medium rounded-lg bg-primary text-white
-                         hover:bg-primary/90 disabled:opacity-40 transition-colors"
+              className="px-3 py-1 text-xs font-medium rounded-lg bg-[image:var(--grad-brand)] text-white
+                         hover:brightness-105 disabled:opacity-40 transition-all shadow-xs"
             >
               {editingId ? t("update") : t("save")}
             </button>

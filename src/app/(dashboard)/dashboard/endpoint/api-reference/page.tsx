@@ -4,12 +4,18 @@ import { useEffect, useMemo, useState } from "react";
 import { useDisplayBaseUrl } from "@/shared/hooks";
 import { matchesSearch } from "@/shared/utils/turkishText";
 import ApiDocsIntegrationHub from "../components/ApiDocsIntegrationHub";
+import {
+  getEndpointCategory,
+  ENDPOINT_CATEGORIES,
+  type EndpointCategory,
+} from "@/shared/utils/apiEndpointCategories";
 
 /* ─── Types (mirror /api/openapi/spec) ────────────────────────────── */
 interface Endpoint {
   method: string;
   path: string;
   tags: string[];
+  category?: EndpointCategory;
   summary: string;
   description: string;
   security: boolean;
@@ -179,7 +185,8 @@ function EndpointDoc({ ep, baseUrl }: { ep: Endpoint; baseUrl: string }) {
 
 export default function ApiReferencePage() {
   const baseUrl = useDisplayBaseUrl();
-  const [viewMode, setViewMode] = useState<"reseller" | "all">("reseller");
+  const [activeTab, setActiveTab] = useState<EndpointCategory>("api");
+  const [resellerSubTab, setResellerSubTab] = useState<"endpoints" | "guide">("endpoints");
   const [catalog, setCatalog] = useState<CatalogData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -192,18 +199,38 @@ export default function ApiReferencePage() {
       .then((r) => r.json())
       .then((d: CatalogData) => {
         setCatalog(d);
-        if (d?.endpoints?.length) setSelected(epKey(d.endpoints[0]));
+        if (d?.endpoints?.length) {
+          const firstApi =
+            d.endpoints.find(
+              (ep) => (ep.category || getEndpointCategory(ep.path, ep.tags)) === "api"
+            ) || d.endpoints[0];
+          setSelected(epKey(firstApi));
+        }
       })
       .catch((e) => setError(String(e?.message ?? e)))
       .finally(() => setLoading(false));
   }, []);
 
-  // Group endpoints by their first tag (fallback "General").
+  // Category counts across all endpoints
+  const categoryCounts = useMemo(() => {
+    if (!catalog) return { api: 0, reseller: 0, "router-panel": 0 };
+    const counts = { api: 0, reseller: 0, "router-panel": 0 };
+    for (const ep of catalog.endpoints) {
+      const cat = ep.category || getEndpointCategory(ep.path, ep.tags);
+      counts[cat] = (counts[cat] || 0) + 1;
+    }
+    return counts;
+  }, [catalog]);
+
+  // Group endpoints by their first tag, filtered strictly by active category
   const groups = useMemo(() => {
     if (!catalog) return [] as Array<{ tag: string; description?: string; items: Endpoint[] }>;
     const map = new Map<string, Endpoint[]>();
     const order: string[] = [];
     for (const ep of catalog.endpoints) {
+      const cat = ep.category || getEndpointCategory(ep.path, ep.tags);
+      if (cat !== activeTab) continue;
+
       const tag = ep.tags?.[0] ?? "General";
       if (!map.has(tag)) {
         map.set(tag, []);
@@ -213,7 +240,7 @@ export default function ApiReferencePage() {
     }
     const descByTag = new Map((catalog.tags ?? []).map((t) => [t.name, t.description]));
     return order.map((tag) => ({ tag, description: descByTag.get(tag), items: map.get(tag)! }));
-  }, [catalog]);
+  }, [catalog, activeTab]);
 
   const filteredGroups = useMemo(() => {
     const query = filter.trim();
@@ -231,10 +258,17 @@ export default function ApiReferencePage() {
       .filter((g) => g.items.length > 0);
   }, [groups, filter]);
 
-  const current = useMemo(
-    () => catalog?.endpoints.find((ep) => epKey(ep) === selected) ?? null,
-    [catalog, selected]
-  );
+  // Derive active endpoint (auto-falling back to first endpoint in current category)
+  const current = useMemo(() => {
+    if (!catalog?.endpoints?.length) return null;
+    const tabEndpoints = catalog.endpoints.filter((ep) => {
+      const cat = ep.category || getEndpointCategory(ep.path, ep.tags);
+      return cat === activeTab;
+    });
+    if (tabEndpoints.length === 0) return null;
+    const match = tabEndpoints.find((ep) => epKey(ep) === selected);
+    return match || tabEndpoints[0];
+  }, [catalog, activeTab, selected]);
 
   const sidebar = (
     <nav className="space-y-4">
@@ -245,7 +279,7 @@ export default function ApiReferencePage() {
           </div>
           <ul className="space-y-0.5">
             {g.items.map((ep) => {
-              const active = epKey(ep) === selected;
+              const active = current ? epKey(ep) === epKey(current) : false;
               return (
                 <li key={epKey(ep)}>
                   <button
@@ -285,33 +319,81 @@ export default function ApiReferencePage() {
           </p>
         </div>
 
-        <div className="flex items-center gap-1 bg-surface-raised p-1 rounded-lg border border-border self-start md:self-auto">
-          <button
-            onClick={() => setViewMode("reseller")}
-            className={`px-3 py-1.5 text-xs font-medium rounded-md transition ${
-              viewMode === "reseller"
-                ? "bg-action text-white shadow-xs"
-                : "text-text-muted hover:text-text-primary"
-            }`}
-          >
-            Reseller Integration APIs (Recommended)
-          </button>
-          <button
-            onClick={() => setViewMode("all")}
-            className={`px-3 py-1.5 text-xs font-medium rounded-md transition ${
-              viewMode === "all"
-                ? "bg-action text-white shadow-xs"
-                : "text-text-muted hover:text-text-primary"
-            }`}
-          >
-            All Raw Endpoints
-          </button>
+        {/* iOS-like Segmented Tab Selector for 3 Categories */}
+        <div className="flex items-center gap-1 bg-surface-raised dark:bg-neutral-900 p-1 rounded-xl border border-border self-start md:self-auto shadow-xs">
+          {ENDPOINT_CATEGORIES.map((cat) => {
+            const active = activeTab === cat.id;
+            const count = categoryCounts[cat.id];
+            return (
+              <button
+                key={cat.id}
+                onClick={() => {
+                  setActiveTab(cat.id);
+                  setFilter("");
+                }}
+                className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg transition-all ${
+                  active
+                    ? "bg-action text-white shadow-xs"
+                    : "text-text-muted hover:text-text-primary hover:bg-black/5 dark:hover:bg-white/5"
+                }`}
+              >
+                <span className="material-symbols-outlined text-[15px]">{cat.icon}</span>
+                <span>{cat.label}</span>
+                <span
+                  className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono ${
+                    active ? "bg-white/20 text-white" : "bg-black/5 dark:bg-white/5 text-text-muted"
+                  }`}
+                >
+                  {count}
+                </span>
+              </button>
+            );
+          })}
         </div>
       </div>
 
-      {viewMode === "reseller" && <ApiDocsIntegrationHub />}
+      {/* When in Reseller API tab: offer sub-toggle for Integration Guide vs Interactive Endpoints */}
+      {activeTab === "reseller" && (
+        <div className="flex items-center justify-between flex-wrap gap-3 mb-4 p-2.5 rounded-xl border border-emerald-500/20 bg-emerald-500/5">
+          <div className="flex items-center gap-2">
+            <span className="material-symbols-outlined text-[18px] text-emerald-500">storefront</span>
+            <div>
+              <span className="text-xs font-semibold text-text-main block">
+                Reseller & Multi-Tenant Management
+              </span>
+              <span className="text-[11px] text-text-muted">
+                User registration, quota upgrades, BYOK provider keys, balances, and AI proxy routing.
+              </span>
+            </div>
+          </div>
+          <div className="inline-flex items-center gap-1 p-0.5 bg-surface rounded-lg border border-border text-xs">
+            <button
+              onClick={() => setResellerSubTab("endpoints")}
+              className={`px-2.5 py-1 rounded-md font-medium transition ${
+                resellerSubTab === "endpoints"
+                  ? "bg-emerald-500 text-white shadow-xs"
+                  : "text-text-muted hover:text-text-main"
+              }`}
+            >
+              Interactive Endpoints ({categoryCounts.reseller})
+            </button>
+            <button
+              onClick={() => setResellerSubTab("guide")}
+              className={`px-2.5 py-1 rounded-md font-medium transition ${
+                resellerSubTab === "guide"
+                  ? "bg-emerald-500 text-white shadow-xs"
+                  : "text-text-muted hover:text-text-main"
+              }`}
+            >
+              Integration Guide (cURL, JS, Python)
+            </button>
+          </div>
+        </div>
+      )}
 
-      {viewMode === "all" && (
+      {activeTab === "reseller" && resellerSubTab === "guide" ? (
+        <ApiDocsIntegrationHub />
+      ) : (
         <>
           <p className="text-xs text-text-muted mb-4 rounded-md border border-border bg-surface/50 p-2">
             <span className="font-semibold text-text-main">Authentication:</span> pass your

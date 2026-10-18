@@ -3,7 +3,7 @@
 import { useMemo, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { Handle, Position, type Node, type Edge, type NodeTypes } from "@xyflow/react";
+import { Handle, Position, type Node, type Edge, type NodeTypes, type FitViewOptions } from "@xyflow/react";
 import { AI_PROVIDERS } from "@/shared/constants/providers";
 import ProviderIcon from "@/shared/components/ProviderIcon";
 import { FlowCanvas } from "@/shared/components/flow/FlowCanvas";
@@ -286,6 +286,9 @@ type Props = {
   activeRequests?: Array<{ provider?: string; model?: string }>;
   lastProvider?: string;
   errorProvider?: string;
+  className?: string;
+  showControls?: boolean;
+  fitViewOptions?: FitViewOptions;
 };
 
 export default function ProviderTopology({
@@ -293,6 +296,9 @@ export default function ProviderTopology({
   activeRequests = [],
   lastProvider = "",
   errorProvider = "",
+  className,
+  showControls,
+  fitViewOptions,
 }: Props) {
   const t = useTranslations("common");
   const activeKey = useMemo(
@@ -345,7 +351,8 @@ export default function ProviderTopology({
   );
 
   const containerClass =
-    "h-[300px] w-full min-w-0 rounded-xl border border-border bg-bg-subtle/20 overflow-hidden sm:h-[420px]";
+    className ||
+    "h-[270px] w-full min-w-0 rounded-xl border border-border/60 bg-bg-subtle/20 overflow-hidden sm:h-[295px]";
 
   if (providers.length === 0) {
     return (
@@ -366,6 +373,8 @@ export default function ProviderTopology({
       fitKey={providersKey}
       className={containerClass}
       onNodeClick={handleNodeClick}
+      showControls={showControls ?? providers.length > 5}
+      fitViewOptions={fitViewOptions}
     />
   );
 }

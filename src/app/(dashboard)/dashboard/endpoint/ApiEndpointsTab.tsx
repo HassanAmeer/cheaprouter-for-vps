@@ -6,12 +6,19 @@ import { Card } from "@/shared/components";
 import { useDisplayBaseUrl } from "@/shared/hooks";
 import VscodeTokenAliasCard from "./VscodeTokenAliasCard";
 import { matchesSearch } from "@/shared/utils/turkishText";
+import {
+  getEndpointCategory,
+  ENDPOINT_CATEGORIES,
+  type EndpointCategory,
+} from "@/shared/utils/apiEndpointCategories";
+import ApiDocsIntegrationHub from "./components/ApiDocsIntegrationHub";
 
 /* ─── Types ──────────────────────────────────────────── */
 interface Endpoint {
   method: string;
   path: string;
   tags: string[];
+  category?: EndpointCategory;
   summary: string;
   description: string;
   security: boolean;
@@ -85,6 +92,8 @@ export default function ApiEndpointsTab() {
     );
   }
 
+  const [categoryTab, setCategoryTab] = useState<EndpointCategory>("api");
+  const [showResellerGuide, setShowResellerGuide] = useState(false);
   const [catalog, setCatalog] = useState<CatalogData | null>(null);
   const [catalogError, setCatalogError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -176,32 +185,51 @@ export default function ApiEndpointsTab() {
     };
   }, [t]);
 
-  // Filter endpoints
+  // Counts across all 3 primary categories (API, Reseller API, Router Panel)
+  const categoryCounts = useMemo(() => {
+    if (!catalog) return { api: 0, reseller: 0, "router-panel": 0 };
+    const counts = { api: 0, reseller: 0, "router-panel": 0 };
+    for (const ep of catalog.endpoints) {
+      if (!showInternal && ep.internal) continue;
+      const cat = ep.category || getEndpointCategory(ep.path, ep.tags);
+      counts[cat] = (counts[cat] || 0) + 1;
+    }
+    return counts;
+  }, [catalog, showInternal]);
+
+  // Filter endpoints by selected category, search query, selected tag, and security tier
   const filteredEndpoints = useMemo(() => {
     if (!catalog) return [];
     return catalog.endpoints.filter((ep) => {
-      // Keep the internal-endpoint visibility toggle + security-tier filter
-      // (from release) while using the locale-aware matchesSearch helper. The
-      // local var is matchesEndpoint (not matchesSearch) to avoid shadowing the
-      // imported helper used in its own initializer.
       if (!showInternal && ep.internal) return false;
+
+      // 1. Primary 3-category filter requested by user
+      const cat = ep.category || getEndpointCategory(ep.path, ep.tags);
+      if (cat !== categoryTab) return false;
+
+      // 2. Search filter
       const matchesEndpoint =
         !search ||
         matchesSearch(ep.path, search) ||
         matchesSearch(ep.summary, search) ||
         ep.tags.some((t) => matchesSearch(t, search));
+
+      // 3. Tag filter
       const matchesTag = !selectedTag || ep.tags.includes(selectedTag);
+
+      // 4. Security tier filter
       const matchesTier =
         securityTier === "all" ||
         (securityTier === "loopback" && ep.loopbackOnly) ||
         (securityTier === "always-protected" && ep.alwaysProtected) ||
         (securityTier === "auth" && ep.security && !ep.loopbackOnly && !ep.alwaysProtected) ||
         (securityTier === "public" && !ep.security && !ep.loopbackOnly && !ep.alwaysProtected);
+
       return matchesEndpoint && matchesTag && matchesTier;
     });
-  }, [catalog, search, selectedTag, showInternal, securityTier]);
+  }, [catalog, categoryTab, search, selectedTag, showInternal, securityTier]);
 
-  // Group by tag
+  // Group by tag within the active category
   const groupedEndpoints = useMemo(() => {
     const groups: Record<string, Endpoint[]> = {};
     for (const ep of filteredEndpoints) {
@@ -212,10 +240,19 @@ export default function ApiEndpointsTab() {
     return groups;
   }, [filteredEndpoints]);
 
-  const allTags = useMemo(() => {
+  // Tags available specifically for the currently active category
+  const categoryTags = useMemo(() => {
     if (!catalog) return [];
-    return catalog.tags.map((t) => t.name);
-  }, [catalog]);
+    const set = new Set<string>();
+    for (const ep of catalog.endpoints) {
+      if (!showInternal && ep.internal) continue;
+      const cat = ep.category || getEndpointCategory(ep.path, ep.tags);
+      if (cat === categoryTab) {
+        for (const t of ep.tags) set.add(t);
+      }
+    }
+    return Array.from(set).sort();
+  }, [catalog, categoryTab, showInternal]);
 
   // Try It handler
   // Generate example body from OpenAPI schema
@@ -337,14 +374,14 @@ export default function ApiEndpointsTab() {
                 <p className="text-xs text-text-muted mt-0.5">
                   {t("catalogStats", {
                     endpoints: catalog.endpoints.length,
-                    categories: allTags.length,
+                    categories: catalog.tags.length,
                   })}
                 </p>
               </div>
             </div>
             <div className="flex items-center gap-2">
               <a
-                href="/docs/openapi.yaml"
+                href="/openapi.yaml"
                 download
                 className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium rounded-lg
                            bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 transition-colors"
@@ -402,6 +439,87 @@ export default function ApiEndpointsTab() {
 
       {catalog && (
         <>
+          {/* iOS-like Segmented Tab Selector for 3 Endpoint Categories */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-black/[0.02] dark:bg-white/[0.02] p-1.5 rounded-2xl border border-black/5 dark:border-white/10">
+            <div className="inline-flex items-center gap-1 p-1 bg-surface-raised dark:bg-neutral-900 rounded-xl border border-border shadow-xs w-full sm:w-auto">
+              {ENDPOINT_CATEGORIES.map((cat) => {
+                const active = categoryTab === cat.id;
+                const count = categoryCounts[cat.id];
+                return (
+                  <button
+                    key={cat.id}
+                    onClick={() => {
+                      setCategoryTab(cat.id);
+                      setSelectedTag(null);
+                      setExpandedEndpoint(null);
+                      setTryingEndpoint(null);
+                    }}
+                    className={`flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold transition-all duration-150 ${
+                      active
+                        ? "bg-primary text-white shadow-xs"
+                        : "text-text-muted hover:text-text-main hover:bg-black/5 dark:hover:bg-white/5"
+                    }`}
+                  >
+                    <span className="material-symbols-outlined text-[16px]">{cat.icon}</span>
+                    <span>{cat.label}</span>
+                    <span
+                      className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono ${
+                        active
+                          ? "bg-white/20 text-white"
+                          : "bg-black/5 dark:bg-white/5 text-text-muted"
+                      }`}
+                    >
+                      {count}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+
+            <div className="flex items-center gap-2 px-2 text-xs text-text-muted">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
+              <span className="truncate">
+                {categoryTab === "api" && "Client Inference & Gateway (Chat, Models, Embeddings, Media)"}
+                {categoryTab === "reseller" && "Reseller Management (User Registration, Quotas, BYOK, Keys)"}
+                {categoryTab === "router-panel" && "Router Infrastructure (Providers, Combos, Limits, Usage)"}
+              </span>
+            </div>
+          </div>
+
+          {/* Reseller Website Integration Guide Toggle Banner */}
+          {categoryTab === "reseller" && (
+            <div className="p-3.5 rounded-xl border border-emerald-500/30 bg-emerald-500/5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <div className="flex items-center justify-center size-8 rounded-lg bg-emerald-500/10 text-emerald-500 shrink-0">
+                  <span className="material-symbols-outlined text-[18px]">menu_book</span>
+                </div>
+                <div>
+                  <h4 className="text-xs font-semibold text-text-main">
+                    Reseller Website Integration Guide & Code Samples
+                  </h4>
+                  <p className="text-[11px] text-text-muted">
+                    Ready-to-use cURL, JavaScript, and Python snippets for User Signups, Quota Upgrades, BYOK submission & AI proxy.
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowResellerGuide((v) => !v)}
+                className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border border-emerald-500/40 bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20 transition-colors"
+              >
+                <span className="material-symbols-outlined text-[15px]">
+                  {showResellerGuide ? "expand_less" : "expand_more"}
+                </span>
+                {showResellerGuide ? "Hide Integration Guide" : "View Integration Guide"}
+              </button>
+            </div>
+          )}
+
+          {categoryTab === "reseller" && showResellerGuide && (
+            <div className="mb-2">
+              <ApiDocsIntegrationHub />
+            </div>
+          )}
+
           {/* Search & filter */}
           <div className="flex items-center gap-2">
             <div className="relative flex-1 max-w-md">
@@ -428,7 +546,7 @@ export default function ApiEndpointsTab() {
               >
                 {t("all")}
               </button>
-              {allTags.slice(0, 8).map((tag) => (
+              {categoryTags.slice(0, 8).map((tag) => (
                 <button
                   key={tag}
                   onClick={() => setSelectedTag(selectedTag === tag ? null : tag)}
@@ -442,9 +560,9 @@ export default function ApiEndpointsTab() {
                   {tag}
                 </button>
               ))}
-              {allTags.length > 8 && (
+              {categoryTags.length > 8 && (
                 <span className="px-2 py-1 text-[10px] text-text-muted">
-                  {t("more", { count: allTags.length - 8 })}
+                  {t("more", { count: categoryTags.length - 8 })}
                 </span>
               )}
             </div>
@@ -487,7 +605,34 @@ export default function ApiEndpointsTab() {
             </div>
           </div>
 
-          <VscodeTokenAliasCard variant="catalog" />
+          {categoryTab === "api" && <VscodeTokenAliasCard variant="catalog" />}
+
+          {/* Empty state if no endpoints found in this category */}
+          {Object.keys(groupedEndpoints).length === 0 && (
+            <Card className="p-8 text-center">
+              <div className="flex flex-col items-center justify-center gap-2 max-w-sm mx-auto">
+                <span className="material-symbols-outlined text-[32px] text-text-muted/60">
+                  search_off
+                </span>
+                <p className="text-sm font-medium text-text-main">No endpoints found</p>
+                <p className="text-xs text-text-muted">
+                  No matching endpoints in {categoryTab === "api" ? "API" : categoryTab === "reseller" ? "Reseller API" : "Router Panel"} for your search or filter.
+                </p>
+                {(search || selectedTag || securityTier !== "all") && (
+                  <button
+                    onClick={() => {
+                      setSearch("");
+                      setSelectedTag(null);
+                      setSecurityTier("all");
+                    }}
+                    className="mt-2 text-xs text-primary font-medium hover:underline"
+                  >
+                    Clear filters
+                  </button>
+                )}
+              </div>
+            </Card>
+          )}
 
           {/* Endpoint groups */}
           {Object.entries(groupedEndpoints).map(([tag, endpoints]) => (

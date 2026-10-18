@@ -185,7 +185,7 @@ export default function ProviderPageHeader({
               <button
                 type="button"
                 onClick={onConnect}
-                className="inline-flex items-center gap-1.5 px-3 py-1 rounded-md bg-primary hover:bg-primary-hover text-white text-xs font-semibold shadow-sm transition-colors"
+                className="inline-flex items-center gap-1.5 px-3 py-1 rounded-md bg-[image:var(--grad-brand)] hover:brightness-105 text-white text-xs font-semibold shadow-sm transition-all"
                 title="Connect this provider"
               >
                 <span className="material-symbols-outlined text-[15px]">add_link</span>

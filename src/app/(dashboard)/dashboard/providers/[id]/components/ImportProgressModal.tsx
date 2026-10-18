@@ -137,7 +137,7 @@ export default function ImportProgressModal({
           <div className="flex justify-center">
             <button
               onClick={onClose}
-              className="px-4 py-2 text-sm font-medium rounded-lg bg-primary text-white hover:opacity-90 transition-opacity"
+              className="px-4 py-2 text-sm font-medium rounded-lg bg-[image:var(--grad-brand)] text-white hover:brightness-105 transition-all shadow-xs"
             >
               {t("close")}
             </button>

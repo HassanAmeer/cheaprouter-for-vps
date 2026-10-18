@@ -65,6 +65,15 @@ const CHEAP_PROXY_ITEMS: readonly SidebarItemDefinition[] = [
     icon: "vpn_key",
   },
   {
+    id: "api-endpoints",
+    href: "/dashboard/endpoint",
+    i18nKey: "apiEndpoints",
+    labelFallback: "Endpoints",
+    subtitleKey: "apiEndpointsSubtitle",
+    subtitleFallback: "Visual endpoint catalog & integration guides",
+    icon: "api",
+  },
+  {
     id: "usage",
     href: "/dashboard/usage",
     i18nKey: "usage",
@@ -75,45 +84,19 @@ const CHEAP_PROXY_ITEMS: readonly SidebarItemDefinition[] = [
   },
 ];
 
-// API section: Endpoints + Docs
+// API section: Developer Docs & Reference
 const API_NAV_ITEMS: readonly SidebarItemDefinition[] = [
-  {
-    id: "api-endpoints",
-    href: "/dashboard/endpoint",
-    i18nKey: "apiEndpoints",
-    labelFallback: "API Endpoints",
-    subtitleKey: "apiEndpointsSubtitle",
-    subtitleFallback: "Visual endpoint catalog & integration guides",
-    icon: "api",
-  },
   {
     id: "api-docs",
     href: "/dashboard/endpoint/api-reference",
     i18nKey: "apiDocs",
-    labelFallback: "API Docs",
+    labelFallback: "API Reference",
     subtitleKey: "apiDocsSubtitle",
     subtitleFallback: "Interactive developer documentation",
     icon: "menu_book",
   },
 ];
 
-// Info section: Costs/Pricing + Free Provider Rankings
-const INFO_ITEMS: readonly SidebarItemDefinition[] = [
-  {
-    id: "costs-pricing",
-    href: "/dashboard/costs/pricing",
-    i18nKey: "costsPricing",
-    subtitleKey: "costsPricingSubtitle",
-    icon: "price_change",
-  },
-  {
-    id: "free-provider-rankings",
-    href: "/dashboard/free-provider-rankings",
-    i18nKey: "freeProviderRankings",
-    subtitleKey: "freeProviderRankingsSubtitle",
-    icon: "leaderboard",
-  },
-];
 
 // Dev Tools section: Logs, Proxy Logs, Console Logs
 const DEVTOOLS_ITEMS: readonly SidebarItemDefinition[] = [
@@ -184,13 +167,6 @@ export const SIDEBAR_SECTIONS: readonly SidebarSectionDefinition[] = [
     titleKey: "apiSection",
     titleFallback: "API",
     children: API_NAV_ITEMS,
-  },
-  // 4. Info: Costs + Rankings
-  {
-    id: "info",
-    titleKey: "costsSection",
-    titleFallback: "Info",
-    children: INFO_ITEMS,
   },
   // 5. Dev Tools: Logs
   {

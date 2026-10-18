@@ -173,6 +173,85 @@ export async function POST(request: Request) {
       );
     }
 
+    // Seed Default / Test User with 100M tokens per model & optional API key
+    if (body?.action === "seedUser") {
+      const uid =
+        (body.userId || body.id)?.trim() ||
+        `usr_pro_test_${Math.floor(1000 + Math.random() * 9000)}`;
+      const name = (body.userName || body.name)?.trim() || "Pro Test User";
+      const email = (body.userEmail || body.email)?.trim() || "pro.test@cheaproute.local";
+      const plan = (body.plan || body.planTier)?.trim() || "Pro";
+      const rpmLimit =
+        typeof body.rpmLimit === "number"
+          ? body.rpmLimit
+          : body.rpmLimit
+          ? Number(body.rpmLimit)
+          : 30;
+
+      const available = await getAvailableModelsAndCombos();
+      const allPipedModelIds = [
+        ...available.combos.map((c) => c.id),
+        ...available.models.map((m) => m.id),
+      ];
+
+      const selectedIds: string[] =
+        Array.isArray(body.selectedModelIds) && body.selectedModelIds.length > 0
+          ? body.selectedModelIds
+          : allPipedModelIds;
+
+      const tokensPerModel =
+        typeof body.tokensPerModel === "number" && body.tokensPerModel > 0
+          ? body.tokensPerModel
+          : 100_000_000;
+
+      const modelQuotas: Record<string, number> = {};
+      selectedIds.forEach((id: string) => {
+        modelQuotas[id] = tokensPerModel;
+      });
+
+      const tokenBudget =
+        typeof body.tokenBudget === "number" && body.tokenBudget > 0
+          ? body.tokenBudget
+          : selectedIds.length * tokensPerModel;
+
+      const user = upsertResellerUser({
+        id: uid,
+        email,
+        name,
+        planTier: plan,
+        tokenBudget,
+        rpmLimit,
+        modelQuotas,
+        isBanned: false,
+      });
+
+      let apiKey: string | null = null;
+      let userKey = null;
+      if (body.generateApiKey !== false) {
+        userKey = await createResellerUserKey({
+          userId: uid,
+          userName: name,
+          userEmail: email,
+          planTier: plan,
+          allowedModels: selectedIds,
+          tokenBudget,
+          rpmLimit,
+        });
+        apiKey = userKey.apiKey;
+      }
+
+      return NextResponse.json(
+        {
+          success: true,
+          user,
+          apiKey,
+          userKey,
+          modelQuotas,
+        },
+        { status: 201, headers: CORS_HEADERS }
+      );
+    }
+
     // Register User with Plan & Quota without generating an API key
     if (body?.action === "upsertUser") {
       const uid = (body.userId || body.id)?.trim();
@@ -192,7 +271,20 @@ export async function POST(request: Request) {
         rpmLimit: typeof body.rpmLimit === "number" ? body.rpmLimit : null,
         modelQuotas: body.modelQuotas,
         isBanned: body.isBanned === true,
+        tokensUsed: body.resetUsage === true ? 0 : undefined,
       });
+
+      if (typeof body.isBanned === "boolean") {
+        setUserBanStatus(uid, body.isBanned);
+      }
+
+      if (body.resetUsage === true) {
+        try {
+          const { getDbInstance } = await import("@/lib/db/core");
+          getDbInstance().prepare("DELETE FROM user_model_usage WHERE user_id = ?").run(uid);
+        } catch {}
+      }
+
       return NextResponse.json({ success: true, user }, { status: 200, headers: CORS_HEADERS });
     }
 

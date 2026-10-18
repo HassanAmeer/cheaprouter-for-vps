@@ -295,11 +295,19 @@ export default function ModelSelectModal({
       ? alwaysIncludeProvidersKey.split("\0")
       : [];
 
-    // Only show connected providers (including both standard and custom)
-    const providerIdsToShow = new Set([
-      ...activeConnectionIds, // Connected providers
-      ...explicitProviderIds, // Zero-config providers required by specific clients
-    ]);
+    const pausedNodeIds = new Set(
+      providerNodes
+        .filter((node: any) => node.isActive === false)
+        .flatMap((node: any) => [node.id, node.prefix].filter(Boolean))
+    );
+
+    // Only show connected providers (including both standard and custom), strictly excluding paused nodes
+    const providerIdsToShow = new Set(
+      [
+        ...activeConnectionIds, // Connected providers
+        ...explicitProviderIds, // Zero-config providers required by specific clients
+      ].filter((pid) => !pausedNodeIds.has(pid))
+    );
 
     // Sort by PROVIDER_ORDER
     const sortedProviderIds = [...providerIdsToShow].sort((a, b) => {
@@ -361,7 +369,8 @@ export default function ModelSelectModal({
           };
         }
       } else if (isCustomProvider) {
-        const matchedNode = providerNodes.find((node) => node.id === providerId);
+        const matchedNode = providerNodes.find((node) => node.id === providerId || node.prefix === providerId);
+        if (matchedNode && matchedNode.isActive === false) return;
         const displayName = matchedNode?.name || providerInfo.name;
         const nodePrefix = matchedNode?.prefix || providerId; // Consider a more user-friendly fallback if providerId is a UUID
 
@@ -487,11 +496,12 @@ export default function ModelSelectModal({
     hiddenModelsByProvider,
   ]);
 
-  // Filter combos by search query
+  // Filter combos by search query - only active and unhidden combos
   const filteredCombos = useMemo(() => {
-    if (!searchQuery.trim()) return combos;
+    const activeCombos = combos.filter((c: any) => c.isActive !== false && !c.isHidden);
+    if (!searchQuery.trim()) return activeCombos;
     const query = searchQuery.toLowerCase();
-    return combos.filter((c) => c.name.toLowerCase().includes(query));
+    return activeCombos.filter((c) => (c.name || c.id || "").toLowerCase().includes(query));
   }, [combos, searchQuery]);
 
   // Filter models by search query
@@ -818,7 +828,7 @@ export default function ModelSelectModal({
           onClose();
           setSearchQuery("");
         }}
-        className="w-full px-3 py-2 text-sm font-medium rounded border border-primary bg-primary text-white hover:bg-primary/90 transition-colors"
+        className="w-full px-3 py-2 text-sm font-medium rounded border border-white/10 bg-[image:var(--grad-brand)] text-white hover:brightness-105 transition-all shadow-sm"
       >
         {t("done")}
       </button>

@@ -915,7 +915,7 @@ function ProviderSection({
                   onSave();
                 }}
                 disabled={saving || !isEdited}
-                className="px-2.5 py-1 text-[11px] bg-primary text-white rounded hover:bg-primary/90 transition-colors disabled:opacity-40"
+                className="px-2.5 py-1 text-[11px] bg-[image:var(--grad-brand)] hover:brightness-105 text-white rounded transition-all disabled:opacity-40 shadow-xs"
               >
                 {saving ? t("saving") : t("saveProvider")}
               </button>

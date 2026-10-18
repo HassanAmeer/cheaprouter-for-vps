@@ -75,15 +75,9 @@ export default function LandingPage() {
               <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
                 <button
                   onClick={() => router.push("/dashboard")}
-                  className="w-full sm:w-auto h-14 px-10 rounded-lg bg-[#E54D5E] hover:bg-[#C93D4E] text-white text-lg font-bold transition-all shadow-[0_0_20px_rgba(229,77,94,0.5)]"
+                  className="w-full sm:w-auto h-14 px-10 rounded-lg bg-[image:var(--grad-brand)] hover:brightness-105 text-white text-lg font-bold transition-all shadow-md"
                 >
                   {t("startFree")}
-                </button>
-                <button
-                  onClick={() => router.push("/docs")}
-                  className="w-full sm:w-auto h-14 px-10 rounded-lg border border-[#2D333B] hover:bg-[#111520] text-white text-lg font-bold transition-all"
-                >
-                  {t("readDocumentation")}
                 </button>
               </div>
             </div>

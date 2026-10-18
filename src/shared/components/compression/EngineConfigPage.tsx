@@ -408,7 +408,7 @@ export function EngineConfigPage({ engineId }: { engineId: string }) {
             <button
               onClick={handleSave}
               disabled={saving || Boolean(loadError)}
-              className="px-4 py-1.5 rounded bg-primary text-primary-foreground text-sm font-medium disabled:opacity-50"
+              className="px-4 py-1.5 rounded bg-[image:var(--grad-brand)] text-white hover:brightness-105 transition-all text-sm font-medium disabled:opacity-50 shadow-xs"
             >
               {saving ? t("saving") : t("save")}
             </button>
@@ -434,7 +434,7 @@ export function EngineConfigPage({ engineId }: { engineId: string }) {
           <button
             onClick={handlePreview}
             disabled={previewLoading}
-            className="px-4 py-1.5 rounded bg-primary text-primary-foreground text-sm font-medium disabled:opacity-50"
+            className="px-4 py-1.5 rounded bg-[image:var(--grad-brand)] text-white hover:brightness-105 transition-all text-sm font-medium disabled:opacity-50 shadow-xs"
           >
             {previewLoading ? t("processing") : t("preview")}
           </button>

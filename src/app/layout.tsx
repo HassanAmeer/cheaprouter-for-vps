@@ -122,12 +122,13 @@ export default async function RootLayout({ children }) {
                   // class rule and pin the light accent in dark mode. Only the
                   // flat single-color themes use the inline var.
                   if (colorTheme !== "jest") {
-                    var COLORS = { opencode: "#cbd5e1", coral: "#e54d5e", blue: "#3b82f6", red: "#ef4444", green: "#22c55e", violet: "#8b5cf6", orange: "#f97316", cyan: "#06b6d4" };
-                    var base = COLORS[colorTheme] || "#e54d5e";
+                    var COLORS = { opencode: "#334155", coral: "#334155", blue: "#3b82f6", red: "#ef4444", green: "#22c55e", violet: "#8b5cf6", orange: "#f97316", cyan: "#06b6d4" };
+                    var base = COLORS[colorTheme] || "#334155";
                     document.documentElement.style.setProperty("--color-primary", base);
                   } else {
                     document.documentElement.style.removeProperty("--color-primary");
                   }
+                  document.documentElement.style.removeProperty("--grad-brand");
                   document.documentElement.classList.toggle("theme-jest", colorTheme === "jest");
                 } catch (e) {}
               })();

@@ -1051,7 +1051,7 @@ function ProvidersPageContent() {
                   <button
                     type="button"
                     onClick={() => setActiveTab("all-providers")}
-                    className="mt-2 inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-white text-sm font-medium hover:bg-primary-hover transition-colors shadow-xs"
+                    className="mt-2 inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-[image:var(--grad-brand)] text-white text-sm font-medium hover:brightness-105 transition-all shadow-xs"
                   >
                     <span className="material-symbols-outlined text-[18px]">apps</span>
                     <span>Go to All Providers</span>
@@ -1088,7 +1088,7 @@ function ProvidersPageContent() {
                 <button
                   type="button"
                   onClick={() => setActiveTab("all-providers")}
-                  className="mt-2 inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-white text-sm font-medium hover:bg-primary-hover transition-colors shadow-xs"
+                  className="mt-2 inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-[image:var(--grad-brand)] text-white text-sm font-medium hover:brightness-105 transition-all shadow-xs"
                 >
                   <span className="material-symbols-outlined text-[18px]">apps</span>
                   <span>Go to All Providers</span>
@@ -1152,7 +1152,7 @@ function ProvidersPageContent() {
                   <button
                     type="button"
                     onClick={() => setActiveTab("all-providers")}
-                    className="mt-2 inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-white text-sm font-medium hover:bg-primary-hover transition-colors shadow-xs"
+                    className="mt-2 inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-[image:var(--grad-brand)] text-white text-sm font-medium hover:brightness-105 transition-all shadow-xs"
                   >
                     <span className="material-symbols-outlined text-[18px]">apps</span>
                     <span>Browse All Providers</span>

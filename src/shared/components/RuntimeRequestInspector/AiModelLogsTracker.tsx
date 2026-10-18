@@ -842,7 +842,7 @@ export default function AiModelLogsTracker({ clientLogs }: AiModelLogsTrackerPro
                     onClick={() =>
                       copyToClipboard(getFullLogReport(selectedLog), "copy_all_report")
                     }
-                    className="inline-flex items-center gap-1 h-6.5 rounded-md border border-primary/40 bg-primary/20 hover:bg-primary/30 px-2 text-[11px] font-semibold text-primary transition-all active:scale-95 cursor-pointer shadow-xs shrink-0"
+                    className="inline-flex items-center gap-1 h-6.5 rounded-md border border-white/10 bg-[image:var(--grad-brand)] hover:brightness-105 px-2 text-[11px] font-semibold text-white transition-all active:scale-95 cursor-pointer shadow-xs shrink-0"
                     title="Copy full telemetry, request, response & headers JSON"
                   >
                     <span className="material-symbols-outlined text-[13px]">
@@ -1307,7 +1307,7 @@ export default function AiModelLogsTracker({ clientLogs }: AiModelLogsTrackerPro
                         onClick={() =>
                           copyToClipboard(getFullLogReport(selectedLog), "copy_raw_full")
                         }
-                        className="inline-flex items-center gap-1 h-6 px-2.5 rounded-md bg-primary/20 text-primary border border-primary/30 text-[10px] font-semibold active:scale-95 cursor-pointer shadow-xs hover:bg-primary/30 transition-all"
+                        className="inline-flex items-center gap-1 h-6 px-2.5 rounded-md bg-[image:var(--grad-brand)] text-white hover:brightness-105 border border-white/10 text-[10px] font-semibold active:scale-95 cursor-pointer shadow-xs transition-all"
                       >
                         <span className="material-symbols-outlined text-[12px]">
                           {copiedKey === "copy_raw_full" ? "check" : "content_copy"}

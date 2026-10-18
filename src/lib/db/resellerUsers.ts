@@ -200,6 +200,56 @@ export function getResellerUserKeys(): ResellerUserKey[] {
 }
 
 /**
+ * Get the most recent active reseller user key.
+ */
+export function getLatestActiveUserKey(): ResellerUserKey | null {
+  ensureResellerUserKeysTable();
+  const db = getDbInstance();
+  const r = db
+    .prepare("SELECT * FROM reseller_user_keys WHERE is_active = 1 ORDER BY id DESC LIMIT 1")
+    .get() as {
+      id: number;
+      user_id: string;
+      user_name: string | null;
+      user_email: string;
+      plan_tier: string;
+      api_key: string;
+      api_key_id: string | null;
+      allowed_models: string;
+      token_budget: number | null;
+      tokens_used: number;
+      rpm_limit: number | null;
+      expires_at: string | null;
+      is_active: number;
+      created_at: string;
+      updated_at: string;
+    } | undefined;
+
+  if (!r) return null;
+  let allowedModels: string[] = [];
+  try {
+    allowedModels = JSON.parse(r.allowed_models || "[]");
+  } catch {}
+  return {
+    id: r.id,
+    userId: r.user_id,
+    userName: r.user_name,
+    userEmail: r.user_email,
+    planTier: r.plan_tier,
+    apiKey: r.api_key,
+    apiKeyId: r.api_key_id,
+    allowedModels,
+    tokenBudget: r.token_budget,
+    tokensUsed: r.tokens_used,
+    rpmLimit: r.rpm_limit,
+    expiresAt: r.expires_at,
+    isActive: r.is_active === 1,
+    createdAt: r.created_at,
+    updatedAt: r.updated_at,
+  };
+}
+
+/**
  * Issue a new API key for a user with specific models and limits.
  */
 export async function createResellerUserKey(params: {
@@ -371,11 +421,26 @@ export async function getAvailableModelsAndCombos() {
       custom_alias: string | null;
     }>;
 
-    activeModels = rows.map((r) => ({
-      id: r.custom_alias || r.original_model_id,
-      name: r.custom_name || r.custom_alias || r.original_model_id,
-      providerId: r.provider_id,
-    }));
+    // Filter by connected & unpaused providers
+    let activeProviderIds = new Set<string>();
+    try {
+      const conns = db
+        .prepare("SELECT provider_id, is_paused, test_status FROM provider_connections")
+        .all() as Array<{ provider_id: string; is_paused: number | null; test_status: string | null }>;
+      activeProviderIds = new Set(
+        conns
+          .filter((c) => c.is_paused !== 1 && c.test_status !== "paused")
+          .map((c) => c.provider_id)
+      );
+    } catch {}
+
+    activeModels = rows
+      .filter((r) => activeProviderIds.size === 0 || activeProviderIds.has(r.provider_id))
+      .map((r) => ({
+        id: r.custom_alias || `${r.provider_id}/${r.original_model_id}`,
+        name: r.custom_name || r.custom_alias || r.original_model_id,
+        providerId: r.provider_id,
+      }));
   } catch (err) {
     console.error("[resellerUsers] Failed to fetch curated models:", err);
   }
@@ -517,6 +582,60 @@ export function upsertResellerUser(params: {
   }
 
   return getResellerUser(params.id)!;
+}
+
+/**
+ * Ensure a default test user exists with 100M tokens per model and 30 RPM limit,
+ * along with an active API key.
+ */
+export async function ensureDefaultTestUserAndKey(): Promise<{ user: ResellerUser; apiKey: string }> {
+  ensureResellerUserKeysTable();
+  const available = await getAvailableModelsAndCombos();
+  const allModelIds = [
+    ...available.combos.map((c) => c.id),
+    ...available.models.map((m) => m.id),
+  ];
+
+  const modelQuotas: Record<string, number> = {};
+  for (const mid of allModelIds) {
+    modelQuotas[mid] = 100_000_000;
+  }
+
+  const tokenBudget = Math.max(100_000_000 * allModelIds.length, 500_000_000);
+  const rpmLimit = 30;
+  const userId = "test_uid_001";
+  const userEmail = "test@example.com";
+  const userName = "Pro Test User";
+  const planTier = "Pro";
+
+  const user = upsertResellerUser({
+    id: userId,
+    email: userEmail,
+    name: userName,
+    planTier,
+    tokenBudget,
+    rpmLimit,
+    modelQuotas,
+    isBanned: false,
+  });
+
+  const existingKeys = getResellerUserKeys().filter((k) => k.userId === userId && k.isActive);
+  let apiKey = existingKeys[0]?.apiKey;
+
+  if (!apiKey) {
+    const newKey = await createResellerUserKey({
+      userId,
+      userName,
+      userEmail,
+      planTier,
+      allowedModels: allModelIds,
+      tokenBudget,
+      rpmLimit,
+    });
+    apiKey = newKey.apiKey;
+  }
+
+  return { user, apiKey };
 }
 
 /**

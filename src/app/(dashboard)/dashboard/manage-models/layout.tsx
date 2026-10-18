@@ -6,9 +6,9 @@ import sectionNamespaces from "@/i18n/routeNamespaces.generated.json";
  * Per-section i18n provider — serves only the namespaces this section's
  * client components actually use (see scripts/i18n/generate-route-namespaces.mjs).
  */
-export default function CostsSectionLayout({ children }: { children: React.ReactNode }) {
+export default function ManageModelsSectionLayout({ children }: { children: React.ReactNode }) {
   return (
-    <SectionI18nProvider namespaces={sectionNamespaces.sections["costs"]}>
+    <SectionI18nProvider namespaces={sectionNamespaces.sections["manage-models"]}>
       {children}
     </SectionI18nProvider>
   );

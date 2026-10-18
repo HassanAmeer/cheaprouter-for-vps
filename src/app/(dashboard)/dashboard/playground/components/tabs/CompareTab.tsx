@@ -378,7 +378,7 @@ export default function CompareTab({ configState }: CompareTabProps) {
           <button
             onClick={() => void runAll()}
             disabled={columns.length === 0 || !prompt.trim()}
-            className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded bg-primary text-white hover:bg-primary/90 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded bg-[image:var(--grad-brand)] text-white hover:brightness-105 transition-all disabled:opacity-40 disabled:cursor-not-allowed shadow-xs"
             aria-label={t("runAllColumns")}
           >
             <span className="material-symbols-outlined text-[14px]">play_arrow</span>

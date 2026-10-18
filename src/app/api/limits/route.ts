@@ -51,7 +51,42 @@ export async function GET(request: Request) {
       }
     }
 
-    // Fetch list of available combos
+    // Fetch connections and provider nodes to ensure only connected, unpaused providers' models appear
+    let connectedProviderIds = new Set<string>();
+    try {
+      const { getProviderConnections, getProviderNodes } = await import("@/lib/db/providers");
+      const connections = await getProviderConnections();
+      const providerNodes: any[] = ((await getProviderNodes()) as any[]) || [];
+      const { isProviderConnectionConnected } = await import(
+        "@/shared/utils/providerConnectionStatus"
+      );
+
+      const activeConnections = connections.filter((c) => isProviderConnectionConnected(c));
+      const activeConnectedProviderSet = new Set(
+        activeConnections
+          .map((c) => (typeof c.provider === "string" ? c.provider : ""))
+          .filter(Boolean)
+      );
+      const pausedNodeIds = new Set(
+        providerNodes
+          .filter((n: any) => n.isActive === false)
+          .flatMap((n) => [n.id, n.prefix].filter(Boolean) as string[])
+      );
+      const activeNodeIds = providerNodes
+        .filter((n: any) => n.isActive !== false)
+        .map((n) => (n.prefix ? String(n.prefix) : String(n.id || "")))
+        .filter((nid) => activeConnectedProviderSet.has(nid));
+
+      connectedProviderIds = new Set(
+        [...Array.from(activeConnectedProviderSet), ...activeNodeIds].filter(
+          (pid) => !pausedNodeIds.has(pid)
+        )
+      );
+    } catch {
+      // Best effort fallback
+    }
+
+    // Fetch list of available combos - only active, unhidden combos
     let combos: Array<{
       id: string;
       name: string;
@@ -66,36 +101,47 @@ export async function GET(request: Request) {
     try {
       const { getCombos } = await import("@/lib/db/combos");
       const rawCombos = await getCombos();
-      combos = (rawCombos || []).map((c: any) => {
-        const id = String(c.id || c.name);
-        const originalName = String(c.name || c.id);
-        const customName = c.displayName || null;
-        const customAlias = c.customAlias || null;
-        const name = customName || originalName;
-        const matchedLimit = limits.find(
-          (l) =>
-            l.targetType === "combo" &&
-            (l.targetId === id || l.targetId === originalName || (customAlias && l.targetId === customAlias))
-        ) || null;
+      combos = (rawCombos || [])
+        .filter((c: any) => c.isActive !== false && !c.isHidden)
+        .map((c: any) => {
+          const id = String(c.id || c.name);
+          const originalName = String(c.name || c.id);
+          const customName = c.displayName || null;
+          const customAlias = c.customAlias || null;
+          const name = customName || originalName;
+          const matchedLimit =
+            limits.find(
+              (l) =>
+                l.targetType === "combo" &&
+                (l.targetId === id ||
+                  l.targetId === originalName ||
+                  (customAlias && l.targetId === customAlias))
+            ) || null;
 
-        return {
-          id,
-          name,
-          originalName,
-          customName,
-          customAlias,
-          strategy: c.strategy || "priority",
-          modelsCount: Array.isArray(c.models) ? c.models.length : 0,
-          isActive: c.isActive !== false,
-          limitPolicy: matchedLimit,
-        };
-      });
+          return {
+            id,
+            name,
+            originalName,
+            customName,
+            customAlias,
+            strategy: c.strategy || "priority",
+            modelsCount: Array.isArray(c.models) ? c.models.length : 0,
+            isActive: true,
+            limitPolicy: matchedLimit,
+          };
+        });
     } catch {
       // Best-effort
     }
 
-    // Fetch list of available models
-    let availableModels: Array<{
+    // Fetch list of available models - ONLY active piped models whose provider is connected and unpaused
+    const activeCustomizations = customizations.filter(
+      (c) =>
+        c &&
+        c.isActive === true &&
+        (connectedProviderIds.size === 0 || connectedProviderIds.has(c.providerId))
+    );
+    const availableModels: Array<{
       id: string;
       name: string;
       originalName: string;
@@ -106,89 +152,36 @@ export async function GET(request: Request) {
       contextWindow?: number | null;
       limitPolicy: any | null;
     }> = [];
-    try {
-      const { getAllCustomModels } = await import("@/lib/db/models");
-      const customModelsMap = await getAllCustomModels();
-      for (const [provider, models] of Object.entries(customModelsMap || {})) {
-        if (Array.isArray(models)) {
-          for (const m of models) {
-            if (m && m.id) {
-              const cust = custMap.get(`${provider}::${m.id}`) || custMap.get(m.id);
-              const originalName = m.name || m.id;
-              const customName = cust?.customName || null;
-              const customAlias = cust?.customAlias || null;
-              const name = customName || originalName;
-              const matchedLimit = limits.find(
-                (l) =>
-                  l.targetType === "model" &&
-                  (l.targetId === m.id ||
-                    l.targetId === `${provider}/${m.id}` ||
-                    (customAlias && l.targetId === customAlias))
-              ) || null;
 
-              availableModels.push({
-                id: m.id,
-                name,
-                originalName,
-                customName,
-                customAlias,
-                provider,
-                isActive: cust ? cust.isActive === true : true,
-                contextWindow: cust?.contextWindow ?? m.contextWindow ?? m.inputTokenLimit ?? null,
-                limitPolicy: matchedLimit,
-              });
-            }
-          }
-        }
-      }
-    } catch {
-      // Best-effort
-    }
+    for (const cust of activeCustomizations) {
+      const provider = cust.providerId;
+      const originalModelId = cust.originalModelId;
+      const originalName = originalModelId;
+      const customName = cust.customName || null;
+      const customAlias = cust.customAlias || null;
+      const name = customName || originalName;
+      const id = customAlias || originalModelId;
+      const matchedLimit =
+        limits.find(
+          (l) =>
+            l.targetType === "model" &&
+            (l.targetId === id ||
+              l.targetId === originalModelId ||
+              l.targetId === `${provider}/${originalModelId}` ||
+              (customAlias && l.targetId === customAlias))
+        ) || null;
 
-    // Also include common models from registry if list is empty
-    if (availableModels.length === 0) {
-      try {
-        const { getModelsByProviderId } = await import("@/shared/constants/models");
-        for (const pid of ["deepseek", "openai", "anthropic", "google", "groq"]) {
-          const regModels = getModelsByProviderId(pid);
-          for (const m of regModels || []) {
-            if (m && m.id) {
-              const cust = custMap.get(`${pid}::${m.id}`) || custMap.get(m.id);
-              const originalName = m.name || m.id;
-              const customName = cust?.customName || null;
-              const customAlias = cust?.customAlias || null;
-              const name = customName || originalName;
-              const matchedLimit = limits.find(
-                (l) =>
-                  l.targetType === "model" &&
-                  (l.targetId === m.id ||
-                    l.targetId === `${pid}/${m.id}` ||
-                    (customAlias && l.targetId === customAlias))
-              ) || null;
-
-              availableModels.push({
-                id: m.id,
-                name,
-                originalName,
-                customName,
-                customAlias,
-                provider: pid,
-                isActive: cust ? cust.isActive === true : true,
-                contextWindow:
-                  cust?.contextWindow ??
-                  (m as unknown as { context_length?: number; contextWindow?: number })
-                    .context_length ??
-                  (m as unknown as { context_length?: number; contextWindow?: number })
-                    .contextWindow ??
-                  null,
-                limitPolicy: matchedLimit,
-              });
-            }
-          }
-        }
-      } catch {
-        // ignore
-      }
+      availableModels.push({
+        id,
+        name,
+        originalName,
+        customName,
+        customAlias,
+        provider,
+        isActive: true,
+        contextWindow: cust.contextWindow ?? null,
+        limitPolicy: matchedLimit,
+      });
     }
 
     return NextResponse.json({

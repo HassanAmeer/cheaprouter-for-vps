@@ -292,6 +292,136 @@ export default function ManageModelsPanel() {
   const [savingComboId, setSavingComboId] = useState<string | null>(null);
   const [combosExpanded, setCombosExpanded] = useState<boolean>(true);
 
+  // ── Pagination State (50 items per page) ──
+  const [providerPages, setProviderPages] = useState<Record<string, number>>({});
+  const [comboPage, setComboPage] = useState<number>(1);
+  const MODEL_PAGE_SIZE = 50;
+
+  const filterKey = `${filter}::${capabilityFilter}`;
+  const [prevFilterKey, setPrevFilterKey] = useState(filterKey);
+  if (prevFilterKey !== filterKey) {
+    setPrevFilterKey(filterKey);
+    setProviderPages({});
+    setComboPage(1);
+  }
+
+  const renderPaginationBar = (
+    currentPg: number,
+    totalPages: number,
+    totalItems: number,
+    pageSize: number,
+    position: "top" | "bottom",
+    label: string,
+    onPageChange: (newPage: number) => void
+  ) => {
+    const startItem = totalItems === 0 ? 0 : (currentPg - 1) * pageSize + 1;
+    const endItem = Math.min(currentPg * pageSize, totalItems);
+
+    const getPageNumbers = () => {
+      const pages: (number | string)[] = [];
+      if (totalPages <= 7) {
+        for (let i = 1; i <= totalPages; i++) pages.push(i);
+      } else {
+        pages.push(1);
+        if (currentPg > 3) pages.push("...");
+        const start = Math.max(2, currentPg - 1);
+        const end = Math.min(totalPages - 1, currentPg + 1);
+        for (let i = start; i <= end; i++) pages.push(i);
+        if (currentPg < totalPages - 2) pages.push("...");
+        pages.push(totalPages);
+      }
+      return pages;
+    };
+
+    return (
+      <div
+        className={`flex flex-col sm:flex-row sm:items-center justify-between gap-2 px-3 sm:px-4 py-2 bg-bg-subtle/50 text-xs ${
+          position === "top" ? "border-b border-border/40" : "border-t border-border/40"
+        }`}
+      >
+        <div className="text-text-muted flex items-center gap-1.5 font-mono text-[11px]">
+          <span>Showing</span>
+          <span className="font-semibold text-text-main">
+            {startItem}–{endItem}
+          </span>
+          <span>of</span>
+          <span className="font-semibold text-text-main">{totalItems}</span>
+          <span>{label} ({pageSize} / page)</span>
+        </div>
+
+        <div className="flex items-center gap-1 self-center sm:self-auto">
+          {/* First */}
+          <button
+            type="button"
+            disabled={currentPg <= 1}
+            onClick={() => onPageChange(1)}
+            className="size-6.5 flex items-center justify-center rounded border border-border bg-bg-card hover:bg-bg-subtle text-text-muted hover:text-text-main disabled:opacity-30 disabled:cursor-not-allowed transition-colors cursor-pointer"
+            title="First Page"
+          >
+            <span className="material-symbols-outlined text-[14px]">first_page</span>
+          </button>
+
+          {/* Prev */}
+          <button
+            type="button"
+            disabled={currentPg <= 1}
+            onClick={() => onPageChange(Math.max(1, currentPg - 1))}
+            className="h-6.5 px-2 flex items-center gap-0.5 rounded border border-border bg-bg-card hover:bg-bg-subtle text-text-muted hover:text-text-main disabled:opacity-30 disabled:cursor-not-allowed transition-colors text-[11px] font-medium cursor-pointer"
+          >
+            <span className="material-symbols-outlined text-[13px]">chevron_left</span>
+            <span>Prev</span>
+          </button>
+
+          {/* Numbers */}
+          <div className="flex items-center gap-1 mx-1">
+            {getPageNumbers().map((p, idx) =>
+              typeof p === "number" ? (
+                <button
+                  key={idx}
+                  type="button"
+                  onClick={() => onPageChange(p)}
+                  className={`min-w-6.5 h-6.5 px-1.5 flex items-center justify-center rounded font-mono text-[11px] transition-colors cursor-pointer ${
+                    currentPg === p
+                      ? "bg-primary text-primary-foreground font-semibold shadow-xs"
+                      : "border border-border bg-bg-card hover:bg-bg-subtle text-text-muted hover:text-text-main"
+                  }`}
+                >
+                  {p}
+                </button>
+              ) : (
+                <span key={idx} className="px-1 text-text-muted font-mono text-[11px]">
+                  {p}
+                </span>
+              )
+            )}
+          </div>
+
+          {/* Next */}
+          <button
+            type="button"
+            disabled={currentPg >= totalPages}
+            onClick={() => onPageChange(Math.min(totalPages, currentPg + 1))}
+            className="h-6.5 px-2 flex items-center gap-0.5 rounded border border-border bg-bg-card hover:bg-bg-subtle text-text-muted hover:text-text-main disabled:opacity-30 disabled:cursor-not-allowed transition-colors text-[11px] font-medium cursor-pointer"
+          >
+            <span>Next</span>
+            <span className="material-symbols-outlined text-[13px]">chevron_right</span>
+          </button>
+
+          {/* Last */}
+          <button
+            type="button"
+            disabled={currentPg >= totalPages}
+            onClick={() => onPageChange(totalPages)}
+            className="size-6.5 flex items-center justify-center rounded border border-border bg-bg-card hover:bg-bg-subtle text-text-muted hover:text-text-main disabled:opacity-30 disabled:cursor-not-allowed transition-colors cursor-pointer"
+            title="Last Page"
+          >
+            <span className="material-symbols-outlined text-[14px]">last_page</span>
+          </button>
+        </div>
+      </div>
+    );
+  };
+
   // ── Global Test Prompt State (Modal in Header) ───────────────────────────
   const [showCapabilityPrompt, setShowCapabilityPrompt] = useState(false);
   const [testPrompt, setTestPrompt] = useState("Hi");
@@ -954,6 +1084,7 @@ export default function ManageModelsPanel() {
           customName: draft.name.trim() || null,
           customAlias: draft.alias.trim() || null,
           contextWindow: parsedCtx,
+          isActive: cust ? cust.isActive : true,
           isFreeOverride: tier === "free",
           pricingTier: tier,
           originalInputCost: origInputCostNum,
@@ -1289,15 +1420,40 @@ export default function ManageModelsPanel() {
           </div>
 
           {/* Combos List */}
-          {combosExpanded && (
-            <div className="border-t border-border/40">
-              {combos
-                .filter((c) => {
-                  const targetName = c.displayName || c.name || c.id;
-                  const targetAlias = c.customAlias || "";
-                  return matchesSearch(targetName, filter) || matchesSearch(targetAlias, filter);
-                })
-                .map((combo, index, arr) => {
+          {combosExpanded && (() => {
+            const filteredCombos = combos.filter((c) => {
+              const targetName = c.displayName || c.name || c.id;
+              const targetAlias = c.customAlias || "";
+              return matchesSearch(targetName, filter) || matchesSearch(targetAlias, filter);
+            });
+            const COMBO_PAGE_SIZE = 50;
+            const totalComboPages = Math.max(1, Math.ceil(filteredCombos.length / COMBO_PAGE_SIZE));
+            const safeComboPg = Math.min(Math.max(1, comboPage), totalComboPages);
+            const paginatedCombos = filteredCombos.slice(
+              (safeComboPg - 1) * COMBO_PAGE_SIZE,
+              safeComboPg * COMBO_PAGE_SIZE
+            );
+
+            return (
+              <div className="border-t border-border/40">
+                {filteredCombos.length === 0 ? (
+                  <p className="px-4 py-3 text-xs text-text-muted font-mono">
+                    No combos match your search.
+                  </p>
+                ) : (
+                  <>
+                    {/* Top Pagination Bar */}
+                    {renderPaginationBar(
+                      safeComboPg,
+                      totalComboPages,
+                      filteredCombos.length,
+                      COMBO_PAGE_SIZE,
+                      "top",
+                      "combos",
+                      (p) => setComboPage(p)
+                    )}
+
+                    {paginatedCombos.map((combo, index, arr) => {
                   const draft = comboDrafts[combo.id] ?? {
                     displayName: combo.displayName ?? "",
                     customAlias: combo.customAlias ?? "",
@@ -1741,8 +1897,21 @@ export default function ManageModelsPanel() {
                     </Fragment>
                   );
                 })}
-            </div>
-          )}
+                    {/* Bottom Pagination Bar */}
+                    {renderPaginationBar(
+                      safeComboPg,
+                      totalComboPages,
+                      filteredCombos.length,
+                      COMBO_PAGE_SIZE,
+                      "bottom",
+                      "combos",
+                      (p) => setComboPage(p)
+                    )}
+                  </>
+                )}
+              </div>
+            );
+          })()}
         </div>
       )}
 
@@ -1894,16 +2063,37 @@ export default function ManageModelsPanel() {
               )}
 
               {/* Models List */}
-              {isOpen && (
-                <div className="border-t border-border/40">
-                  {models.length === 0 && (
-                    <p className="px-4 py-3 text-xs text-text-muted font-mono">
-                      {all.length === 0
-                        ? "No synced models for this provider yet — click Fetch Models above."
-                        : "No models match your search."}
-                    </p>
-                  )}
-                  {models.map((m, index) => {
+              {isOpen && (() => {
+                const currentPg = providerPages[providerId] || 1;
+                const totalModelPages = Math.max(1, Math.ceil(models.length / MODEL_PAGE_SIZE));
+                const safePg = Math.min(Math.max(1, currentPg), totalModelPages);
+                const paginatedModels = models.slice(
+                  (safePg - 1) * MODEL_PAGE_SIZE,
+                  safePg * MODEL_PAGE_SIZE
+                );
+
+                return (
+                  <div className="border-t border-border/40">
+                    {models.length === 0 ? (
+                      <p className="px-4 py-3 text-xs text-text-muted font-mono">
+                        {all.length === 0
+                          ? "No synced models for this provider yet — click Fetch Models above."
+                          : "No models match your search."}
+                      </p>
+                    ) : (
+                      <>
+                        {/* Top Pagination Bar */}
+                        {renderPaginationBar(
+                          safePg,
+                          totalModelPages,
+                          models.length,
+                          MODEL_PAGE_SIZE,
+                          "top",
+                          "models",
+                          (p) => setProviderPages((prev) => ({ ...prev, [providerId]: p }))
+                        )}
+
+                        {paginatedModels.map((m, index) => {
                     const key = `${providerId}::${m.id}`;
                     const cust = customizationByModel.get(key);
                     const isActive = cust ? cust.isActive === true : false;
@@ -2641,12 +2831,28 @@ export default function ManageModelsPanel() {
                         </div>
 
                         {/* Full-Width Visible Grey Divider Between Models */}
-                        {index < models.length - 1 && <div className="w-full h-px bg-zinc-600" />}
+                        {index < paginatedModels.length - 1 && (
+                          <div className="w-full h-px bg-zinc-600" />
+                        )}
                       </Fragment>
                     );
                   })}
-                </div>
-              )}
+
+                        {/* Bottom Pagination Bar */}
+                        {renderPaginationBar(
+                          safePg,
+                          totalModelPages,
+                          models.length,
+                          MODEL_PAGE_SIZE,
+                          "bottom",
+                          "models",
+                          (p) => setProviderPages((prev) => ({ ...prev, [providerId]: p }))
+                        )}
+                      </>
+                    )}
+                  </div>
+                );
+              })()}
             </div>
           );
         })}

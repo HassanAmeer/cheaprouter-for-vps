@@ -8,6 +8,7 @@ import fs from "fs";
 import path from "path";
 import * as yaml from "js-yaml";
 import { sanitizeErrorMessage } from "@cheaproute/open-sse/utils/error";
+import { getEndpointCategory } from "@/shared/utils/apiEndpointCategories";
 
 let cachedSpec: { data: any; mtime: number } | null = null;
 const OPENAPI_SPEC_CANDIDATES = [
@@ -164,10 +165,12 @@ export async function GET() {
             exampleBody = generateExampleFromSchema(jsonBody.schema, raw.components?.schemas || {});
           }
 
+          const endpointTags = Array.isArray(spec.tags) ? spec.tags : [];
           catalog.endpoints.push({
             method: method.toUpperCase(),
             path: pathStr,
-            tags: Array.isArray(spec.tags) ? spec.tags : [],
+            tags: endpointTags,
+            category: getEndpointCategory(pathStr, endpointTags),
             summary: spec.summary || "",
             description: spec.description || "",
             security: spec.security ? true : false,
@@ -181,6 +184,122 @@ export async function GET() {
           });
         }
       }
+    }
+
+    // Ensure Reseller & BYOK endpoints are fully represented in catalog
+    const hasResellerUsers = catalog.endpoints.some((e: any) => e.path === "/api/v1/reseller/users");
+    if (!hasResellerUsers) {
+      catalog.endpoints.push(
+        {
+          method: "GET",
+          path: "/api/v1/reseller/users",
+          tags: ["Reseller", "User Accounts"],
+          category: "reseller",
+          summary: "List Reseller Users, Keys & Available Models",
+          description: "Returns all registered reseller users, issued API keys, BYOK keys, available models, and published providers.",
+          security: false,
+          parameters: [],
+          requestBody: false,
+          responses: ["200", "500"],
+          loopbackOnly: false,
+          alwaysProtected: false,
+          internal: false,
+        },
+        {
+          method: "POST",
+          path: "/api/v1/reseller/users",
+          tags: ["Reseller", "User Accounts"],
+          category: "reseller",
+          summary: "Register User, Issue Key, Update Quota or Add BYOK",
+          description: "Multi-action management: 'upsertUser' (create user with plan & quota), 'updateQuota' (plan upgrade/reset tokens), 'setBanStatus', 'addByok' (register user BYOK key), or key creation.",
+          security: false,
+          parameters: [],
+          requestBody: true,
+          exampleBody: {
+            action: "upsertUser",
+            userId: "usr_1001",
+            userName: "Hasan Ali",
+            userEmail: "hasan@example.com",
+            plan: "Free",
+            tokenBudget: 10,
+            rpmLimit: 30,
+          },
+          responses: ["200", "201", "400", "403", "500"],
+          loopbackOnly: false,
+          alwaysProtected: false,
+          internal: false,
+        },
+        {
+          method: "DELETE",
+          path: "/api/v1/reseller/users",
+          tags: ["Reseller", "User Accounts"],
+          category: "reseller",
+          summary: "Delete Reseller User or BYOK Key",
+          description: "Delete a user account or individual BYOK key by ID.",
+          security: false,
+          parameters: [
+            {
+              name: "userId",
+              in: "query",
+              required: true,
+              schema: { type: "string" },
+              description: "The user ID to delete",
+            },
+          ],
+          requestBody: false,
+          responses: ["200", "400", "500"],
+          loopbackOnly: false,
+          alwaysProtected: false,
+          internal: false,
+        }
+      );
+    }
+
+    const hasResellerByok = catalog.endpoints.some((e: any) => e.path === "/api/v1/reseller/byok");
+    if (!hasResellerByok) {
+      catalog.endpoints.push(
+        {
+          method: "GET",
+          path: "/api/v1/reseller/byok",
+          tags: ["Reseller", "BYOK"],
+          category: "reseller",
+          summary: "Get BYOK Master Toggle State",
+          description: "Check if Bring-Your-Own-Key pass-through is globally enabled.",
+          security: true,
+          parameters: [],
+          requestBody: false,
+          responses: ["200", "401", "500"],
+          loopbackOnly: false,
+          alwaysProtected: false,
+          internal: false,
+        },
+        {
+          method: "POST",
+          path: "/api/v1/reseller/byok",
+          tags: ["Reseller", "BYOK"],
+          category: "reseller",
+          summary: "Update BYOK Master Toggle State",
+          description: "Enable or disable Bring-Your-Own-Key pass-through globally.",
+          security: true,
+          parameters: [],
+          requestBody: true,
+          exampleBody: {
+            byokEnabled: true,
+          },
+          responses: ["200", "400", "401", "500"],
+          loopbackOnly: false,
+          alwaysProtected: false,
+          internal: false,
+        }
+      );
+    }
+
+    const existingTagNames = new Set(catalog.tags.map((t: any) => t.name));
+    if (!existingTagNames.has("Reseller")) {
+      catalog.tags.push({ name: "Reseller", description: "Reseller and multi-tenant management endpoints" });
+    }
+    if (!existingTagNames.has("User Accounts")) {
+      catalog.tags.push({ name: "User Accounts", description: "User registration, plans, and quota balances" });
     }
 
     cachedSpec = { data: catalog, mtime };

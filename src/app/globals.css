@@ -1,6 +1,4 @@
 @import "tailwindcss";
-@import "fumadocs-ui/css/neutral.css";
-@import "fumadocs-ui/css/preset.css";
 /* Self-hosted Material Symbols icon font (#3695): the Google Fonts CDN
    (fonts.googleapis.com) is blocked in some networks (e.g. mainland China),
    which made every icon ligature fall back to its literal text name and broke
@@ -12,21 +10,13 @@
    instead of in the component so node:test / esbuild never see a .css import. */
 @import "react18-json-view/src/style.css";
 @import "react18-json-view/src/dark.css";
-@source "../../node_modules/fumadocs-ui/css/generated/*.css";
 
 /* Keep Tailwind v4 from scanning the entire repository. The UI lives in the
-   App Router and shared component trees; third-party Fumadocs sources remain
-   explicit because node_modules is ignored by automatic detection. */
+   App Router and shared component trees. */
 @source "../app";
 @source "../shared";
-@source "../../node_modules/fumadocs-ui/dist/**/*.js";
 
 @custom-variant dark (&:where(.dark, .dark *));
-
-/* Fumadocs sidebar width override */
-:root {
-  --fd-sidebar-width: 220px;
-}
 
 /* OpenClaw × ClawHub Color Palette */
 :root {
@@ -34,14 +24,14 @@
   --desktop-safe-bottom: 0px;
   color-scheme: light;
 
-  /* Primary - Coral Red (OpenClaw) */
-  --color-primary: #e54d5e;
-  --color-primary-hover: #c93d4e;
+  /* Primary - Dark Slate / Charcoal */
+  --color-primary: #334155;
+  --color-primary-hover: #1e293b;
 
-  /* Accent - Indigo/Violet (buttons, links, gradients) */
-  --color-accent: #6366f1;
-  --color-accent-hover: #8b5cf6;
-  --color-accent-light: #a855f7;
+  /* Accent - Dark Silver / Slate (buttons, links, gradients) */
+  --color-accent: #475569;
+  --color-accent-hover: #334155;
+  --color-accent-light: #64748b;
 
   /* Semantic */
   --color-error: #ef4444;
@@ -109,7 +99,7 @@
   --surface-2: #f5f5fa;
   --radius: 14px;
   --radius-control: 9px;
-  --grad-brand: linear-gradient(135deg, var(--color-primary), var(--color-accent-light));
+  --grad-brand: linear-gradient(135deg, #475569, #18181b);
 
   /* Data-table surfaces — theme-aware. The DARK values (in .dark below) exactly mirror
      the previous hardcoded rgba in DataTable.tsx so dark stays byte-identical; these
@@ -136,6 +126,12 @@
   --color-text-main: #e6e6ef;
   --color-text-primary: #e6e6ef;
   --color-text-muted: #a1a1aa;
+
+  /* Primary & Accent - Dark Grey & Dark Silver */
+  --color-primary: #334155;
+  --color-primary-hover: #475569;
+  --color-accent: #475569;
+  --color-accent-hover: #334155;
 
   /* Orchestration status tokens — dark values (previous STATUS_HEX constants) */
   --orch-status-success: #22c55e;
@@ -177,6 +173,7 @@
   --table-row-zebra: rgba(255, 255, 255, 0.02);
   --table-row-hover: rgba(255, 255, 255, 0.04);
   --table-cell-border: rgba(255, 255, 255, 0.04);
+  --grad-brand: linear-gradient(135deg, #475569, #18181b);
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -190,14 +187,14 @@
 .theme-jest {
   color-scheme: light;
 
-  /* Accent — jest silver (matches COLOR_THEMES.jest) */
-  --color-primary: #94a3b8;
-  --color-primary-hover: #78879b;
+  /* Accent — dark silver & slate (matches COLOR_THEMES.jest) */
+  --color-primary: #334155;
+  --color-primary-hover: #1e293b;
 
-  /* Neutral accent family: no rainbow, just silver + a cool slate */
-  --color-accent: #64748b;
-  --color-accent-hover: #475569;
-  --color-accent-light: #94a3b8;
+  /* Neutral accent family: dark silver + cool slate */
+  --color-accent: #475569;
+  --color-accent-hover: #334155;
+  --color-accent-light: #64748b;
 
   /* Semantic (kept readable, slightly desaturated for the clean look) */
   --color-error: #dc2626;
@@ -259,7 +256,7 @@
   --color-fd-accent-foreground: #18181b;
   --color-fd-ring: #94a3b8;
 
-  --grad-brand: linear-gradient(135deg, #94a3b8, #475569);
+  --grad-brand: linear-gradient(135deg, #475569, #18181b);
 }
 
 /* Jest Open Code — dark body: graphite surfaces, silver edges, same silver accent */
@@ -267,12 +264,12 @@
 .theme-jest.dark {
   color-scheme: dark;
 
-  --color-primary: #b1bcca;
-  --color-primary-hover: #cbd5e1;
+  --color-primary: #334155;
+  --color-primary-hover: #475569;
 
-  --color-accent: #94a3b8;
-  --color-accent-hover: #b1bcca;
-  --color-accent-light: #cbd5e1;
+  --color-accent: #475569;
+  --color-accent-hover: #334155;
+  --color-accent-light: #64748b;
 
   --color-error: #ef4444;
   --color-success: #22c55e;
@@ -327,10 +324,12 @@
   --color-fd-accent-foreground: #e5e7eb;
   --color-fd-ring: #b1bcca;
 
-  --grad-brand: linear-gradient(135deg, #b1bcca, #64748b);
+  --grad-brand: linear-gradient(135deg, #475569, #18181b);
 }
 
 @theme inline {
+  --background-image-grad-brand: var(--grad-brand);
+
   /* Primary */
   --color-primary: var(--color-primary);
   --color-primary-hover: var(--color-primary-hover);
@@ -575,6 +574,45 @@ button .material-symbols-outlined,
     "opsz" 24;
 }
 
+/* ═══════════════════════════════════════════════════════════════
+   Global Theme Buttons — Dark Grey & Dark Silver Gradient
+   Applies to all primary theme buttons across the whole app
+   ═══════════════════════════════════════════════════════════════ */
+button.bg-primary,
+a.bg-primary,
+[role="button"].bg-primary,
+.btn-primary {
+  background-image: var(--grad-brand) !important;
+  background-color: transparent !important;
+  color: #ffffff !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+button.bg-primary:hover,
+a.bg-primary:hover,
+[role="button"].bg-primary:hover,
+.btn-primary:hover {
+  filter: brightness(1.15) !important;
+}
+
+button.bg-primary:active,
+a.bg-primary:active,
+[role="button"].bg-primary:active,
+.btn-primary:active {
+  transform: scale(0.98);
+}
+
+button.bg-primary:disabled,
+a.bg-primary:disabled,
+[role="button"].bg-primary:disabled,
+.btn-primary:disabled {
+  opacity: 0.5 !important;
+  cursor: not-allowed !important;
+  transform: none !important;
+}
+
 /* react18-json-view fold control: the SVG chevron itself is ~14px, too small
    a touch target on mobile. Padding + a matching negative margin grows the
    hit area without shifting sibling layout -- unlike the row-level icon this
@@ -745,12 +783,38 @@ select option {
 /* React Flow loads its component stylesheet after this global file in some
    bundles, so direct background/fill declarations can lose to its shorthand
    rules. Override the supported theme variables on our canvas instead. */
-.react-flow.cheaproute-flow {
+.react-flow.cheaproute-flow,
+.react-flow.cheaprouter-flow {
   --xy-controls-button-background-color: var(--color-surface);
   --xy-controls-button-background-color-hover: var(--color-bg-subtle);
   --xy-controls-button-color: var(--color-text-main);
   --xy-controls-button-color-hover: var(--color-text-main);
   --xy-controls-button-border-color: var(--color-border);
+}
+
+.react-flow__controls {
+  border-radius: 10px !important;
+  overflow: hidden !important;
+  border: 1px solid var(--color-border) !important;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.2) !important;
+}
+
+.react-flow__controls-button {
+  background-color: var(--color-surface) !important;
+  border-bottom: 1px solid var(--color-border) !important;
+  fill: var(--color-text-main) !important;
+}
+
+.react-flow__controls-button:last-child {
+  border-bottom: none !important;
+}
+
+.react-flow__controls-button:hover {
+  background-color: var(--color-bg-subtle) !important;
+}
+
+.react-flow__controls-button svg {
+  fill: var(--color-text-main) !important;
 }
 
 /* Desktop sidebar visibility must not depend on Tailwind's hidden/lg:flex cascade

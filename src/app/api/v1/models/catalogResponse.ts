@@ -316,6 +316,11 @@ export async function finalizeCatalogResponse(
         : entry;
       listedModel = maybeOmitCatalogModelName(listedModel, includeModelNames);
     }
+    if (listedModel.context_window == null && listedModel.context_length != null) {
+      listedModel.context_window = listedModel.context_length;
+    } else if (listedModel.context_length == null && listedModel.context_window != null) {
+      listedModel.context_length = listedModel.context_window;
+    }
     enriched.push(listedModel);
     catEnrichCount++;
     if (catEnrichCount % catYIELD_EVERY === 0) {

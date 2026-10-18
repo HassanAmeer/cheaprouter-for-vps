@@ -146,22 +146,34 @@ export default function HomeRecentRequests({ enabled = true }: { enabled?: boole
   }, [enabled, load]);
 
   return (
-    <Card padding="sm" className="flex min-w-0 flex-col overflow-hidden h-[300px] sm:h-[420px]">
-      <div className="pb-2 mb-1 border-b border-border shrink-0">
-        <span className="text-xs font-semibold uppercase tracking-wide text-text-muted">
-          {t("recentRequests")}
-        </span>
+    <Card padding="sm" className="flex min-w-0 flex-col overflow-hidden h-[270px] sm:h-[295px]">
+      <div className="flex items-center justify-between pb-2 mb-2 border-b border-border/70 shrink-0">
+        <div className="flex items-center gap-2">
+          <span className="text-xs font-semibold uppercase tracking-wide text-text-muted">
+            {t("recentRequests")}
+          </span>
+          {rows.length > 0 && (
+            <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-mono bg-primary/10 text-primary border border-primary/20">
+              {rows.length}
+            </span>
+          )}
+        </div>
+        <div className="flex items-center gap-1.5 text-[10px] text-text-muted">
+          <span className="size-1.5 rounded-full bg-emerald-500 animate-pulse" />
+          <span>Live feed</span>
+        </div>
       </div>
 
       {loaded && rows.length === 0 ? (
-        <div className="flex-1 flex items-center justify-center text-sm text-text-muted">
-          {t("recentRequestsEmpty")}
+        <div className="flex-1 flex flex-col items-center justify-center text-sm text-text-muted gap-1">
+          <span className="material-symbols-outlined text-2xl text-text-muted/60">history</span>
+          <p className="text-xs">{t("recentRequestsEmpty")}</p>
         </div>
       ) : (
-        <div className="flex-1 overflow-y-auto -mx-1 px-1">
+        <div className="flex-1 overflow-y-auto -mx-1 px-1 min-h-0">
           <table className="w-full min-w-0 border-collapse text-xs">
             <thead className="sticky top-0 z-10 bg-surface">
-              <tr className="border-b border-border text-text-muted">
+              <tr className="border-b border-border/60 text-text-muted text-[11px]">
                 <th className="w-2 py-1.5" />
                 <th className="py-1.5 text-left font-semibold">{t("recentRequestsModel")}</th>
                 <th className="py-1.5 text-right font-semibold whitespace-nowrap">
@@ -170,27 +182,29 @@ export default function HomeRecentRequests({ enabled = true }: { enabled?: boole
                 <th className="py-1.5 text-right font-semibold">{t("recentRequestsWhen")}</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-border/50">
+            <tbody className="divide-y divide-border/40">
               {rows.map((row, i) => {
                 const state = requestState(row);
                 return (
-                  <tr key={row.id || i} className="hover:bg-bg-subtle transition-colors">
-                    <td className="py-1.5">
+                  <tr key={row.id || i} className="hover:bg-bg-subtle/80 transition-colors group">
+                    <td className="py-1.5 pl-0.5">
                       <span className={`block size-1.5 rounded-full ${STATE_DOT[state]}`} />
                     </td>
                     <td
-                      className="py-1.5 font-mono truncate max-w-[140px]"
+                      className="py-1.5 font-mono text-[11px] truncate max-w-[130px] text-text-main group-hover:text-primary transition-colors"
                       title={row.model || ""}
                     >
                       {row.model || "—"}
                     </td>
-                    <td className="py-1.5 text-right whitespace-nowrap">
-                      <span className="text-primary">{fmtCompact(row.tokens?.in)}↑</span>{" "}
-                      <span className="text-green-500">{fmtCompact(row.tokens?.out)}↓</span>
+                    <td className="py-1.5 text-right whitespace-nowrap text-[11px] font-mono">
+                      <span className="text-primary font-medium">{fmtCompact(row.tokens?.in)}↑</span>{" "}
+                      <span className="text-emerald-500 font-medium">
+                        {fmtCompact(row.tokens?.out)}↓
+                      </span>
                     </td>
-                    <td className="py-1.5 text-right whitespace-nowrap text-text-muted">
+                    <td className="py-1.5 text-right whitespace-nowrap text-[10px] text-text-muted font-mono">
                       {state === "active" ? (
-                        <span className="text-primary">•••</span>
+                        <span className="text-primary font-bold">•••</span>
                       ) : (
                         timeAgo(row.timestamp, nowMs)
                       )}

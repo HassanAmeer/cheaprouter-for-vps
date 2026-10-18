@@ -5,7 +5,7 @@ import { useTranslations } from "next-intl";
 import { useState, useEffect, useMemo, useCallback, useRef, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Card, CardSkeleton, ShimmerPageLoader, Button, Modal } from "@/shared/components";
+import { Card, ShimmerPageLoader, Button, Modal } from "@/shared/components";
 import { AI_PROVIDERS, NOAUTH_PROVIDERS, OAUTH_PROVIDERS } from "@/shared/constants/providers";
 import {
   isProviderConnectionConnected,
@@ -100,12 +100,6 @@ function mergeUpdateStep(steps: UpdateStep[], nextStep: UpdateStep) {
   return next;
 }
 
-// Quick-start link classes, extracted so each <Link> still fits on one line with
-// prefetch={false} (#8281) — this file is size-frozen.
-const INLINE_LINK = "text-primary hover:underline";
-const DOCS_LINK =
-  "hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-border text-text-muted hover:text-text-main hover:bg-bg-subtle transition-colors";
-
 // Stable no-op subscription for useSyncExternalStore reads of never-changing
 // browser globals (location.origin does not change without a full navigation).
 function emptySubscribe() {
@@ -132,7 +126,7 @@ export default function HomePageClient({ machineId: _machineId }: HomePageClient
   const [providerMetrics, setProviderMetrics] = useState<Record<string, ProviderMetricSummary>>({});
   const [providerTopology, setProviderTopology] = useState({ lastProvider: "", errorProvider: "" });
   const [providerNodes, setProviderNodes] = useState<
-    Array<{ id?: string; prefix?: string; name?: string }>
+    Array<{ id?: string; prefix?: string; name?: string; isActive?: boolean }>
   >([]);
 
   // The live in-flight request feed for the Provider Topology pulse animation is owned by
@@ -216,6 +210,9 @@ export default function HomePageClient({ machineId: _machineId }: HomePageClient
 
   // Appearance settings for home page pinning
   const [showQuickStartOnHome, setShowQuickStartOnHome] = useState(true); // default on
+  const [isQuickStartExpanded, setIsQuickStartExpanded] = useState(false); // default collapsed
+  const [isApiFlowExpanded, setIsApiFlowExpanded] = useState(false); // default collapsed
+  const [isTopologyExpanded, setIsTopologyExpanded] = useState(false); // default collapsed
   // #4596: default hidden until appearance settings load, so the live-WS
   // topology connection is never opened before we know the user wants it.
   const [showProviderTopologyOnHome, setShowProviderTopologyOnHome] = useState(false);
@@ -493,11 +490,19 @@ export default function HomePageClient({ machineId: _machineId }: HomePageClient
       const canonicalProviderId = normalizeProviderId(rawProviderId);
       if (!canonicalProviderId || byProvider.has(canonicalProviderId)) return;
 
-      // Exclude providers with no active connections (or where all connections are deactivated)
+      // Exclude providers with no active connections (or where all connections are deactivated / paused)
       const hasActiveConn = providerConnections.some(
         (c) => normalizeProviderId(c.provider) === canonicalProviderId && c.isActive !== false
       );
       if (!hasActiveConn) return;
+
+      // Exclude paused custom provider nodes
+      const customNode = (providerNodes || []).find(
+        (n) =>
+          normalizeProviderId(n.id) === canonicalProviderId ||
+          (n.prefix && normalizeProviderId(n.prefix) === canonicalProviderId)
+      );
+      if (customNode && customNode.isActive === false) return;
 
       const resolvedName =
         getProviderDisplayLabel(rawProviderId, providerNodes) ||
@@ -514,9 +519,11 @@ export default function HomePageClient({ machineId: _machineId }: HomePageClient
     };
 
     providerStats
-      .filter((provider) => provider.total > 0)
+      .filter((provider) => provider.total > 0 && provider.connected > 0)
       .forEach((provider) => addProvider(provider.id, provider.provider.name));
-    providerConnections.forEach((conn) => addProvider(conn.provider));
+    providerConnections
+      .filter((c) => c.isActive !== false)
+      .forEach((conn) => addProvider(conn.provider));
     Object.keys(providerMetrics).forEach((provider) => addProvider(provider));
 
     return Array.from(byProvider.values());
@@ -797,7 +804,7 @@ export default function HomePageClient({ machineId: _machineId }: HomePageClient
   const currentEndpoint = baseUrl;
 
   return (
-    <div className="flex flex-col gap-8">
+    <div className="flex flex-col gap-2.5 sm:gap-3">
       {/* Update Progress Overlay */}
       {showUpdateOverlay && (
         <div className="fixed inset-0 z-[999] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
@@ -1054,110 +1061,641 @@ export default function HomePageClient({ machineId: _machineId }: HomePageClient
       {/* Quick Start (controlled by Appearance setting, default on) */}
       {showQuickStartOnHome && (
         <Card>
-          <div className="flex flex-col gap-5">
-            <div className="flex items-center justify-between">
-              <div>
-                <h2 className="text-lg font-semibold">{t("quickStart")}</h2>
-                <p className="text-sm text-text-muted">{t("quickStartDesc")}</p>
+          <div className="flex flex-col gap-4">
+            {/* Header: Title, Subtitle, Step Badge, Full Docs Link, and Collapse/Expand Toggle */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="flex items-start gap-3">
+                <div className="w-9 h-9 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0 mt-0.5">
+                  <span className="material-symbols-outlined text-[20px]">rocket_launch</span>
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">
+                      Quick Start Guide
+                    </h2>
+                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold bg-primary/10 text-primary border border-primary/20">
+                      8 Steps · Core Workflow
+                    </span>
+                  </div>
+                  <p className="text-sm text-text-muted mt-0.5">
+                    Step-by-step setup: connect providers, create combos, pipe models, configure limits & users, query APIs, and track usage.
+                  </p>
+                </div>
               </div>
-              <Link href="/docs" prefetch={false} className={DOCS_LINK}>
-                <span className="material-symbols-outlined text-[14px]">menu_book</span>
-                {t("fullDocs")}
-              </Link>
+
+              <div className="flex items-center gap-2 self-end sm:self-auto shrink-0">
+                <button
+                  onClick={() => setIsQuickStartExpanded((prev) => !prev)}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-zinc-200/80 dark:border-zinc-700/80 hover:bg-zinc-100 dark:hover:bg-zinc-800 text-xs font-semibold text-zinc-700 dark:text-zinc-200 transition-all cursor-pointer shadow-xs"
+                  aria-expanded={isQuickStartExpanded}
+                  title={isQuickStartExpanded ? "Collapse guide" : "Expand guide"}
+                >
+                  <span>{isQuickStartExpanded ? "Collapse" : "Expand Guide"}</span>
+                  <span
+                    className={`material-symbols-outlined text-[18px] transition-transform duration-200 ${
+                      isQuickStartExpanded ? "rotate-180" : ""
+                    }`}
+                  >
+                    expand_more
+                  </span>
+                </button>
+              </div>
             </div>
 
-            <ol className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
-              <li className="rounded-lg border border-border bg-bg-subtle p-4 flex gap-3">
-                <div className="flex items-center justify-center size-8 rounded-lg bg-primary/10 text-primary shrink-0">
-                  <span className="material-symbols-outlined text-[18px]">key</span>
+            {/* Collapsed Preview Roadmap Bar */}
+            {!isQuickStartExpanded && (
+              <div
+                onClick={() => setIsQuickStartExpanded(true)}
+                className="pt-3 border-t border-zinc-100 dark:border-zinc-800/80 flex flex-wrap items-center gap-2 cursor-pointer group"
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    setIsQuickStartExpanded(true);
+                  }
+                }}
+              >
+                <span className="text-xs font-medium text-zinc-400 dark:text-zinc-500">
+                  Workflow:
+                </span>
+                {[
+                  { num: "1", name: "Providers", icon: "dns" },
+                  { num: "2", name: "Combos", icon: "layers" },
+                  { num: "3", name: "Pipe Models", icon: "tune" },
+                  { num: "4", name: "Limits", icon: "speed" },
+                  { num: "5", name: "Users", icon: "groups" },
+                  { num: "6", name: "API Keys", icon: "vpn_key" },
+                  { num: "7", name: "Endpoints", icon: "api" },
+                  { num: "8", name: "Usage", icon: "analytics" },
+                ].map((s, idx) => (
+                  <div key={s.num} className="flex items-center gap-1.5">
+                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-zinc-100/80 dark:bg-zinc-800/80 group-hover:bg-primary/10 group-hover:text-primary border border-zinc-200/60 dark:border-zinc-700/60 text-xs font-medium text-zinc-700 dark:text-zinc-300 transition-colors">
+                      <span className="text-[10px] font-mono font-bold text-zinc-400 group-hover:text-primary">
+                        {s.num}
+                      </span>
+                      <span className="material-symbols-outlined text-[14px]">{s.icon}</span>
+                      <span>{s.name}</span>
+                    </span>
+                    {idx < 7 && (
+                      <span className="text-zinc-300 dark:text-zinc-600 text-xs font-bold">→</span>
+                    )}
+                  </div>
+                ))}
+                <span className="text-xs text-primary font-medium ml-auto flex items-center gap-0.5 group-hover:translate-x-0.5 transition-transform">
+                  Expand all 8 steps <span className="material-symbols-outlined text-[14px]">arrow_forward</span>
+                </span>
+              </div>
+            )}
+
+            {/* Expanded Detailed 8 Steps Grid */}
+            {isQuickStartExpanded && (
+              <div className="pt-4 border-t border-zinc-100 dark:border-zinc-800/80 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3.5">
+                {/* Step 1: Connect Provider */}
+                <div className="rounded-2xl border border-zinc-200/80 dark:border-zinc-800/80 bg-zinc-50/60 dark:bg-zinc-800/40 p-4 flex flex-col justify-between hover:border-zinc-300 dark:hover:border-zinc-700 transition-all">
+                  <div>
+                    <div className="flex items-center justify-between gap-2 mb-2.5">
+                      <span className="font-mono text-[11px] font-bold px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                        Step 01
+                      </span>
+                      <div className="w-8 h-8 rounded-xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center shrink-0">
+                        <span className="material-symbols-outlined text-[18px]">dns</span>
+                      </div>
+                    </div>
+                    <h3 className="font-semibold text-sm text-zinc-900 dark:text-zinc-100">
+                      Connect Providers
+                    </h3>
+                    <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1.5 leading-relaxed">
+                      Connect upstream AI providers (Custom or Pre-configured / Prefix providers). Choose your model types and test models directly in provider details before deploying.
+                    </p>
+                  </div>
+                  <Link
+                    href="/dashboard/providers"
+                    prefetch={false}
+                    className="mt-4 inline-flex items-center gap-1 text-xs font-semibold text-primary hover:text-primary-hover hover:underline"
+                  >
+                    Open Providers
+                    <span className="material-symbols-outlined text-[14px]">arrow_forward</span>
+                  </Link>
                 </div>
-                <div>
-                  <span className="font-semibold">{t("step1Title")}</span>
-                  <p className="text-text-muted mt-0.5">
-                    {t.rich("step1Desc", {
-                      endpoint: (chunks) => (
-                        <Link
-                          href="/dashboard/api-manager"
-                          prefetch={false}
-                          className={INLINE_LINK}
-                        >
-                          {chunks}
-                        </Link>
-                      ),
-                    })}
-                  </p>
+
+                {/* Step 2: Create Combo */}
+                <div className="rounded-2xl border border-zinc-200/80 dark:border-zinc-800/80 bg-zinc-50/60 dark:bg-zinc-800/40 p-4 flex flex-col justify-between hover:border-zinc-300 dark:hover:border-zinc-700 transition-all">
+                  <div>
+                    <div className="flex items-center justify-between gap-2 mb-2.5">
+                      <span className="font-mono text-[11px] font-bold px-2 py-0.5 rounded-md bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20">
+                        Step 02
+                      </span>
+                      <div className="w-8 h-8 rounded-xl bg-purple-500/10 text-purple-500 flex items-center justify-center shrink-0">
+                        <span className="material-symbols-outlined text-[18px]">layers</span>
+                      </div>
+                    </div>
+                    <h3 className="font-semibold text-sm text-zinc-900 dark:text-zinc-100">
+                      Create Model Combos
+                    </h3>
+                    <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1.5 leading-relaxed">
+                      Select different models to create load-balanced combos. Give your combo a custom name, add multiple models, and select routing strategies (Auto-Combo, Random, Priority, Weighted, etc.).
+                    </p>
+                  </div>
+                  <Link
+                    href="/dashboard/combos"
+                    prefetch={false}
+                    className="mt-4 inline-flex items-center gap-1 text-xs font-semibold text-primary hover:text-primary-hover hover:underline"
+                  >
+                    Open Combos
+                    <span className="material-symbols-outlined text-[14px]">arrow_forward</span>
+                  </Link>
                 </div>
-              </li>
-              <li className="rounded-lg border border-border bg-bg-subtle p-4 flex gap-3">
-                <div className="flex items-center justify-center size-8 rounded-lg bg-green-500/10 text-green-500 shrink-0">
-                  <span className="material-symbols-outlined text-[18px]">dns</span>
+
+                {/* Step 3: Manage & Pipe Models */}
+                <div className="rounded-2xl border border-zinc-200/80 dark:border-zinc-800/80 bg-zinc-50/60 dark:bg-zinc-800/40 p-4 flex flex-col justify-between hover:border-zinc-300 dark:hover:border-zinc-700 transition-all">
+                  <div>
+                    <div className="flex items-center justify-between gap-2 mb-2.5">
+                      <span className="font-mono text-[11px] font-bold px-2 py-0.5 rounded-md bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border border-cyan-500/20">
+                        Step 03
+                      </span>
+                      <div className="w-8 h-8 rounded-xl bg-cyan-500/10 text-cyan-500 flex items-center justify-center shrink-0">
+                        <span className="material-symbols-outlined text-[18px]">tune</span>
+                      </div>
+                    </div>
+                    <h3 className="font-semibold text-sm text-zinc-900 dark:text-zinc-100">
+                      Pipe Models & Combos
+                    </h3>
+                    <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1.5 leading-relaxed">
+                      Select models and combos to pipe for usage.{" "}
+                      <strong className="text-zinc-800 dark:text-zinc-200">
+                        Only piped models will be accessible via APIs and available to users.
+                      </strong>{" "}
+                      Rename models, set custom aliases, adjust context windows, set token prices, and assign Free or Pro tiers.
+                    </p>
+                  </div>
+                  <Link
+                    href="/dashboard/manage-models"
+                    prefetch={false}
+                    className="mt-4 inline-flex items-center gap-1 text-xs font-semibold text-primary hover:text-primary-hover hover:underline"
+                  >
+                    Open Pipe Models
+                    <span className="material-symbols-outlined text-[14px]">arrow_forward</span>
+                  </Link>
                 </div>
-                <div>
-                  <span className="font-semibold">{t("step2Title")}</span>
-                  <p className="text-text-muted mt-0.5">
-                    {t.rich("step2Desc", {
-                      providers: (chunks) => (
-                        <Link href="/dashboard/providers" prefetch={false} className={INLINE_LINK}>
-                          {chunks}
-                        </Link>
-                      ),
-                    })}
-                  </p>
+
+                {/* Step 4: Limits Bank */}
+                <div className="rounded-2xl border border-zinc-200/80 dark:border-zinc-800/80 bg-zinc-50/60 dark:bg-zinc-800/40 p-4 flex flex-col justify-between hover:border-zinc-300 dark:hover:border-zinc-700 transition-all">
+                  <div>
+                    <div className="flex items-center justify-between gap-2 mb-2.5">
+                      <span className="font-mono text-[11px] font-bold px-2 py-0.5 rounded-md bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20">
+                        Step 04
+                      </span>
+                      <div className="w-8 h-8 rounded-xl bg-rose-500/10 text-rose-500 flex items-center justify-center shrink-0">
+                        <span className="material-symbols-outlined text-[18px]">speed</span>
+                      </div>
+                    </div>
+                    <h3 className="font-semibold text-sm text-zinc-900 dark:text-zinc-100">
+                      Limits Bank
+                    </h3>
+                    <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1.5 leading-relaxed">
+                      Configure token quota ceilings on piped models and combos (e.g. 500M, 10B, 1B, or unlimited). Specify total token capacity and reset windows to protect upstream budgets.
+                    </p>
+                  </div>
+                  <Link
+                    href="/dashboard/limits"
+                    prefetch={false}
+                    className="mt-4 inline-flex items-center gap-1 text-xs font-semibold text-primary hover:text-primary-hover hover:underline"
+                  >
+                    Open Limits Bank
+                    <span className="material-symbols-outlined text-[14px]">arrow_forward</span>
+                  </Link>
                 </div>
-              </li>
-              <li className="rounded-lg border border-border bg-bg-subtle p-4 flex gap-3">
-                <div className="flex items-center justify-center size-8 rounded-lg bg-blue-500/10 text-blue-500 shrink-0">
-                  <span className="material-symbols-outlined text-[18px]">link</span>
+
+                {/* Step 5: User Management */}
+                <div className="rounded-2xl border border-zinc-200/80 dark:border-zinc-800/80 bg-zinc-50/60 dark:bg-zinc-800/40 p-4 flex flex-col justify-between hover:border-zinc-300 dark:hover:border-zinc-700 transition-all">
+                  <div>
+                    <div className="flex items-center justify-between gap-2 mb-2.5">
+                      <span className="font-mono text-[11px] font-bold px-2 py-0.5 rounded-md bg-teal-500/10 text-teal-600 dark:text-teal-400 border border-teal-500/20">
+                        Step 05
+                      </span>
+                      <div className="w-8 h-8 rounded-xl bg-teal-500/10 text-teal-500 flex items-center justify-center shrink-0">
+                        <span className="material-symbols-outlined text-[18px]">groups</span>
+                      </div>
+                    </div>
+                    <h3 className="font-semibold text-sm text-zinc-900 dark:text-zinc-100">
+                      User Management
+                    </h3>
+                    <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1.5 leading-relaxed">
+                      Create reseller users and assign token limits or unlimited access. Set RPM (requests per minute) caps, assign Free or Pro plans, monitor generated API keys and BYOK credentials, or ban and enable/disable accounts.
+                    </p>
+                  </div>
+                  <Link
+                    href="/dashboard/users"
+                    prefetch={false}
+                    className="mt-4 inline-flex items-center gap-1 text-xs font-semibold text-primary hover:text-primary-hover hover:underline"
+                  >
+                    Open Users
+                    <span className="material-symbols-outlined text-[14px]">arrow_forward</span>
+                  </Link>
                 </div>
-                <div>
-                  <span className="font-semibold">{t("step3Title")}</span>
-                  <p className="text-text-muted mt-0.5">
-                    {t("step3Desc", { url: currentEndpoint })}
-                  </p>
+
+                {/* Step 6: User API Keys */}
+                <div className="rounded-2xl border border-zinc-200/80 dark:border-zinc-800/80 bg-zinc-50/60 dark:bg-zinc-800/40 p-4 flex flex-col justify-between hover:border-zinc-300 dark:hover:border-zinc-700 transition-all">
+                  <div>
+                    <div className="flex items-center justify-between gap-2 mb-2.5">
+                      <span className="font-mono text-[11px] font-bold px-2 py-0.5 rounded-md bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
+                        Step 06
+                      </span>
+                      <div className="w-8 h-8 rounded-xl bg-amber-500/10 text-amber-500 flex items-center justify-center shrink-0">
+                        <span className="material-symbols-outlined text-[18px]">vpn_key</span>
+                      </div>
+                    </div>
+                    <h3 className="font-semibold text-sm text-zinc-900 dark:text-zinc-100">
+                      User API Keys
+                    </h3>
+                    <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1.5 leading-relaxed">
+                      Select created users and generate dedicated API keys. Directly pause and resume keys from the table, view creation dates, copy keys securely, or permanently delete keys.
+                    </p>
+                  </div>
+                  <Link
+                    href="/dashboard/api-manager"
+                    prefetch={false}
+                    className="mt-4 inline-flex items-center gap-1 text-xs font-semibold text-primary hover:text-primary-hover hover:underline"
+                  >
+                    Open API Keys
+                    <span className="material-symbols-outlined text-[14px]">arrow_forward</span>
+                  </Link>
                 </div>
-              </li>
-              <li className="rounded-lg border border-border bg-bg-subtle p-4 flex gap-3">
-                <div className="flex items-center justify-center size-8 rounded-lg bg-amber-500/10 text-amber-500 shrink-0">
-                  <span className="material-symbols-outlined text-[18px]">analytics</span>
+
+                {/* Step 7: Go to Endpoints */}
+                <div className="rounded-2xl border border-zinc-200/80 dark:border-zinc-800/80 bg-zinc-50/60 dark:bg-zinc-800/40 p-4 flex flex-col justify-between hover:border-zinc-300 dark:hover:border-zinc-700 transition-all">
+                  <div>
+                    <div className="flex items-center justify-between gap-2 mb-2.5">
+                      <span className="font-mono text-[11px] font-bold px-2 py-0.5 rounded-md bg-sky-500/10 text-sky-600 dark:text-sky-400 border border-sky-500/20">
+                        Step 07
+                      </span>
+                      <div className="w-8 h-8 rounded-xl bg-sky-500/10 text-sky-500 flex items-center justify-center shrink-0">
+                        <span className="material-symbols-outlined text-[18px]">api</span>
+                      </div>
+                    </div>
+                    <h3 className="font-semibold text-sm text-zinc-900 dark:text-zinc-100">
+                      Integrate Endpoints
+                    </h3>
+                    <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1.5 leading-relaxed">
+                      Query <code className="px-1 py-0.5 rounded bg-zinc-200/60 dark:bg-zinc-700/60 font-mono text-[10px] text-zinc-800 dark:text-zinc-200">{currentEndpoint}/v1/models</code> or send requests to <code className="px-1 py-0.5 rounded bg-zinc-200/60 dark:bg-zinc-700/60 font-mono text-[10px] text-zinc-800 dark:text-zinc-200">{currentEndpoint}/v1/chat/completions</code>.{" "}
+                      <strong className="text-zinc-800 dark:text-zinc-200">
+                        Only piped models will appear in /v1/models.
+                      </strong>
+                    </p>
+                  </div>
+                  <Link
+                    href="/dashboard/endpoint"
+                    prefetch={false}
+                    className="mt-4 inline-flex items-center gap-1 text-xs font-semibold text-primary hover:text-primary-hover hover:underline"
+                  >
+                    View Endpoints
+                    <span className="material-symbols-outlined text-[14px]">arrow_forward</span>
+                  </Link>
                 </div>
-                <div>
-                  <span className="font-semibold">{t("step4Title")}</span>
-                  <p className="text-text-muted mt-0.5">
-                    {t.rich("step4Desc", {
-                      logs: (chunks) => (
-                        <Link href="/dashboard/logs" prefetch={false} className={INLINE_LINK}>
-                          {chunks}
-                        </Link>
-                      ),
-                      analytics: (chunks) => (
-                        <Link href="/dashboard/usage" prefetch={false} className={INLINE_LINK}>
-                          {chunks}
-                        </Link>
-                      ),
-                    })}
-                  </p>
+
+                {/* Step 8: Usage & Limits Tracking */}
+                <div className="rounded-2xl border border-zinc-200/80 dark:border-zinc-800/80 bg-zinc-50/60 dark:bg-zinc-800/40 p-4 flex flex-col justify-between hover:border-zinc-300 dark:hover:border-zinc-700 transition-all">
+                  <div>
+                    <div className="flex items-center justify-between gap-2 mb-2.5">
+                      <span className="font-mono text-[11px] font-bold px-2 py-0.5 rounded-md bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20">
+                        Step 08
+                      </span>
+                      <div className="w-8 h-8 rounded-xl bg-indigo-500/10 text-indigo-500 flex items-center justify-center shrink-0">
+                        <span className="material-symbols-outlined text-[18px]">analytics</span>
+                      </div>
+                    </div>
+                    <h3 className="font-semibold text-sm text-zinc-900 dark:text-zinc-100">
+                      Usage & Limits
+                    </h3>
+                    <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1.5 leading-relaxed">
+                      Monitor token consumption across all users and models. Track consumed vs remaining tokens against Limits Bank ceilings, inspect RPM request rates, and review active usage logs.
+                    </p>
+                  </div>
+                  <Link
+                    href="/dashboard/usage"
+                    prefetch={false}
+                    className="mt-4 inline-flex items-center gap-1 text-xs font-semibold text-primary hover:text-primary-hover hover:underline"
+                  >
+                    Open Usage Analytics
+                    <span className="material-symbols-outlined text-[14px]">arrow_forward</span>
+                  </Link>
                 </div>
-              </li>
-            </ol>
+              </div>
+            )}
           </div>
         </Card>
       )}
 
-      {/* Usage analytics: provider/token/key roll-up + charts. Kept out of the
-          topology section so it renders independently of that setting. */}
-      <HomeAnalytics providerStats={providerStats} customProviders={customProvidersCount} />
+      {/* API Creation & Testing Quick Flow */}
+      {showQuickStartOnHome && (
+        <Card>
+          <div className="flex flex-col gap-4">
+            {/* Header: Title, Subtitle, Badge, and Collapse/Expand Toggle */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="flex items-start gap-3">
+                <div className="w-9 h-9 rounded-xl bg-sky-500/10 text-sky-500 flex items-center justify-center shrink-0 mt-0.5">
+                  <span className="material-symbols-outlined text-[20px]">api</span>
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">
+                      API Creation & Testing Quick Flow
+                    </h2>
+                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold bg-sky-500/10 text-sky-600 dark:text-sky-400 border border-sky-500/20">
+                      4 Steps · API Access & Test
+                    </span>
+                  </div>
+                  <p className="text-sm text-text-muted mt-0.5">
+                    Fast client setup: Register user identity → Issue API key → Test endpoints → Monitor usage & limits.
+                  </p>
+                </div>
+              </div>
 
-      {showProviderTopologyOnHome && (
-        <div className="grid grid-cols-1 lg:grid-cols-[2fr_1fr] gap-3">
-          <HomeProviderTopologySection
-            providers={topologyProviders}
-            lastProvider={lastProvider}
-            errorProvider={errorProvider}
-            enabled={showProviderTopologyOnHome}
-          />
-          <HomeRecentRequests enabled={showProviderTopologyOnHome} />
-        </div>
+              <div className="flex items-center gap-2 self-end sm:self-auto shrink-0">
+                <button
+                  onClick={() => setIsApiFlowExpanded((prev) => !prev)}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-zinc-200/80 dark:border-zinc-700/80 hover:bg-zinc-100 dark:hover:bg-zinc-800 text-xs font-semibold text-zinc-700 dark:text-zinc-200 transition-all cursor-pointer shadow-xs"
+                  aria-expanded={isApiFlowExpanded}
+                  title={isApiFlowExpanded ? "Collapse API flow" : "Expand API flow"}
+                >
+                  <span>{isApiFlowExpanded ? "Collapse" : "Expand Flow"}</span>
+                  <span
+                    className={`material-symbols-outlined text-[18px] transition-transform duration-200 ${
+                      isApiFlowExpanded ? "rotate-180" : ""
+                    }`}
+                  >
+                    expand_more
+                  </span>
+                </button>
+              </div>
+            </div>
+
+            {/* Collapsed Preview Roadmap Bar */}
+            {!isApiFlowExpanded && (
+              <div
+                onClick={() => setIsApiFlowExpanded(true)}
+                className="pt-3 border-t border-zinc-100 dark:border-zinc-800/80 flex flex-wrap items-center gap-2 cursor-pointer group"
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    setIsApiFlowExpanded(true);
+                  }
+                }}
+              >
+                <span className="text-xs font-medium text-zinc-400 dark:text-zinc-500">
+                  API Flow:
+                </span>
+                {[
+                  { num: "1", name: "Users", icon: "person_add" },
+                  { num: "2", name: "API Keys", icon: "vpn_key" },
+                  { num: "3", name: "Test Endpoints", icon: "api" },
+                  { num: "4", name: "Check Usage", icon: "analytics" },
+                ].map((s, idx) => (
+                  <div key={s.num} className="flex items-center gap-1.5">
+                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-zinc-100/80 dark:bg-zinc-800/80 group-hover:bg-sky-500/10 group-hover:text-sky-600 dark:group-hover:text-sky-400 border border-zinc-200/60 dark:border-zinc-700/60 text-xs font-medium text-zinc-700 dark:text-zinc-300 transition-colors">
+                      <span className="text-[10px] font-mono font-bold text-zinc-400 group-hover:text-sky-500">
+                        {s.num}
+                      </span>
+                      <span className="material-symbols-outlined text-[14px]">{s.icon}</span>
+                      <span>{s.name}</span>
+                    </span>
+                    {idx < 3 && (
+                      <span className="text-zinc-300 dark:text-zinc-600 text-xs font-bold">→</span>
+                    )}
+                  </div>
+                ))}
+                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 text-xs font-medium ml-1">
+                  <span className="material-symbols-outlined text-[14px]">science</span>
+                  Playground (Piped Models Only)
+                </span>
+                <span className="text-xs text-sky-600 dark:text-sky-400 font-medium ml-auto flex items-center gap-0.5 group-hover:translate-x-0.5 transition-transform">
+                  Expand full flow <span className="material-symbols-outlined text-[14px]">arrow_forward</span>
+                </span>
+              </div>
+            )}
+
+            {/* Expanded Detailed 4 Steps Grid + Playground Callout */}
+            {isApiFlowExpanded && (
+              <div className="pt-4 border-t border-zinc-100 dark:border-zinc-800/80 flex flex-col gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3.5">
+                  {/* Step 1: Add User */}
+                  <div className="rounded-2xl border border-zinc-200/80 dark:border-zinc-800/80 bg-zinc-50/60 dark:bg-zinc-800/40 p-4 flex flex-col justify-between hover:border-zinc-300 dark:hover:border-zinc-700 transition-all">
+                    <div>
+                      <div className="flex items-center justify-between gap-2 mb-2.5">
+                        <span className="font-mono text-[11px] font-bold px-2 py-0.5 rounded-md bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20">
+                          Step 01
+                        </span>
+                        <div className="w-8 h-8 rounded-xl bg-purple-500/10 text-purple-500 flex items-center justify-center shrink-0">
+                          <span className="material-symbols-outlined text-[18px]">person_add</span>
+                        </div>
+                      </div>
+                      <h3 className="font-semibold text-sm text-zinc-900 dark:text-zinc-100">
+                        Add User First
+                      </h3>
+                      <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1.5 leading-relaxed">
+                        API key issue karne se pehle user create karein. User ID aur username assign karein taake keys, limits aur quota usage specifically us user ke account ke saath link ho sakein.
+                      </p>
+                    </div>
+                    <Link
+                      href="/dashboard/users"
+                      prefetch={false}
+                      className="mt-4 inline-flex items-center gap-1 text-xs font-semibold text-primary hover:text-primary-hover hover:underline"
+                    >
+                      Manage Users
+                      <span className="material-symbols-outlined text-[14px]">arrow_forward</span>
+                    </Link>
+                  </div>
+
+                  {/* Step 2: Create API Key */}
+                  <div className="rounded-2xl border border-zinc-200/80 dark:border-zinc-800/80 bg-zinc-50/60 dark:bg-zinc-800/40 p-4 flex flex-col justify-between hover:border-zinc-300 dark:hover:border-zinc-700 transition-all">
+                    <div>
+                      <div className="flex items-center justify-between gap-2 mb-2.5">
+                        <span className="font-mono text-[11px] font-bold px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                          Step 02
+                        </span>
+                        <div className="w-8 h-8 rounded-xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center shrink-0">
+                          <span className="material-symbols-outlined text-[18px]">vpn_key</span>
+                        </div>
+                      </div>
+                      <h3 className="font-semibold text-sm text-zinc-900 dark:text-zinc-100">
+                        Generate API Key
+                      </h3>
+                      <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1.5 leading-relaxed">
+                        Selected user ke liye unique API key create karein. Yahan se key copy karein, pause aur resume states manage karein, ya revoke/delete karein. Extra options bilkul clean aur simple hain.
+                      </p>
+                    </div>
+                    <Link
+                      href="/dashboard/api-manager"
+                      prefetch={false}
+                      className="mt-4 inline-flex items-center gap-1 text-xs font-semibold text-primary hover:text-primary-hover hover:underline"
+                    >
+                      Open API Keys
+                      <span className="material-symbols-outlined text-[14px]">arrow_forward</span>
+                    </Link>
+                  </div>
+
+                  {/* Step 3: Test Endpoints */}
+                  <div className="rounded-2xl border border-zinc-200/80 dark:border-zinc-800/80 bg-zinc-50/60 dark:bg-zinc-800/40 p-4 flex flex-col justify-between hover:border-zinc-300 dark:hover:border-zinc-700 transition-all">
+                    <div>
+                      <div className="flex items-center justify-between gap-2 mb-2.5">
+                        <span className="font-mono text-[11px] font-bold px-2 py-0.5 rounded-md bg-sky-500/10 text-sky-600 dark:text-sky-400 border border-sky-500/20">
+                          Step 03
+                        </span>
+                        <div className="w-8 h-8 rounded-xl bg-sky-500/10 text-sky-500 flex items-center justify-center shrink-0">
+                          <span className="material-symbols-outlined text-[18px]">api</span>
+                        </div>
+                      </div>
+                      <h3 className="font-semibold text-sm text-zinc-900 dark:text-zinc-100">
+                        View & Test Endpoints
+                      </h3>
+                      <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1.5 leading-relaxed">
+                        Endpoints catalog par jayein aur visual test runner use karein. Apni newly generated API key ke sath OpenAI-compatible `/v1/chat/completions` request test karein aur live response verify karein.
+                      </p>
+                    </div>
+                    <Link
+                      href="/dashboard/endpoint"
+                      prefetch={false}
+                      className="mt-4 inline-flex items-center gap-1 text-xs font-semibold text-primary hover:text-primary-hover hover:underline"
+                    >
+                      Test Endpoints
+                      <span className="material-symbols-outlined text-[14px]">arrow_forward</span>
+                    </Link>
+                  </div>
+
+                  {/* Step 4: Monitor Usage */}
+                  <div className="rounded-2xl border border-zinc-200/80 dark:border-zinc-800/80 bg-zinc-50/60 dark:bg-zinc-800/40 p-4 flex flex-col justify-between hover:border-zinc-300 dark:hover:border-zinc-700 transition-all">
+                    <div>
+                      <div className="flex items-center justify-between gap-2 mb-2.5">
+                        <span className="font-mono text-[11px] font-bold px-2 py-0.5 rounded-md bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
+                          Step 04
+                        </span>
+                        <div className="w-8 h-8 rounded-xl bg-amber-500/10 text-amber-500 flex items-center justify-center shrink-0">
+                          <span className="material-symbols-outlined text-[18px]">analytics</span>
+                        </div>
+                      </div>
+                      <h3 className="font-semibold text-sm text-zinc-900 dark:text-zinc-100">
+                        Monitor Usage & Limits
+                      </h3>
+                      <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1.5 leading-relaxed">
+                        Endpoint test calls ke baad token consumption check karein. Kaun se user ne kaun sa model use kiya, kitne tokens kharch hue, Limits Bank ke mutabiq kitni limit bachi hai, sab track karein.
+                      </p>
+                    </div>
+                    <Link
+                      href="/dashboard/usage"
+                      prefetch={false}
+                      className="mt-4 inline-flex items-center gap-1 text-xs font-semibold text-primary hover:text-primary-hover hover:underline"
+                    >
+                      Check Usage
+                      <span className="material-symbols-outlined text-[14px]">arrow_forward</span>
+                    </Link>
+                  </div>
+                </div>
+
+                {/* Playground Interactive Testing Callout */}
+                <div className="rounded-2xl border border-zinc-200/80 dark:border-zinc-800/80 bg-linear-to-r from-sky-500/5 via-primary/5 to-purple-500/5 dark:from-sky-500/10 dark:via-primary/10 dark:to-purple-500/10 p-4 sm:p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                  <div className="flex items-start gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0 mt-0.5">
+                      <span className="material-symbols-outlined text-[22px]">science</span>
+                    </div>
+                    <div>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <h4 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+                          Test Directly in Playground
+                        </h4>
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                          Strict Policy: Piped Models Only
+                        </span>
+                      </div>
+                      <p className="text-xs text-zinc-600 dark:text-zinc-300 mt-1 leading-relaxed max-w-3xl">
+                        Agar aap API code ya terminal ke baghair direct chat completions test karna chahte hain, toh Playground use kar sakte hain. <span className="font-semibold text-zinc-900 dark:text-zinc-100">Zaroori Note:</span> Playground ke andar sirf aur sirf wahi models show honge jo aapne <Link href="/dashboard/curation" className="underline hover:text-primary">Manage Models (Pipe Models)</Link> ke zariye pipe / curate kiye hain aur active combos hain.
+                      </p>
+                    </div>
+                  </div>
+
+                  <Link
+                    href="/dashboard/playground"
+                    prefetch={false}
+                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-primary hover:bg-primary-hover text-white text-xs font-semibold shrink-0 transition-all shadow-xs cursor-pointer"
+                  >
+                    <span>Launch Playground</span>
+                    <span className="material-symbols-outlined text-[16px]">arrow_forward</span>
+                  </Link>
+                </div>
+              </div>
+            )}
+          </div>
+        </Card>
       )}
+
+      {/* Usage analytics: provider/token/key roll-up + topology + charts */}
+      <HomeAnalytics
+        providerStats={providerStats}
+        customProviders={customProvidersCount}
+        providerNodes={providerNodes}
+        providerConnections={providerConnections}
+        topologySection={
+          showProviderTopologyOnHome ? (
+            !isTopologyExpanded ? (
+              <div
+                onClick={() => setIsTopologyExpanded(true)}
+                className="p-2.5 rounded-2xl border border-zinc-200/80 dark:border-zinc-800/80 bg-zinc-50/70 dark:bg-zinc-800/40 hover:bg-zinc-100/80 dark:hover:bg-zinc-800/70 transition-all cursor-pointer flex flex-wrap items-center justify-between gap-2 text-xs shadow-xs group"
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") setIsTopologyExpanded(true);
+                }}
+              >
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white dark:bg-zinc-900 border border-zinc-200/60 dark:border-zinc-700/60 text-xs font-semibold text-zinc-900 dark:text-zinc-100">
+                    <span className="material-symbols-outlined text-[15px] text-primary">hub</span>
+                    Provider Topology & Recent Requests
+                  </span>
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-medium bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                    <span className="size-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                    Live Nodes: {topologyProviders.length}
+                  </span>
+                </div>
+                <div className="flex items-center gap-1.5 text-xs text-primary font-medium group-hover:translate-x-0.5 transition-transform">
+                  <span>Expand Topology & Live Requests</span>
+                  <span className="material-symbols-outlined text-[16px]">expand_more</span>
+                </div>
+              </div>
+            ) : (
+              <div className="flex flex-col gap-2">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-semibold text-text-muted uppercase tracking-wider">
+                      Provider Topology & Live Feed
+                    </span>
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-medium bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                      <span className="size-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                      Live Nodes: {topologyProviders.length}
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setIsTopologyExpanded(false)}
+                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl border border-zinc-200/80 dark:border-zinc-700/80 hover:bg-zinc-100 dark:hover:bg-zinc-800 text-xs font-semibold text-zinc-700 dark:text-zinc-200 transition-all cursor-pointer shadow-xs"
+                  >
+                    <span>Collapse Topology</span>
+                    <span className="material-symbols-outlined text-[16px]">expand_less</span>
+                  </button>
+                </div>
+                <div className="grid grid-cols-1 lg:grid-cols-[2fr_1fr] gap-2.5">
+                  <HomeProviderTopologySection
+                    providers={topologyProviders}
+                    lastProvider={lastProvider}
+                    errorProvider={errorProvider}
+                    enabled={showProviderTopologyOnHome && isTopologyExpanded}
+                  />
+                  <HomeRecentRequests enabled={showProviderTopologyOnHome && isTopologyExpanded} />
+                </div>
+              </div>
+            )
+          ) : null
+        }
+      />
 
       {/* Provider Models Modal */}
       {selectedProvider && (

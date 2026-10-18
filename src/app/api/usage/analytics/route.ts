@@ -42,6 +42,9 @@ function getRangeStartIso(range: string): string | null {
     case "30d":
       start.setDate(start.getDate() - 30);
       break;
+    case "60d":
+      start.setDate(start.getDate() - 60);
+      break;
     case "90d":
       start.setDate(start.getDate() - 90);
       break;

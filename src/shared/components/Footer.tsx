@@ -16,8 +16,11 @@ const footerLinks = {
     },
   ],
   resources: [
-    { key: "documentation", href: "/docs" },
-    { key: "apiReference", href: "/docs#api-reference" },
+    {
+      key: "github",
+      href: "https://github.com/diegosouzapw/CheapRoute",
+      external: true,
+    },
     {
       key: "helpCenter",
       href: "https://github.com/diegosouzapw/CheapRoute/discussions",
@@ -142,9 +145,6 @@ export default function Footer() {
             {t("copyright", { year: new Date().getFullYear() })}
           </p>
           <div className="flex gap-6 text-sm text-text-muted">
-            <Link href="/docs" className="hover:text-primary transition-colors">
-              {t("documentation")}
-            </Link>
             <Link href="/terms" className="hover:text-primary transition-colors">
               {t("terms")}
             </Link>

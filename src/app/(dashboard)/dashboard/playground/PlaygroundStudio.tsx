@@ -16,7 +16,57 @@
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { CAPABILITY_PRESETS, type CapabilityPreset } from "../providers/components/DefaultCapabilitiesPromptModal";
+import {
+  CAPABILITY_PRESETS,
+  type CapabilityPreset,
+} from "../providers/components/DefaultCapabilitiesPromptModal";
+
+export interface CapabilityBadge {
+  id: string;
+  label: string;
+  icon: string;
+  colorClass: string;
+}
+
+export function getCapabilityBadges(caps: string[]): CapabilityBadge[] {
+  const map: Record<string, { icon: string; colorClass: string }> = {
+    Vision: {
+      icon: "visibility",
+      colorClass: "text-amber-400 bg-amber-400/10 border-amber-400/30",
+    },
+    Reasoning: {
+      icon: "psychology",
+      colorClass: "text-purple-400 bg-purple-400/10 border-purple-400/30",
+    },
+    Tools: {
+      icon: "build",
+      colorClass: "text-blue-400 bg-blue-400/10 border-blue-400/30",
+    },
+    Code: {
+      icon: "code",
+      colorClass: "text-emerald-400 bg-emerald-400/10 border-emerald-400/30",
+    },
+    Chat: {
+      icon: "chat",
+      colorClass: "text-cyan-400 bg-cyan-400/10 border-cyan-400/30",
+    },
+    Combo: {
+      icon: "layers",
+      colorClass: "text-pink-400 bg-pink-400/10 border-pink-400/30",
+    },
+    Audio: {
+      icon: "volume_up",
+      colorClass: "text-orange-400 bg-orange-400/10 border-orange-400/30",
+    },
+  };
+
+  return caps.map((c) => ({
+    id: c,
+    label: c,
+    icon: map[c]?.icon || "check_circle",
+    colorClass: map[c]?.colorClass || "text-zinc-300 bg-white/10 border-white/15",
+  }));
+}
 
 export interface TargetOption {
   id: string; // The identifier sent as `model` in API calls
@@ -44,6 +94,10 @@ export function PlaygroundStudio() {
   const [selectedTargetId, setSelectedTargetId] = useState<string>("");
   const [loadingTargets, setLoadingTargets] = useState<boolean>(true);
 
+  // Authentication API Key state for testing
+  const [apiKey, setApiKey] = useState<string>("");
+  const [showApiKey, setShowApiKey] = useState<boolean>(false);
+
   // Chat conversation state
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputPrompt, setInputPrompt] = useState<string>("");
@@ -59,97 +113,126 @@ export function PlaygroundStudio() {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, isSending]);
 
-  // Load curated active models and combos
+  // Load API Key on mount (from localStorage or default config endpoint)
+  useEffect(() => {
+    const savedKey =
+      typeof window !== "undefined" ? localStorage.getItem("cheaproute_playground_api_key") : null;
+    if (savedKey) {
+      setApiKey(savedKey);
+    } else {
+      fetch("/api/v1/playground/config")
+        .then((r) => r.json())
+        .then((cfg) => {
+          if (cfg?.success && cfg.apiKey) {
+            setApiKey(cfg.apiKey);
+            try {
+              localStorage.setItem("cheaproute_playground_api_key", cfg.apiKey);
+            } catch {}
+          }
+        })
+        .catch(() => {});
+    }
+  }, []);
+
+  const handleApiKeyChange = (newKey: string) => {
+    setApiKey(newKey);
+    try {
+      if (newKey) {
+        localStorage.setItem("cheaproute_playground_api_key", newKey);
+      } else {
+        localStorage.removeItem("cheaproute_playground_api_key");
+      }
+    } catch {}
+  };
+
+  // Load active piped models and combos strictly from /v1/models
   useEffect(() => {
     let cancelled = false;
 
     async function loadAvailableTargets() {
       setLoadingTargets(true);
       try {
-        const [curationRes, combosRes] = await Promise.all([
-          fetch("/api/v1/models/curation").catch(() => null),
-          fetch("/api/combos").catch(() => null),
-        ]);
-
+        const res = await fetch("/v1/models").catch(() => null);
         const targetList: TargetOption[] = [];
 
-        // 1. Process Combos
-        if (combosRes && combosRes.ok) {
-          const combosData = await combosRes.json().catch(() => ({}));
-          const comboList = Array.isArray(combosData?.combos) ? combosData.combos : [];
-          for (const combo of comboList) {
-            if (combo?.isActive === false || combo?.isHidden === true) continue;
-            const comboName = String(combo?.name || combo?.id || "").trim();
-            if (!comboName) continue;
+        if (res && res.ok) {
+          const data = await res.json().catch(() => ({}));
+          const modelsList: Array<{
+            id: string;
+            name?: string;
+            owned_by?: string;
+            context_window?: number | null;
+            context_length?: number | null;
+            capabilities?: {
+              vision?: boolean;
+              tool_calling?: boolean;
+              reasoning?: boolean;
+            };
+            input_modalities?: string[];
+            pricing_tier?: string;
+          }> = Array.isArray(data?.data) ? data.data : [];
 
-            const models = Array.isArray(combo?.models) ? combo.models : [];
+          for (const m of modelsList) {
+            const isCombo = m.owned_by === "combo";
+            const modelId = String(m.id || "").trim();
+            if (!modelId) continue;
+
+            const displayName = String(m.name || m.id || "").trim();
+            const providerName = isCombo
+              ? "CheapRouter Combo"
+              : String(m.owned_by || "Provider");
+
+            const hasVision =
+              m.capabilities?.vision === true ||
+              (Array.isArray(m.input_modalities) && m.input_modalities.includes("image")) ||
+              /vision|vl|omni|image|gpt-4o|gemini-1.5/i.test(`${modelId} ${displayName}`);
+
+            const hasReasoning =
+              m.capabilities?.reasoning === true ||
+              /reason|o1|o3|r1|deepseek-r1|thinking|instruct/i.test(`${modelId} ${displayName}`);
+
+            const hasTools =
+              m.capabilities?.tool_calling === true || /tool|function/i.test(modelId);
+
+            const hasCode = /code|coder/i.test(`${modelId} ${displayName}`);
+
+            const hasAudio =
+              (Array.isArray(m.input_modalities) && m.input_modalities.includes("audio")) ||
+              /audio|whisper|speech/i.test(`${modelId} ${displayName}`);
+
+            const caps: string[] = [];
+            if (isCombo) caps.push("Combo");
+            caps.push("Chat");
+            if (hasVision) caps.push("Vision");
+            if (hasReasoning) caps.push("Reasoning");
+            if (hasTools) caps.push("Tools");
+            if (hasCode) caps.push("Code");
+            if (hasAudio) caps.push("Audio");
+
+            const contextWindow = m.context_window
+              ? `${Math.round(m.context_window / 1000)}K`
+              : m.context_length
+              ? `${Math.round(m.context_length / 1000)}K`
+              : undefined;
+
             targetList.push({
-              id: comboName,
-              name: comboName,
-              type: "combo",
-              provider: "CheapRouter Combo",
-              capabilities: ["Chat", "Auto Failover", "Multi-Target"],
-              limits: `${models.length} failover targets`,
+              id: modelId,
+              name: displayName,
+              type: isCombo ? "combo" : "model",
+              provider: providerName,
+              capabilities: caps,
+              limits: isCombo ? "Multi-Target Failover" : "Piped / Quota Pool",
+              contextWindow,
             });
-          }
-        }
-
-        // 2. Process Curated Models
-        if (curationRes && curationRes.ok) {
-          const curationData = await curationRes.json().catch(() => ({}));
-          const modelsByProvider = curationData?.modelsByProvider ?? {};
-          const connectedProviderIds: string[] = Array.isArray(curationData?.connectedProviderIds)
-            ? curationData.connectedProviderIds
-            : [];
-          const connectedSet = new Set(connectedProviderIds);
-
-          const customizations: Array<{
-            providerId: string;
-            originalModelId: string;
-            customName?: string | null;
-            customAlias?: string | null;
-            isActive?: boolean;
-            capabilities?: string[] | null;
-            contextWindow?: number | null;
-          }> = Array.isArray(curationData?.customizations) ? curationData.customizations : [];
-
-          const activeCustMap = new Map<string, (typeof customizations)[number]>();
-          for (const c of customizations) {
-            if (c.isActive === true) {
-              activeCustMap.set(`${c.providerId}::${c.originalModelId}`, c);
-            }
-          }
-
-          for (const [providerId, models] of Object.entries(modelsByProvider)) {
-            if (!connectedSet.has(providerId)) continue;
-            for (const m of models as Array<{ id: string; name?: string; contextWindow?: number }>) {
-              const cust = activeCustMap.get(`${providerId}::${m.id}`);
-              if (!cust) continue;
-
-              const targetId = cust.customAlias || `${providerId}/${m.id}`;
-              const displayName = cust.customName || m.name || m.id;
-
-              const caps: string[] = cust.capabilities && cust.capabilities.length > 0
-                ? cust.capabilities
-                : ["Text"];
-
-              targetList.push({
-                id: targetId,
-                name: displayName,
-                type: "model",
-                provider: providerId,
-                capabilities: caps,
-                limits: "Unlimited (BYOK / Pool)",
-                contextWindow: m.contextWindow ? `${Math.round(m.contextWindow / 1000)}K` : undefined,
-              });
-            }
           }
         }
 
         if (!cancelled) {
           setTargets(targetList);
           if (targetList.length > 0) {
-            setSelectedTargetId((prev) => (prev && targetList.some((t) => t.id === prev) ? prev : targetList[0].id));
+            setSelectedTargetId((prev) =>
+              prev && targetList.some((t) => t.id === prev) ? prev : targetList[0].id
+            );
           }
         }
       } catch (err) {
@@ -203,7 +286,11 @@ export function PlaygroundStudio() {
       role: "user",
       content: text,
       imageUrl: attachedImage || undefined,
-      timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" }),
+      timestamp: new Date().toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+      }),
     };
 
     setMessages((prev) => [...prev, newUserMessage]);
@@ -232,9 +319,14 @@ export function PlaygroundStudio() {
         };
       });
 
+      const headers: Record<string, string> = { "Content-Type": "application/json" };
+      if (apiKey && apiKey.trim()) {
+        headers["Authorization"] = `Bearer ${apiKey.trim()}`;
+      }
+
       const res = await fetch("/v1/chat/completions", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers,
         body: JSON.stringify({
           model: selectedTarget.id,
           messages: apiMessages,
@@ -246,7 +338,8 @@ export function PlaygroundStudio() {
       const data = await res.json().catch(() => null);
 
       if (!res.ok) {
-        const errorMsg = data?.error?.message || data?.error || `HTTP ${res.status}: Failed to get response`;
+        const errorMsg =
+          data?.error?.message || data?.error || `HTTP ${res.status}: Failed to get response`;
         setMessages((prev) => [
           ...prev,
           {
@@ -255,7 +348,11 @@ export function PlaygroundStudio() {
             content: errorMsg,
             latencyMs,
             isError: true,
-            timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" }),
+            timestamp: new Date().toLocaleTimeString([], {
+              hour: "2-digit",
+              minute: "2-digit",
+              second: "2-digit",
+            }),
           },
         ]);
         return;
@@ -274,7 +371,11 @@ export function PlaygroundStudio() {
           content: typeof responseText === "string" ? responseText : JSON.stringify(responseText),
           latencyMs,
           modelServed: data?.model || selectedTarget.id,
-          timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" }),
+          timestamp: new Date().toLocaleTimeString([], {
+            hour: "2-digit",
+            minute: "2-digit",
+            second: "2-digit",
+          }),
         },
       ]);
     } catch (err) {
@@ -286,7 +387,11 @@ export function PlaygroundStudio() {
           content: err instanceof Error ? err.message : "Network error occurred",
           latencyMs: Date.now() - startTime,
           isError: true,
-          timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" }),
+          timestamp: new Date().toLocaleTimeString([], {
+            hour: "2-digit",
+            minute: "2-digit",
+            second: "2-digit",
+          }),
         },
       ]);
     } finally {
@@ -315,29 +420,90 @@ export function PlaygroundStudio() {
       {/* ───────────────────────────────────────────────────────────── */}
       <div className="w-full lg:w-[80%] flex flex-col h-full rounded-2xl border border-white/10 bg-black/40 backdrop-blur-xl shadow-2xl overflow-hidden">
         {/* Top Header of Chat */}
-        <div className="h-14 px-4 flex items-center justify-between border-b border-white/10 bg-white/[0.02]">
+        <div className="h-14 px-4 flex items-center justify-between border-b border-white/10 bg-white/[0.02] gap-3">
           <div className="flex items-center gap-2.5 min-w-0">
-            <span className="material-symbols-outlined text-primary text-xl">science</span>
-            <span className="font-semibold text-sm text-text-main truncate">
+            <span className="material-symbols-outlined text-primary text-xl shrink-0">science</span>
+            <span className="font-semibold text-sm text-text-main truncate hidden sm:inline">
               Playground Live Testbench
             </span>
             {selectedTarget && (
-              <span className="hidden sm:inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-mono bg-primary/10 text-primary border border-primary/20 truncate">
-                {selectedTarget.type === "combo" ? "🌟 Combo: " : "🤖 Model: "}
-                {selectedTarget.name}
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-mono bg-primary/10 text-primary border border-primary/20 truncate">
+                <span className="material-symbols-outlined text-[14px]">
+                  {selectedTarget.type === "combo" ? "layers" : "smart_toy"}
+                </span>
+                <span className="truncate max-w-[140px] font-semibold">{selectedTarget.name}</span>
+                <span className="flex items-center gap-0.5 ml-1 pl-1 border-l border-primary/20 shrink-0">
+                  {getCapabilityBadges(selectedTarget.capabilities).map((b) => (
+                    <span
+                      key={b.id}
+                      className="material-symbols-outlined text-[13px] text-zinc-300"
+                      title={b.label}
+                    >
+                      {b.icon}
+                    </span>
+                  ))}
+                </span>
               </span>
             )}
           </div>
+
+          {/* Center-Right: API Key Field & Actions */}
           <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5 bg-white/[0.04] border border-white/10 hover:border-white/20 focus-within:border-primary/60 rounded-xl px-2.5 py-1 transition-all max-w-[280px] sm:max-w-[340px]">
+              <span className="material-symbols-outlined text-zinc-400 text-[16px] shrink-0">key</span>
+              <input
+                type={showApiKey ? "text" : "password"}
+                value={apiKey}
+                onChange={(e) => handleApiKeyChange(e.target.value)}
+                placeholder="API Key (sk-...)"
+                className="bg-transparent text-xs text-text-main placeholder:text-text-muted/50 outline-none w-28 sm:w-40 font-mono truncate"
+                title="CheapRoute API Key for Playground authentication"
+              />
+              <button
+                type="button"
+                onClick={() => setShowApiKey(!showApiKey)}
+                className="text-zinc-400 hover:text-white transition-colors cursor-pointer shrink-0"
+                title={showApiKey ? "Hide Key" : "Reveal Key"}
+              >
+                <span className="material-symbols-outlined text-[15px]">
+                  {showApiKey ? "visibility_off" : "visibility"}
+                </span>
+              </button>
+              {apiKey && (
+                <button
+                  type="button"
+                  onClick={() => handleApiKeyChange("")}
+                  className="text-zinc-500 hover:text-red-400 transition-colors cursor-pointer shrink-0"
+                  title="Clear Key"
+                >
+                  <span className="material-symbols-outlined text-[15px]">close</span>
+                </button>
+              )}
+            </div>
+
+            {/* Auth status pill */}
+            <span
+              className={`hidden md:inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium border shrink-0 ${
+                apiKey
+                  ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
+                  : "bg-white/5 text-zinc-400 border-white/10"
+              }`}
+            >
+              <span
+                className={`size-1.5 rounded-full ${apiKey ? "bg-emerald-400 animate-pulse" : "bg-zinc-500"}`}
+              />
+              {apiKey ? "Key Active" : "Public Mode"}
+            </span>
+
             {messages.length > 0 && (
               <button
                 type="button"
                 onClick={handleClearChat}
-                className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-lg text-text-muted hover:text-text-main hover:bg-white/5 transition-colors cursor-pointer"
+                className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-lg text-text-muted hover:text-text-main hover:bg-white/5 transition-colors cursor-pointer shrink-0"
                 title="Clear conversation"
               >
                 <span className="material-symbols-outlined text-[16px]">delete_sweep</span>
-                <span>Clear</span>
+                <span className="hidden sm:inline">Clear</span>
               </button>
             )}
           </div>
@@ -351,10 +517,13 @@ export function PlaygroundStudio() {
                 <span className="material-symbols-outlined text-3xl">smart_toy</span>
               </div>
               <h3 className="font-semibold text-base text-text-main mb-1">
-                {selectedTarget ? `Ready to test ${selectedTarget.name}` : "Select a Model or Combo"}
+                {selectedTarget
+                  ? `Ready to test ${selectedTarget.name}`
+                  : "Select a Model or Combo"}
               </h3>
               <p className="text-xs max-w-md text-text-muted/80 leading-relaxed">
-                Send a message below or pick a preset from the right palette to benchmark reasoning, code, OCR, vision, or text failover live.
+                Send a message below or pick a preset from the right palette to benchmark reasoning,
+                code, OCR, vision, or text failover live.
               </p>
             </div>
           ) : (
@@ -366,7 +535,9 @@ export function PlaygroundStudio() {
                   className={`flex flex-col ${isUser ? "items-end" : "items-start"} max-w-full`}
                 >
                   <div className="flex items-center gap-2 mb-1 text-[11px] text-text-muted font-mono">
-                    <span>{isUser ? "You" : msg.modelServed || selectedTarget?.name || "Assistant"}</span>
+                    <span>
+                      {isUser ? "You" : msg.modelServed || selectedTarget?.name || "Assistant"}
+                    </span>
                     <span>·</span>
                     <span>{msg.timestamp}</span>
                     {msg.latencyMs != null && (
@@ -381,14 +552,18 @@ export function PlaygroundStudio() {
                       isUser
                         ? "bg-primary text-white shadow-md rounded-tr-xs"
                         : msg.isError
-                        ? "bg-red-500/15 border border-red-500/30 text-red-200 rounded-tl-xs"
-                        : "bg-white/[0.06] border border-white/10 text-text-main rounded-tl-xs"
+                          ? "bg-red-500/15 border border-red-500/30 text-red-200 rounded-tl-xs"
+                          : "bg-white/[0.06] border border-white/10 text-text-main rounded-tl-xs"
                     }`}
                   >
                     {msg.imageUrl && (
                       <div className="mb-2 max-w-sm rounded-lg overflow-hidden border border-white/20">
                         {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src={msg.imageUrl} alt="Attached input" className="w-full h-auto object-cover" />
+                        <img
+                          src={msg.imageUrl}
+                          alt="Attached input"
+                          className="w-full h-auto object-cover"
+                        />
                       </div>
                     )}
                     {msg.content}
@@ -406,7 +581,9 @@ export function PlaygroundStudio() {
                 <span className="text-primary animate-pulse">Running live request…</span>
               </div>
               <div className="rounded-2xl px-4 py-3 bg-white/[0.04] border border-white/10 rounded-tl-xs flex items-center gap-2 text-xs text-text-muted">
-                <span className="material-symbols-outlined text-sm animate-spin text-primary">progress_activity</span>
+                <span className="material-symbols-outlined text-sm animate-spin text-primary">
+                  progress_activity
+                </span>
                 <span>Generating response...</span>
               </div>
             </div>
@@ -472,7 +649,7 @@ export function PlaygroundStudio() {
               type="button"
               onClick={() => void handleSendMessage()}
               disabled={isSending || (!inputPrompt.trim() && !attachedImage)}
-              className="size-9 rounded-lg bg-primary hover:brightness-110 active:scale-95 text-white flex items-center justify-center transition-all disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer shrink-0 shadow-md"
+              className="size-9 rounded-lg bg-[image:var(--grad-brand)] hover:brightness-105 active:scale-95 text-white flex items-center justify-center transition-all disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer shrink-0 shadow-md"
               title="Send (Enter)"
             >
               <span className="material-symbols-outlined text-[18px]">
@@ -494,7 +671,7 @@ export function PlaygroundStudio() {
             <span>Target Selection</span>
           </div>
 
-          <label className="flex flex-col gap-1 text-[11px] text-text-muted">
+          <label className="flex flex-col gap-1.5 text-[11px] text-text-muted">
             Active Model or Combo:
             <select
               value={selectedTargetId}
@@ -520,41 +697,68 @@ export function PlaygroundStudio() {
                   <optgroup label="🤖 Curated Models">
                     {targets
                       .filter((t) => t.type === "model")
-                      .map((t) => (
-                        <option key={t.id} value={t.id}>
-                          {t.name} ({t.provider})
-                        </option>
-                      ))}
+                      .map((t) => {
+                        const nonChatCaps = t.capabilities.filter((c) => c !== "Chat").join(", ");
+                        return (
+                          <option key={t.id} value={t.id}>
+                            {t.name} ({t.provider}) {nonChatCaps ? `• ${nonChatCaps}` : ""}
+                          </option>
+                        );
+                      })}
                   </optgroup>
                 </>
               )}
             </select>
           </label>
 
+          {/* Quick Capability Badges bar below select */}
+          {selectedTarget && (
+            <div className="flex flex-wrap items-center gap-1">
+              {getCapabilityBadges(selectedTarget.capabilities).map((b) => (
+                <span
+                  key={b.id}
+                  className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-mono border ${b.colorClass}`}
+                  title={`Supports ${b.label}`}
+                >
+                  <span className="material-symbols-outlined text-[12px]">{b.icon}</span>
+                  <span>{b.label}</span>
+                </span>
+              ))}
+            </div>
+          )}
+
           {/* Selected Target Metadata */}
           {selectedTarget && (
             <div className="p-2.5 rounded-xl bg-white/[0.03] border border-white/10 flex flex-col gap-1.5 text-[11px]">
               <div className="flex items-center justify-between">
                 <span className="text-text-muted">Provider:</span>
-                <span className="font-semibold text-text-main truncate">{selectedTarget.provider}</span>
+                <span className="font-semibold text-text-main truncate">
+                  {selectedTarget.provider}
+                </span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-text-muted">Limits:</span>
-                <span className="font-mono text-emerald-400 text-[10px] truncate">{selectedTarget.limits}</span>
+                <span className="font-mono text-emerald-400 text-[10px] truncate">
+                  {selectedTarget.limits}
+                </span>
               </div>
               {selectedTarget.contextWindow && (
                 <div className="flex items-center justify-between">
                   <span className="text-text-muted">Context:</span>
-                  <span className="font-mono text-cyan-300 text-[10px]">{selectedTarget.contextWindow}</span>
+                  <span className="font-mono text-cyan-300 text-[10px]">
+                    {selectedTarget.contextWindow}
+                  </span>
                 </div>
               )}
-              <div className="pt-1.5 border-t border-white/10 flex flex-wrap gap-1">
-                {selectedTarget.capabilities.map((c) => (
+              <div className="pt-2 border-t border-white/10 flex flex-wrap gap-1.5">
+                {getCapabilityBadges(selectedTarget.capabilities).map((badge) => (
                   <span
-                    key={c}
-                    className="px-1.5 py-0.5 rounded text-[9px] font-medium bg-white/10 text-zinc-300"
+                    key={badge.id}
+                    className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-medium border ${badge.colorClass}`}
+                    title={`Supports ${badge.label}`}
                   >
-                    {c}
+                    <span className="material-symbols-outlined text-[13px]">{badge.icon}</span>
+                    <span>{badge.label}</span>
                   </span>
                 ))}
               </div>
@@ -566,7 +770,9 @@ export function PlaygroundStudio() {
         <div className="p-3.5 rounded-2xl border border-white/10 bg-black/40 backdrop-blur-xl flex flex-col gap-2.5 shadow-lg flex-1">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-1.5 text-xs font-semibold text-text-main">
-              <span className="material-symbols-outlined text-primary text-[18px]">auto_awesome</span>
+              <span className="material-symbols-outlined text-primary text-[18px]">
+                auto_awesome
+              </span>
               <span>Capabilities Palette</span>
             </div>
             <span className="text-[10px] text-text-muted">9 Presets</span>
@@ -602,9 +808,7 @@ export function PlaygroundStudio() {
                       <span className="font-semibold text-xs text-text-main truncate">
                         {preset.label}
                       </span>
-                      <span className="text-[9px] font-mono opacity-60">
-                        {preset.category}
-                      </span>
+                      <span className="text-[9px] font-mono opacity-60">{preset.category}</span>
                     </div>
                     <span className="text-[10px] text-text-muted/80 block truncate">
                       {preset.description}

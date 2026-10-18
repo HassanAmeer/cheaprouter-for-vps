@@ -243,7 +243,7 @@ export default function ToolsBuilder({ toolsBuilder }: ToolsBuilderProps) {
 
         <button
           onClick={handleAdd}
-          className="text-xs px-3 py-1.5 rounded bg-primary text-white hover:bg-primary/90 transition-colors self-start"
+          className="text-xs px-3 py-1.5 rounded bg-[image:var(--grad-brand)] text-white hover:brightness-105 transition-all self-start shadow-xs"
         >
           + {t("addTool")}
         </button>

@@ -47,6 +47,8 @@ const requireConsistentModelAccess = (
 export const createKeySchema = z
   .object({
     name: z.string().min(1, "Name is required").max(200),
+    userId: z.string().trim().max(100).optional(),
+    userName: z.string().trim().max(200).optional(),
     modelAccessMode: z.enum(["all", "restricted"]).optional(),
     allowedModels: z.array(z.string().trim().min(1)).max(1000).optional(),
     allowedCombos: z.array(z.string().trim().min(1).max(200)).max(500).optional(),

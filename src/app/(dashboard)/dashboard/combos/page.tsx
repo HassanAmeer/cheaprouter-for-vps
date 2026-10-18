@@ -854,14 +854,22 @@ function CombosPageContent() {
       const providersData = await providersRes.json();
       const metricsData = await metricsRes.json();
       const nodesData = nodesRes.ok ? await nodesRes.json() : { nodes: [] };
+      const loadedNodes = nodesData.nodes || [];
+      const pausedNodeIds = new Set(
+        loadedNodes
+          .filter((n: any) => n.isActive === false)
+          .flatMap((n: any) => [n.id, n.prefix].filter(Boolean))
+      );
 
       if (combosRes.ok) setCombos((combosData.combos || []).filter((c) => !c.isHidden));
       if (providersRes.ok) {
-        const active = (providersData.connections || []).filter(isEligibleActiveConnection);
+        const active = (providersData.connections || []).filter(
+          (c: any) => isEligibleActiveConnection(c) && !pausedNodeIds.has(c.provider)
+        );
         setActiveProviders(active);
       }
       if (metricsRes.ok) setMetrics(metricsData.metrics || {});
-      setProviderNodes(nodesData.nodes || []);
+      setProviderNodes(loadedNodes);
     } catch (error) {
       console.log("Error fetching data:", error);
     } finally {
@@ -888,10 +896,6 @@ function CombosPageContent() {
       .then((r) => (r.ok ? r.json() : null))
       .then((settings) => setPromptCompressionEnabled(settings?.enabled === true))
       .catch(() => setPromptCompressionEnabled(false));
-    fetch("/api/settings/proxy")
-      .then((r) => (r.ok ? r.json() : null))
-      .then((c) => setProxyConfig(c))
-      .catch(() => {});
   }, []);
 
   const handleCreate = async (data) => {

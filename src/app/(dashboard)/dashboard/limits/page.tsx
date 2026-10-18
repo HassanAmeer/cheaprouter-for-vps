@@ -48,23 +48,35 @@ export interface UnifiedTargetItem {
 }
 
 export function formatTokens(n: number): string {
-  if (n >= 1_000_000_000) {
-    const val = n / 1_000_000_000;
-    return `${val.toFixed(val % 1 === 0 ? 0 : 2)}B`;
+  if (n <= 0) return "0M";
+  const millions = n / 1_000_000;
+  if (millions >= 1000) {
+    const billions = n / 1_000_000_000;
+    return `${millions.toLocaleString()}M (${billions.toFixed(billions % 1 === 0 ? 0 : 2)}B)`;
   }
-  if (n >= 1_000_000) {
-    const val = n / 1_000_000;
-    return `${val.toFixed(val % 1 === 0 ? 0 : 1)}M`;
+  if (millions >= 1) {
+    return `${millions.toFixed(millions % 1 === 0 ? 0 : 2)}M`;
   }
   if (n >= 1_000) {
-    const val = n / 1_000;
-    return `${val.toFixed(val % 1 === 0 ? 0 : 1)}k`;
+    return `${millions.toFixed(3)}M`;
   }
-  return n.toLocaleString();
+  return `${(n / 1_000_000).toFixed(4)}M`;
+}
+
+export function formatTokensInput(n: number): string {
+  if (n <= 0) return "";
+  const millions = n / 1_000_000;
+  if (millions >= 1) {
+    return `${millions % 1 === 0 ? millions : Number(millions.toFixed(2))}M`;
+  }
+  return `${Number((n / 1_000_000).toFixed(3))}M`;
 }
 
 export function parseTokenInput(val: string | number): number {
-  if (typeof val === "number") return Math.max(0, Math.floor(val));
+  if (typeof val === "number") {
+    if (val > 0 && val <= 100_000) return Math.floor(val * 1_000_000);
+    return Math.max(0, Math.floor(val));
+  }
   const s = String(val || "").trim().toLowerCase();
   if (!s) return 0;
   if (s.endsWith("b") || s.endsWith("billion")) {
@@ -80,10 +92,15 @@ export function parseTokenInput(val: string | number): number {
     return isNaN(num) ? 0 : Math.floor(num * 1_000);
   }
   const n = Number(s.replace(/,/g, ""));
-  return isNaN(n) ? 0 : Math.max(0, Math.floor(n));
+  if (isNaN(n) || n <= 0) return 0;
+  // In Limits Bank, numbers entered without a suffix (e.g. 10, 50, 100, 500) represent Millions of tokens
+  if (n <= 100_000) {
+    return Math.floor(n * 1_000_000);
+  }
+  return Math.floor(n);
 }
 
-const PRESET_QUICK_LIMITS = ["1B", "2B", "10B", "34B", "50B", "80B"];
+const PRESET_QUICK_LIMITS = ["5M", "10M", "25M", "50M", "100M", "250M", "500M", "1000M"];
 
 export default function LimitsBankPage() {
   const notify = useNotificationStore();
@@ -110,6 +127,8 @@ export default function LimitsBankPage() {
         resetWindow: LimitResetWindow;
         onExhaustion: LimitExhaustionAction;
         fallbackTarget: string;
+        rpmLimit?: string;
+        tpmLimit?: string;
       }
     >
   >({});
@@ -172,8 +191,9 @@ export default function LimitsBankPage() {
   const unifiedTargets: UnifiedTargetItem[] = useMemo(() => {
     const list: UnifiedTargetItem[] = [];
 
-    // 1. Combos
+    // 1. Combos - only active
     for (const c of rawCombos) {
+      if (c.isActive === false) continue;
       const id = String(c.id || c.name);
       const originalName = String(c.originalName || c.name || c.id);
       const customName = c.customName || null;
@@ -197,13 +217,14 @@ export default function LimitsBankPage() {
         customAlias,
         strategy: c.strategy || "priority",
         modelsCount: c.modelsCount || 0,
-        isActive: c.isActive !== false,
+        isActive: true,
         policy: matchedLimit,
       });
     }
 
-    // 2. Models
+    // 2. Models - only active piped models
     for (const m of rawModels) {
+      if (m.isActive === false) continue;
       const id = m.id;
       const originalName = m.originalName || m.name || m.id;
       const customName = m.customName || null;
@@ -226,7 +247,7 @@ export default function LimitsBankPage() {
         customName,
         customAlias,
         provider: m.provider,
-        isActive: m.isActive !== false,
+        isActive: true,
         contextWindow: m.contextWindow,
         policy: matchedLimit,
       });
@@ -315,6 +336,134 @@ export default function LimitsBankPage() {
       return true;
     });
   }, [unifiedTargets, typeFilter, statusFilter, search]);
+
+  // Pagination State (50 items per page)
+  const [currentPage, setCurrentPage] = useState(1);
+  const PAGE_SIZE = 50;
+
+  const filterKey = `${typeFilter}::${statusFilter}::${search}`;
+  const [prevFilterKey, setPrevFilterKey] = useState(filterKey);
+  if (prevFilterKey !== filterKey) {
+    setPrevFilterKey(filterKey);
+    setCurrentPage(1);
+  }
+
+  const totalPages = Math.max(1, Math.ceil(filteredTargets.length / PAGE_SIZE));
+  const clampedPage = Math.min(Math.max(1, currentPage), totalPages);
+
+  const paginatedTargets = useMemo(() => {
+    const start = (clampedPage - 1) * PAGE_SIZE;
+    return filteredTargets.slice(start, start + PAGE_SIZE);
+  }, [filteredTargets, clampedPage]);
+
+  const renderPaginationBar = (position: "top" | "bottom") => {
+    const startItem = filteredTargets.length === 0 ? 0 : (clampedPage - 1) * PAGE_SIZE + 1;
+    const endItem = Math.min(clampedPage * PAGE_SIZE, filteredTargets.length);
+
+    const getPageNumbers = () => {
+      const pages: (number | string)[] = [];
+      if (totalPages <= 7) {
+        for (let i = 1; i <= totalPages; i++) pages.push(i);
+      } else {
+        pages.push(1);
+        if (clampedPage > 3) pages.push("...");
+        const start = Math.max(2, clampedPage - 1);
+        const end = Math.min(totalPages - 1, clampedPage + 1);
+        for (let i = start; i <= end; i++) pages.push(i);
+        if (clampedPage < totalPages - 2) pages.push("...");
+        pages.push(totalPages);
+      }
+      return pages;
+    };
+
+    return (
+      <div
+        className={`flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 px-4 py-2.5 bg-bg-subtle/50 text-xs ${
+          position === "top" ? "border-b border-border" : "border-t border-border"
+        }`}
+      >
+        <div className="text-text-muted flex items-center gap-1.5 font-mono text-[11px]">
+          <span>Showing</span>
+          <span className="font-semibold text-text-main">
+            {startItem}–{endItem}
+          </span>
+          <span>of</span>
+          <span className="font-semibold text-text-main">{filteredTargets.length}</span>
+          <span>targets ({PAGE_SIZE} / page)</span>
+        </div>
+
+        <div className="flex items-center gap-1 self-center sm:self-auto">
+          {/* First */}
+          <button
+            type="button"
+            disabled={clampedPage <= 1}
+            onClick={() => setCurrentPage(1)}
+            className="size-7 flex items-center justify-center rounded border border-border bg-bg-card hover:bg-bg-subtle text-text-muted hover:text-text-main disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+            title="First Page"
+          >
+            <span className="material-symbols-outlined text-[15px]">first_page</span>
+          </button>
+
+          {/* Prev */}
+          <button
+            type="button"
+            disabled={clampedPage <= 1}
+            onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+            className="h-7 px-2 flex items-center gap-0.5 rounded border border-border bg-bg-card hover:bg-bg-subtle text-text-muted hover:text-text-main disabled:opacity-30 disabled:cursor-not-allowed transition-colors text-[11px] font-medium"
+          >
+            <span className="material-symbols-outlined text-[14px]">chevron_left</span>
+            <span>Prev</span>
+          </button>
+
+          {/* Numbers */}
+          <div className="flex items-center gap-1 mx-1">
+            {getPageNumbers().map((p, idx) =>
+              typeof p === "number" ? (
+                <button
+                  key={idx}
+                  type="button"
+                  onClick={() => setCurrentPage(p)}
+                  className={`min-w-7 h-7 px-1.5 flex items-center justify-center rounded font-mono text-xs transition-colors ${
+                    clampedPage === p
+                      ? "bg-primary text-primary-foreground font-semibold shadow-xs"
+                      : "border border-border bg-bg-card hover:bg-bg-subtle text-text-muted hover:text-text-main"
+                  }`}
+                >
+                  {p}
+                </button>
+              ) : (
+                <span key={idx} className="px-1 text-text-muted font-mono text-xs">
+                  {p}
+                </span>
+              )
+            )}
+          </div>
+
+          {/* Next */}
+          <button
+            type="button"
+            disabled={clampedPage >= totalPages}
+            onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+            className="h-7 px-2 flex items-center gap-0.5 rounded border border-border bg-bg-card hover:bg-bg-subtle text-text-muted hover:text-text-main disabled:opacity-30 disabled:cursor-not-allowed transition-colors text-[11px] font-medium"
+          >
+            <span>Next</span>
+            <span className="material-symbols-outlined text-[14px]">chevron_right</span>
+          </button>
+
+          {/* Last */}
+          <button
+            type="button"
+            disabled={clampedPage >= totalPages}
+            onClick={() => setCurrentPage(totalPages)}
+            className="size-7 flex items-center justify-center rounded border border-border bg-bg-card hover:bg-bg-subtle text-text-muted hover:text-text-main disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+            title="Last Page"
+          >
+            <span className="material-symbols-outlined text-[15px]">last_page</span>
+          </button>
+        </div>
+      </div>
+    );
+  };
 
   // Toggle Row Expand / Collapse
   const toggleRowCollapse = (key: string) => {
@@ -414,13 +563,35 @@ export default function LimitsBankPage() {
   const handleSaveRow = async (target: UnifiedTargetItem) => {
     const key = `${target.type}::${target.id}`;
     const draft = drafts[key];
-    const rawInput = draft?.poolInput ?? (target.policy ? formatTokens(target.policy.totalTokenPool) : "");
+    const rawInput =
+      draft?.poolInput ?? (target.policy ? formatTokensInput(target.policy.totalTokenPool) : "");
     const parsedPool = parseTokenInput(rawInput);
 
     if (parsedPool <= 0) {
-      notify.error("Please enter a valid token limit greater than 0 (e.g. 10B, 34B, 50B)");
+      notify.error("Please enter a valid token limit greater than 0 in Millions (e.g. 10M, 50M, 100M)");
       return;
     }
+
+    const parsedRpm =
+      draft?.rpmLimit !== undefined
+        ? draft.rpmLimit.trim()
+          ? Number(draft.rpmLimit.trim())
+          : null
+        : (target.policy?.rpmLimit ?? null);
+    const parsedTpm =
+      draft?.tpmLimit !== undefined
+        ? draft.tpmLimit.trim()
+          ? Number(draft.tpmLimit.trim())
+          : null
+        : (target.policy?.tpmLimit ?? null);
+
+    const exhaustion = draft?.onExhaustion || target.policy?.onExhaustion || "error";
+    const fallback =
+      exhaustion === "fallback"
+        ? (draft?.fallbackTarget !== undefined
+            ? draft.fallbackTarget || null
+            : target.policy?.fallbackTarget || null)
+        : null;
 
     setSavingKey(key);
     try {
@@ -431,12 +602,11 @@ export default function LimitsBankPage() {
         targetName: target.name,
         providerId: target.provider || null,
         totalTokenPool: parsedPool,
+        rpmLimit: parsedRpm && parsedRpm > 0 ? parsedRpm : null,
+        tpmLimit: parsedTpm && parsedTpm > 0 ? parsedTpm : null,
         resetWindow: draft?.resetWindow || target.policy?.resetWindow || "lifetime",
-        onExhaustion: draft?.onExhaustion || target.policy?.onExhaustion || "error",
-        fallbackTarget:
-          draft?.onExhaustion === "fallback"
-            ? draft.fallbackTarget || null
-            : target.policy?.fallbackTarget || null,
+        onExhaustion: exhaustion,
+        fallbackTarget: fallback,
         customErrorMessage:
           draft?.customError !== undefined
             ? draft.customError.trim() || null
@@ -755,7 +925,9 @@ export default function LimitsBankPage() {
         </div>
 
         <span className="text-xs text-text-muted font-medium">
-          Showing {filteredTargets.length} of {unifiedTargets.length} models &amp; combos
+          Showing {filteredTargets.length === 0 ? 0 : (clampedPage - 1) * PAGE_SIZE + 1}–
+          {Math.min(clampedPage * PAGE_SIZE, filteredTargets.length)} of {filteredTargets.length}{" "}
+          models &amp; combos
         </span>
       </Card>
 
@@ -772,20 +944,24 @@ export default function LimitsBankPage() {
             </p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse text-xs">
-              <thead>
-                <tr className="border-b border-border bg-bg-subtle/60 text-text-muted text-[11px] font-semibold uppercase tracking-wider">
-                  <th className="py-3 px-3 w-10 text-center"></th>
-                  <th className="py-3 px-4 min-w-[220px]">Target (Custom &amp; Original Name)</th>
-                  <th className="py-3 px-4 min-w-[240px]">Limit Bank Setting</th>
-                  <th className="py-3 px-4 min-w-[220px]">Used / Total Limit Bank</th>
-                  <th className="py-3 px-4 text-center">Status</th>
-                  <th className="py-3 px-4 text-right min-w-[130px]">Action</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border/60">
-                {filteredTargets.map((target) => {
+          <>
+            {/* Top Pagination Bar */}
+            {renderPaginationBar("top")}
+
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse text-xs">
+                <thead>
+                  <tr className="border-b border-border bg-bg-subtle/60 text-text-muted text-[11px] font-semibold uppercase tracking-wider">
+                    <th className="py-3 px-3 w-10 text-center"></th>
+                    <th className="py-3 px-4 min-w-[220px]">Target (Custom &amp; Original Name)</th>
+                    <th className="py-3 px-4 min-w-[240px]">Limit Bank Setting (M Tokens)</th>
+                    <th className="py-3 px-4 min-w-[220px]">Used / Total Limit Bank (Millions / M)</th>
+                    <th className="py-3 px-4 text-center">Status</th>
+                    <th className="py-3 px-4 text-right min-w-[130px]">Action</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border/60">
+                  {paginatedTargets.map((target) => {
                   const key = `${target.type}::${target.id}`;
                   const isExpanded = Boolean(expandedRows[key]);
                   const policy = target.policy;
@@ -794,7 +970,31 @@ export default function LimitsBankPage() {
                     draft?.poolInput !== undefined
                       ? draft.poolInput
                       : policy
-                        ? formatTokens(policy.totalTokenPool)
+                        ? formatTokensInput(policy.totalTokenPool)
+                        : "";
+                  const currentCustomError =
+                    draft?.customError !== undefined
+                      ? draft.customError
+                      : policy?.customErrorMessage ?? "";
+                  const currentResetWindow =
+                    draft?.resetWindow ?? policy?.resetWindow ?? "lifetime";
+                  const currentOnExhaustion =
+                    draft?.onExhaustion ?? policy?.onExhaustion ?? "error";
+                  const currentFallbackTarget =
+                    draft?.fallbackTarget !== undefined
+                      ? draft.fallbackTarget
+                      : policy?.fallbackTarget ?? "";
+                  const currentRpmLimit =
+                    draft?.rpmLimit !== undefined
+                      ? draft.rpmLimit
+                      : policy?.rpmLimit != null
+                        ? String(policy.rpmLimit)
+                        : "";
+                  const currentTpmLimit =
+                    draft?.tpmLimit !== undefined
+                      ? draft.tpmLimit
+                      : policy?.tpmLimit != null
+                        ? String(policy.tpmLimit)
                         : "";
 
                   const consumed = policy?.consumedTokens || 0;
@@ -904,29 +1104,23 @@ export default function LimitsBankPage() {
                                   setDrafts((prev) => ({
                                     ...prev,
                                     [key]: {
+                                      customError: currentCustomError,
+                                      resetWindow: currentResetWindow,
+                                      onExhaustion: currentOnExhaustion,
+                                      fallbackTarget: currentFallbackTarget,
+                                      rpmLimit: currentRpmLimit,
+                                      tpmLimit: currentTpmLimit,
+                                      ...(prev[key] || {}),
                                       poolInput: e.target.value,
-                                      customError:
-                                        prev[key]?.customError ??
-                                        policy?.customErrorMessage ??
-                                        "",
-                                      resetWindow:
-                                        prev[key]?.resetWindow ??
-                                      policy?.resetWindow ??
-                                        "lifetime",
-                                      onExhaustion:
-                                        prev[key]?.onExhaustion ??
-                                        policy?.onExhaustion ??
-                                        "error",
-                                      fallbackTarget:
-                                        prev[key]?.fallbackTarget ??
-                                        policy?.fallbackTarget ??
-                                        "",
                                     },
                                   }))
                                 }
-                                placeholder="e.g. 10B, 34B, 50B"
-                                className="w-full pl-7 pr-2.5 py-1 rounded bg-bg-subtle border border-border font-mono text-xs text-text-main focus:outline-none focus:border-amber-500 placeholder:text-zinc-600"
+                                placeholder="e.g. 10M, 50M, 100M"
+                                className="w-full pl-7 pr-16 py-1 rounded bg-bg-subtle border border-border font-mono text-xs text-text-main focus:outline-none focus:border-amber-500 placeholder:text-zinc-600"
                               />
+                              <span className="absolute right-2 text-[10px] text-amber-400/90 font-mono font-semibold pointer-events-none select-none">
+                                M Tokens
+                              </span>
                             </div>
 
                             {/* Quick Preset Buttons */}
@@ -939,23 +1133,14 @@ export default function LimitsBankPage() {
                                     setDrafts((prev) => ({
                                       ...prev,
                                       [key]: {
+                                        customError: currentCustomError,
+                                        resetWindow: currentResetWindow,
+                                        onExhaustion: currentOnExhaustion,
+                                        fallbackTarget: currentFallbackTarget,
+                                        rpmLimit: currentRpmLimit,
+                                        tpmLimit: currentTpmLimit,
+                                        ...(prev[key] || {}),
                                         poolInput: preset,
-                                        customError:
-                                          prev[key]?.customError ??
-                                          policy?.customErrorMessage ??
-                                          "",
-                                        resetWindow:
-                                          prev[key]?.resetWindow ??
-                                          policy?.resetWindow ??
-                                          "lifetime",
-                                        onExhaustion:
-                                          prev[key]?.onExhaustion ??
-                                          policy?.onExhaustion ??
-                                          "error",
-                                        fallbackTarget:
-                                          prev[key]?.fallbackTarget ??
-                                          policy?.fallbackTarget ??
-                                          "",
                                       },
                                     }))
                                   }
@@ -1180,7 +1365,7 @@ export default function LimitsBankPage() {
                                 </div>
                               ) : (
                                 <p className="text-xs text-text-muted italic">
-                                  No limit bank set yet. Enter a limit (e.g. 10B, 34B, 50B) and click Save above to activate.
+                                  No limit bank set yet. Enter a limit in millions of tokens (e.g. 10M, 50M, 100M) and click Save above to activate.
                                 </p>
                               )}
 
@@ -1191,10 +1376,10 @@ export default function LimitsBankPage() {
                                     <span className="material-symbols-outlined text-[15px] text-emerald-400">
                                       add_circle
                                     </span>
-                                    Quick Top-Up (Add Tokens to Bank):
+                                    Quick Top-Up (Add Millions of Tokens to Bank):
                                   </span>
                                   <div className="flex items-center gap-2 flex-wrap">
-                                    {[100_000_000, 500_000_000, 1_000_000_000, 5_000_000_000, 10_000_000_000].map(
+                                    {[5_000_000, 10_000_000, 25_000_000, 50_000_000, 100_000_000, 250_000_000, 500_000_000].map(
                                       (amount) => (
                                         <button
                                           key={amount}
@@ -1210,81 +1395,243 @@ export default function LimitsBankPage() {
                                 </div>
                               )}
 
-                              {/* Policy Custom Error Message & Reset Window */}
+                              {/* Exhaustion Action & Fallback Target */}
                               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
                                 <label className="flex flex-col gap-1 text-xs text-text-muted">
-                                  <span className="font-semibold text-text-main">
-                                    Custom Limit Exceeded Error Message:
-                                  </span>
-                                  <input
-                                    type="text"
-                                    value={
-                                      draft?.customError !== undefined
-                                        ? draft.customError
-                                        : policy?.customErrorMessage ?? ""
-                                    }
-                                    onChange={(e) =>
-                                      setDrafts((prev) => ({
-                                        ...prev,
-                                        [key]: {
-                                          poolInput: currentPoolInput,
-                                          customError: e.target.value,
-                                          resetWindow:
-                                            prev[key]?.resetWindow ??
-                                            policy?.resetWindow ??
-                                            "lifetime",
-                                          onExhaustion:
-                                            prev[key]?.onExhaustion ??
-                                            policy?.onExhaustion ??
-                                            "error",
-                                          fallbackTarget:
-                                            prev[key]?.fallbackTarget ??
-                                            policy?.fallbackTarget ??
-                                            "",
-                                        },
-                                      }))
-                                    }
-                                    placeholder="Leave empty to use .env LIMIT_BANK_EXCEEDED_MESSAGE"
-                                    className="px-3 py-1.5 rounded-lg bg-bg-subtle border border-border text-xs text-text-main placeholder:text-zinc-600 focus:outline-none focus:border-amber-500"
-                                  />
-                                </label>
-
-                                <label className="flex flex-col gap-1 text-xs text-text-muted">
-                                  <span className="font-semibold text-text-main">
-                                    Bank Reset Window:
+                                  <span className="font-semibold text-text-main flex items-center gap-1">
+                                    <span className="material-symbols-outlined text-[14px] text-amber-400">
+                                      block
+                                    </span>
+                                    On Limit Ceiling Reached:
                                   </span>
                                   <select
-                                    value={
-                                      draft?.resetWindow ?? policy?.resetWindow ?? "lifetime"
-                                    }
+                                    value={currentOnExhaustion}
                                     onChange={(e) =>
                                       setDrafts((prev) => ({
                                         ...prev,
                                         [key]: {
                                           poolInput: currentPoolInput,
-                                          customError:
-                                            prev[key]?.customError ??
-                                            policy?.customErrorMessage ??
-                                            "",
-                                          resetWindow: e.target.value as LimitResetWindow,
-                                          onExhaustion:
-                                            prev[key]?.onExhaustion ??
-                                            policy?.onExhaustion ??
-                                            "error",
-                                          fallbackTarget:
-                                            prev[key]?.fallbackTarget ??
-                                            policy?.fallbackTarget ??
-                                            "",
+                                          customError: currentCustomError,
+                                          resetWindow: currentResetWindow,
+                                          fallbackTarget: currentFallbackTarget,
+                                          rpmLimit: currentRpmLimit,
+                                          tpmLimit: currentTpmLimit,
+                                          ...(prev[key] || {}),
+                                          onExhaustion: e.target.value as LimitExhaustionAction,
                                         },
                                       }))
                                     }
                                     className="px-3 py-1.5 rounded-lg bg-bg-subtle border border-border text-xs text-text-main focus:outline-none cursor-pointer"
                                   >
-                                    <option value="lifetime">Lifetime (Hard manual ceiling)</option>
-                                    <option value="monthly">Monthly Auto-Reset</option>
-                                    <option value="weekly">Weekly Auto-Reset</option>
-                                    <option value="daily">Daily Auto-Reset</option>
+                                    <option value="error">Block with HTTP 429 Error</option>
+                                    <option value="fallback">Fallback to Another Model / Combo</option>
                                   </select>
+                                </label>
+
+                                {currentOnExhaustion === "fallback" ? (
+                                  <label className="flex flex-col gap-1 text-xs text-text-muted">
+                                    <span className="font-semibold text-text-main flex items-center gap-1">
+                                      <span className="material-symbols-outlined text-[14px] text-purple-400">
+                                        swap_horiz
+                                      </span>
+                                      Fallback Target:
+                                    </span>
+                                    <select
+                                      value={currentFallbackTarget}
+                                      onChange={(e) =>
+                                        setDrafts((prev) => ({
+                                          ...prev,
+                                          [key]: {
+                                            poolInput: currentPoolInput,
+                                            customError: currentCustomError,
+                                            resetWindow: currentResetWindow,
+                                            onExhaustion: currentOnExhaustion,
+                                            rpmLimit: currentRpmLimit,
+                                            tpmLimit: currentTpmLimit,
+                                            ...(prev[key] || {}),
+                                            fallbackTarget: e.target.value,
+                                          },
+                                        }))
+                                      }
+                                      className="px-3 py-1.5 rounded-lg bg-bg-subtle border border-border text-xs text-text-main focus:outline-none cursor-pointer"
+                                    >
+                                      <option value="">Select a fallback target...</option>
+                                      {unifiedTargets
+                                        .filter((t) => t.id !== target.id)
+                                        .map((t) => (
+                                          <option key={t.id} value={t.id}>
+                                            {t.name} ({t.type === "combo" ? "Combo" : t.provider || "Model"})
+                                          </option>
+                                        ))}
+                                    </select>
+                                  </label>
+                                ) : (
+                                  <label className="flex flex-col gap-1 text-xs text-text-muted">
+                                    <span className="font-semibold text-text-main flex items-center gap-1">
+                                      <span className="material-symbols-outlined text-[14px] text-amber-400">
+                                        schedule
+                                      </span>
+                                      Bank Reset Window:
+                                    </span>
+                                    <select
+                                      value={currentResetWindow}
+                                      onChange={(e) =>
+                                        setDrafts((prev) => ({
+                                          ...prev,
+                                          [key]: {
+                                            poolInput: currentPoolInput,
+                                            customError: currentCustomError,
+                                            onExhaustion: currentOnExhaustion,
+                                            fallbackTarget: currentFallbackTarget,
+                                            rpmLimit: currentRpmLimit,
+                                            tpmLimit: currentTpmLimit,
+                                            ...(prev[key] || {}),
+                                            resetWindow: e.target.value as LimitResetWindow,
+                                          },
+                                        }))
+                                      }
+                                      className="px-3 py-1.5 rounded-lg bg-bg-subtle border border-border text-xs text-text-main focus:outline-none cursor-pointer"
+                                    >
+                                      <option value="lifetime">Lifetime (Hard manual ceiling)</option>
+                                      <option value="monthly">Monthly Auto-Reset</option>
+                                      <option value="weekly">Weekly Auto-Reset</option>
+                                      <option value="daily">Daily Auto-Reset</option>
+                                    </select>
+                                  </label>
+                                )}
+                              </div>
+
+                              {/* Reset Window (if fallback active) & Custom Error Message */}
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                {currentOnExhaustion === "fallback" && (
+                                  <label className="flex flex-col gap-1 text-xs text-text-muted">
+                                    <span className="font-semibold text-text-main flex items-center gap-1">
+                                      <span className="material-symbols-outlined text-[14px] text-amber-400">
+                                        schedule
+                                      </span>
+                                      Bank Reset Window:
+                                    </span>
+                                    <select
+                                      value={currentResetWindow}
+                                      onChange={(e) =>
+                                        setDrafts((prev) => ({
+                                          ...prev,
+                                          [key]: {
+                                            poolInput: currentPoolInput,
+                                            customError: currentCustomError,
+                                            onExhaustion: currentOnExhaustion,
+                                            fallbackTarget: currentFallbackTarget,
+                                            rpmLimit: currentRpmLimit,
+                                            tpmLimit: currentTpmLimit,
+                                            ...(prev[key] || {}),
+                                            resetWindow: e.target.value as LimitResetWindow,
+                                          },
+                                        }))
+                                      }
+                                      className="px-3 py-1.5 rounded-lg bg-bg-subtle border border-border text-xs text-text-main focus:outline-none cursor-pointer"
+                                    >
+                                      <option value="lifetime">Lifetime (Hard manual ceiling)</option>
+                                      <option value="monthly">Monthly Auto-Reset</option>
+                                      <option value="weekly">Weekly Auto-Reset</option>
+                                      <option value="daily">Daily Auto-Reset</option>
+                                    </select>
+                                  </label>
+                                )}
+
+                                <label
+                                  className={`flex flex-col gap-1 text-xs text-text-muted ${
+                                    currentOnExhaustion === "fallback" ? "sm:col-span-1" : "sm:col-span-2"
+                                  }`}
+                                >
+                                  <span className="font-semibold text-text-main">
+                                    Custom Limit Exceeded Error Message:
+                                  </span>
+                                  <input
+                                    type="text"
+                                    value={currentCustomError}
+                                    onChange={(e) =>
+                                      setDrafts((prev) => ({
+                                        ...prev,
+                                        [key]: {
+                                          poolInput: currentPoolInput,
+                                          resetWindow: currentResetWindow,
+                                          onExhaustion: currentOnExhaustion,
+                                          fallbackTarget: currentFallbackTarget,
+                                          rpmLimit: currentRpmLimit,
+                                          tpmLimit: currentTpmLimit,
+                                          ...(prev[key] || {}),
+                                          customError: e.target.value,
+                                        },
+                                      }))
+                                    }
+                                    placeholder="Leave empty to use default 429 error message"
+                                    className="px-3 py-1.5 rounded-lg bg-bg-subtle border border-border text-xs text-text-main placeholder:text-zinc-600 focus:outline-none focus:border-amber-500"
+                                  />
+                                </label>
+                              </div>
+
+                              {/* Rate Limit Throttles (RPM & TPM) */}
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3 rounded-lg bg-bg-subtle/30 border border-border/60">
+                                <label className="flex flex-col gap-1 text-xs text-text-muted">
+                                  <span className="font-semibold text-text-main flex items-center gap-1">
+                                    <span className="material-symbols-outlined text-[14px] text-blue-400">
+                                      speed
+                                    </span>
+                                    RPM Limit (Requests / Min):
+                                  </span>
+                                  <input
+                                    type="number"
+                                    min="1"
+                                    value={currentRpmLimit}
+                                    onChange={(e) =>
+                                      setDrafts((prev) => ({
+                                        ...prev,
+                                        [key]: {
+                                          poolInput: currentPoolInput,
+                                          customError: currentCustomError,
+                                          resetWindow: currentResetWindow,
+                                          onExhaustion: currentOnExhaustion,
+                                          fallbackTarget: currentFallbackTarget,
+                                          tpmLimit: currentTpmLimit,
+                                          ...(prev[key] || {}),
+                                          rpmLimit: e.target.value,
+                                        },
+                                      }))
+                                    }
+                                    placeholder="Leave empty for unlimited RPM"
+                                    className="px-3 py-1.5 rounded-lg bg-bg-card border border-border text-xs text-text-main placeholder:text-zinc-600 focus:outline-none focus:border-amber-500 font-mono"
+                                  />
+                                </label>
+
+                                <label className="flex flex-col gap-1 text-xs text-text-muted">
+                                  <span className="font-semibold text-text-main flex items-center gap-1">
+                                    <span className="material-symbols-outlined text-[14px] text-cyan-400">
+                                      toll
+                                    </span>
+                                    TPM Limit (Tokens / Min):
+                                  </span>
+                                  <input
+                                    type="number"
+                                    min="1"
+                                    value={currentTpmLimit}
+                                    onChange={(e) =>
+                                      setDrafts((prev) => ({
+                                        ...prev,
+                                        [key]: {
+                                          poolInput: currentPoolInput,
+                                          customError: currentCustomError,
+                                          resetWindow: currentResetWindow,
+                                          onExhaustion: currentOnExhaustion,
+                                          fallbackTarget: currentFallbackTarget,
+                                          rpmLimit: currentRpmLimit,
+                                          ...(prev[key] || {}),
+                                          tpmLimit: e.target.value,
+                                        },
+                                      }))
+                                    }
+                                    placeholder="Leave empty for unlimited TPM"
+                                    className="px-3 py-1.5 rounded-lg bg-bg-card border border-border text-xs text-text-main placeholder:text-zinc-600 focus:outline-none focus:border-amber-500 font-mono"
+                                  />
                                 </label>
                               </div>
                             </div>
@@ -1297,6 +1644,10 @@ export default function LimitsBankPage() {
               </tbody>
             </table>
           </div>
+
+            {/* Bottom Pagination Bar */}
+            {renderPaginationBar("bottom")}
+          </>
         )}
       </Card>
     </div>

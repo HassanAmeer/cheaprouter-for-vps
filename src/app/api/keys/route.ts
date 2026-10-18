@@ -40,10 +40,31 @@ export async function GET(request: Request) {
     const dbLimit = limit ?? undefined;
     const total = getApiKeysCount();
     const keys = await getApiKeys(dbLimit, offset);
-    const maskedKeys = keys.map((k) => ({
-      ...k,
-      key: maskStoredApiKey(k.key),
-    }));
+
+    const resellerMap = new Map<string, { userId: string; userName: string | null }>();
+    try {
+      const { getResellerUserKeys } = await import("@/lib/db/resellerUsers");
+      const resellerKeys = getResellerUserKeys();
+      for (const rk of resellerKeys) {
+        if (rk.apiKeyId) {
+          resellerMap.set(rk.apiKeyId, { userId: rk.userId, userName: rk.userName });
+        }
+        if (rk.apiKey) {
+          resellerMap.set(rk.apiKey, { userId: rk.userId, userName: rk.userName });
+        }
+      }
+    } catch {}
+
+    const maskedKeys = keys.map((k) => {
+      const keyStr = typeof k.key === "string" ? k.key : "";
+      const reseller = resellerMap.get(k.id) || (keyStr ? resellerMap.get(keyStr) : undefined);
+      return {
+        ...k,
+        key: maskStoredApiKey(keyStr),
+        userId: reseller?.userId || k.name || k.id,
+        userName: reseller?.userName || k.name || "User",
+      };
+    });
 
     return NextResponse.json({
       keys: maskedKeys,
@@ -71,6 +92,8 @@ export async function POST(request) {
     }
     const {
       name,
+      userId,
+      userName,
       modelAccessMode,
       allowedModels,
       allowedCombos,
@@ -138,6 +161,38 @@ export async function POST(request) {
       }
     }
 
+    const effectiveUserId = userId?.trim() || name;
+    const effectiveUserName = userName?.trim() || name;
+    try {
+      const { getDbInstance } = await import("@/lib/db/core");
+      const { ensureResellerUserKeysTable } = await import("@/lib/db/resellerUsers");
+      ensureResellerUserKeysTable();
+      const db = getDbInstance();
+      const now = new Date().toISOString();
+      db.prepare(`
+        INSERT INTO reseller_user_keys (
+          user_id, user_name, user_email, plan_tier, api_key, api_key_id,
+          allowed_models, token_budget, tokens_used, rpm_limit, expires_at,
+          is_active, created_at, updated_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, 1, ?, ?)
+      `).run(
+        effectiveUserId,
+        effectiveUserName,
+        `${effectiveUserId.toLowerCase().replace(/[^a-z0-9]/g, "") || "user"}@cheaproute.local`,
+        "standard",
+        apiKey.key,
+        apiKey.id,
+        JSON.stringify(allowedModels || []),
+        null,
+        rateLimits?.requestsPerMinute ?? null,
+        expiresAt ?? null,
+        now,
+        now
+      );
+    } catch (e) {
+      log.warn("keys", "Failed to sync created key to reseller_user_keys", e);
+    }
+
     // Auto sync to Cloud if enabled — fire-and-forget. Cloud sync is a
     // background side-effect, not part of the key-creation contract, and it
     // performs an outbound network call. Awaiting it here blocked the HTTP
@@ -152,6 +207,8 @@ export async function POST(request) {
       {
         key: apiKey.key,
         name: apiKey.name,
+        userId: effectiveUserId,
+        userName: effectiveUserName,
         id: apiKey.id,
         machineId: apiKey.machineId,
         modelAccessMode: apiKey.modelAccessMode,

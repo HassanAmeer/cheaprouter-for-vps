@@ -983,18 +983,63 @@ async function buildUnifiedModelsResponseCore(
       // not set one, none is advertised.
       const comboDisplayName =
         typeof combo.displayName === "string" ? combo.displayName.trim() : "";
+      const comboCustomAlias =
+        typeof combo.customAlias === "string" ? combo.customAlias.trim() : "";
+      const comboEffectiveId = comboCustomAlias || combo.name;
+      const comboPricing = combo.pricing as Record<string, any> | undefined;
+      const comboTier = comboPricing?.tier || comboPricing?.pricing_tier || "paid";
+      const comboInput = comboPricing?.inputCost ?? comboPricing?.input_cost ?? 0;
+      const comboCache = comboPricing?.cacheCost ?? comboPricing?.cache_cost ?? 0;
+      const comboOutput = comboPricing?.outputCost ?? comboPricing?.output_cost ?? 0;
+      const comboOrigInput =
+        comboPricing?.originalInputCost ?? comboPricing?.original_input_cost ?? null;
+      const comboOrigCache =
+        comboPricing?.originalCacheCost ?? comboPricing?.original_cache_cost ?? null;
+      const comboOrigOutput =
+        comboPricing?.originalOutputCost ?? comboPricing?.original_output_cost ?? null;
+
       models.push({
-        id: combo.name,
+        id: comboEffectiveId,
         object: "model",
         created: timestamp,
         owned_by: "combo",
         permission: [],
         root: combo.name,
         parent: null,
+        name: comboDisplayName || combo.name,
         ...(comboDisplayName ? { display_name: comboDisplayName } : {}),
+        ...(comboCustomAlias ? { custom_alias: comboCustomAlias } : {}),
         ...(comboDescription ? { description: comboDescription } : {}),
         ...comboMetadata,
-        ...(combo.pricing ? { pricing: combo.pricing } : {}),
+        context_window: combo.context_length || (comboMetadata as any)?.context_length || null,
+        context_length: combo.context_length || (comboMetadata as any)?.context_length || null,
+        ...(comboPricing
+          ? {
+              pricing_tier: comboTier,
+              input_cost: comboInput,
+              cache_cost: comboCache,
+              output_cost: comboOutput,
+              original_input_cost: comboOrigInput,
+              original_cache_cost: comboOrigCache,
+              original_output_cost: comboOrigOutput,
+              pricing: {
+                tier: comboTier,
+                pricing_tier: comboTier,
+                input_cost: comboInput,
+                cache_cost: comboCache,
+                output_cost: comboOutput,
+                original_input_cost: comboOrigInput,
+                original_cache_cost: comboOrigCache,
+                original_output_cost: comboOrigOutput,
+                input: comboInput / 1_000_000,
+                output: comboOutput / 1_000_000,
+                cached: comboCache / 1_000_000,
+                original_input: comboOrigInput != null ? comboOrigInput / 1_000_000 : null,
+                original_output: comboOrigOutput != null ? comboOrigOutput / 1_000_000 : null,
+                original_cached: comboOrigCache != null ? comboOrigCache / 1_000_000 : null,
+              },
+            }
+          : {}),
       });
 
       // #9147: combos can number hundreds at catalog scale — yield periodically.
@@ -2100,50 +2145,235 @@ async function buildUnifiedModelsResponseCore(
     try {
       const { getAllCustomizations } = await import("@/lib/db/providerModelCustomizations");
       const customizations = getAllCustomizations();
-      const inactiveKeys = new Set(
-        customizations
-          .filter((c) => c.isActive === false)
-          .map((c) => `${c.providerId}::${c.originalModelId}`)
-      );
-      if (inactiveKeys.size > 0) {
-        finalModels = finalModels.filter((m: any) => {
-          const pid = typeof m.owned_by === "string" ? m.owned_by : "";
-          const mid = typeof m.id === "string" ? m.id : "";
-          const bareId = mid.includes("/") ? mid.slice(mid.indexOf("/") + 1) : mid;
-          return !inactiveKeys.has(`${pid}::${mid}`) && !inactiveKeys.has(`${pid}::${bareId}`);
-        });
-      }
+      const activeCustomizations = customizations.filter((c) => c && c.isActive === true);
 
-      // Apply active operator customizations (custom name, custom alias, context window)
+      // Quick lookup map for active customizations
       const activeCustomizationMap = new Map<string, any>();
-      for (const c of customizations) {
-        if (c.isActive !== false) {
-          activeCustomizationMap.set(`${c.providerId}::${c.originalModelId}`, c);
+      for (const c of activeCustomizations) {
+        if (!c || !c.originalModelId) continue;
+        const p = c.providerId;
+        const m = c.originalModelId;
+        activeCustomizationMap.set(`${p}::${m}`, c);
+        activeCustomizationMap.set(`${p}::${m.toLowerCase()}`, c);
+        activeCustomizationMap.set(`${p}/${m}`, c);
+        activeCustomizationMap.set(`${p}/${m.toLowerCase()}`, c);
+        if (c.customAlias) {
+          activeCustomizationMap.set(`${p}::${c.customAlias}`, c);
+          activeCustomizationMap.set(`${p}/${c.customAlias}`, c);
+          activeCustomizationMap.set(c.customAlias, c);
+        }
+        activeCustomizationMap.set(m, c);
+        activeCustomizationMap.set(m.toLowerCase(), c);
+      }
+
+      const matchActiveCustomization = (m: any) => {
+        const pid = typeof m.owned_by === "string" ? m.owned_by : "";
+        const mid = typeof m.id === "string" ? m.id : "";
+        const root = typeof m.root === "string" ? m.root : "";
+        const bareId = mid.includes("/") ? mid.slice(mid.indexOf("/") + 1) : mid;
+        const prefix = mid.includes("/") ? mid.slice(0, mid.indexOf("/")) : "";
+
+        return (
+          activeCustomizationMap.get(`${pid}::${root}`) ||
+          activeCustomizationMap.get(`${pid}::${bareId}`) ||
+          activeCustomizationMap.get(`${pid}::${mid}`) ||
+          activeCustomizationMap.get(`${pid}/${root}`) ||
+          activeCustomizationMap.get(`${pid}/${bareId}`) ||
+          activeCustomizationMap.get(`${pid}/${mid}`) ||
+          (prefix ? activeCustomizationMap.get(`${prefix}::${bareId}`) : undefined) ||
+          (prefix ? activeCustomizationMap.get(`${prefix}/${bareId}`) : undefined) ||
+          activeCustomizationMap.get(root) ||
+          activeCustomizationMap.get(bareId) ||
+          activeCustomizationMap.get(mid)
+        );
+      };
+
+      // Build connectedProviderIds to ensure paused custom nodes and unconnected providers are excluded
+      const activeConnectedProviderSet = new Set(
+        connections
+          .map((c: any) => (typeof c.provider === "string" ? c.provider : ""))
+          .filter(Boolean)
+      );
+      const pausedNodeIds = new Set(
+        providerNodes
+          .filter((n: any) => n.isActive === false)
+          .flatMap((n: any) => [n.id, n.prefix].filter(Boolean) as string[])
+      );
+      const activeNodeIds = providerNodes
+        .filter((n: any) => n.isActive !== false)
+        .map((n: any) => (n.prefix ? String(n.prefix) : String(n.id || "")))
+        .filter((nid: string) => activeConnectedProviderSet.has(nid));
+
+      const connectedProviderIds = new Set(
+        [...Array.from(activeConnectedProviderSet), ...activeNodeIds].filter(
+          (pid) => !pausedNodeIds.has(pid)
+        )
+      );
+
+      const validActiveCustomizations = activeCustomizations.filter(
+        (c) => connectedProviderIds.size === 0 || connectedProviderIds.has(c.providerId)
+      );
+
+      const isUserCombo = (m: any) =>
+        Boolean(m && m.owned_by === "combo" && !String(m.id).startsWith("auto/"));
+
+      const isMatchingPipedModel = (m: any) => {
+        if (m.owned_by === "combo") return false;
+        const cust = matchActiveCustomization(m);
+        if (!cust) return false;
+        if (connectedProviderIds.size > 0 && !connectedProviderIds.has(cust.providerId)) {
+          return false;
+        }
+        return true;
+      };
+
+      // Strictly expose ONLY user combos and active piped models from connected providers
+      finalModels = finalModels.filter((m: any) => isUserCombo(m) || isMatchingPipedModel(m));
+
+      // Ensure every active customization is present in the final models list
+      for (const cust of validActiveCustomizations) {
+        const idToCheck = cust.customAlias || `${cust.providerId}/${cust.originalModelId}`;
+        const alreadyPresent = finalModels.some((m: any) => {
+          if (
+            cust.customAlias &&
+            (m.id === cust.customAlias || m.customAlias === cust.customAlias)
+          ) {
+            return true;
+          }
+          const pid = typeof m.owned_by === "string" ? m.owned_by : "";
+          const root = typeof m.root === "string" ? m.root : "";
+          const mid = typeof m.id === "string" ? m.id : "";
+          const bareId = mid.includes("/") ? mid.slice(mid.indexOf("/") + 1) : mid;
+          return (
+            (pid === cust.providerId || !pid) &&
+            (root === cust.originalModelId ||
+              bareId === cust.originalModelId ||
+              mid === cust.originalModelId)
+          );
+        });
+
+        if (!alreadyPresent) {
+          finalModels.push({
+            id: idToCheck,
+            object: "model",
+            created: timestamp,
+            owned_by: cust.providerId,
+            permission: [],
+            root: cust.originalModelId,
+            parent: null,
+            name: cust.customName || cust.originalModelId,
+            display_name: cust.customName || cust.originalModelId,
+            context_window: cust.contextWindow ?? null,
+            context_length: cust.contextWindow ?? null,
+          });
         }
       }
 
-      if (activeCustomizationMap.size > 0) {
-        for (const m of finalModels as any[]) {
-          if (m.owned_by === "combo") continue;
-          const pid = typeof m.owned_by === "string" ? m.owned_by : "";
-          const mid = typeof m.id === "string" ? m.id : "";
-          const bareId = mid.includes("/") ? mid.slice(mid.indexOf("/") + 1) : mid;
-          const cust =
-            activeCustomizationMap.get(`${pid}::${bareId}`) ||
-            activeCustomizationMap.get(`${pid}::${mid}`);
-          if (cust) {
-            if (cust.customName) {
-              m.name = cust.customName;
-            }
-            if (cust.customAlias) {
-              m.id = cust.customAlias;
-            }
-            if (cust.contextWindow && typeof cust.contextWindow === "number") {
-              m.context_length = cust.contextWindow;
-            }
+      // Enrich all models with custom aliases, names, context windows, and full 6-field pricing
+      for (const m of finalModels as any[]) {
+        if (m.owned_by === "combo") {
+          m.context_window = m.context_length ?? null;
+          if (m.pricing) {
+            const p = m.pricing;
+            const tier = p.tier || p.pricing_tier || "paid";
+            const inCost = p.inputCost ?? p.input_cost ?? 0;
+            const caCost = p.cacheCost ?? p.cache_cost ?? 0;
+            const outCost = p.outputCost ?? p.output_cost ?? 0;
+            const origIn = p.originalInputCost ?? p.original_input_cost ?? null;
+            const origCa = p.originalCacheCost ?? p.original_cache_cost ?? null;
+            const origOut = p.originalOutputCost ?? p.original_output_cost ?? null;
+
+            m.pricing_tier = tier;
+            m.input_cost = inCost;
+            m.cache_cost = caCost;
+            m.output_cost = outCost;
+            m.original_input_cost = origIn;
+            m.original_cache_cost = origCa;
+            m.original_output_cost = origOut;
+
+            m.pricing = {
+              tier,
+              pricing_tier: tier,
+              input_cost: inCost,
+              cache_cost: caCost,
+              output_cost: outCost,
+              original_input_cost: origIn,
+              original_cache_cost: origCa,
+              original_output_cost: origOut,
+              input: inCost / 1_000_000,
+              output: outCost / 1_000_000,
+              cached: caCost / 1_000_000,
+              original_input: origIn != null ? origIn / 1_000_000 : null,
+              original_output: origOut != null ? origOut / 1_000_000 : null,
+              original_cached: origCa != null ? origCa / 1_000_000 : null,
+            };
           }
+          continue;
+        }
+
+        const cust = matchActiveCustomization(m);
+        if (cust) {
+          if (cust.customName) {
+            m.name = cust.customName;
+            m.display_name = cust.customName;
+          }
+          if (cust.customAlias) {
+            m.id = cust.customAlias;
+          }
+          if (cust.contextWindow && typeof cust.contextWindow === "number") {
+            m.context_length = cust.contextWindow;
+            m.context_window = cust.contextWindow;
+            m.max_input_tokens = cust.contextWindow;
+          } else {
+            m.context_window = m.context_length ?? null;
+          }
+
+          const pricingTier =
+            cust.pricingTier || (cust.isFreeOverride === false ? "paid" : "free");
+          const inputCost = cust.inputCost ?? 0;
+          const cacheCost = cust.cacheCost ?? 0;
+          const outputCost = cust.outputCost ?? 0;
+          const originalInputCost = cust.originalInputCost ?? null;
+          const originalCacheCost = cust.originalCacheCost ?? null;
+          const originalOutputCost = cust.originalOutputCost ?? null;
+
+          m.pricing_tier = pricingTier;
+          m.input_cost = inputCost;
+          m.cache_cost = cacheCost;
+          m.output_cost = outputCost;
+          m.original_input_cost = originalInputCost;
+          m.original_cache_cost = originalCacheCost;
+          m.original_output_cost = originalOutputCost;
+
+          m.pricing = {
+            tier: pricingTier,
+            pricing_tier: pricingTier,
+            input_cost: inputCost,
+            cache_cost: cacheCost,
+            output_cost: outputCost,
+            original_input_cost: originalInputCost,
+            original_cache_cost: originalCacheCost,
+            original_output_cost: originalOutputCost,
+            input: inputCost / 1_000_000,
+            output: outputCost / 1_000_000,
+            cached: cacheCost / 1_000_000,
+            original_input: originalInputCost != null ? originalInputCost / 1_000_000 : null,
+            original_output: originalOutputCost != null ? originalOutputCost / 1_000_000 : null,
+            original_cached: originalCacheCost != null ? originalCacheCost / 1_000_000 : null,
+          };
+        } else {
+          m.context_window = m.context_length ?? null;
         }
       }
+
+      // Deduplicate by model id
+      const seenModelIds = new Set<string>();
+      finalModels = finalModels.filter((m: any) => {
+        if (!m || !m.id) return false;
+        if (seenModelIds.has(m.id)) return false;
+        seenModelIds.add(m.id);
+        return true;
+      });
     } catch {
       // ignore
     }

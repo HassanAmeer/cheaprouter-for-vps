@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, type ReactNode } from "react";
 import {
   ReactFlow,
   Controls,
@@ -10,10 +10,15 @@ import {
   type EdgeTypes,
   type NodeMouseHandler,
   type ReactFlowInstance,
+  type FitViewOptions,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 
-const FIT_VIEW_OPTIONS = { padding: 0.22, duration: 250 } as const;
+const DEFAULT_FIT_VIEW_OPTIONS: FitViewOptions = {
+  padding: 0.35,
+  maxZoom: 0.7,
+  duration: 250,
+};
 const MIN_ZOOM = 0.08;
 const MAX_ZOOM = 2;
 const REFIT_DELAY_MS = 60;
@@ -34,6 +39,10 @@ type FlowCanvasProps = {
   /** Sizing/theme classes for the container that hosts the canvas. */
   className?: string;
   onNodeClick?: NodeMouseHandler;
+  /** Whether to show the zoom/fit controls in the corner. Defaults to true. */
+  showControls?: boolean;
+  /** Custom fitView options (padding, maxZoom, etc.). */
+  fitViewOptions?: FitViewOptions;
   /** Overlays rendered inside the canvas (after Controls). */
   children?: ReactNode;
 };
@@ -65,6 +74,8 @@ export function FlowCanvas({
   interactive = false,
   className = "h-full w-full min-w-0 overflow-hidden",
   onNodeClick,
+  showControls = true,
+  fitViewOptions,
   children,
 }: FlowCanvasProps) {
   const rfInstance = useRef<ReactFlowInstance | null>(null);
@@ -73,28 +84,39 @@ export function FlowCanvas({
   // a new ReactFlow instance mounts (e.g. via fitKey change).
   const generationRef = useRef(0);
 
-  const onInit = useCallback((instance: ReactFlowInstance) => {
-    const generation = ++generationRef.current;
-    rfInstance.current = instance;
-    // Defer fitView until ReactFlow has measured its viewport, but guard
-    // against the instance being replaced (generation mismatch) before the
-    // timer fires — see Bug #4 in the audit report.
-    setTimeout(() => {
-      if (generationRef.current === generation) {
-        instance.fitView(FIT_VIEW_OPTIONS);
-      }
-    }, REFIT_DELAY_MS);
-  }, []);
+  const effectiveFitViewOptions = useMemo(
+    () => ({
+      ...DEFAULT_FIT_VIEW_OPTIONS,
+      ...fitViewOptions,
+    }),
+    [fitViewOptions]
+  );
+
+  const onInit = useCallback(
+    (instance: ReactFlowInstance) => {
+      const generation = ++generationRef.current;
+      rfInstance.current = instance;
+      // Defer fitView until ReactFlow has measured its viewport, but guard
+      // against the instance being replaced (generation mismatch) before the
+      // timer fires — see Bug #4 in the audit report.
+      setTimeout(() => {
+        if (generationRef.current === generation) {
+          instance.fitView(effectiveFitViewOptions);
+        }
+      }, REFIT_DELAY_MS);
+    },
+    [effectiveFitViewOptions]
+  );
 
   useEffect(() => {
     const el = containerRef.current;
     if (!el) return;
     const ro = new ResizeObserver(() => {
-      rfInstance.current?.fitView(FIT_VIEW_OPTIONS);
+      rfInstance.current?.fitView(effectiveFitViewOptions);
     });
     ro.observe(el);
     return () => ro.disconnect();
-  }, []);
+  }, [effectiveFitViewOptions]);
 
   useEffect(() => {
     // Snapshot the generation so a queued callback that fires after a
@@ -102,11 +124,11 @@ export function FlowCanvas({
     const generation = generationRef.current;
     const id = setTimeout(() => {
       if (generationRef.current === generation) {
-        rfInstance.current?.fitView(FIT_VIEW_OPTIONS);
+        rfInstance.current?.fitView(effectiveFitViewOptions);
       }
     }, REFIT_DELAY_MS);
     return () => clearTimeout(id);
-  }, [nodes.length]);
+  }, [nodes.length, effectiveFitViewOptions]);
 
   // Clear the ref on unmount so a late-arriving callback (e.g. a ResizeObserver
   // tick fired just before the React tree unmounted) cannot reach into a
@@ -121,14 +143,14 @@ export function FlowCanvas({
     <div ref={containerRef} className={className}>
       <ReactFlow
         key={fitKey}
-        className="cheaprouter-flow"
+        className="cheaprouter-flow cheaproute-flow"
         nodes={nodes}
         edges={edges}
         nodeTypes={nodeTypes}
         edgeTypes={edgeTypes}
         onNodeClick={onNodeClick}
         fitView
-        fitViewOptions={FIT_VIEW_OPTIONS}
+        fitViewOptions={effectiveFitViewOptions}
         minZoom={MIN_ZOOM}
         maxZoom={MAX_ZOOM}
         onInit={onInit}
@@ -142,7 +164,7 @@ export function FlowCanvas({
         nodesConnectable={false}
         elementsSelectable={interactive}
       >
-        <Controls showInteractive={false} />
+        {showControls && <Controls showInteractive={false} />}
         {children}
       </ReactFlow>
     </div>

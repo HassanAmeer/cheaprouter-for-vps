@@ -12,10 +12,8 @@ export const HIDEABLE_SIDEBAR_ITEM_IDS = [
   "limits",
   // Multi-tenant / reseller
   "users",
-  // Info
+  // Usage
   "usage",
-  "costs-pricing",
-  "free-provider-rankings",
   // Dev Tools
   "logs",
   "logs-proxy",
@@ -38,8 +36,6 @@ export type SidebarSectionId =
   | "api"
   | "cheap-proxy"
   | "multi-tenant"
-  | "costs"
-  | "info"
   | "devtools"
   | "settings"
   | "bottom";

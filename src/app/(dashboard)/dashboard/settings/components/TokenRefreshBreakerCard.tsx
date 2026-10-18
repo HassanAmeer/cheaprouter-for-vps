@@ -38,7 +38,7 @@ function ActionButtons({
         </button>
         <button
           type="button"
-          className="rounded-lg bg-primary px-3 py-1.5 text-sm text-white"
+          className="rounded-lg bg-[image:var(--grad-brand)] hover:brightness-105 px-3 py-1.5 text-sm text-white shadow-xs transition-all"
           onClick={onSave}
           disabled={saving}
         >

@@ -822,7 +822,7 @@ const ProviderCard = forwardRef<ProviderCardHandle, ProviderCardProps>(function 
                         e.stopPropagation();
                         router.push(`/dashboard/providers/${providerId}?action=connect`);
                       }}
-                      className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold rounded-md bg-primary text-white hover:bg-primary-hover shadow-xs transition-colors cursor-pointer"
+                      className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold rounded-md bg-[image:var(--grad-brand)] text-white hover:brightness-105 shadow-xs transition-all cursor-pointer"
                       title={providerText(t, "connectProvider", "Connect {name}", {
                         name: provider.name,
                       })}

@@ -59,11 +59,11 @@ export default function Modal({
   const previouslyFocusedRef = useRef<HTMLElement | null>(null);
 
   const sizes = {
-    sm: "max-w-sm",
-    md: "max-w-md",
-    lg: "max-w-lg",
-    xl: "max-w-xl",
-    full: "max-w-4xl",
+    sm: "w-[90vw] max-w-[90vw] sm:w-full sm:max-w-sm",
+    md: "w-[90vw] max-w-[90vw] sm:w-full sm:max-w-md",
+    lg: "w-[90vw] max-w-[90vw] sm:w-full sm:max-w-lg",
+    xl: "w-[90vw] max-w-[90vw] sm:w-full sm:max-w-xl",
+    full: "w-[90vw] max-w-[90vw] sm:w-full sm:max-w-4xl",
   };
 
   // Lock body scroll when modal is open
@@ -241,6 +241,19 @@ export default function Modal({
           <div className="flex items-center justify-end gap-3 p-6 border-t border-black/5 dark:border-white/5">
             {footer}
           </div>
+        )}
+
+        {/* Mobile floating close icon button in bottom-right corner for 1-tap thumb dismissal */}
+        {showCloseButton && (
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label={t("close")}
+            className="sm:hidden absolute bottom-3 right-3 z-30 w-8 h-8 rounded-full bg-zinc-200/95 dark:bg-zinc-700/95 hover:bg-zinc-300 dark:hover:bg-zinc-600 text-zinc-700 dark:text-zinc-200 shadow-md flex items-center justify-center transition-all cursor-pointer border border-black/10 dark:border-white/10"
+            title={t("close")}
+          >
+            <span className="material-symbols-outlined text-[18px]">close</span>
+          </button>
         )}
       </div>
     </div>

@@ -6,13 +6,9 @@ import sectionNamespaces from "@/i18n/routeNamespaces.generated.json";
  * Per-section i18n provider — serves only the namespaces this section's
  * client components actually use (see scripts/i18n/generate-route-namespaces.mjs).
  */
-export default function FreeProviderRankingsSectionLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function LimitsSectionLayout({ children }: { children: React.ReactNode }) {
   return (
-    <SectionI18nProvider namespaces={sectionNamespaces.sections["free-provider-rankings"]}>
+    <SectionI18nProvider namespaces={sectionNamespaces.sections["limits"]}>
       {children}
     </SectionI18nProvider>
   );

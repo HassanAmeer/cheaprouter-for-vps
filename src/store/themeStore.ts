@@ -58,16 +58,16 @@ const useThemeStore = create<ThemeState>()(
 );
 
 export const COLOR_THEMES: Record<string, string> = {
-  opencode: "#cbd5e1",
-  coral: "#e54d5e",
+  opencode: "#334155",
+  coral: "#334155",
   blue: "#3b82f6",
   red: "#ef4444",
   green: "#22c55e",
   violet: "#8b5cf6",
   orange: "#f97316",
   cyan: "#06b6d4",
-  // Jest Open Code — white + silver, clean minimal. Light/dark both.
-  jest: "#94a3b8",
+  // Jest Open Code — dark silver / dark grey
+  jest: "#334155",
 };
 
 // Apply light/dark theme to document
@@ -106,6 +106,7 @@ function applyColorTheme(colorTheme: string, customColor: string) {
     root.style.removeProperty("--color-primary");
     root.style.removeProperty("--color-primary-hover");
   }
+  root.style.removeProperty("--grad-brand");
 
   // Scoped full-palette overrides. Adding/removing the class (rather than
   // inline vars) keeps globals.css the single source of truth for the palette,

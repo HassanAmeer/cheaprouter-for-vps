@@ -126,6 +126,20 @@ export function getCustomizationsForProvider(providerId: string): ProviderModelC
 }
 
 /**
+ * All active customizations across providers (for curated public catalog and limits).
+ */
+export function getAllActiveCustomizations(): ProviderModelCustomization[] {
+  const db = getDbInstance();
+  const rows = db
+    .prepare(
+      "SELECT * FROM provider_model_customizations WHERE is_active = 1 ORDER BY provider_id, original_model_id"
+    )
+    .all() as RowShape[];
+
+  return rows.map(fromRow);
+}
+
+/**
  * All customizations across providers (for a global curation listing).
  */
 export function getAllCustomizations(): ProviderModelCustomization[] {

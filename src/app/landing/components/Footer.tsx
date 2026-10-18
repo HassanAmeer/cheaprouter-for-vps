@@ -1,5 +1,4 @@
 "use client";
-import Link from "next/link";
 /* eslint-disable @next/next/no-img-element */
 import { useTranslations } from "next-intl";
 
@@ -66,12 +65,6 @@ export default function Footer() {
           {/* Resources */}
           <div className="flex flex-col gap-4">
             <h4 className="font-bold text-white">{t("resources")}</h4>
-            <Link
-              className="text-gray-400 hover:text-[#E54D5E] text-sm transition-colors"
-              href="/docs"
-            >
-              {t("documentation")}
-            </Link>
             <a
               className="text-gray-400 hover:text-[#E54D5E] text-sm transition-colors"
               href="https://github.com/diegosouzapw/CheapRoute"

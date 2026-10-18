@@ -101,6 +101,13 @@ export async function GET(request: Request) {
         .filter(Boolean)
     );
 
+    // Paused custom provider nodes (isActive === false) must be strictly excluded
+    const pausedNodeIds = new Set(
+      providerNodes
+        .filter((n: any) => n.isActive === false)
+        .flatMap((n) => [n.id, n.prefix].filter(Boolean) as string[])
+    );
+
     // Active custom provider nodes that have an active connection
     const activeNodeIds = providerNodes
       .filter((n: any) => n.isActive !== false)
@@ -109,7 +116,7 @@ export async function GET(request: Request) {
 
     const connectedProviderIds = Array.from(
       new Set([...Array.from(activeConnectedProviderSet), ...activeNodeIds])
-    );
+    ).filter((pid) => !pausedNodeIds.has(pid));
 
     const { getCustomModels } = await import("@/lib/db/models");
     const { getModelsByProviderId } = await import("@/shared/constants/models");

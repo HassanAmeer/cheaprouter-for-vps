@@ -24,8 +24,6 @@ export const SIDEBAR_ICON_ACCENTS: Partial<Record<SidebarItemId, string>> = {
   limits: "#F43F5E",
   combos: "#A855F7",
   users: "#14B8A0",
-  "costs-pricing": "#FB923C",
-  "free-provider-rankings": "#10B981",
   logs: "#CBD5E1",
   "logs-proxy": "#A3E635",
   "logs-console": "#FACC15",

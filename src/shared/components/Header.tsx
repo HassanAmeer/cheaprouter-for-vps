@@ -80,9 +80,6 @@ const HEADER_DESCRIPTIONS: Partial<Record<string, string>> = {
   "analytics-utilization": "analyticsUtilizationDescription",
   "analytics-combo-health": "analyticsComboHealthDescription",
   "analytics-compression": "analyticsCompressionDescription",
-  // Costs sub-pages
-  "costs-budget": "costsBudgetDescription",
-  "costs-pricing": "costsPricingDescription",
   // Logs sub-pages
   "logs-proxy": "logsProxyDescription",
   "logs-console": "logsConsoleDescription",

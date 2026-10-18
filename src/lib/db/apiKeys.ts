@@ -1165,6 +1165,11 @@ export async function updateApiKeyPermissions(
       action: normalized.isActive ? "apiKey.activate" : "apiKey.deactivate",
       target: id,
     });
+    try {
+      db.prepare(
+        "UPDATE reseller_user_keys SET is_active = ?, updated_at = datetime('now') WHERE api_key_id = ?"
+      ).run(normalized.isActive ? 1 : 0, id);
+    } catch {}
   }
 
   if (scopesUpdate !== undefined) {
@@ -1223,6 +1228,9 @@ export async function deleteApiKey(id: string) {
 
   db.prepare("DELETE FROM domain_budgets WHERE api_key_id = ?").run(id);
   db.prepare("DELETE FROM domain_cost_history WHERE api_key_id = ?").run(id);
+  try {
+    db.prepare("DELETE FROM reseller_user_keys WHERE api_key_id = ?").run(id);
+  } catch {}
   setNoLog(id, false);
 
   // Invalidate caches since a key was removed
