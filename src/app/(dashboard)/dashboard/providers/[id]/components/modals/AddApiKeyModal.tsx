@@ -276,6 +276,7 @@ export default function AddApiKeyModal({
           runtimeKey: isChatGptWebCodex ? formData.runtimeKey.trim() || undefined : undefined,
           tunnelId: isChatGptWebCodex ? formData.tunnelId.trim() || undefined : undefined,
           connectorName: isChatGptWebCodex ? formData.connectorName.trim() || undefined : undefined,
+          accountId: formData.accountId.trim() || undefined,
         }),
       });
       const data = await res.json();

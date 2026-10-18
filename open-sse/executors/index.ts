@@ -194,6 +194,10 @@ const lazyExecutors: Record<string, () => Promise<BaseExecutor>> = {
   chatplayground: () => import("./chatplayground.ts").then((m) => new m.ChatPlaygroundExecutor()),
   cpl: () =>
     import("./chatplayground.ts").then((m) => new m.ChatPlaygroundExecutor("chatplayground")), // Alias
+  "opencode-cli": () =>
+    import("./opencode-cli.ts").then((m) => new m.OpenCodeCliExecutor("opencode-cli")),
+  "kilo-code-cli": () =>
+    import("./opencode-cli.ts").then((m) => new m.OpenCodeCliExecutor("kilo-code-cli")),
 };
 
 // Bootstrap: declare every built-in alias in the ExecutorRegistry. Duplicate

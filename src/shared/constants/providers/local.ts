@@ -215,4 +215,21 @@ export const LOCAL_PROVIDERS = {
     passthroughModels: true,
     isLocalCli: true,
   },
+  "kilo-code-cli": {
+    id: "kilo-code-cli",
+    serviceKinds: ["llm"],
+    alias: "kilo-code-cli",
+    name: "Kilo Code CLI / Server",
+    icon: "terminal",
+    color: "#6366F1",
+    textIcon: "KC",
+    website: "https://kilo.ai",
+    hasFree: true,
+    authHint:
+      "Connects to Kilo Code CLI running locally or on a remote VPS (e.g. `kilo serve --port 4098`). Default endpoint: http://localhost:4098.",
+    localDefault: "http://localhost:4098",
+    passthroughModels: true,
+    isLocalCli: true,
+  },
 };
+

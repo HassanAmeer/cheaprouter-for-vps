@@ -79,6 +79,7 @@ import {
 } from "./providerCompactMode";
 import { getRecentProviderIds } from "@/lib/providers/recentProviders";
 import { CupertinoProviderGuideSheet } from "@/shared/components/CupertinoProviderGuideSheet";
+import CliConnectSheet from "./components/CliConnectSheet";
 
 type DashboardProviderInfo = {
   id?: string;
@@ -280,17 +281,28 @@ function ProvidersPageContent() {
         });
       }
     };
-    window.addEventListener("cheaproute:open_provider_guide", handleOpenGuide);
+    const handleOpenCliConnect = (e: Event) => {
+      const custom = e as CustomEvent<{ id: string; name?: string }>;
+      if (custom.detail?.id) {
+        setCliConnectTarget({
+          id: custom.detail.id,
+          name: custom.detail.name,
+        });
+      }
+    };
+    window.addEventListener("cheaproute:open_cli_connect", handleOpenCliConnect);
 
     return () => {
       window.removeEventListener("cheaproute:recent_providers_updated", handleRecent);
       window.removeEventListener("cheaproute:open_provider_guide", handleOpenGuide);
+      window.removeEventListener("cheaproute:open_cli_connect", handleOpenCliConnect);
     };
   }, []);
   // #4240: media-category (serviceKind) filter — composes with activeTab,
   // search and configured-only. null = no serviceKind filter.
   const [activeServiceKind, setActiveServiceKind] = useState<string | null>(null);
   const [showServerPortsSheet, setShowServerPortsSheet] = useState(false);
+  const [cliConnectTarget, setCliConnectTarget] = useState<{ id: string; name?: string } | null>(null);
   const notify = useNotificationStore();
   const t = useTranslations("providers");
   const tc = useTranslations("common");
@@ -1618,6 +1630,7 @@ function ProvidersPageContent() {
                                 provider={provider}
                                 stats={stats}
                                 authType={displayAuthType}
+                                onConnectCli={(id, name) => setCliConnectTarget({ id, name })}
                                 onToggle={(active) =>
                                   handleToggleProvider(providerId, toggleAuthType, active)
                                 }
@@ -2352,6 +2365,21 @@ function ProvidersPageContent() {
               setShowCustomProviderForm(true);
               setIsCompatibleCollapsed(false);
               notify.info(`Server port URL: ${url}. Opened Custom Provider form.`);
+            }}
+          />
+        )}
+
+        {/* CLI Connect Slide-Over Sheet (OpenCode CLI, Kilo Code CLI) */}
+        {cliConnectTarget && (
+          <CliConnectSheet
+            isOpen={!!cliConnectTarget}
+            onClose={() => setCliConnectTarget(null)}
+            providerId={cliConnectTarget.id}
+            providerName={cliConnectTarget.name}
+            onConnected={async () => {
+              const data = await loadProviderPageData();
+              setConnections(data.connections);
+              setProviderNodes(data.providerNodes);
             }}
           />
         )}

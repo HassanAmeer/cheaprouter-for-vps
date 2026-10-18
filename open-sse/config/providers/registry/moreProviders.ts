@@ -136,6 +136,15 @@ export const opencodeCliProvider: RegistryEntry = buildOpenAiCompatibleRegistryE
   passthroughModels: true,
 });
 
+export const kiloCodeCliProvider: RegistryEntry = buildOpenAiCompatibleRegistryEntry({
+  id: "kilo-code-cli",
+  alias: "kilo-code-cli",
+  baseUrl: "http://localhost:4098/v1/chat/completions",
+  modelsUrl: "http://localhost:4098/config/providers",
+  models: [],
+  passthroughModels: true,
+});
+
 export const llamafileProvider: RegistryEntry = buildOpenAiCompatibleRegistryEntry({
   id: "llamafile",
   alias: "llamafile",

@@ -160,12 +160,31 @@ let durablePublicKey: JsonWebKey | null = null;
 
 export function normalizeDuckDuckGoMessages(value: unknown): DuckDuckGoRequestMessage[] {
   if (!Array.isArray(value)) return [];
-  return value.flatMap((message) => {
+  const normalized = value.flatMap((message) => {
     if (!message || typeof message !== "object" || Array.isArray(message)) return [];
     const record = message as Record<string, unknown>;
     if (typeof record.role !== "string") return [];
-    return [{ ...record, role: record.role, content: record.content }];
+    let content = record.content;
+    if (typeof content === "string" && content.length > 3500) {
+      content = content.slice(0, 3500) + "\n...[truncated for DuckDuckGo context limit]";
+    }
+    return [{ ...record, role: record.role, content }];
   });
+
+  // DuckDuckGo free web API drops connections or returns 429 when total payload > ~12KB.
+  // Preserve the most recent messages that fit within the safe window.
+  let totalChars = 0;
+  const pruned: DuckDuckGoRequestMessage[] = [];
+  for (let i = normalized.length - 1; i >= 0; i--) {
+    const msg = normalized[i];
+    const len = typeof msg.content === "string" ? msg.content.length : 100;
+    if (totalChars + len > 10000 && pruned.length > 0) {
+      break;
+    }
+    totalChars += len;
+    pruned.unshift(msg);
+  }
+  return pruned;
 }
 
 function extractDuckDuckGoContent(data: unknown): string {

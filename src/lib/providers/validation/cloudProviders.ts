@@ -765,3 +765,79 @@ export async function validateSapProvider({ apiKey, providerSpecificData = {} }:
 
   return { valid: false, error: "Connection failed while testing SAP Generative AI Hub" };
 }
+
+export async function validateCloudflareAiProvider({ apiKey, providerSpecificData = {} }: any) {
+  if (!apiKey || typeof apiKey !== "string" || !apiKey.trim()) {
+    return { valid: false, error: "Cloudflare API Token is required" };
+  }
+  const token = apiKey.trim();
+
+  // 1. Verify API Token authenticity against Cloudflare API
+  try {
+    const verifyRes = await validationRead("https://api.cloudflare.com/client/v4/user/tokens/verify", {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    const verifyData = await verifyRes.json().catch(() => null);
+
+    if (!verifyRes.ok || !verifyData?.success) {
+      const errMsg = verifyData?.errors?.[0]?.message || "Invalid Cloudflare API Token";
+      return { valid: false, error: errMsg };
+    }
+  } catch (error: any) {
+    return toValidationErrorResult(error);
+  }
+
+  // 2. Token is verified and active! Check accountId.
+  let accountId =
+    (typeof providerSpecificData?.accountId === "string" && providerSpecificData.accountId.trim()) ||
+    process.env.CLOUDFLARE_ACCOUNT_ID ||
+    "";
+
+  // If accountId is not provided, try to discover it via /accounts
+  if (!accountId) {
+    try {
+      const accRes = await validationRead("https://api.cloudflare.com/client/v4/accounts", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (accRes.ok) {
+        const accData = await accRes.json().catch(() => null);
+        if (accData?.success && Array.isArray(accData.result) && accData.result.length > 0) {
+          accountId = accData.result[0].id;
+        }
+      }
+    } catch {
+      // Ignore discovery errors
+    }
+  }
+
+  // If still no accountId, inform the user clearly
+  if (!accountId) {
+    return {
+      valid: false,
+      error:
+        "Your Cloudflare API Token is active and verified! However, Cloudflare Workers AI requires your Account ID. Please enter your Account ID (found on the right sidebar of dash.cloudflare.com).",
+    };
+  }
+
+  // 3. We have both token and accountId! Test Workers AI chat endpoint
+  const targetUrl = `https://api.cloudflare.com/client/v4/accounts/${accountId}/ai/v1/chat/completions`;
+  const probeModel = providerSpecificData?.validationModelId || "@cf/meta/llama-3.2-3b-instruct";
+
+  return validateDirectChatProvider({
+    url: targetUrl,
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+    body: {
+      model: probeModel,
+      messages: [{ role: "user", content: "test" }],
+      max_tokens: 1,
+    },
+    providerSpecificData: {
+      ...providerSpecificData,
+      accountId,
+    },
+  });
+}
+

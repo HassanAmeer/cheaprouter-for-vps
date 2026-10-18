@@ -1138,6 +1138,10 @@ export async function GET(
         `${base}/v1/models`,
         `${base}/models`,
         `${cleanRaw}/models`,
+        `${base}/api/model`,
+        `${base}/config/providers`,
+        `${cleanRaw}/api/model`,
+        `${cleanRaw}/config/providers`,
       ];
 
       // #8347: opt-in `client_version` query param on the model-LIST request only
@@ -1174,9 +1178,35 @@ export async function GET(
 
           if (response.ok) {
             const data = await response.json();
-            models = isNamedOpenAIStyleProvider(provider)
-              ? normalizeOpenAiLikeModelsResponse(data, provider)
-              : data.data || data.models || (Array.isArray(data) ? data : []);
+            if (data && Array.isArray(data.data) && (provider === "opencode-cli" || provider === "kilo-code-cli" || modelsUrl.includes("/api/model"))) {
+              models = data.data.map((m: any) => ({
+                id: m.id || m.name,
+                name: m.name || m.id,
+                context_length: m.limit?.context,
+                max_output_tokens: m.limit?.output,
+              }));
+            } else if (data && Array.isArray(data.providers)) {
+              const extracted: any[] = [];
+              for (const p of data.providers) {
+                if (p.models && typeof p.models === "object") {
+                  for (const [id, m] of Object.entries(p.models)) {
+                    const modelObj = m as any;
+                    extracted.push({
+                      id: modelObj.id || id,
+                      name: modelObj.name || id,
+                      context_length: modelObj.limit?.context,
+                      max_output_tokens: modelObj.limit?.output,
+                    });
+                  }
+                }
+              }
+              if (extracted.length > 0) models = extracted;
+            }
+            if (!models) {
+              models = isNamedOpenAIStyleProvider(provider)
+                ? normalizeOpenAiLikeModelsResponse(data, provider)
+                : data.data || data.models || (Array.isArray(data) ? data : []);
+            }
             if (provider === "ollama-local")
               models = await enrichOllamaLocalModels(models, baseUrl, proxy, token);
             break; // Success!

@@ -62,12 +62,30 @@ function identifyService(
     };
   }
 
-  if (port === 4096 || (lowerCmd.includes("opencode") && lowerCmd.includes("serve"))) {
+  if (
+    port === 4099 ||
+    port === 4096 ||
+    (lowerCmd.includes("opencode") && lowerCmd.includes("serve")) ||
+    procName.includes("opencode")
+  ) {
     return {
       service: "OpenCode CLI Server",
       category: "ai-cli",
       isAiService: true,
-      suggestedBaseUrl: `http://${normalizedIp}:${port}/v1`,
+      suggestedBaseUrl: `http://${normalizedIp}:${port}`,
+    };
+  }
+
+  if (
+    port === 4098 ||
+    (lowerCmd.includes("kilo") && lowerCmd.includes("serve")) ||
+    procName.includes("kilo")
+  ) {
+    return {
+      service: "Kilo Code CLI Server",
+      category: "ai-cli",
+      isAiService: true,
+      suggestedBaseUrl: `http://${normalizedIp}:${port}`,
     };
   }
 
@@ -319,7 +337,7 @@ export async function GET(req: NextRequest) {
   }
 
   // 2. Fallback probe for standard AI ports if not already found
-  const candidateAiPorts = [8377, 4096, 11434, 1234, 8000, 8080, 8188, 9997, 20128];
+  const candidateAiPorts = [8377, 4098, 4099, 4096, 11434, 1234, 8000, 8080, 8188, 9997, 20128];
   for (const port of candidateAiPorts) {
     const key = `127.0.0.1:${port}`;
     if (!portsMap.has(key)) {

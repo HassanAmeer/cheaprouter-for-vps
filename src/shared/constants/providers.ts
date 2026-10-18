@@ -25,6 +25,7 @@ export const FREE_APIKEY_PROVIDER_IDS = new Set([
   "qoder",
   "opencode",
   "opencode-cli",
+  "kilo-code-cli",
   "dahl",
   // auggie is a fully local, credential-less CLI passthrough (auth handled by
   // `auggie login` outside CheapRoute). Admitted here purely so POST /api/providers
@@ -247,6 +248,7 @@ export const SELF_HOSTED_CHAT_PROVIDER_IDS = new Set([
   "xinference",
   "oobabooga",
   "opencode-cli",
+  "kilo-code-cli",
 ]);
 
 export function isSelfHostedChatProvider(providerId: unknown): boolean {
@@ -256,6 +258,7 @@ export function isSelfHostedChatProvider(providerId: unknown): boolean {
 // Dedicated CLI Tools and local daemon-managed providers
 export const CLI_PROVIDER_IDS = new Set([
   "opencode-cli",
+  "kilo-code-cli",
   "opencode",
   "codex",
   "codex-app-server",

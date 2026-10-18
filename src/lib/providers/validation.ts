@@ -26,7 +26,7 @@ import {
   addModelsSuffix,
   resolveBaseUrl,
 } from "./validation/urlHelpers";
-import { toValidationErrorResult } from "./validation/transport";
+import { toValidationErrorResult, validationRead } from "./validation/transport";
 import {
   validateDeepSeekWebProvider,
   validateGrokWebProvider,
@@ -60,6 +60,7 @@ import {
   validateWatsonxProvider,
   validateOciProvider,
   validateSapProvider,
+  validateCloudflareAiProvider,
 } from "./validation/cloudProviders";
 import {
   validateDeepgramProvider,
@@ -426,6 +427,57 @@ export async function validateProviderApiKey({
       });
     } catch (error: any) {
       return toValidationErrorResult(error);
+    }
+  }
+
+  if (provider === "cloudflare-ai" || provider === "cloudflare") {
+    return await validateCloudflareAiProvider({ apiKey, providerSpecificData });
+  }
+
+  if (provider === "opencode-cli" || provider === "kilo-code-cli") {
+    const rawBase =
+      (typeof providerSpecificData?.baseUrl === "string" && providerSpecificData.baseUrl.trim()) ||
+      (provider === "opencode-cli" ? "http://127.0.0.1:4099" : "http://127.0.0.1:4098");
+    const cleanBase = rawBase.trim().replace(/\/$/, "");
+    try {
+      const checkUrls = [
+        `${cleanBase}/api/model`,
+        `${cleanBase}/config/providers`,
+        `${cleanBase}/v1/models`,
+        cleanBase,
+      ];
+      let reachable = false;
+      let modelCount = 0;
+      for (const url of checkUrls) {
+        try {
+          const res = await validationRead(url, {}, true);
+          if (res.ok) {
+            reachable = true;
+            const data = await res.json().catch(() => null);
+            if (data?.data && Array.isArray(data.data)) {
+              modelCount = data.data.length;
+            } else if (data?.providers && Array.isArray(data.providers)) {
+              modelCount = data.providers.reduce(
+                (acc: number, p: any) =>
+                  acc + (p.models && typeof p.models === "object" ? Object.keys(p.models).length : 0),
+                0
+              );
+            }
+            break;
+          }
+        } catch {
+          // Continue to next probe endpoint
+        }
+      }
+      if (reachable) {
+        return { valid: true, error: null, capabilities: { modelsCount: modelCount } };
+      }
+      return {
+        valid: false,
+        error: `Could not connect to ${provider === "opencode-cli" ? "OpenCode" : "Kilo Code"} CLI server at ${cleanBase}. Make sure the CLI server is running.`,
+      };
+    } catch (e: any) {
+      return toValidationErrorResult(e);
     }
   }
 

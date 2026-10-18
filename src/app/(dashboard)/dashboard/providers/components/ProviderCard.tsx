@@ -97,6 +97,7 @@ interface ProviderCardProps {
   onEdit?: (id: string) => void;
   onDelete?: (id: string) => void;
   onOpenGuide?: (id: string, name: string) => void;
+  onConnectCli?: (id: string, name?: string) => void;
 }
 
 const DOT_COLORS: Record<string, string> = {
@@ -267,6 +268,7 @@ const ProviderCard = forwardRef<ProviderCardHandle, ProviderCardProps>(function 
     onEdit,
     onDelete,
     onOpenGuide,
+    onConnectCli,
   },
   ref
 ) {
@@ -478,10 +480,32 @@ const ProviderCard = forwardRef<ProviderCardHandle, ProviderCardProps>(function 
     onToggle(allDisabled);
   };
 
-  const handleCardClick = useCallback(() => {
-    addRecentProvider(providerId, provider.name);
-    onCardClick?.(providerId);
-  }, [onCardClick, providerId, provider.name]);
+  const handleCardClick = useCallback(
+    (e?: MouseEvent<HTMLAnchorElement>) => {
+      addRecentProvider(providerId, provider.name);
+      if (
+        (providerId === "opencode-cli" || providerId === "kilo-code-cli") &&
+        !isCardConnected
+      ) {
+        if (e) {
+          e.preventDefault();
+          e.stopPropagation();
+        }
+        if (onConnectCli) {
+          onConnectCli(providerId, provider.name);
+        } else if (typeof window !== "undefined") {
+          window.dispatchEvent(
+            new CustomEvent("cheaproute:open_cli_connect", {
+              detail: { id: providerId, name: provider.name },
+            })
+          );
+        }
+        return;
+      }
+      onCardClick?.(providerId);
+    },
+    [onCardClick, providerId, provider.name, isCardConnected, onConnectCli]
+  );
 
   return (
     <div ref={innerRef} id={`provider-${providerId}`} className="flex flex-col h-full">
@@ -820,6 +844,18 @@ const ProviderCard = forwardRef<ProviderCardHandle, ProviderCardProps>(function 
                       onClick={(e) => {
                         e.preventDefault();
                         e.stopPropagation();
+                        if (providerId === "opencode-cli" || providerId === "kilo-code-cli") {
+                          if (onConnectCli) {
+                            onConnectCli(providerId, provider.name);
+                          } else if (typeof window !== "undefined") {
+                            window.dispatchEvent(
+                              new CustomEvent("cheaproute:open_cli_connect", {
+                                detail: { id: providerId, name: provider.name },
+                              })
+                            );
+                          }
+                          return;
+                        }
                         router.push(`/dashboard/providers/${providerId}?action=connect`);
                       }}
                       className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold rounded-md bg-[image:var(--grad-brand)] text-white hover:brightness-105 shadow-xs transition-all cursor-pointer"
