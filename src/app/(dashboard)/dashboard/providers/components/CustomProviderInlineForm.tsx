@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 
 import { Button, Input, Select, Badge, Textarea, ProviderImagePicker } from "@/shared/components";
 import { readFetchErrorMessage } from "@/shared/utils/fetchError";
+import ServerPortsSheet from "./ServerPortsSheet";
 
 /** One repeatable model row — "ID / Name / Reasoning / Image". */
 export type ModelRow = {
@@ -157,6 +158,7 @@ export default function CustomProviderInlineForm({
   const [models, setModels] = useState<ModelRow[]>([]);
   const [headers, setHeaders] = useState<HeaderRow[]>([]);
   const [iconUrl, setIconUrl] = useState("");
+  const [showServerPorts, setShowServerPorts] = useState(false);
 
   // Models view mode: "rows" or "bulk"
   const [modelsViewMode, setModelsViewMode] = useState<"rows" | "bulk">("rows");
@@ -650,18 +652,29 @@ export default function CustomProviderInlineForm({
               >
                 {t("customProviderBaseUrlLabel")} <span className="text-red-500">*</span>
               </label>
-              <button
-                type="button"
-                onClick={handleTestProvider}
-                disabled={testing || !baseUrl.trim()}
-                title="Test connection to Base URL"
-                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-medium bg-primary/10 hover:bg-primary/20 text-primary active:scale-95 transition-all disabled:opacity-40 disabled:pointer-events-none"
-              >
-                <span className="material-symbols-outlined text-[14px]">
-                  {testing ? "sync" : "sensors"}
-                </span>
-                <span>{testing ? "Testing..." : "Test Provider"}</span>
-              </button>
+              <div className="flex items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => setShowServerPorts(true)}
+                  title="Check available listening ports on server (Antseed, OpenCode, Antigravity, Ollama, etc.)"
+                  className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-medium bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 active:scale-95 transition-all"
+                >
+                  <span className="material-symbols-outlined text-[14px]">lan</span>
+                  <span>Check Server Ports</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={handleTestProvider}
+                  disabled={testing || !baseUrl.trim()}
+                  title="Test connection to Base URL"
+                  className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-medium bg-primary/10 hover:bg-primary/20 text-primary active:scale-95 transition-all disabled:opacity-40 disabled:pointer-events-none"
+                >
+                  <span className="material-symbols-outlined text-[14px]">
+                    {testing ? "sync" : "sensors"}
+                  </span>
+                  <span>{testing ? "Testing..." : "Test Provider"}</span>
+                </button>
+              </div>
             </div>
             <div className="flex items-center gap-2">
               <div className="flex-1">
@@ -1045,6 +1058,14 @@ export default function CustomProviderInlineForm({
             </p>
           )}
         </div>
+      )}
+
+      {showServerPorts && (
+        <ServerPortsSheet
+          isOpen={showServerPorts}
+          onClose={() => setShowServerPorts(false)}
+          onSelectBaseUrl={(url) => setBaseUrl(url)}
+        />
       )}
     </div>
   );

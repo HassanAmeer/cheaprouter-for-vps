@@ -114,6 +114,8 @@ export default function HomePageClient({ machineId: _machineId }: HomePageClient
   const tp = useTranslations("providers");
   const [providerConnections, setProviderConnections] = useState([]);
   const [models, setModels] = useState([]);
+  const [modelCustomizations, setModelCustomizations] = useState<any[]>([]);
+  const [combos, setCombos] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   // useSyncExternalStore keeps SSR/hydration consistent ("/v1" on the server,
   // the real origin after hydration) without a setState-in-effect round-trip.
@@ -248,10 +250,12 @@ export default function HomePageClient({ machineId: _machineId }: HomePageClient
 
   const fetchData = useCallback(async () => {
     try {
-      const [provRes, modelsRes, versionRes] = await Promise.all([
+      const [provRes, modelsRes, versionRes, curationRes, combosRes] = await Promise.all([
         fetch("/api/providers"),
         fetch("/api/models"),
         fetch("/api/system/version"),
+        fetch("/api/v1/models/curation").catch(() => null),
+        fetch("/api/combos").catch(() => null),
       ]);
       if (provRes.ok) {
         const provData = await provRes.json();
@@ -264,6 +268,19 @@ export default function HomePageClient({ machineId: _machineId }: HomePageClient
       if (versionRes.ok) {
         const versionData = await versionRes.json();
         setVersionInfo(versionData);
+      }
+      if (curationRes && curationRes.ok) {
+        const curationData = await curationRes.json();
+        setModelCustomizations(Array.isArray(curationData.customizations) ? curationData.customizations : []);
+      }
+      if (combosRes && combosRes.ok) {
+        const combosData = await combosRes.json();
+        const cList = Array.isArray(combosData.combos)
+          ? combosData.combos
+          : Array.isArray(combosData)
+            ? combosData
+            : [];
+        setCombos(cList);
       }
     } catch (e) {
       console.log("Error fetching data:", e);
@@ -465,14 +482,12 @@ export default function HomePageClient({ machineId: _machineId }: HomePageClient
     type ProviderHealth = "active" | "error" | "idle";
     const byProvider = new Map<
       string,
-      { id: string; provider: string; name?: string; status: ProviderHealth }
+      { id: string; provider: string; name?: string; status: ProviderHealth; models?: any[] }
     >();
     const providerConfig = AI_PROVIDERS as Record<string, { name?: string }>;
 
     // Connection-health per provider, so the topology node reflects "what is connected"
-    // at rest (green healthy / red error) instead of going blank between requests. A
-    // provider with ≥1 healthy connection is "active"; if none are healthy but some are
-    // errored it is "error"; otherwise "idle". Live/recent traffic still overrides this.
+    // at rest (green healthy / red error) instead of going blank between requests.
     const healthByProvider = new Map<string, ProviderHealth>();
     for (const stat of providerStats) {
       const canonical = normalizeProviderId(stat.id);
@@ -483,6 +498,8 @@ export default function HomePageClient({ machineId: _machineId }: HomePageClient
       );
     }
 
+    const activeCustoms = (modelCustomizations || []).filter((c) => c && c.isActive !== false);
+
     const addProvider = (providerId?: string | null, name?: string) => {
       const rawProviderId = typeof providerId === "string" ? providerId.trim() : "";
       if (!rawProviderId) return;
@@ -490,11 +507,14 @@ export default function HomePageClient({ machineId: _machineId }: HomePageClient
       const canonicalProviderId = normalizeProviderId(rawProviderId);
       if (!canonicalProviderId || byProvider.has(canonicalProviderId)) return;
 
-      // Exclude providers with no active connections (or where all connections are deactivated / paused)
+      // Provider is active if it has active connection or active piped models
       const hasActiveConn = providerConnections.some(
         (c) => normalizeProviderId(c.provider) === canonicalProviderId && c.isActive !== false
       );
-      if (!hasActiveConn) return;
+      const hasActiveModels = activeCustoms.some(
+        (c) => normalizeProviderId(c.providerId) === canonicalProviderId
+      );
+      if (!hasActiveConn && !hasActiveModels) return;
 
       // Exclude paused custom provider nodes
       const customNode = (providerNodes || []).find(
@@ -510,11 +530,57 @@ export default function HomePageClient({ machineId: _machineId }: HomePageClient
         providerConfig[canonicalProviderId]?.name ||
         rawProviderId;
 
+      const providerCustoms = activeCustoms.filter(
+        (c) => normalizeProviderId(c.providerId) === canonicalProviderId
+      );
+
+      let providerModels: any[] = [];
+      if (providerCustoms.length > 0) {
+        providerModels = providerCustoms.map((c) => {
+          const customName = c.customName?.trim();
+          const customAlias = c.customAlias?.trim();
+          const origId = c.originalModelId || "";
+          const cleanOrig = origId.replace(/^[^/]+\//, "");
+          const displayName = customName || customAlias || cleanOrig || origId;
+          return {
+            id: `${canonicalProviderId}/${origId}`,
+            originalModelId: origId,
+            name: displayName,
+            customAlias: customAlias || null,
+            isActive: c.isActive !== false,
+            isTested: Boolean(c.isTested),
+            testStatus: c.testStatus || null,
+            testHttpStatus: c.testHttpStatus != null ? Number(c.testHttpStatus) : null,
+            testLatencyMs: c.testLatencyMs != null ? Number(c.testLatencyMs) : null,
+            pricingTier: c.pricingTier || (c.isFreeOverride ? "free" : null),
+            contextWindow: c.contextWindow != null ? Number(c.contextWindow) : null,
+          };
+        });
+      } else {
+        const catalogModels = (models || []).filter(
+          (m: any) => normalizeProviderId(m.provider) === canonicalProviderId && m.available !== false
+        );
+        providerModels = catalogModels.slice(0, 10).map((m: any) => ({
+          id: `${canonicalProviderId}/${m.model}`,
+          originalModelId: m.model,
+          name: m.name || m.alias || m.model,
+          customAlias: m.alias || null,
+          isActive: true,
+          isTested: false,
+          testStatus: null,
+          testHttpStatus: null,
+          testLatencyMs: null,
+          pricingTier: null,
+          contextWindow: null,
+        }));
+      }
+
       byProvider.set(canonicalProviderId, {
         id: canonicalProviderId,
         provider: canonicalProviderId,
         name: resolvedName,
-        status: healthByProvider.get(canonicalProviderId) ?? "idle",
+        status: healthByProvider.get(canonicalProviderId) ?? (hasActiveConn ? "active" : "idle"),
+        models: providerModels,
       });
     };
 
@@ -524,10 +590,27 @@ export default function HomePageClient({ machineId: _machineId }: HomePageClient
     providerConnections
       .filter((c) => c.isActive !== false)
       .forEach((conn) => addProvider(conn.provider));
+    activeCustoms.forEach((c) => {
+      if (c.providerId) addProvider(c.providerId);
+    });
     Object.keys(providerMetrics).forEach((provider) => addProvider(provider));
 
     return Array.from(byProvider.values());
-  }, [providerStats, providerMetrics, providerNodes, providerConnections]);
+  }, [providerStats, providerMetrics, providerNodes, providerConnections, modelCustomizations, models]);
+
+  const topologyCombos = useMemo(() => {
+    return (combos || [])
+      .filter((c: any) => c && c.isActive !== false && !c.isHidden)
+      .map((c: any) => ({
+        id: c.id || c.name,
+        name: c.name,
+        strategy: c.strategy || "priority",
+        models: Array.isArray(c.models)
+          ? c.models.map((m: any) => (typeof m === "string" ? m : m.model || m.id))
+          : [],
+        isActive: c.isActive !== false,
+      }));
+  }, [combos]);
 
   const { lastProvider, errorProvider } = providerTopology;
 
@@ -1685,6 +1768,7 @@ export default function HomePageClient({ machineId: _machineId }: HomePageClient
                 <div className="grid grid-cols-1 lg:grid-cols-[2fr_1fr] gap-2.5">
                   <HomeProviderTopologySection
                     providers={topologyProviders}
+                    combos={topologyCombos}
                     lastProvider={lastProvider}
                     errorProvider={errorProvider}
                     enabled={showProviderTopologyOnHome && isTopologyExpanded}

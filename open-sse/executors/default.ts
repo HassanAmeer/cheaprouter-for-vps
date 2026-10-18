@@ -395,7 +395,8 @@ export class DefaultExecutor extends BaseExecutor {
       case "triton":
       case "docker-model-runner":
       case "xinference":
-      case "oobabooga": {
+      case "oobabooga":
+      case "opencode-cli": {
         // #3197 (residual of #3136): for self-hosted/local providers, prefer the
         // catalog's localDefault when no explicit baseUrl is set. `this.config`
         // falls back to PROVIDERS.openai for providers not in the open-sse

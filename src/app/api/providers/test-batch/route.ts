@@ -12,6 +12,7 @@ import {
   AUDIO_ONLY_PROVIDERS,
   CLOUD_AGENT_PROVIDERS,
   IDE_PROVIDER_IDS,
+  CLI_PROVIDER_IDS,
   getProviderConnectionFamilyIds,
   OPENAI_COMPATIBLE_PREFIX,
   ANTHROPIC_COMPATIBLE_PREFIX,
@@ -95,13 +96,14 @@ export async function POST(request) {
     // Fetch connections to test. mode=selected targets explicit IDs and must
     // also reach inactive connections (matching single-connection retest);
     // every other mode tests active connections only.
-    const allConnections =
+    const allConnections = (
       mode === "selected"
         ? await getProviderConnections()
-        : await getProviderConnections({ isActive: true });
+        : await getProviderConnections({ isActive: true })
+    ) as Array<{ id: string; provider: string; [key: string]: unknown }>;
 
     // Filter based on mode
-    let connectionsToTest = [];
+    let connectionsToTest: Array<{ id: string; provider: string; [key: string]: unknown }> = [];
     if (mode === "selected") {
       const idSet = new Set(connectionIds || []);
       connectionsToTest = allConnections.filter((c) => idSet.has(c.id));
@@ -135,6 +137,10 @@ export async function POST(request) {
       connectionsToTest = allConnections.filter((c) => getAuthGroup(c.provider) === "cloud-agent");
     } else if (mode === "ide") {
       connectionsToTest = allConnections.filter((c) => IDE_PROVIDER_IDS.has(c.provider));
+    } else if (mode === "cli") {
+      connectionsToTest = allConnections.filter(
+        (c) => typeof c.provider === "string" && CLI_PROVIDER_IDS.has(c.provider)
+      );
     } else if (mode === "compatible") {
       connectionsToTest = allConnections.filter((c) => isCompatibleProvider(c.provider));
     } else if (mode === "all") {
@@ -143,7 +149,7 @@ export async function POST(request) {
       return NextResponse.json(
         {
           error:
-            "Invalid mode. Use: provider, oauth, free, no-auth, apikey, compatible, all, web-cookie, search, audio, local, upstream-proxy, cloud-agent, ide, selected",
+            "Invalid mode. Use: provider, oauth, free, no-auth, apikey, compatible, all, web-cookie, search, audio, local, upstream-proxy, cloud-agent, ide, cli, selected",
         },
         { status: 400 }
       );
@@ -170,7 +176,7 @@ export async function POST(request) {
     // fallback, which also spawns. Same gate, same reason.
     const allowLocalRuntimeProbe = getRequestPeerLocality(request) !== "remote";
     const allowLocalSpawn = getRequestPeerLocality(request) !== "remote";
-    const testOne = async (conn: Record<string, unknown>) => {
+    const testOne = async (conn: { id: string; provider?: string; [key: string]: unknown }) => {
       try {
         const result = await Promise.race([
           testSingleConnection(conn.id, undefined, { allowLocalRuntimeProbe, allowLocalSpawn }),

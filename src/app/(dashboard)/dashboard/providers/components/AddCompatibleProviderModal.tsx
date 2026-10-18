@@ -12,6 +12,7 @@ import {
 } from "@/shared/constants/clientIdentityProfiles";
 import NewApiAggregatorFields from "../[id]/components/modals/NewApiAggregatorFields";
 import { providerText } from "../[id]/providerPageHelpers";
+import ServerPortsSheet from "./ServerPortsSheet";
 
 type CompatibleMode = "openai" | "anthropic" | "cc";
 type CompatibleProviderNode = { id: string } & Record<string, unknown>;
@@ -148,6 +149,7 @@ export default function AddCompatibleProviderModal({
   }>(null);
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [iconUrlError, setIconUrlError] = useState<string | null>(null);
+  const [showServerPorts, setShowServerPorts] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
 
   const apiTypeOptions = useMemo(
@@ -362,7 +364,8 @@ export default function AddCompatibleProviderModal({
   };
 
   return (
-    <Modal isOpen={isOpen} title={modalTitle} onClose={onClose}>
+    <>
+      <Modal isOpen={isOpen} title={modalTitle} onClose={onClose}>
       <div className="flex flex-col gap-4">
         {defaults.hasWarning && (
           <div className="rounded-lg border border-amber-500/25 bg-amber-500/10 px-3 py-2 text-sm text-text-muted">
@@ -397,13 +400,25 @@ export default function AddCompatibleProviderModal({
             onChange={(e) => setFormData({ ...formData, apiType: e.target.value })}
           />
         )}
-        <Input
-          label={t("baseUrlLabel")}
-          value={formData.baseUrl}
-          onChange={(e) => setFormData({ ...formData, baseUrl: e.target.value })}
-          placeholder={baseUrlPlaceholder}
-          hint={baseUrlHint}
-        />
+        <div className="flex flex-col gap-1">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-medium text-text-muted">{t("baseUrlLabel")}</span>
+            <button
+              type="button"
+              onClick={() => setShowServerPorts(true)}
+              className="inline-flex items-center gap-1 text-[11px] font-medium text-emerald-400 hover:text-emerald-300"
+            >
+              <span className="material-symbols-outlined text-[13px]">lan</span>
+              <span>Check Server Ports</span>
+            </button>
+          </div>
+          <Input
+            value={formData.baseUrl}
+            onChange={(e) => setFormData({ ...formData, baseUrl: e.target.value })}
+            placeholder={baseUrlPlaceholder}
+            hint={baseUrlHint}
+          />
+        </div>
         <ProviderImagePicker
           label={t("iconUrlLabel")}
           value={formData.iconUrl}
@@ -561,5 +576,13 @@ export default function AddCompatibleProviderModal({
         </div>
       </div>
     </Modal>
+    {showServerPorts && (
+      <ServerPortsSheet
+        isOpen={showServerPorts}
+        onClose={() => setShowServerPorts(false)}
+        onSelectBaseUrl={(url) => setFormData((prev) => ({ ...prev, baseUrl: url }))}
+      />
+    )}
+  </>
   );
 }

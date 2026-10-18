@@ -10,7 +10,7 @@
 
 import { extractApiKey } from "@/sse/services/auth";
 import { getApiKeyMetadata, isModelAllowedForKey, getApiKeyById } from "@/lib/db/apiKeys";
-import { getResellerUserByApiKeyId } from "@/lib/db/resellerUsers";
+import { getResellerUserByApiKeyId, getUserModelUsageTokens } from "@/lib/db/resellerUsers";
 import { getComboByName } from "@/lib/db/combos";
 import { isDashboardSessionAuthenticated } from "./apiAuth";
 import { resolveComboForModel } from "@/lib/db/modelComboMappings";
@@ -768,20 +768,47 @@ function validateKeyQuota(context: PolicyContext): Response | null {
 
   try {
     const resellerUser = getResellerUserByApiKeyId(apiKeyInfo.id);
-    if (resellerUser && typeof resellerUser.tokenBudget === "number" && resellerUser.tokenBudget > 0) {
-      // Normalize budget: support both raw tokens (>= 10,000) and millions (< 10,000)
-      const rawBudget =
-        resellerUser.tokenBudget < 10_000
-          ? resellerUser.tokenBudget * 1_000_000
-          : resellerUser.tokenBudget;
+    if (resellerUser) {
+      if (typeof resellerUser.tokenBudget === "number" && resellerUser.tokenBudget > 0) {
+        // Normalize budget: support both raw tokens (>= 10,000) and millions (< 10,000)
+        const rawBudget =
+          resellerUser.tokenBudget < 10_000
+            ? resellerUser.tokenBudget * 1_000_000
+            : resellerUser.tokenBudget;
 
-      if (resellerUser.tokensUsed >= rawBudget) {
-        const usedM = (resellerUser.tokensUsed / 1_000_000).toFixed(2);
-        const budgetM = (rawBudget / 1_000_000).toFixed(2);
-        return errorResponse(
-          HTTP_STATUS.RATE_LIMITED,
-          `User account token quota exceeded (${usedM}M / ${budgetM}M tokens used). Please upgrade your plan or top up.`
-        );
+        if (resellerUser.tokensUsed >= rawBudget) {
+          const usedM = (resellerUser.tokensUsed / 1_000_000).toFixed(2);
+          const budgetM = (rawBudget / 1_000_000).toFixed(2);
+          return errorResponse(
+            HTTP_STATUS.RATE_LIMITED,
+            `User account token quota exceeded (${usedM}M / ${budgetM}M tokens used). Please upgrade your plan or top up.`
+          );
+        }
+      }
+
+      // Check per-model quota if configured for the requested model
+      if (context.modelStr && resellerUser.modelQuotas && typeof resellerUser.modelQuotas === "object") {
+        const requestedModel = context.modelStr;
+        const bareModel = requestedModel.includes("/")
+          ? requestedModel.slice(requestedModel.indexOf("/") + 1)
+          : requestedModel;
+        const configuredLimit =
+          resellerUser.modelQuotas[requestedModel] ??
+          resellerUser.modelQuotas[bareModel];
+
+        if (typeof configuredLimit === "number" && configuredLimit > 0) {
+          const rawModelLimit =
+            configuredLimit < 10_000 ? configuredLimit * 1_000_000 : configuredLimit;
+          const usedTokens = getUserModelUsageTokens(resellerUser.userId, requestedModel);
+          if (usedTokens >= rawModelLimit) {
+            const usedM = (usedTokens / 1_000_000).toFixed(2);
+            const limitM = (rawModelLimit / 1_000_000).toFixed(2);
+            return errorResponse(
+              HTTP_STATUS.RATE_LIMITED,
+              `Model token quota exceeded for '${requestedModel}' (${usedM}M / ${limitM}M tokens used). Please upgrade your plan or request limit increase.`
+            );
+          }
+        }
       }
     }
   } catch {}

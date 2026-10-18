@@ -29,6 +29,7 @@ export interface ProviderSummaryStats {
   upstreamproxy: SummaryStat;
   cloudagent: SummaryStat;
   ide: SummaryStat;
+  cli?: SummaryStat;
   webfetch: SummaryStat;
 }
 
@@ -116,6 +117,12 @@ export default function ProviderSummaryCard({
       color: "bg-cyan-500",
       label: providerText(t, "categoryIde", "IDE"),
       stat: summaryStats.ide,
+    },
+    {
+      key: "cli",
+      color: "bg-emerald-600",
+      label: providerText(t, "categoryCli", "CLI"),
+      stat: summaryStats.cli || { configured: 0, total: 0 },
     },
     {
       key: "free",

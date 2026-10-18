@@ -666,6 +666,7 @@ export const providersBatchTestSchema = z
       "upstream-proxy",
       "cloud-agent",
       "ide",
+      "cli",
       "selected",
     ]),
     // Frontend may send null when mode != 'provider' — accept and treat as missing

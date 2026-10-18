@@ -67,6 +67,7 @@ export function tabToCategories(_tab: ProviderTab): string[] {
     "apikey",
     "oauth",
     "ide",
+    "cli",
     "free",
     "no-auth",
     "noauth",

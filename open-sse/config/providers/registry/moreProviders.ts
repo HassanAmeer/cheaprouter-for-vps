@@ -127,6 +127,15 @@ export const lemonadeProvider: RegistryEntry = buildOpenAiCompatibleRegistryEntr
   passthroughModels: true,
 });
 
+export const opencodeCliProvider: RegistryEntry = buildOpenAiCompatibleRegistryEntry({
+  id: "opencode-cli",
+  alias: "opencode-cli",
+  baseUrl: "http://localhost:4096/v1/chat/completions",
+  modelsUrl: "http://localhost:4096/v1/models",
+  models: [],
+  passthroughModels: true,
+});
+
 export const llamafileProvider: RegistryEntry = buildOpenAiCompatibleRegistryEntry({
   id: "llamafile",
   alias: "llamafile",

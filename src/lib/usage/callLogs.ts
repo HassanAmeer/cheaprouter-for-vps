@@ -861,7 +861,12 @@ async function saveCallLogOperation(entry: any): Promise<void> {
         const usedModel = logEntry.model || logEntry.requestedModel || "unknown";
         if (totalTokens > 0) {
           const { recordResellerKeyUsage } = await import("../db/resellerUsers");
-          recordResellerKeyUsage(apiKeyId, usedModel, totalTokens);
+          recordResellerKeyUsage(
+            apiKeyId,
+            usedModel,
+            totalTokens,
+            logEntry.comboName || logEntry.requestedModel || undefined
+          );
         }
       } catch {
         // Non-blocking: fail-open for call log persistence

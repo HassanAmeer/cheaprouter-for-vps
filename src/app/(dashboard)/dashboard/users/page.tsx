@@ -44,6 +44,24 @@ interface UserByokKeyEntry {
   updatedAt: string;
 }
 
+interface UserKeyEntry {
+  id: number;
+  userId: string;
+  userName: string | null;
+  userEmail: string;
+  planTier: string;
+  apiKey: string;
+  apiKeyId?: string | null;
+  allowedModels: string[];
+  tokenBudget: number | null;
+  tokensUsed: number;
+  rpmLimit: number | null;
+  expiresAt: string | null;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
 const PLAN_STYLES: Record<string, string> = {
   free: "bg-slate-500/15 text-slate-300 border-slate-500/30",
   pro: "bg-blue-500/15 text-blue-400 border-blue-500/30",
@@ -81,6 +99,7 @@ function formatTokens(tokenBudget: number | null): string {
 export default function UsersPage() {
   const [users, setUsers] = useState<ResellerUserEntry[]>([]);
   const [byokKeys, setByokKeys] = useState<UserByokKeyEntry[]>([]);
+  const [userKeys, setUserKeys] = useState<UserKeyEntry[]>([]);
   const [publishedProviders, setPublishedProviders] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -124,6 +143,12 @@ export default function UsersPage() {
     if (!activeSheetUser) return [];
     return byokKeys.filter((b) => b.userId === activeSheetUser.id);
   }, [byokKeys, activeSheetUser]);
+
+  // Issued native API keys for current user in sheet
+  const activeUserKeys = useMemo(() => {
+    if (!activeSheetUser) return [];
+    return userKeys.filter((k) => k.userId === activeSheetUser.id);
+  }, [userKeys, activeSheetUser]);
 
   // Handle ESC key to dismiss slide-over sheets
   useEffect(() => {
@@ -179,6 +204,7 @@ export default function UsersPage() {
         if (data.success) {
           setUsers(data.users || []);
           setByokKeys(data.byokKeys || []);
+          setUserKeys(data.userKeys || []);
           if (data.publishedProviders) {
             setPublishedProviders(data.publishedProviders);
           }
@@ -649,6 +675,22 @@ export default function UsersPage() {
     }
   };
 
+  // Handler: Delete / Revoke User API Key
+  const handleDeleteUserKey = async (id: number) => {
+    if (!confirm("Are you sure you want to revoke and delete this API key?")) return;
+    try {
+      const res = await fetch(`/api/v1/reseller/users?id=${id}`, {
+        method: "DELETE",
+      });
+      if (res.ok) {
+        setUserKeys((prev) => prev.filter((k) => k.id !== id));
+        loadData();
+      }
+    } catch (e) {
+      console.error("Failed to delete user key", e);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="p-6 max-w-7xl mx-auto space-y-6">
@@ -1059,16 +1101,32 @@ export default function UsersPage() {
                         <td className="py-3.5 px-4 text-center">
                           {(() => {
                             const userByok = byokKeys.filter((b) => b.userId === user.id);
+                            const pausedCount = userByok.filter((b) => b.isPaused).length;
+                            const activeCount = userByok.length - pausedCount;
                             const distinctUserProviders = new Set(userByok.map((b) => b.providerId))
                               .size;
 
                             return (
                               <div className="flex flex-col items-center justify-center gap-1.5">
-                                {/* Connected Providers on top (silver light text matching Plan text) */}
-                                <span className="text-[10.5px] font-semibold text-zinc-300 tracking-tight leading-none">
-                                  {distinctUserProviders}{" "}
-                                  {distinctUserProviders === 1 ? "Provider" : "Providers"}
-                                </span>
+                                {/* Connected BYOK Providers & Active/Paused Status */}
+                                <div className="flex items-center gap-1.5">
+                                  <span className="text-[10.5px] font-semibold text-zinc-300 tracking-tight leading-none">
+                                    {userByok.length} BYOK ({distinctUserProviders}{" "}
+                                    {distinctUserProviders === 1 ? "Prov" : "Provs"})
+                                  </span>
+                                  {userByok.length > 0 && (
+                                    <span
+                                      className={`text-[9.5px] px-1 py-0.5 rounded border font-medium leading-none ${
+                                        pausedCount > 0
+                                          ? "text-amber-400 bg-amber-500/10 border-amber-500/30"
+                                          : "text-emerald-400 bg-emerald-500/10 border-emerald-500/30"
+                                      }`}
+                                      title={`${activeCount} active, ${pausedCount} paused`}
+                                    >
+                                      {pausedCount > 0 ? `${pausedCount} paused` : `${activeCount} act`}
+                                    </span>
+                                  )}
+                                </div>
 
                                 {/* Keys Badge: smaller, compact Cupertino line design underneath */}
                                 <span
@@ -2559,31 +2617,112 @@ export default function UsersPage() {
               </div>
 
               {/* 4. API Keys */}
-              <div className="p-3.5 rounded-2xl bg-bg-subtle/40 border border-border/80 space-y-2.5">
+              <div className="p-3.5 rounded-2xl bg-bg-subtle/40 border border-border/80 space-y-3">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <span className="material-symbols-outlined text-[20px] text-blue-400">
                       vpn_key
                     </span>
-                    <span className="text-xs font-semibold text-text-main">API Keys</span>
+                    <span className="text-xs font-semibold text-text-main">Issued API Keys</span>
                   </div>
-                  <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/20">
-                    {activeSheetUser.keysCount} issued
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/20">
+                      {activeUserKeys.length} issued
+                    </span>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => handleIssueKeyForUser(activeSheetUser)}
+                      className="text-xs text-primary border-primary/30 h-7 px-2.5 flex items-center gap-1"
+                    >
+                      <span className="material-symbols-outlined text-[14px]">add</span>
+                      Issue Key
+                    </Button>
+                  </div>
                 </div>
-                <div className="flex items-center justify-between text-xs text-text-muted">
-                  <span className="text-[11px]">
-                    Keys inherit account quotas & plan limits. Key secrets stay secured and hidden.
-                  </span>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => handleIssueKeyForUser(activeSheetUser)}
-                    className="text-xs text-primary shrink-0 ml-2"
-                  >
-                    + Issue Key
-                  </Button>
-                </div>
+
+                {activeUserKeys.length > 0 ? (
+                  <div className="space-y-2">
+                    {activeUserKeys.map((k) => (
+                      <div
+                        key={k.id}
+                        className="p-3 rounded-xl bg-bg-card border border-border/80 hover:border-border transition-colors space-y-2 shadow-xs"
+                      >
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="flex items-center gap-2 min-w-0">
+                            <code className="text-xs font-mono font-bold text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded border border-blue-500/20 truncate">
+                              {k.apiKey.length > 20
+                                ? `${k.apiKey.slice(0, 10)}...${k.apiKey.slice(-6)}`
+                                : k.apiKey}
+                            </code>
+                            <button
+                              onClick={() => copy(k.apiKey, `key_${k.id}`)}
+                              title="Copy API Key"
+                              className="text-text-muted hover:text-text-main transition-colors shrink-0"
+                            >
+                              <span className="material-symbols-outlined text-[14px]">
+                                {copied === `key_${k.id}` ? "check" : "content_copy"}
+                              </span>
+                            </button>
+                          </div>
+
+                          <div className="flex items-center gap-1.5 shrink-0">
+                            <span className="text-[10px] text-text-muted">
+                              {k.createdAt ? new Date(k.createdAt).toLocaleDateString() : "—"}
+                            </span>
+                            <button
+                              onClick={() => handleDeleteUserKey(k.id)}
+                              title="Revoke / Delete this API key"
+                              className="p-1 rounded text-red-400 hover:bg-red-500/10 hover:text-red-300 transition-colors"
+                            >
+                              <span className="material-symbols-outlined text-[16px]">delete</span>
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Model & Limit Scope Badges */}
+                        <div className="flex flex-wrap items-center gap-1.5 text-[10px]">
+                          {k.allowedModels && k.allowedModels.length > 0 ? (
+                            <span
+                              className="px-2 py-0.5 rounded-md bg-purple-500/10 text-purple-400 border border-purple-500/20 font-medium truncate max-w-[220px]"
+                              title={`Allowed: ${k.allowedModels.join(", ")}`}
+                            >
+                              {k.allowedModels.length} Model{k.allowedModels.length > 1 ? "s" : ""}: {k.allowedModels.slice(0, 2).join(", ")}{k.allowedModels.length > 2 ? "..." : ""}
+                            </span>
+                          ) : (
+                            <span className="px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-medium">
+                              All Piped Models &amp; Combos
+                            </span>
+                          )}
+
+                          {k.tokenBudget ? (
+                            <span className="px-2 py-0.5 rounded-md bg-surface-raised border border-border text-text-muted">
+                              {(k.tokenBudget / 1_000_000).toFixed(1)}M Budget
+                            </span>
+                          ) : (
+                            <span className="px-2 py-0.5 rounded-md bg-surface-raised border border-border text-text-muted">
+                              Pool Budget
+                            </span>
+                          )}
+
+                          {k.rpmLimit ? (
+                            <span className="px-2 py-0.5 rounded-md bg-surface-raised border border-border text-text-muted">
+                              {k.rpmLimit} RPM
+                            </span>
+                          ) : (
+                            <span className="px-2 py-0.5 rounded-md bg-surface-raised border border-border text-text-muted">
+                              Unlimited RPM
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="p-3.5 rounded-xl border border-dashed border-border/80 text-center text-xs text-text-muted bg-bg-card/50">
+                    <p>No native API keys issued yet. Click &quot;Issue Key&quot; to generate an active key.</p>
+                  </div>
+                )}
               </div>
 
               {/* 5. Connected BYOK Providers */}

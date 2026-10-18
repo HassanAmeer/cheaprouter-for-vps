@@ -28,6 +28,7 @@ export interface CompactProviderEntryOptions<TProvider> {
   audioProviderEntries: ProviderCategoryEntries<TProvider>;
   localProviderEntries: ProviderCategoryEntries<TProvider>;
   cloudAgentProviderEntries: ProviderCategoryEntries<TProvider>;
+  cliProviderEntries?: ProviderCategoryEntries<TProvider>;
 }
 
 function getCompactProviderEntryGroups<TProvider>({
@@ -51,6 +52,7 @@ function getCompactProviderEntryGroups<TProvider>({
   audioProviderEntries,
   localProviderEntries,
   cloudAgentProviderEntries,
+  cliProviderEntries,
 }: CompactProviderEntryOptions<TProvider>): ProviderEntry<TProvider>[][] {
   const oauthEntries = oauthProviderEntries.filter(
     (entry) => !IDE_PROVIDER_IDS.has(entry.providerId)
@@ -69,6 +71,7 @@ function getCompactProviderEntryGroups<TProvider>({
   if (activeCategory === "compatible") return [compatibleProviderEntries];
   if (activeCategory === "oauth") return [oauthEntries];
   if (activeCategory === "ide") return [ideProviderEntries];
+  if (activeCategory === "cli") return [cliProviderEntries ?? []];
   if (activeCategory === "no-auth") return [noAuthEntries];
   if (activeCategory === "upstream-proxy") return [upstreamProxyEntries];
   if (activeCategory === "apikey") return apiKeyEntries;
@@ -83,6 +86,7 @@ function getCompactProviderEntryGroups<TProvider>({
     compatibleProviderEntries,
     oauthEntries,
     ideProviderEntries,
+    ...(cliProviderEntries ? [cliProviderEntries] : []),
     webCookieProviderEntries,
     llmProviderEntries,
     upstreamProxyEntries,

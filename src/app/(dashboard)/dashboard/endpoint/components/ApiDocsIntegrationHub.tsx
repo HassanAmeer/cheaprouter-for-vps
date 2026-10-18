@@ -240,8 +240,12 @@ export default function ApiDocsIntegrationHub() {
   "action": "updateQuota",
   "userId": "usr_1001",
   "plan": "Pro",
-  "tokenBudget": 50,
+  "tokenBudget": 50000000,
   "rpmLimit": 60,
+  "modelQuotas": {
+    "openai/gpt-4o": 25000000,
+    "claude-3-5-sonnet": 25000000
+  },
   "resetUsage": false
 }`}
                 </pre>
@@ -257,9 +261,13 @@ export default function ApiDocsIntegrationHub() {
   "user": {
     "id": "usr_1001",
     "planTier": "Pro",
-    "tokenBudget": 50,
+    "tokenBudget": 50000000,
     "tokensUsed": 15000000,
-    "rpmLimit": 60
+    "rpmLimit": 60,
+    "modelQuotas": {
+      "openai/gpt-4o": 25000000,
+      "claude-3-5-sonnet": 25000000
+    }
   }
 }`}
                 </pre>
@@ -310,8 +318,8 @@ export default function ApiDocsIntegrationHub() {
             </div>
           </div>
 
-          {/* 1.4 Ban / Unban User & 1.5 List & Delete */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {/* 1.4 Ban / Unban User & 1.5 List & 1.6 Delete & 1.7 Lookup */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             {/* 1.4 Ban / Unban */}
             <div className="p-4 rounded-xl border border-border bg-surface-raised/40 space-y-2">
               <div className="flex items-center gap-2">
@@ -375,6 +383,26 @@ const { users, byokKeys } = await res.json();
 {`await fetch("${baseUrl}/api/v1/reseller/users?userId=usr_1001", {
   method: "DELETE"
 });`}
+              </pre>
+            </div>
+
+            {/* 1.7 GET Single User Profile */}
+            <div className="p-4 rounded-xl border border-border bg-surface-raised/40 space-y-2">
+              <div className="flex items-center gap-2">
+                <span className="px-2 py-0.5 rounded bg-blue-500/10 text-blue-400 font-bold text-xs font-mono">
+                  GET
+                </span>
+                <span className="font-mono text-xs text-text-primary">
+                  1.7 Single User Profile
+                </span>
+              </div>
+              <p className="text-xs text-text-muted">
+                User ka live quota balance, BYOK keys aur API keys check karein:
+              </p>
+              <pre className="p-2.5 rounded-lg bg-surface border border-border font-mono text-[11px] text-text-primary overflow-x-auto">
+{`const res = await fetch("${baseUrl}/api/v1/reseller/users?userId=usr_1001");
+const { user } = await res.json();
+// user.byokKeys, user.userKeys, user.tokensUsed`}
               </pre>
             </div>
           </div>
@@ -510,22 +538,22 @@ print(res.json())`}
 
           {/* Sub-section: Pause / Resume & Delete BYOK */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* PATCH Pause / Resume */}
+            {/* POST / PATCH Pause / Resume */}
             <div className="p-4 rounded-xl border border-border bg-surface-raised/40 space-y-2">
               <div className="flex items-center gap-2">
                 <span className="px-2 py-0.5 rounded bg-orange-500/10 text-orange-400 font-bold text-xs font-mono">
-                  PATCH
+                  POST / PATCH
                 </span>
                 <span className="font-mono text-xs text-text-primary">
                   {baseUrl}/api/v1/reseller/users
                 </span>
               </div>
               <p className="text-xs text-text-muted">
-                User ki BYOK key ko temporarily pause ya resume karein bina key delete kiye.
+                User ki BYOK key ko temporarily pause ya resume karein bina key delete kiye:
               </p>
               <pre className="p-3 rounded-lg bg-surface border border-border font-mono text-[11px] text-text-primary overflow-x-auto">
 {`await fetch("${baseUrl}/api/v1/reseller/users", {
-  method: "PATCH",
+  method: "POST", // ya PATCH
   headers: { "Content-Type": "application/json" },
   body: JSON.stringify({
     action: "pauseByok",
@@ -537,14 +565,14 @@ print(res.json())`}
               </pre>
             </div>
 
-            {/* DELETE BYOK Key */}
+            {/* DELETE / POST Delete BYOK Key */}
             <div className="p-4 rounded-xl border border-border bg-surface-raised/40 space-y-2">
               <div className="flex items-center gap-2">
                 <span className="px-2 py-0.5 rounded bg-red-500/10 text-red-400 font-bold text-xs font-mono">
-                  DELETE
+                  DELETE / POST
                 </span>
                 <span className="font-mono text-xs text-text-primary">
-                  {baseUrl}/api/v1/reseller/users?userId=...&providerId=...
+                  {baseUrl}/api/v1/reseller/users?byokId=...
                 </span>
               </div>
               <p className="text-xs text-text-muted">

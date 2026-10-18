@@ -199,4 +199,20 @@ export const LOCAL_PROVIDERS = {
       "No API key required. Configure the local ComfyUI base URL (default: http://localhost:8188).",
     localDefault: "http://localhost:8188",
   },
+  "opencode-cli": {
+    id: "opencode-cli",
+    serviceKinds: ["llm"],
+    alias: "opencode-cli",
+    name: "OpenCode CLI / Server",
+    icon: "terminal",
+    color: "#E87040",
+    textIcon: "OC",
+    website: "https://opencode.ai",
+    hasFree: true,
+    authHint:
+      "Connects to OpenCode CLI running locally or on a remote VPS (e.g. `opencode serve --port 4096`). Default endpoint: http://localhost:4096/v1.",
+    localDefault: "http://localhost:4096/v1",
+    passthroughModels: true,
+    isLocalCli: true,
+  },
 };

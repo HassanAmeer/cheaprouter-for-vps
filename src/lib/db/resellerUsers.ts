@@ -686,7 +686,7 @@ export function updateUserQuota(params: {
     try {
       db.prepare(`
         UPDATE api_keys
-        SET max_requests_per_minute = ?, updated_at = datetime('now')
+        SET max_requests_per_minute = ?
         WHERE id IN (SELECT api_key_id FROM reseller_user_keys WHERE user_id = ? AND api_key_id IS NOT NULL)
       `).run(rpmLimit, params.userId);
       invalidateApiKeyCaches();
@@ -715,7 +715,7 @@ export function setUserBanStatus(userId: string, isBanned: boolean): void {
   try {
     db.prepare(`
       UPDATE api_keys
-      SET is_banned = ?, is_active = ?, updated_at = datetime('now')
+      SET is_banned = ?, is_active = ?
       WHERE id IN (SELECT api_key_id FROM reseller_user_keys WHERE user_id = ? AND api_key_id IS NOT NULL)
     `).run(val, isBanned ? 0 : 1, userId);
 
@@ -734,6 +734,7 @@ export function getResellerUserByApiKeyId(apiKeyId: string): {
   tokenBudget: number | null;
   tokensUsed: number;
   rpmLimit: number | null;
+  modelQuotas?: Record<string, number>;
 } | null {
   if (!apiKeyId) return null;
   ensureResellerUserKeysTable();
@@ -741,20 +742,34 @@ export function getResellerUserByApiKeyId(apiKeyId: string): {
   try {
     const row = db
       .prepare(
-        `SELECT u.id as user_id, u.is_banned, u.token_budget, u.tokens_used, u.rpm_limit
+        `SELECT u.id as user_id, u.is_banned, u.token_budget, u.tokens_used, u.rpm_limit, u.model_quotas
          FROM reseller_user_keys k
          JOIN reseller_users u ON u.id = k.user_id
          WHERE k.api_key_id = ?
          LIMIT 1`
       )
-      .get(apiKeyId) as any;
+      .get(apiKeyId) as
+      | {
+          user_id: string;
+          is_banned: number;
+          token_budget: number | null;
+          tokens_used: number;
+          rpm_limit: number | null;
+          model_quotas?: string | null;
+        }
+      | undefined;
     if (!row) return null;
+    let modelQuotas: Record<string, number> = {};
+    try {
+      modelQuotas = JSON.parse(row.model_quotas || "{}");
+    } catch {}
     return {
       userId: row.user_id,
       isBanned: row.is_banned === 1,
       tokenBudget: row.token_budget,
       tokensUsed: row.tokens_used || 0,
       rpmLimit: row.rpm_limit,
+      modelQuotas,
     };
   } catch {
     return null;
@@ -762,18 +777,45 @@ export function getResellerUserByApiKeyId(apiKeyId: string): {
 }
 
 /**
+ * Get cumulative tokens used by a user for a specific model (or bare model name).
+ */
+export function getUserModelUsageTokens(userId: string, model: string): number {
+  ensureResellerUserKeysTable();
+  const db = getDbInstance();
+  try {
+    const bare = model.includes("/") ? model.slice(model.indexOf("/") + 1) : model;
+    const rows = db
+      .prepare(
+        "SELECT tokens_used FROM user_model_usage WHERE user_id = ? AND (model = ? OR model = ?)"
+      )
+      .all(userId, model, bare) as Array<{ tokens_used: number }>;
+    if (!rows.length) return 0;
+    return Math.max(...rows.map((r) => r.tokens_used || 0));
+  } catch {
+    return 0;
+  }
+}
+
+/**
  * Record model-specific and user-level token usage.
  */
-export function recordUserModelUsage(userId: string, model: string, tokens: number): void {
+export function recordUserModelUsage(
+  userId: string,
+  model: string,
+  tokens: number,
+  incrementUserTotal = true
+): void {
   ensureResellerUserKeysTable();
   const db = getDbInstance();
   const now = new Date().toISOString();
 
-  db.prepare(
-    `UPDATE reseller_users
-     SET tokens_used = tokens_used + ?, updated_at = ?
-     WHERE id = ?`
-  ).run(tokens, now, userId);
+  if (incrementUserTotal) {
+    db.prepare(
+      `UPDATE reseller_users
+       SET tokens_used = tokens_used + ?, updated_at = ?
+       WHERE id = ?`
+    ).run(tokens, now, userId);
+  }
 
   db.prepare(
     `INSERT INTO user_model_usage (user_id, model, tokens_used, requests, last_used_at, created_at, updated_at)
@@ -789,7 +831,12 @@ export function recordUserModelUsage(userId: string, model: string, tokens: numb
 /**
  * Record token consumption from a live API request for a reseller user key.
  */
-export function recordResellerKeyUsage(apiKeyId: string, model: string, tokens: number): void {
+export function recordResellerKeyUsage(
+  apiKeyId: string,
+  model: string,
+  tokens: number,
+  requestedModel?: string
+): void {
   if (tokens <= 0 || !apiKeyId) return;
   try {
     ensureResellerUserKeysTable();
@@ -810,7 +857,12 @@ export function recordResellerKeyUsage(apiKeyId: string, model: string, tokens: 
     ).run(tokens, now, keyRow.id);
 
     // 2. Update user tokens_used and model usage
-    recordUserModelUsage(keyRow.user_id, model, tokens);
+    recordUserModelUsage(keyRow.user_id, model, tokens, true);
+
+    // 3. If requested model was a combo or alias distinct from upstream model, record under that too
+    if (requestedModel && requestedModel !== model) {
+      recordUserModelUsage(keyRow.user_id, requestedModel, tokens, false);
+    }
   } catch (err) {
     console.error("[resellerUsers] Failed to record reseller key usage:", err);
   }

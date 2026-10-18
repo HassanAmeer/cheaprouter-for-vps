@@ -37,6 +37,7 @@ export const ProviderSchema = z.object({
   noAuth: z.boolean().optional(),
   anonymousFallback: z.boolean().optional(),
   managedAccount: z.boolean().optional(),
+  isLocalCli: z.boolean().optional(),
 });
 
 export const ProvidersMapSchema = z.record(z.string(), ProviderSchema);

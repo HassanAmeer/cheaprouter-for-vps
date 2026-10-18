@@ -7,6 +7,7 @@ import {
   EMBEDDING_RERANK_PROVIDER_IDS,
   ENTERPRISE_CLOUD_PROVIDER_IDS,
   IDE_PROVIDER_IDS,
+  CLI_PROVIDER_IDS,
   IMAGE_ONLY_PROVIDER_IDS,
   VIDEO_PROVIDER_IDS,
 } from "@/shared/constants/providers";
@@ -55,6 +56,9 @@ const AddCompatibleProviderModal = dynamic(
   { ssr: false }
 );
 const EditCustomProviderSheet = dynamic(() => import("./[id]/components/EditCustomProviderSheet"), {
+  ssr: false,
+});
+const ServerPortsSheet = dynamic(() => import("./components/ServerPortsSheet"), {
   ssr: false,
 });
 import CustomProviderInlineForm from "./components/CustomProviderInlineForm";
@@ -286,6 +290,7 @@ function ProvidersPageContent() {
   // #4240: media-category (serviceKind) filter — composes with activeTab,
   // search and configured-only. null = no serviceKind filter.
   const [activeServiceKind, setActiveServiceKind] = useState<string | null>(null);
+  const [showServerPortsSheet, setShowServerPortsSheet] = useState(false);
   const notify = useNotificationStore();
   const t = useTranslations("providers");
   const tc = useTranslations("common");
@@ -298,6 +303,7 @@ function ProvidersPageContent() {
     if (!activeCategory) return true;
     if (activeCategory === "oauth") return sectionCat === "oauth";
     if (activeCategory === "ide") return sectionCat === "ide";
+    if (activeCategory === "cli") return sectionCat === "cli";
     if (activeCategory === "free") return sectionCat === "free";
     if (activeCategory === "compatible") return sectionCat === "compatible";
     if (activeCategory === "apikey") return sectionCat === "apikey";
@@ -744,7 +750,6 @@ function ProvidersPageContent() {
   // aggregate/count/model list that consumes it is unchanged.
   const { visible: noAuthEntriesAll, blocked: blockedNoAuthEntries } =
     partitionNoAuthEntriesByBlocked(rawNoAuthEntriesAll, blockedProviders);
-  const noAuthEntries = filterEntries(noAuthEntriesAll);
 
   const apiKeyProviderEntriesAll = buildStaticProviderEntries("apikey", getProviderStats);
   const llmProviderEntriesAll = apiKeyProviderEntriesAll.filter(isPrimaryLlmProviderEntry);
@@ -774,7 +779,6 @@ function ProvidersPageContent() {
   const webCookieProviderEntries = filterEntries(webCookieProviderEntriesAll);
 
   const localProviderEntriesAll = buildStaticProviderEntries("local", getProviderStats);
-  const localProviderEntries = filterEntries(localProviderEntriesAll);
 
   const searchProviderEntriesAll = buildStaticProviderEntries("search", getProviderStats);
   const searchProviderEntries = filterEntries(searchProviderEntriesAll);
@@ -857,9 +861,32 @@ function ProvidersPageContent() {
   );
   const ideProviderEntries = filterEntries(ideProviderEntriesAll);
 
+  // CLI providers: tools, daemons, and background CLIs (OpenCode CLI, Codex CLI,
+  // Antseed, Antigravity, Claude Code, Augment, ZCode, etc.). Rendered in a dedicated
+  // "CLI Providers" section and excluded from generic sections.
+  const cliProviderEntriesAll = dedupeProviderEntries(
+    [
+      ...oauthProviderEntriesAll,
+      ...noAuthEntriesAll,
+      ...localProviderEntriesAll,
+      ...apiKeyProviderEntriesAll,
+    ].filter((e) => CLI_PROVIDER_IDS.has(e.providerId))
+  );
+  const cliProviderEntries = filterEntries(cliProviderEntriesAll);
+
   const oauthOnlyEntriesAll = oauthProviderEntriesAll
     .filter((e) => e.toggleAuthType === "oauth")
-    .filter((e) => !IDE_PROVIDER_IDS.has(e.providerId));
+    .filter((e) => !IDE_PROVIDER_IDS.has(e.providerId) && !CLI_PROVIDER_IDS.has(e.providerId));
+
+  const nonCliNoAuthEntriesAll = noAuthEntriesAll.filter(
+    (e) => !CLI_PROVIDER_IDS.has(e.providerId)
+  );
+  const nonCliNoAuthEntries = filterEntries(nonCliNoAuthEntriesAll);
+
+  const nonCliLocalProviderEntriesAll = localProviderEntriesAll.filter(
+    (e) => !CLI_PROVIDER_IDS.has(e.providerId)
+  );
+  const nonCliLocalProviderEntries = filterEntries(nonCliLocalProviderEntriesAll);
 
   // Web Fetch providers: filter across all entries by serviceKinds
   const webFetchEntriesAll = dedupeProviderEntries(
@@ -878,7 +905,8 @@ function ProvidersPageContent() {
     compatibleProviderEntries,
     oauthProviderEntries,
     ideProviderEntries,
-    noAuthEntries,
+    cliProviderEntries,
+    noAuthEntries: nonCliNoAuthEntries,
     upstreamProxyEntries,
     llmProviderEntries,
     aggregatorProviderEntries,
@@ -890,24 +918,25 @@ function ProvidersPageContent() {
     searchProviderEntries,
     webFetchEntries,
     audioProviderEntries,
-    localProviderEntries,
+    localProviderEntries: nonCliLocalProviderEntries,
     cloudAgentProviderEntries,
   });
 
   const summaryStats = {
     all: countConfigured(dashboardProviderEntriesAll),
     free: countConfigured(freeSectionEntriesAll),
-    noauth: countConfigured(noAuthEntriesAll),
+    noauth: countConfigured(nonCliNoAuthEntriesAll),
     oauth: countConfigured(oauthOnlyEntriesAll),
     apikey: countConfigured(apiKeyProviderEntriesAll),
     compatible: countConfigured(compatibleProviderEntriesAll),
     webcookie: countConfigured(webCookieProviderEntriesAll),
     search: countConfigured(searchProviderEntriesAll),
     audio: countConfigured(audioProviderEntriesAll),
-    local: countConfigured(localProviderEntriesAll),
+    local: countConfigured(nonCliLocalProviderEntriesAll),
     upstreamproxy: countConfigured(upstreamProxyEntriesAll),
     cloudagent: countConfigured(cloudAgentProviderEntriesAll),
     ide: countConfigured(ideProviderEntriesAll),
+    cli: countConfigured(cliProviderEntriesAll),
     webfetch: countConfigured(webFetchEntriesAll),
   };
   if (loading) {
@@ -916,12 +945,16 @@ function ProvidersPageContent() {
 
   const totalVisibleEntriesCount =
     (showSectionFromTab("oauth")
-      ? oauthProviderEntries.filter((e) => !IDE_PROVIDER_IDS.has(e.providerId)).length
+      ? oauthProviderEntries.filter(
+          (e) => !IDE_PROVIDER_IDS.has(e.providerId) && !CLI_PROVIDER_IDS.has(e.providerId)
+        ).length
       : 0) +
+    (showSectionFromTab("ide") ? ideProviderEntries.length : 0) +
+    (showSectionFromTab("cli") ? cliProviderEntries.length : 0) +
     (showSectionFromTab("noauth")
       ? activeTab === "unconnected"
         ? blockedNoAuthEntries.length
-        : noAuthEntries.length
+        : nonCliNoAuthEntries.length
       : 0) +
     (showSectionFromTab("apikey")
       ? llmProviderEntries.length +
@@ -932,13 +965,12 @@ function ProvidersPageContent() {
         embeddingRerankProviderEntries.length
       : 0) +
     (showSectionFromTab("web") ? webCookieProviderEntries.length : 0) +
-    (showSectionFromTab("local") ? localProviderEntries.length : 0) +
+    (showSectionFromTab("local") ? nonCliLocalProviderEntries.length : 0) +
     (showSectionFromTab("search") ? searchProviderEntries.length : 0) +
     (showSectionFromTab("audio") ? audioProviderEntries.length : 0) +
     (showSectionFromTab("cloud") ? cloudAgentProviderEntries.length : 0) +
     (showSectionFromTab("proxy") ? upstreamProxyEntries.length : 0) +
     (showSectionFromTab("compatible") ? compatibleProviderEntries.length : 0) +
-    (showSectionFromTab("ide") ? ideProviderEntries.length : 0) +
     (showSectionFromTab("free") ? freeSectionEntries.length : 0) +
     (showSectionFromTab("webfetch") ? visibleWebFetchEntries.length : 0);
 
@@ -1319,6 +1351,14 @@ function ProvidersPageContent() {
                           )}
                           <Button
                             size="sm"
+                            variant="outline"
+                            icon="lan"
+                            onClick={() => setShowServerPortsSheet(true)}
+                          >
+                            Check Server Ports
+                          </Button>
+                          <Button
+                            size="sm"
                             icon={showCustomProviderForm ? "expand_less" : "add"}
                             onClick={() => setShowCustomProviderForm((prev) => !prev)}
                           >
@@ -1525,6 +1565,70 @@ function ProvidersPageContent() {
                     </div>
                   )}
 
+                {/* CLI & Local Tools (OpenCode CLI, Codex CLI, Antseed, Antigravity, Claude Code, Augment, ZCode, etc.) */}
+                {showSectionFromTab("cli") &&
+                  (activeTab === "all-providers" || cliProviderEntries.length > 0) && (
+                    <div className="flex flex-col gap-4">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <h2 className="text-xl font-semibold flex items-center gap-2 flex-1 min-w-0">
+                          {providerText(t, "cliProviders", "CLI & Local Agent Tools")}{" "}
+                          <span
+                            className="size-2.5 rounded-full bg-emerald-600"
+                            title={providerText(t, "cliProviders", "CLI & Local Agent Tools")}
+                          />
+                          <ProviderCountBadge {...countConfigured(cliProviderEntriesAll)} />
+                        </h2>
+                        <button
+                          onClick={() => handleBatchTest("cli")}
+                          disabled={!!testingMode}
+                          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
+                            testingMode === "cli"
+                              ? "bg-primary/20 border-primary/40 text-primary animate-pulse"
+                              : "bg-bg-subtle border-border text-text-muted hover:text-text-primary hover:border-primary/40"
+                          }`}
+                          title={t("testAll")}
+                          aria-label={t("testAll")}
+                        >
+                          <span
+                            className={`material-symbols-outlined text-[14px]${testingMode === "cli" ? " animate-spin" : ""}`}
+                          >
+                            play_arrow
+                          </span>
+                          {testingMode === "cli" ? t("testing") : t("testAll")}
+                        </button>
+                      </div>
+                      <p className="text-sm text-text-muted -mt-2">
+                        {providerText(
+                          t,
+                          "cliProvidersDesc",
+                          "Command-line tools, local daemons, and background agents (OpenCode CLI, Codex CLI, Antseed, Antigravity, Claude Code, Augment, ZCode). CheapRouter coordinates directly with your installed CLIs and local daemon servers."
+                        )}
+                      </p>
+                      {cliProviderEntries.length === 0 ? (
+                        <div className="rounded-lg border border-dashed border-border bg-bg-subtle p-6 text-center text-sm text-text-muted">
+                          {providerText(t, "noCliProviders", "No CLI providers match the current filters.")}
+                        </div>
+                      ) : (
+                        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 gap-3">
+                          {cliProviderEntries.map(
+                            ({ providerId, provider, stats, displayAuthType, toggleAuthType }) => (
+                              <HighlightableProviderCard
+                                key={`cli-${providerId}`}
+                                providerId={providerId}
+                                provider={provider}
+                                stats={stats}
+                                authType={displayAuthType}
+                                onToggle={(active) =>
+                                  handleToggleProvider(providerId, toggleAuthType, active)
+                                }
+                              />
+                            )
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
                 {/* Web / Cookie Providers */}
                 {showSectionFromTab("web") && webCookieProviderEntries.length > 0 && (
                   <div className="flex flex-col gap-4">
@@ -1695,11 +1799,13 @@ function ProvidersPageContent() {
                   !showFreeOnly &&
                   (activeTab === "unconnected"
                     ? blockedNoAuthEntries.length > 0
-                    : noAuthEntries.length > 0 || blockedNoAuthEntries.length > 0) && (
+                    : nonCliNoAuthEntries.length > 0 || blockedNoAuthEntries.length > 0) && (
                     <NoAuthProvidersSection
-                      visibleEntries={activeTab === "unconnected" ? [] : noAuthEntries}
-                      count={countConfigured(noAuthEntriesAll)}
-                      blockedEntries={blockedNoAuthEntries}
+                      visibleEntries={activeTab === "unconnected" ? [] : nonCliNoAuthEntries}
+                      count={countConfigured(nonCliNoAuthEntriesAll)}
+                      blockedEntries={blockedNoAuthEntries.filter(
+                        (e) => !CLI_PROVIDER_IDS.has(e.providerId)
+                      )}
                       blockedProviders={blockedProviders}
                       onBlockedChange={setBlockedProviders}
                       onError={(msg) => notify.error(msg)}
@@ -1911,7 +2017,7 @@ function ProvidersPageContent() {
                 )}
 
                 {/* Local / Self-Hosted Providers */}
-                {showSectionFromTab("local") && localProviderEntries.length > 0 && (
+                {showSectionFromTab("local") && nonCliLocalProviderEntries.length > 0 && (
                   <div className="flex flex-col gap-4">
                     <div className="flex flex-wrap items-center gap-2">
                       <h2 className="text-xl font-semibold flex items-center gap-2 flex-1 min-w-0">
@@ -1920,7 +2026,7 @@ function ProvidersPageContent() {
                           className="size-2.5 rounded-full bg-emerald-500"
                           title={t("localProviders")}
                         />
-                        <ProviderCountBadge {...countConfigured(localProviderEntriesAll)} />
+                        <ProviderCountBadge {...countConfigured(nonCliLocalProviderEntriesAll)} />
                       </h2>
                       <button
                         onClick={() => handleBatchTest("local")}
@@ -1942,7 +2048,7 @@ function ProvidersPageContent() {
                     </div>
                     <p className="text-sm text-text-muted -mt-2">{t("localProvidersDesc")}</p>
                     <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 gap-3">
-                      {localProviderEntries.map(
+                      {nonCliLocalProviderEntries.map(
                         ({ providerId, provider, stats, toggleAuthType }) => (
                           <HighlightableProviderCard
                             key={providerId}
@@ -2236,6 +2342,19 @@ function ProvidersPageContent() {
           providerId={guideModalProvider?.id ?? ""}
           providerName={guideModalProvider?.name ?? ""}
         />
+
+        {/* Server Ports Discovery Sheet */}
+        {showServerPortsSheet && (
+          <ServerPortsSheet
+            isOpen={showServerPortsSheet}
+            onClose={() => setShowServerPortsSheet(false)}
+            onSelectBaseUrl={(url) => {
+              setShowCustomProviderForm(true);
+              setIsCompatibleCollapsed(false);
+              notify.info(`Server port URL: ${url}. Opened Custom Provider form.`);
+            }}
+          />
+        )}
       </div>
     </OpenRouterProviderStatsProvider>
   );

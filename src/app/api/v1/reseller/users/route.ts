@@ -62,8 +62,34 @@ const pauseSchema = z.object({
   paused: z.boolean(),
 });
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
+    const url = new URL(request.url);
+    const targetUserId = url.searchParams.get("userId")?.trim();
+
+    if (targetUserId) {
+      const user = getResellerUser(targetUserId);
+      if (!user) {
+        return NextResponse.json(
+          { success: false, error: `User with ID '${targetUserId}' not found.` },
+          { status: 404, headers: CORS_HEADERS }
+        );
+      }
+      const userByokKeys = getUserByokKeys(targetUserId);
+      const userKeys = getResellerUserKeys().filter((k) => k.userId === targetUserId);
+      return NextResponse.json(
+        {
+          success: true,
+          user: {
+            ...user,
+            byokKeys: userByokKeys,
+            userKeys,
+          },
+        },
+        { headers: CORS_HEADERS }
+      );
+    }
+
     const userKeys = getResellerUserKeys();
     const byokKeys = getAllUserByokKeys();
     const available = await getAvailableModelsAndCombos();
@@ -135,6 +161,66 @@ export async function POST(request: Request) {
         userEmail: parsedByok.data.userEmail,
       });
       return NextResponse.json({ success: true, key }, { status: 201, headers: CORS_HEADERS });
+    }
+
+    // Pause / Resume BYOK Provider Key via POST
+    if (body?.action === "pauseByok") {
+      const parsed = pauseSchema.safeParse(body);
+      if (!parsed.success) {
+        return NextResponse.json(
+          { success: false, error: "Invalid payload", issues: parsed.error.issues },
+          { status: 400, headers: CORS_HEADERS }
+        );
+      }
+      setUserByokPaused(parsed.data.userId, parsed.data.providerId, parsed.data.paused);
+      return NextResponse.json(
+        { success: true, paused: parsed.data.paused },
+        { status: 200, headers: CORS_HEADERS }
+      );
+    }
+
+    // Delete BYOK Provider Key via POST
+    if (body?.action === "deleteByok") {
+      if (body.byokId || body.id) {
+        const deleted = deleteUserByokKeyById(Number(body.byokId || body.id));
+        return NextResponse.json({ success: true, deleted }, { status: 200, headers: CORS_HEADERS });
+      }
+      const uid = (body.userId || body.uid)?.trim();
+      const provId = (body.providerId || body.provider)?.trim();
+      if (uid && provId) {
+        const deleted = deleteUserByokKey(uid, provId);
+        return NextResponse.json({ success: true, deleted }, { status: 200, headers: CORS_HEADERS });
+      }
+      return NextResponse.json(
+        { success: false, error: "byokId or (userId and providerId) is required to delete BYOK key." },
+        { status: 400, headers: CORS_HEADERS }
+      );
+    }
+
+    // Delete / Revoke Reseller User API Key via POST
+    if (body?.action === "deleteKey" || body?.action === "revokeKey") {
+      const keyId = body.id || body.keyId;
+      if (!keyId) {
+        return NextResponse.json(
+          { success: false, error: "keyId / id is required to delete user API key." },
+          { status: 400, headers: CORS_HEADERS }
+        );
+      }
+      const deleted = await deleteResellerUserKey(Number(keyId));
+      return NextResponse.json({ success: true, deleted }, { status: 200, headers: CORS_HEADERS });
+    }
+
+    // Delete Entire Reseller User Account via POST
+    if (body?.action === "deleteUser") {
+      const uid = (body.userId || body.id)?.trim();
+      if (!uid) {
+        return NextResponse.json(
+          { success: false, error: "userId is required to delete user account." },
+          { status: 400, headers: CORS_HEADERS }
+        );
+      }
+      const deleted = await deleteResellerUser(uid);
+      return NextResponse.json({ success: true, deleted }, { status: 200, headers: CORS_HEADERS });
     }
 
     // Update Quota / Plan (when user purchases plan or admin updates in GUI)
@@ -298,12 +384,12 @@ export async function POST(request: Request) {
 
     const data = parsed.data;
     const userId = (data.userId || data.id)?.trim();
-    const userEmail = (data.userEmail || data.email)?.trim();
-    const userName = (data.userName || data.name)?.trim() || userId;
+    let userEmail = (data.userEmail || data.email)?.trim();
+    let userName = (data.userName || data.name)?.trim();
 
-    if (!userId || !userEmail) {
+    if (!userId) {
       return NextResponse.json(
-        { success: false, error: "User ID (UID) and Email/Phone are required." },
+        { success: false, error: "User ID (UID) is required." },
         { status: 400, headers: CORS_HEADERS }
       );
     }
@@ -313,6 +399,20 @@ export async function POST(request: Request) {
       return NextResponse.json(
         { success: false, error: "Cannot generate API key: user account is currently banned." },
         { status: 403, headers: CORS_HEADERS }
+      );
+    }
+
+    if (!userEmail) {
+      userEmail = existingUser?.email || "";
+    }
+    if (!userName) {
+      userName = existingUser?.name || userId;
+    }
+
+    if (!userEmail) {
+      return NextResponse.json(
+        { success: false, error: "User email or phone is required to generate an API key." },
+        { status: 400, headers: CORS_HEADERS }
       );
     }
 

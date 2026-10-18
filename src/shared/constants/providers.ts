@@ -24,6 +24,7 @@ export const FREE_PROVIDERS = {};
 export const FREE_APIKEY_PROVIDER_IDS = new Set([
   "qoder",
   "opencode",
+  "opencode-cli",
   "dahl",
   // auggie is a fully local, credential-less CLI passthrough (auth handled by
   // `auggie login` outside CheapRoute). Admitted here purely so POST /api/providers
@@ -245,10 +246,30 @@ export const SELF_HOSTED_CHAT_PROVIDER_IDS = new Set([
   "docker-model-runner",
   "xinference",
   "oobabooga",
+  "opencode-cli",
 ]);
 
 export function isSelfHostedChatProvider(providerId: unknown): boolean {
   return typeof providerId === "string" && SELF_HOSTED_CHAT_PROVIDER_IDS.has(providerId);
+}
+
+// Dedicated CLI Tools and local daemon-managed providers
+export const CLI_PROVIDER_IDS = new Set([
+  "opencode-cli",
+  "opencode",
+  "codex",
+  "codex-app-server",
+  "antigravity",
+  "antseed",
+  "auggie",
+  "zcode",
+  "claude",
+  "cline",
+  "devin-cli-agentic",
+]);
+
+export function isCliProvider(providerId: unknown): boolean {
+  return typeof providerId === "string" && CLI_PROVIDER_IDS.has(providerId);
 }
 
 // Providers with heterogeneous/no-key auth that don't fit the NOAUTH_PROVIDERS
