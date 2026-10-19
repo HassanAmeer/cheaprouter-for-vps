@@ -59,8 +59,7 @@ function CliConnectSheetPanel({
   const notify = useNotificationStore();
   const isKilo = providerId === "kilo-code-cli";
   const defaultPort = isKilo ? 4098 : 4099;
-  const displayName =
-    providerName || (isKilo ? "Kilo Code CLI Server" : "OpenCode CLI Server");
+  const displayName = providerName || (isKilo ? "Kilo Code CLI Server" : "OpenCode CLI Server");
   const defaultUrl = `http://127.0.0.1:${defaultPort}`;
 
   const [baseUrl, setBaseUrl] = useState<string>(defaultUrl);
@@ -72,7 +71,9 @@ function CliConnectSheetPanel({
   const [showAllPorts, setShowAllPorts] = useState<boolean>(false);
 
   const [fetchingModels, setFetchingModels] = useState<boolean>(false);
-  const [discoveredModels, setDiscoveredModels] = useState<Array<{ id: string; name?: string }>>([]);
+  const [discoveredModels, setDiscoveredModels] = useState<Array<{ id: string; name?: string }>>(
+    []
+  );
   const [connectSuccess, setConnectSuccess] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
@@ -94,11 +95,7 @@ function CliConnectSheetPanel({
       const match = discoveredList.find((p) => {
         const lowerCmd = (p.cmdline + " " + p.processName + " " + p.service).toLowerCase();
         if (isKilo) {
-          return (
-            p.port === 4098 ||
-            lowerCmd.includes("kilo") ||
-            p.processName.includes("kilo")
-          );
+          return p.port === 4098 || lowerCmd.includes("kilo") || p.processName.includes("kilo");
         } else {
           return (
             p.port === 4099 ||
@@ -178,18 +175,15 @@ function CliConnectSheetPanel({
       // 2. Fetch model list via probe
       const modelsList: Array<{ id: string; name?: string }> = [];
       try {
-        const probeRes = await fetch(
-          `/api/system/server-ports`,
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              host: new URL(targetUrl).hostname || "127.0.0.1",
-              port: Number(new URL(targetUrl).port) || defaultPort,
-              path: "/api/model",
-            }),
-          }
-        );
+        const probeRes = await fetch(`/api/system/server-ports`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            host: new URL(targetUrl).hostname || "127.0.0.1",
+            port: Number(new URL(targetUrl).port) || defaultPort,
+            path: "/api/model",
+          }),
+        });
         const probeData = await probeRes.json().catch(() => null);
         if (probeData?.preview) {
           try {
@@ -274,7 +268,9 @@ function CliConnectSheetPanel({
       notify.success(`${displayName} connected successfully!`);
 
       // Trigger sync of models in background
-      void fetch(`/api/providers/${encodeURIComponent(providerId)}/models?refresh=true`).catch(() => {});
+      void fetch(`/api/providers/${encodeURIComponent(providerId)}/models?refresh=true`).catch(
+        () => {}
+      );
 
       if (onConnected) {
         onConnected();
@@ -316,9 +312,7 @@ function CliConnectSheetPanel({
               <h2 className="text-base font-semibold leading-tight text-text-main truncate">
                 Connect {displayName}
               </h2>
-              <p className="text-xs text-text-muted truncate">
-                CLI Headless Server Passthrough
-              </p>
+              <p className="text-xs text-text-muted truncate">CLI Headless Server Passthrough</p>
             </div>
           </div>
           <button
@@ -338,9 +332,7 @@ function CliConnectSheetPanel({
             <div className="flex items-center justify-between gap-2">
               <div className="min-w-0">
                 <h3 className="text-sm font-semibold text-text-main">
-                  {isKilo
-                    ? "Check Kilo Code CLI Connection"
-                    : "Check OpenCode CLI Connection"}
+                  {isKilo ? "Check Kilo Code CLI Connection" : "Check OpenCode CLI Connection"}
                 </h3>
                 <p className="text-xs text-text-muted">
                   Fetch active listening ports on this machine / VPS.
@@ -409,9 +401,7 @@ function CliConnectSheetPanel({
                   onClick={() => setShowAllPorts(!showAllPorts)}
                   className="flex items-center justify-between w-full text-xs text-text-muted hover:text-text-main py-1"
                 >
-                  <span className="font-medium">
-                    All Discovered Ports ({ports.length})
-                  </span>
+                  <span className="font-medium">All Discovered Ports ({ports.length})</span>
                   <span
                     className={`material-symbols-outlined text-[16px] transition-transform ${
                       showAllPorts ? "rotate-180" : ""
@@ -455,9 +445,7 @@ function CliConnectSheetPanel({
                               }`}
                             >
                               <div className="min-w-0">
-                                <span className="font-mono font-semibold">
-                                  {p.port}
-                                </span>{" "}
+                                <span className="font-mono font-semibold">{p.port}</span>{" "}
                                 <span className="text-[11px] text-text-muted truncate">
                                   · {p.service}
                                 </span>
@@ -480,9 +468,7 @@ function CliConnectSheetPanel({
           <div className="space-y-2">
             <label className="text-xs font-semibold text-text-main flex items-center justify-between">
               <span>CLI Server Base URL</span>
-              <span className="text-[11px] text-emerald-400 font-normal">
-                No API Key Required
-              </span>
+              <span className="text-[11px] text-emerald-400 font-normal">No API Key Required</span>
             </label>
             <input
               type="text"
@@ -492,16 +478,15 @@ function CliConnectSheetPanel({
               className="w-full text-sm font-mono px-3.5 py-2.5 rounded-lg bg-bg-subtle border border-border text-text-main focus:outline-none focus:border-primary transition-colors"
             />
             <p className="text-[11px] text-text-muted">
-              Connects directly to your local or VPS headless server without needing any paid credentials or authentication keys.
+              Connects directly to your local or VPS headless server without needing any paid
+              credentials or authentication keys.
             </p>
           </div>
 
           {/* Error Message */}
           {errorMessage && (
             <div className="rounded-lg border border-red-500/30 bg-red-500/10 p-3 text-xs text-red-400 flex items-start gap-2">
-              <span className="material-symbols-outlined text-[16px] shrink-0 mt-0.5">
-                error
-              </span>
+              <span className="material-symbols-outlined text-[16px] shrink-0 mt-0.5">error</span>
               <span className="min-w-0 break-words">{errorMessage}</span>
             </div>
           )}
@@ -509,12 +494,8 @@ function CliConnectSheetPanel({
           {/* Success Message */}
           {connectSuccess && (
             <div className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-3 text-xs text-emerald-400 flex items-center gap-2">
-              <span className="material-symbols-outlined text-[18px] shrink-0">
-                check_circle
-              </span>
-              <span className="font-medium">
-                Connected successfully! Connection is now active.
-              </span>
+              <span className="material-symbols-outlined text-[18px] shrink-0">check_circle</span>
+              <span className="font-medium">Connected successfully! Connection is now active.</span>
             </div>
           )}
 
@@ -553,23 +534,17 @@ function CliConnectSheetPanel({
             >
               {fetchingModels ? (
                 <>
-                  <span className="material-symbols-outlined text-[18px] animate-spin">
-                    sync
-                  </span>
+                  <span className="material-symbols-outlined text-[18px] animate-spin">sync</span>
                   Fetching Models & Connecting...
                 </>
               ) : connectSuccess ? (
                 <>
-                  <span className="material-symbols-outlined text-[18px]">
-                    check
-                  </span>
+                  <span className="material-symbols-outlined text-[18px]">check</span>
                   Connected!
                 </>
               ) : (
                 <>
-                  <span className="material-symbols-outlined text-[18px]">
-                    power
-                  </span>
+                  <span className="material-symbols-outlined text-[18px]">power</span>
                   Fetch Models & Connect
                 </>
               )}
@@ -585,7 +560,9 @@ function CliConnectSheetPanel({
                 detectedPort || connectSuccess ? "bg-emerald-500" : "bg-amber-500"
               }`}
             />
-            <span>{connectSuccess ? "Connected" : detectedPort ? "Port Active" : "Waiting for Server"}</span>
+            <span>
+              {connectSuccess ? "Connected" : detectedPort ? "Port Active" : "Waiting for Server"}
+            </span>
           </div>
           <button
             type="button"

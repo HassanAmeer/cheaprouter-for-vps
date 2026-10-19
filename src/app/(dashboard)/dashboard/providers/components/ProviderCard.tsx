@@ -483,10 +483,7 @@ const ProviderCard = forwardRef<ProviderCardHandle, ProviderCardProps>(function 
   const handleCardClick = useCallback(
     (e?: MouseEvent<HTMLAnchorElement>) => {
       addRecentProvider(providerId, provider.name);
-      if (
-        (providerId === "opencode-cli" || providerId === "kilo-code-cli") &&
-        !isCardConnected
-      ) {
+      if ((providerId === "opencode-cli" || providerId === "kilo-code-cli") && !isCardConnected) {
         if (e) {
           e.preventDefault();
           e.stopPropagation();

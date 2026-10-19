@@ -1178,7 +1178,13 @@ export async function GET(
 
           if (response.ok) {
             const data = await response.json();
-            if (data && Array.isArray(data.data) && (provider === "opencode-cli" || provider === "kilo-code-cli" || modelsUrl.includes("/api/model"))) {
+            if (
+              data &&
+              Array.isArray(data.data) &&
+              (provider === "opencode-cli" ||
+                provider === "kilo-code-cli" ||
+                modelsUrl.includes("/api/model"))
+            ) {
               models = data.data.map((m: any) => ({
                 id: m.id || m.name,
                 name: m.name || m.id,

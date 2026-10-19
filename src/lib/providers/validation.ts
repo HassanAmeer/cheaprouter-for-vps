@@ -459,7 +459,8 @@ export async function validateProviderApiKey({
             } else if (data?.providers && Array.isArray(data.providers)) {
               modelCount = data.providers.reduce(
                 (acc: number, p: any) =>
-                  acc + (p.models && typeof p.models === "object" ? Object.keys(p.models).length : 0),
+                  acc +
+                  (p.models && typeof p.models === "object" ? Object.keys(p.models).length : 0),
                 0
               );
             }

@@ -774,9 +774,12 @@ export async function validateCloudflareAiProvider({ apiKey, providerSpecificDat
 
   // 1. Verify API Token authenticity against Cloudflare API
   try {
-    const verifyRes = await validationRead("https://api.cloudflare.com/client/v4/user/tokens/verify", {
-      headers: { Authorization: `Bearer ${token}` },
-    });
+    const verifyRes = await validationRead(
+      "https://api.cloudflare.com/client/v4/user/tokens/verify",
+      {
+        headers: { Authorization: `Bearer ${token}` },
+      }
+    );
     const verifyData = await verifyRes.json().catch(() => null);
 
     if (!verifyRes.ok || !verifyData?.success) {
@@ -789,7 +792,8 @@ export async function validateCloudflareAiProvider({ apiKey, providerSpecificDat
 
   // 2. Token is verified and active! Check accountId.
   let accountId =
-    (typeof providerSpecificData?.accountId === "string" && providerSpecificData.accountId.trim()) ||
+    (typeof providerSpecificData?.accountId === "string" &&
+      providerSpecificData.accountId.trim()) ||
     process.env.CLOUDFLARE_ACCOUNT_ID ||
     "";
 
@@ -840,4 +844,3 @@ export async function validateCloudflareAiProvider({ apiKey, providerSpecificDat
     },
   });
 }
-

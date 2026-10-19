@@ -238,7 +238,10 @@ async function probePortTcp(host: string, port: number, timeoutMs = 250): Promis
 
 async function checkAuth(req: NextRequest): Promise<boolean> {
   if (await isAuthenticated(req)) return true;
-  const apiKey = req.headers.get("authorization")?.replace(/^Bearer\s+/i, "").trim();
+  const apiKey = req.headers
+    .get("authorization")
+    ?.replace(/^Bearer\s+/i, "")
+    .trim();
   if (apiKey) {
     try {
       const { validateApiKey } = await import("@/lib/db/apiKeys");

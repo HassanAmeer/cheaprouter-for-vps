@@ -302,7 +302,9 @@ function ProvidersPageContent() {
   // search and configured-only. null = no serviceKind filter.
   const [activeServiceKind, setActiveServiceKind] = useState<string | null>(null);
   const [showServerPortsSheet, setShowServerPortsSheet] = useState(false);
-  const [cliConnectTarget, setCliConnectTarget] = useState<{ id: string; name?: string } | null>(null);
+  const [cliConnectTarget, setCliConnectTarget] = useState<{ id: string; name?: string } | null>(
+    null
+  );
   const notify = useNotificationStore();
   const t = useTranslations("providers");
   const tc = useTranslations("common");
@@ -1618,7 +1620,11 @@ function ProvidersPageContent() {
                       </p>
                       {cliProviderEntries.length === 0 ? (
                         <div className="rounded-lg border border-dashed border-border bg-bg-subtle p-6 text-center text-sm text-text-muted">
-                          {providerText(t, "noCliProviders", "No CLI providers match the current filters.")}
+                          {providerText(
+                            t,
+                            "noCliProviders",
+                            "No CLI providers match the current filters."
+                          )}
                         </div>
                       ) : (
                         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 gap-3">
