@@ -12,6 +12,7 @@ export default defineConfig({
   resolve: {
     alias: {
       "@": resolve(__dirname, "./src"),
+      "@cheaproute/open-sse": resolve(__dirname, "./open-sse"),
     },
   },
 });

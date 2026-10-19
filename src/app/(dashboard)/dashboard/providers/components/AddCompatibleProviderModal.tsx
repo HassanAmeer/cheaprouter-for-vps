@@ -365,7 +365,7 @@ export default function AddCompatibleProviderModal({
 
   return (
     <>
-      <Modal isOpen={isOpen} title={modalTitle} onClose={onClose}>
+      <Modal variant="sheet" isOpen={isOpen} title={modalTitle} onClose={onClose}>
       <div className="flex flex-col gap-4">
         {defaults.hasWarning && (
           <div className="rounded-lg border border-amber-500/25 bg-amber-500/10 px-3 py-2 text-sm text-text-muted">

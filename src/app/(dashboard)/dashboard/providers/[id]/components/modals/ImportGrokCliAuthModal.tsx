@@ -124,7 +124,7 @@ export default function ImportGrokCliAuthModal({
   }
 
   return (
-    <Modal isOpen onClose={onClose} title={t("grokImportTitle")} size="md">
+    <Modal variant="sheet" isOpen onClose={onClose} title={t("grokImportTitle")} size="md">
       <div className="flex flex-col gap-4">
         <p className="text-sm text-text-muted">
           {t.rich("grokImportDescription", {

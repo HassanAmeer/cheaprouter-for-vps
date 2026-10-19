@@ -794,7 +794,7 @@ export default function EditConnectionModal({
     />
   ) : null;
   return (
-    <Modal isOpen={isOpen} title={t("editConnection")} onClose={onClose}>
+    <Modal variant="sheet" isOpen={isOpen} title={t("editConnection")} onClose={onClose}>
       <div className="flex flex-col gap-4">
         <Input
           label={t("nameLabel")}
@@ -1027,6 +1027,17 @@ export default function EditConnectionModal({
                   </Button>
                 </div>
               </div>
+            )}
+            {isCloudflare && (
+              <Input
+                label={t("accountIdLabel") || "Cloudflare Account ID"}
+                value={formData.accountId}
+                onChange={(e) => setFormData({ ...formData, accountId: e.target.value })}
+                placeholder={t("accountIdPlaceholder") || "e.g. 394a5d02bb4a37a24f397c721aa16ccc"}
+                hint={t("accountIdHint") || "32-character ID found on your Cloudflare dashboard overview"}
+                spellCheck={false}
+                autoComplete="off"
+              />
             )}
             {isChatGptWebCodex && (
               <div className="space-y-3 rounded-lg border border-border bg-surface/40 p-3">
@@ -1402,15 +1413,6 @@ export default function EditConnectionModal({
           value={formData.region}
           onChange={(region) => setFormData({ ...formData, region })}
         />
-        {isCloudflare && (
-          <Input
-            label={t("accountIdLabel")}
-            value={formData.accountId}
-            onChange={(e) => setFormData({ ...formData, accountId: e.target.value })}
-            placeholder={t("accountIdPlaceholder")}
-            hint={t("accountIdHint")}
-          />
-        )}
         {isGlm && (
           <div className="flex flex-col gap-3">
             <div>

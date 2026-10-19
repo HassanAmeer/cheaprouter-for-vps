@@ -20,6 +20,7 @@ interface ModalProps {
   children?: React.ReactNode;
   footer?: React.ReactNode;
   size?: "sm" | "md" | "lg" | "xl" | "full";
+  variant?: "modal" | "sheet";
   closeOnOverlay?: boolean;
   showCloseButton?: boolean;
   className?: string;
@@ -47,6 +48,7 @@ export default function Modal({
   children,
   footer,
   size = "md",
+  variant = "modal",
   closeOnOverlay = true,
   showCloseButton = true,
   className,
@@ -145,6 +147,124 @@ export default function Modal({
   }, [isOpen]);
 
   if (!isOpen) return null;
+
+  if (variant === "sheet") {
+    return (
+      <div className="fixed inset-0 z-50 overflow-hidden font-sans">
+        {/* Backdrop with frosted glass effect */}
+        <div
+          className="fixed inset-0 bg-black/60 backdrop-blur-md transition-opacity duration-200 animate-in fade-in"
+          onClick={closeOnOverlay ? onClose : undefined}
+          aria-hidden="true"
+        />
+
+        {/* Cupertino iOS Right Slide-Over Sheet: 90% width on mobile, responsive sheet on desktop */}
+        <div
+          ref={dialogRef}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby={title ? titleId : undefined}
+          className={cn(
+            "fixed inset-y-0 right-0 z-50 flex flex-col",
+            "w-[90vw] max-w-[90vw] sm:w-full sm:max-w-md md:max-w-lg lg:max-w-xl",
+            "border-l border-black/10 dark:border-white/10 bg-surface text-text-main shadow-2xl backdrop-blur-2xl",
+            "animate-in slide-in-from-right duration-250 ease-out h-full",
+            className
+          )}
+        >
+          {/* Top Cupertino drag handle pill */}
+          <div className="w-10 h-1 rounded-full bg-black/20 dark:bg-white/20 mx-auto mt-2.5 mb-1 shrink-0" />
+
+          {/* Header */}
+          {(title || showCloseButton) && (
+            <div
+              className={cn(
+                "flex items-center justify-between border-b border-black/5 dark:border-white/5",
+                compactHeader ? "px-4 py-2.5" : "px-6 py-3.5"
+              )}
+            >
+              <div className="flex items-center min-w-0">
+                <div
+                  className={cn(
+                    "flex items-center gap-1.5 mr-3 shrink-0",
+                    compactHeader ? "" : "gap-2 mr-4"
+                  )}
+                  aria-hidden="true"
+                >
+                  <div
+                    className={cn(
+                      "rounded-full bg-[#FF5F56]",
+                      compactHeader ? "w-2.5 h-2.5" : "w-3 h-3"
+                    )}
+                  />
+                  <div
+                    className={cn(
+                      "rounded-full bg-[#FFBD2E]",
+                      compactHeader ? "w-2.5 h-2.5" : "w-3 h-3"
+                    )}
+                  />
+                  <div
+                    className={cn(
+                      "rounded-full bg-[#27C93F]",
+                      compactHeader ? "w-2.5 h-2.5" : "w-3 h-3"
+                    )}
+                  />
+                </div>
+                {title && (
+                  <h2
+                    id={titleId}
+                    className={cn(
+                      "font-semibold text-text-main truncate min-w-0",
+                      compactHeader ? "text-sm" : "text-base sm:text-lg"
+                    )}
+                  >
+                    {title}
+                  </h2>
+                )}
+              </div>
+              {showCloseButton && (
+                <button
+                  type="button"
+                  onClick={onClose}
+                  aria-label={t("close")}
+                  className="p-1.5 rounded-lg text-text-muted hover:bg-black/5 dark:hover:bg-white/5 hover:text-text-main transition-colors shrink-0 cursor-pointer"
+                >
+                  <span className="material-symbols-outlined text-[20px]" aria-hidden="true">
+                    close
+                  </span>
+                </button>
+              )}
+            </div>
+          )}
+
+          {/* Scrollable Sheet Body */}
+          <div className={cn("flex-1 overflow-y-auto custom-scrollbar", bodyClassName ?? "p-6")}>
+            {children}
+          </div>
+
+          {/* Footer (if provided) */}
+          {footer && (
+            <div className="flex items-center justify-end gap-3 p-4 border-t border-black/5 dark:border-white/5 shrink-0 bg-black/[0.02] dark:bg-white/[0.02]">
+              {footer}
+            </div>
+          )}
+
+          {/* Mobile floating close button at bottom-right for 1-tap thumb dismissal */}
+          {showCloseButton && (
+            <button
+              type="button"
+              onClick={onClose}
+              aria-label={t("close")}
+              className="sm:hidden fixed bottom-4 right-4 z-50 size-11 rounded-full bg-zinc-800/95 hover:bg-zinc-700 text-white shadow-2xl backdrop-blur-md border border-white/20 flex items-center justify-center transition-transform active:scale-95 cursor-pointer"
+              title={t("close")}
+            >
+              <span className="material-symbols-outlined text-[22px]">close</span>
+            </button>
+          )}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">

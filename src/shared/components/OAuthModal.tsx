@@ -1017,6 +1017,7 @@ export default function OAuthModal({
 
   return (
     <Modal
+      variant="sheet"
       isOpen={isOpen}
       title={t("title", { providerName: providerInfo.name })}
       onClose={handleClose}

@@ -181,7 +181,7 @@ export default function KiroAuthModal({
   };
 
   return (
-    <Modal isOpen={isOpen} title={t("title", { providerLabel })} onClose={onClose} size="lg">
+    <Modal variant="sheet" isOpen={isOpen} title={t("title", { providerLabel })} onClose={onClose} size="lg">
       <div className="flex flex-col gap-4">
         {/* Method Selection */}
         {!selectedMethod && (

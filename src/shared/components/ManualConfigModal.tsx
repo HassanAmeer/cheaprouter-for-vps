@@ -23,7 +23,7 @@ export default function ManualConfigModal({ isOpen, onClose, title, configs = []
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title={resolvedTitle} size="xl">
+    <Modal variant="sheet" isOpen={isOpen} onClose={onClose} title={resolvedTitle} size="xl">
       <div className="flex flex-col gap-4">
         {configs.map((config, index) => (
           <div key={index} className="flex flex-col gap-2">

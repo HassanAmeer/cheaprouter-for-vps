@@ -770,7 +770,24 @@ export async function validateCloudflareAiProvider({ apiKey, providerSpecificDat
   if (!apiKey || typeof apiKey !== "string" || !apiKey.trim()) {
     return { valid: false, error: "Cloudflare API Token is required" };
   }
-  const token = apiKey.trim();
+  let rawKey = apiKey.trim();
+  let token = rawKey;
+  let accountId =
+    (typeof providerSpecificData?.accountId === "string" &&
+      providerSpecificData.accountId.trim()) ||
+    process.env.CLOUDFLARE_ACCOUNT_ID ||
+    "";
+
+  // Auto-split if user entered combined accountId:token or token|accountId
+  if (!accountId && (rawKey.includes(":") || rawKey.includes("|"))) {
+    const parts = rawKey.split(/[:|]/).map((s: string) => s.trim());
+    const tokenPart = parts.find((p: string) => p.startsWith("cfut_") || p.length > 35);
+    const accPart = parts.find((p: string) => /^[0-9a-fA-F]{32}$/.test(p));
+    if (tokenPart && accPart) {
+      token = tokenPart;
+      accountId = accPart;
+    }
+  }
 
   // 1. Verify API Token authenticity against Cloudflare API
   try {
@@ -789,13 +806,6 @@ export async function validateCloudflareAiProvider({ apiKey, providerSpecificDat
   } catch (error: any) {
     return toValidationErrorResult(error);
   }
-
-  // 2. Token is verified and active! Check accountId.
-  let accountId =
-    (typeof providerSpecificData?.accountId === "string" &&
-      providerSpecificData.accountId.trim()) ||
-    process.env.CLOUDFLARE_ACCOUNT_ID ||
-    "";
 
   // If accountId is not provided, try to discover it via /accounts
   if (!accountId) {

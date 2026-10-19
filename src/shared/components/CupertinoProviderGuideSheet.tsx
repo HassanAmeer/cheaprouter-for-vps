@@ -2115,6 +2115,53 @@ export const PROVIDER_GUIDES: Record<string, ProviderGuideData> = {
       },
     ],
   },
+
+  // ── Devin (Cognition AI) ────────────────────────────────────────────────
+  devin: {
+    authTypeBadge: "API Key / CLI Login",
+    authTypeColor: "purple",
+    isCompletelyFree: false,
+    topSummaryText: "Cloud Agent API or Local CLI • Cognition AI",
+    apiKeyUrl: "https://app.devin.ai/settings/api-keys",
+    requirements: {
+      loginStatus: "Devin Account (app.devin.ai) or local Devin CLI login",
+      creditCardStatus: "Requires Devin Subscription or active API credits",
+      credentialsNeeded: "Devin API Key (Cloud) OR 'devin auth login' session (CLI)",
+      connectionType: "Bearer API Key OR Local Process Spawning via stdio",
+      toolsSupported: "Full agentic reasoning, code execution, repo editing",
+    },
+    limits: {
+      rateLimitBadge: "Subscription / Credit Based",
+      rateLimitDetail: "Rate limits and concurrency depend on your Devin tier.",
+      rpm: "Standard Cognition rate limits",
+    },
+    freeModels: [
+      {
+        id: "devin",
+        name: "Devin Agent",
+        pricing: "Subscription / Credits",
+        notes: "Autonomous AI software engineering agent",
+      },
+    ],
+    connectSteps: [
+      {
+        step: 1,
+        title: "Option A: Cloud API Key (Recommended)",
+        instruction:
+          "Visit app.devin.ai → Settings → API Keys to generate your Devin API key. Paste it directly in CheapRouter.",
+        linkUrl: "https://app.devin.ai/settings/api-keys",
+        linkLabel: "Open Devin API Keys Portal ↗",
+      },
+      {
+        step: 2,
+        title: "Option B: Local CLI (Without API Key)",
+        instruction:
+          "Install Devin CLI from cli.devin.ai on your machine. In terminal, run 'devin auth login' to sign in. CheapRouter will automatically discover your session without an API key.",
+        linkUrl: "https://cli.devin.ai",
+        linkLabel: "Install Devin CLI ↗",
+      },
+    ],
+  },
 };
 
 // Aliases for providers with multiple catalog IDs
@@ -2123,6 +2170,9 @@ PROVIDER_GUIDES["cloudflare-ai"] = PROVIDER_GUIDES["cloudflare"];
 PROVIDER_GUIDES["github-models"] = PROVIDER_GUIDES["github"];
 PROVIDER_GUIDES["pollinations-text"] = PROVIDER_GUIDES["pollinations"];
 PROVIDER_GUIDES["aihorde-community"] = PROVIDER_GUIDES["aihorde"];
+PROVIDER_GUIDES["devin-cli"] = PROVIDER_GUIDES["devin"];
+PROVIDER_GUIDES["devin-cli-agentic"] = PROVIDER_GUIDES["devin"];
+PROVIDER_GUIDES["devin-desktop"] = PROVIDER_GUIDES["devin"];
 
 /**
  * Universal Fallback Resolver:

@@ -317,6 +317,7 @@ export function ImportCodexAuthModal({ onClose, onSuccess }: ImportCodexAuthModa
 
   return (
     <Modal
+      variant="sheet"
       isOpen
       onClose={onClose}
       title={t("codexImportModalTitle") || "Import Codex Auth"}
@@ -687,7 +688,7 @@ export function ApplyCodexAuthModal({
   const applyText = typeof t.has === "function" && t.has("codexApply") ? t("codexApply") : "Apply";
 
   return (
-    <Modal isOpen={isOpen} title={title} onClose={onClose}>
+    <Modal variant="sheet" isOpen={isOpen} title={title} onClose={onClose}>
       <div className="flex flex-col gap-4">
         <div>
           <div className="text-xs uppercase text-text-muted mb-1">{targetLabel}</div>

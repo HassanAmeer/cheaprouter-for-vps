@@ -192,11 +192,13 @@ export default function AddApiKeyModal({
         ? providerText(t, "vertexCredentialLabel", "API Key or Service Account JSON")
         : isQoder
           ? t("personalAccessTokenLabel")
-          : webSessionCredential
-            ? getWebSessionCredentialLabel(t, webSessionCredential, apiKeyOptional)
-            : apiKeyOptional
-              ? `${t("apiKeyLabel")} (${t("optional").toLowerCase()})`
-              : t("apiKeyLabel");
+          : isCloudflare
+            ? "Cloudflare API Token"
+            : webSessionCredential
+              ? getWebSessionCredentialLabel(t, webSessionCredential, apiKeyOptional)
+              : apiKeyOptional
+                ? `${t("apiKeyLabel")} (${t("optional").toLowerCase()})`
+                : t("apiKeyLabel");
   const apiCredentialPlaceholder = isModal
     ? "ak-xxxxxxxxxxxxxxxx"
     : isVertex
@@ -207,9 +209,11 @@ export default function AddApiKeyModal({
           ? t("qoderPatPlaceholder")
           : isFreebuff
             ? "Enter Freebuff / Codebuff Auth Token (e.g. 038fcdf9-...)"
-            : apiKeyOptional
-              ? t("optional")
-              : undefined;
+            : isCloudflare
+              ? "cfut_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+              : apiKeyOptional
+                ? t("optional")
+                : undefined;
   const apiCredentialHint = isModal
     ? providerText(
         t,
@@ -222,19 +226,21 @@ export default function AddApiKeyModal({
           "vertexCredentialHint",
           "API keys use the curated project catalog. Service Account JSON enables live Model Garden discovery."
         )
-      : isQoder
-        ? t("qoderPatHint")
-        : isFreebuff
-          ? "Freebuff uses an authentic CLI auth token obtained via codebuff CLI login."
-          : isWebSessionCredential
-            ? getWebSessionCredentialHint(t, webSessionCredential, providerDisplayName, false)
-            : isLocalSelfHostedProvider
-              ? t("localProviderApiKeyOptionalHint", {
-                  provider: localProviderMetadata?.name || providerName || provider || "",
-                })
-              : apiKeyOptional
-                ? t("apiKeyOptionalHint")
-                : undefined;
+    : isQoder
+      ? t("qoderPatHint")
+    : isFreebuff
+      ? "Freebuff uses an authentic CLI auth token obtained via codebuff CLI login."
+    : isCloudflare
+      ? "Cloudflare API Token with Workers AI permission (created at dash.cloudflare.com/profile/api-tokens)"
+    : isWebSessionCredential
+      ? getWebSessionCredentialHint(t, webSessionCredential, providerDisplayName, false)
+    : isLocalSelfHostedProvider
+      ? t("localProviderApiKeyOptionalHint", {
+          provider: localProviderMetadata?.name || providerName || provider || "",
+        })
+      : apiKeyOptional
+        ? t("apiKeyOptionalHint")
+        : undefined;
   const credentialValidationFailedMessage = isWebSessionCredential
     ? providerText(
         t,
@@ -283,6 +289,9 @@ export default function AddApiKeyModal({
       const ok = !!data.valid;
       const unsupported = !!data.unsupported;
       setValidationResult(ok ? "success" : unsupported ? "unsupported" : "failed");
+      if (ok && data.providerSpecificData?.accountId && !formData.accountId) {
+        setFormData((prev) => ({ ...prev, accountId: data.providerSpecificData.accountId }));
+      }
       setValidationCapabilities(
         ok && data.capabilities && typeof data.capabilities === "object" ? data.capabilities : null
       );
@@ -529,6 +538,7 @@ export default function AddApiKeyModal({
 
   return (
     <Modal
+      variant="sheet"
       isOpen={isOpen}
       title={getAddCredentialModalTitle(t, providerDisplayName, webSessionCredential)}
       onClose={onClose}
@@ -773,6 +783,39 @@ export default function AddApiKeyModal({
                 </div>
               </div>
             )}
+            {isCloudflare && (
+              <div className="rounded-xl border border-sky-500/30 bg-sky-500/10 p-3.5 space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1.5 text-xs font-semibold text-sky-300">
+                    <span className="material-symbols-outlined text-base text-sky-400">cloud_done</span>
+                    Cloudflare Workers AI Setup Guide
+                  </div>
+                  <a
+                    href="https://dash.cloudflare.com/profile/api-tokens"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 text-[11px] px-2.5 py-1 rounded-md bg-sky-500/20 hover:bg-sky-500/30 text-sky-200 transition-colors font-medium border border-sky-500/30"
+                  >
+                    <span>Open API Tokens</span>
+                    <span className="material-symbols-outlined text-[13px]">open_in_new</span>
+                  </a>
+                </div>
+                <div className="space-y-1.5 text-xs text-text-muted">
+                  <div className="flex items-start gap-2">
+                    <span className="size-4 shrink-0 rounded-full bg-sky-500/20 text-sky-300 text-[10px] font-bold flex items-center justify-center mt-0.5">1</span>
+                    <span>Go to <strong>API Tokens</strong> → Create Token with <strong>Workers AI (Read)</strong> template.</span>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <span className="size-4 shrink-0 rounded-full bg-sky-500/20 text-sky-300 text-[10px] font-bold flex items-center justify-center mt-0.5">2</span>
+                    <span>Copy your <strong>Account ID</strong> from Cloudflare dashboard overview (right sidebar or URL: <code>dash.cloudflare.com/&lt;account-id&gt;</code>).</span>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <span className="size-4 shrink-0 rounded-full bg-sky-500/20 text-sky-300 text-[10px] font-bold flex items-center justify-center mt-0.5">3</span>
+                    <span>Paste your <strong>API Token</strong> and <strong>Account ID</strong> below and click <strong>Check</strong>!</span>
+                  </div>
+                </div>
+              </div>
+            )}
             <Input
               label={t("nameLabel")}
               value={formData.name}
@@ -806,7 +849,19 @@ export default function AddApiKeyModal({
                       label={apiCredentialLabel}
                       type="password"
                       value={formData.apiKey}
-                      onChange={(e) => setFormData({ ...formData, apiKey: e.target.value })}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        if (isCloudflare && (val.includes(":") || val.includes("|"))) {
+                          const parts = val.split(/[:|]/).map((s) => s.trim());
+                          const tokenPart = parts.find((p) => p.startsWith("cfut_") || p.length > 35);
+                          const accPart = parts.find((p) => /^[0-9a-fA-F]{32}$/.test(p));
+                          if (tokenPart && accPart) {
+                            setFormData((prev) => ({ ...prev, apiKey: tokenPart, accountId: accPart }));
+                            return;
+                          }
+                        }
+                        setFormData({ ...formData, apiKey: val });
+                      }}
                       onKeyDown={(e) => {
                         if (e.key === "Enter" && !isCheckDisabled) {
                           e.preventDefault();
@@ -836,6 +891,29 @@ export default function AddApiKeyModal({
                   </div>
                 );
               })()}
+            {isCloudflare && (
+              <Input
+                label={t("accountIdLabel") || "Cloudflare Account ID"}
+                value={formData.accountId}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  if (val.includes(":") || val.includes("|")) {
+                    const parts = val.split(/[:|]/).map((s) => s.trim());
+                    const tokenPart = parts.find((p) => p.startsWith("cfut_") || p.length > 35);
+                    const accPart = parts.find((p) => /^[0-9a-fA-F]{32}$/.test(p));
+                    if (tokenPart && accPart) {
+                      setFormData((prev) => ({ ...prev, apiKey: tokenPart, accountId: accPart }));
+                      return;
+                    }
+                  }
+                  setFormData({ ...formData, accountId: val });
+                }}
+                placeholder="e.g. 394a5d02bb4a37a24f397c721aa16ccc"
+                hint="32-character ID found on your Cloudflare dashboard overview or in the dashboard URL"
+                spellCheck={false}
+                autoComplete="off"
+              />
+            )}
             {isChatGptWebCodex && (
               <div className="space-y-3 rounded-lg border border-border bg-surface/40 p-3">
                 <div>
@@ -1140,15 +1218,6 @@ export default function AddApiKeyModal({
               value={formData.region}
               onChange={(region) => setFormData({ ...formData, region })}
             />
-            {isCloudflare && (
-              <Input
-                label={t("accountIdLabel")}
-                value={formData.accountId}
-                onChange={(e) => setFormData({ ...formData, accountId: e.target.value })}
-                placeholder={t("accountIdPlaceholder")}
-                hint={t("accountIdHint")}
-              />
-            )}
             {isGlm && (
               <div className="flex flex-col gap-3">
                 <div>

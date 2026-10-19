@@ -197,7 +197,7 @@ export function useAlibabaProviderRegionStep<T extends RegionFormData>({
 
   if (!isRegionStepProvider || stepState.complete) return null;
   return (
-    <Modal isOpen={isOpen} title={title} onClose={onClose} size="md">
+    <Modal variant="sheet" isOpen={isOpen} title={title} onClose={onClose} size="md">
       {isXiaomiTokenPlan ? (
         <XiaomiTokenPlanRegionChoices
           onSelect={(region) => {

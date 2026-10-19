@@ -557,7 +557,7 @@ export default function ProxyConfigModal({
         });
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title={title} maxWidth="lg">
+    <Modal variant="sheet" isOpen={isOpen} onClose={onClose} title={title} maxWidth="lg">
       {loading ? (
         <div className="py-8 text-center text-text-muted animate-pulse">{t("loading")}</div>
       ) : (

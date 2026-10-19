@@ -364,7 +364,7 @@ export function ImportClaudeAuthModal({ onClose, onSuccess }: ImportClaudeAuthMo
       : "Import Claude Auth";
 
   return (
-    <Modal isOpen onClose={onClose} title={modalTitle}>
+    <Modal variant="sheet" isOpen onClose={onClose} title={modalTitle}>
       <div className="flex flex-col gap-4">
         {/* Top tabs */}
         <div className="flex gap-1 border-b border-border pb-0">
@@ -697,7 +697,7 @@ export function ApplyClaudeAuthModal({
       : "Existing MCP OAuth state will be preserved.";
 
   return (
-    <Modal isOpen={isOpen} title={title} onClose={onClose}>
+    <Modal variant="sheet" isOpen={isOpen} title={title} onClose={onClose}>
       <div className="flex flex-col gap-4">
         <div>
           <div className="text-xs uppercase text-text-muted mb-1">{targetLabel}</div>

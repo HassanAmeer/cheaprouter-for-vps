@@ -141,6 +141,7 @@ export default function KiroSocialOAuthModal({
 
   return (
     <Modal
+      variant="sheet"
       isOpen={isOpen}
       title={t("title", { providerLabel, providerName })}
       onClose={handleClose}

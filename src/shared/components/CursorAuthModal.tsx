@@ -228,7 +228,7 @@ export default function CursorAuthModal({
   };
 
   return (
-    <Modal isOpen={isOpen} title={t("title")} onClose={handleClose}>
+    <Modal variant="sheet" isOpen={isOpen} title={t("title")} onClose={handleClose}>
       <div className="flex flex-col gap-4">
         <div className="flex gap-2 border-b border-border pb-2">
           <Button

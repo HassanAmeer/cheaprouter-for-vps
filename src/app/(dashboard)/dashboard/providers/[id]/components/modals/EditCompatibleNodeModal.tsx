@@ -222,6 +222,7 @@ export default function EditCompatibleNodeModal({
 
   return (
     <Modal
+      variant="sheet"
       isOpen={isOpen}
       title={
         isCcCompatible
