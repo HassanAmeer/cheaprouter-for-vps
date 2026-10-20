@@ -127,4 +127,40 @@ describe("QuickComboCreator (§5)", () => {
     expect(body.models).toContain("glm/glm-5.3");
     expect(onCreated).toHaveBeenCalledWith("auto-coding-combo");
   });
+
+  it("shows models for connected providers that do not have customizations even when another provider does", async () => {
+    const multiProviderPayload = {
+      connectedProviderIds: ["glm", "opencode"],
+      modelsByProvider: {
+        glm: [{ id: "glm-5.3", name: "GLM 5.3" }],
+        opencode: [{ id: "minimax-m2.5", name: "MiniMax M2.5" }],
+      },
+      customizations: [
+        {
+          providerId: "glm",
+          originalModelId: "glm-5.3",
+          isActive: true,
+        },
+      ],
+    };
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => ({ ok: true, json: async () => multiProviderPayload }))
+    );
+    const container = renderComponent(
+      <NextIntlClientProvider
+        locale="en"
+        messages={{
+          combos: (messages as Record<string, unknown>).combos,
+          common: (messages as Record<string, unknown>).common,
+        }}
+      >
+        <QuickComboCreator />
+      </NextIntlClientProvider>
+    );
+    await flush();
+    await flush();
+    expect(container.textContent).toContain("glm/glm-5.3");
+    expect(container.textContent).toContain("opencode/minimax-m2.5");
+  });
 });

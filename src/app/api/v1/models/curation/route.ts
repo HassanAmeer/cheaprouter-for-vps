@@ -108,14 +108,35 @@ export async function GET(request: Request) {
         .flatMap((n) => [n.id, n.prefix].filter(Boolean) as string[])
     );
 
-    // Active custom provider nodes that have an active connection
+    // Active custom provider nodes (configured with baseUrl or having an active connection)
     const activeNodeIds = providerNodes
       .filter((n: any) => n.isActive !== false)
-      .map((n) => (n.prefix ? String(n.prefix) : String(n.id || "")))
-      .filter((nid) => activeConnectedProviderSet.has(nid));
+      .filter((n: any) => {
+        const hasBaseUrl = Boolean(n.baseUrl && String(n.baseUrl).trim().length > 0);
+        const hasConn =
+          (n.id && activeConnectedProviderSet.has(String(n.id))) ||
+          (n.prefix && activeConnectedProviderSet.has(String(n.prefix)));
+        return hasBaseUrl || hasConn;
+      })
+      .map((n: any) => (n.prefix ? String(n.prefix) : String(n.id || "")))
+      .filter(Boolean);
+
+    // Unblocked no-auth providers (displayed as Connected on the providers dashboard)
+    const { getSettings } = await import("@/lib/db/settings");
+    const settings = await getSettings().catch(() => ({}) as Record<string, unknown>);
+    const { isProviderBlockedByIdOrAlias } = await import("@/shared/utils/noAuthProviders");
+    const blockedProviders = (settings as any)?.blockedProviders;
+    const { NOAUTH_PROVIDERS } = await import("@/shared/constants/providers");
+    const unblockedNoAuthIds = Object.keys(NOAUTH_PROVIDERS).filter(
+      (pid) => !isProviderBlockedByIdOrAlias(pid, blockedProviders) && !pausedNodeIds.has(pid)
+    );
 
     const connectedProviderIds = Array.from(
-      new Set([...Array.from(activeConnectedProviderSet), ...activeNodeIds])
+      new Set([
+        ...Array.from(activeConnectedProviderSet),
+        ...activeNodeIds,
+        ...unblockedNoAuthIds,
+      ])
     ).filter((pid) => !pausedNodeIds.has(pid));
 
     const { getCustomModels } = await import("@/lib/db/models");

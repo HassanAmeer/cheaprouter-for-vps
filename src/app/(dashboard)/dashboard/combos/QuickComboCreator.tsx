@@ -105,10 +105,11 @@ async function fetchActiveCandidates(): Promise<Candidate[]> {
     }
   }
 
-  const hasCustomizations = customizations.length > 0;
+  const providerHasCustomizations = new Set(customizations.map((c) => c.providerId));
   const out: Candidate[] = [];
   for (const [providerId, models] of Object.entries(modelsByProvider)) {
     if (!connectedSet.has(providerId)) continue;
+    const hasCustomizations = providerHasCustomizations.has(providerId);
     for (const m of models) {
       const k = `${providerId}::${m.id}`;
       const cust = activeCustomizations.get(k);

@@ -9,11 +9,13 @@ import { getSyncedCapabilities } from "@/lib/modelsDevSync";
 import { getModelsByProviderId } from "@/shared/constants/models";
 import {
   AI_PROVIDERS,
+  NOAUTH_PROVIDERS,
   isAnthropicCompatibleProvider,
   isClaudeCodeCompatibleProvider,
   isOpenAICompatibleProvider,
 } from "@/shared/constants/providers";
 import { isProviderConnectionConnected } from "@/shared/utils/providerConnectionStatus";
+import { isProviderBlockedByIdOrAlias } from "@/shared/utils/noAuthProviders";
 import {
   getAllCustomizations,
   ensureProviderInitialActiveModels,
@@ -588,8 +590,6 @@ function buildModelOptions(
         option.contextLength = cust.contextWindow;
       }
     }
-  } else {
-    modelMap.clear();
   }
 
   return modelMap;
@@ -733,6 +733,50 @@ export async function getComboBuilderOptions(): Promise<ComboBuilderOptionsPaylo
     connectionsByProvider.set(providerId, list);
   }
 
+  // Active custom provider nodes (configured with baseUrl or active connections)
+  for (const providerNode of providerNodes as ProviderNodeLike[]) {
+    if ((providerNode as any).isActive === false) continue;
+    const nodeId = toStringOrNull(providerNode.id);
+    const nodePrefix = toStringOrNull(providerNode.prefix);
+    const primaryId = nodePrefix || nodeId;
+    if (!primaryId) continue;
+    if (!connectionsByProvider.has(primaryId) && (!nodeId || !connectionsByProvider.has(nodeId))) {
+      connectionsByProvider.set(primaryId, [
+        {
+          id: nodeId || primaryId,
+          provider: primaryId,
+          name: providerNode.name || "Default",
+          authType: (providerNode as any).type || "openai-compatible",
+          priority: 1,
+          isActive: true,
+          testStatus: "active",
+        },
+      ]);
+    }
+  }
+
+  // No-auth providers (connected out-of-the-box unless explicitly blocked)
+  const blockedProviders = (_settings as any)?.blockedProviders;
+  for (const noAuthProvider of Object.values(NOAUTH_PROVIDERS)) {
+    const providerId = noAuthProvider.id;
+    if (isProviderBlockedByIdOrAlias(providerId, blockedProviders)) continue;
+    const routingPrefix = noAuthProvider.alias || providerId;
+    if (isProviderBlockedByIdOrAlias(routingPrefix, blockedProviders)) continue;
+    if (connectionsByProvider.has(providerId) || connectionsByProvider.has(routingPrefix)) continue;
+
+    connectionsByProvider.set(providerId, [
+      {
+        id: "auto",
+        provider: providerId,
+        name: "Default (No Auth)",
+        authType: "no-auth",
+        priority: 1,
+        isActive: true,
+        testStatus: "active",
+      },
+    ]);
+  }
+
   const providers: ComboBuilderProviderOption[] = [];
 
   for (const [providerId, providerConnections] of connectionsByProvider) {
@@ -790,12 +834,13 @@ export async function getComboBuilderOptions(): Promise<ComboBuilderOptionsPaylo
     // #14135: custom provider nodes (provider-node source) configured with a prefix alias
     // must route under their alias (e.g. "of/model"), not their raw internal database node id
     // (e.g. "openai-compatible-chat-<uuid>/model").
+    const noAuthAlias = (NOAUTH_PROVIDERS as Record<string, { alias?: string }>)[providerId]?.alias;
     const routingPrefix =
       providerId === "opencode"
         ? providerVisual.alias
         : providerVisual.source === "provider-node" && providerVisual.alias
           ? providerVisual.alias
-          : providerId;
+          : noAuthAlias || providerId;
     rewriteQualifiedModelPrefix(modelMap, providerId, routingPrefix);
 
     const normalizedConnections =
