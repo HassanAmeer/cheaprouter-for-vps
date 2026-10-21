@@ -27,6 +27,7 @@ import { shouldUseLiveAlibabaFreeModelDiscovery } from "@cheaproute/open-sse/ser
 import { isDashscopeTextModelId } from "@cheaproute/open-sse/services/dashscopeTextModels.ts";
 import "@cheaproute/open-sse/services/zaiWebCredentials.ts";
 import { buildOpencodeBackgroundHeaders } from "@cheaproute/open-sse/utils/opencodeHeaders.ts";
+import { buildBypassHeaders, mintSession } from "@/lib/providers/opencode-bypass";
 import { isFeatureFlagEnabled } from "@/shared/utils/featureFlags";
 import { buildChatPlaygroundModelsDiscoveryEntry } from "@cheaproute/open-sse/services/chatplaygroundModels.ts";
 import { normalizeOpenAiLikeModelsResponse, normalizeWorkbuddyModelsResponse } from "./normalizers";
@@ -964,6 +965,36 @@ export const PROVIDER_MODELS_CONFIG: Record<string, ProviderModelsConfigEntry> =
   opencode: buildOpencodeModelsDiscoveryEntry("https://opencode.ai/zen/v1/models"),
   "opencode-zen": buildOpencodeModelsDiscoveryEntry("https://opencode.ai/zen/v1/models"),
   "opencode-go": buildOpencodeModelsDiscoveryEntry("https://opencode.ai/zen/go/v1/models"),
+  "opencode-bypass": {
+    url: "https://opencode.ai/inference/v1/models",
+    method: "GET",
+    headers: { Accept: "application/json" },
+    buildHeaders: (token, _connection) => {
+      const session = mintSession();
+      return {
+        ...buildBypassHeaders(session),
+        Accept: "application/json",
+        ...(token && token !== "anonymous" ? { Authorization: `Bearer ${token}` } : {}),
+      };
+    },
+    parseResponse: (data) => {
+      const list = Array.isArray(data?.data)
+        ? data.data
+        : Array.isArray(data?.models)
+          ? data.models
+          : [];
+      return list.length > 0
+        ? list
+        : [
+            { id: "deepseek-v4.1-flash-free", name: "DeepSeek V4.1 Flash Free" },
+            { id: "glm-5.3-flash-free", name: "GLM 5.3 Flash Free" },
+            { id: "minimax-m3.1-flash-free", name: "MiniMax M3.1 Flash Free" },
+            { id: "beam-free", name: "Beam Free" },
+            { id: "big-pickle", name: "Big Pickle" },
+            { id: "mimo-v2.6-flash-free", name: "MiMo V2.6 Flash Free" },
+          ];
+    },
+  },
   "glm-cn": {
     url: "https://open.bigmodel.cn/api/coding/paas/v4/models",
     method: "GET",

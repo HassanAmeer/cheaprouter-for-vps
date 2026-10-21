@@ -5,7 +5,6 @@ import { useParams, useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import {
-  CardSkeleton,
   ShimmerPageLoader,
   OAuthModal,
   KiroOAuthWrapper,
@@ -39,6 +38,7 @@ import KimiCodeAuthMethodModal from "./components/KimiCodeAuthMethodModal";
 import SiliconFlowEndpointModal from "./components/SiliconFlowEndpointModal";
 import { RemoteTunnelBanner } from "@/shared/components/RemoteTunnelBanner";
 import { CupertinoProviderGuideSheet } from "@/shared/components/CupertinoProviderGuideSheet";
+import OpenCodeBypassDetailPanel from "./components/OpenCodeBypassDetailPanel";
 import { addRecentProvider } from "@/lib/providers/recentProviders";
 
 export default function ProviderDetailPageClient() {
@@ -200,7 +200,7 @@ export default function ProviderDetailPageClient() {
   // Handle URL ?action=connect (e.g. from ProviderCard "Connect" button)
   useEffect(() => {
     if (searchParams?.get("action") === "connect") {
-      openPrimaryAddFlow();
+      queueMicrotask(() => openPrimaryAddFlow());
     }
   }, [searchParams, openPrimaryAddFlow]);
 
@@ -480,8 +480,19 @@ export default function ProviderDetailPageClient() {
         </div>
       </div>
 
+      {/* ── OPENCODE BYPASS DEDICATED PANEL (DETAILS, DIRECT BASE URL & CONTROLS) ── */}
+      {providerId === "opencode-bypass" && (
+        <OpenCodeBypassDetailPanel
+          providerId={providerId}
+          onFetchModels={handleFetchAllModels}
+          isFetchingModels={fetchingAllModels}
+          onConfigureBaseUrl={openPrimaryAddFlow}
+          customBaseUrl={connections?.[0]?.baseUrl}
+        />
+      )}
+
       {/* ── REMOTE TUNNEL HELPER BANNER (WHEN NOT CONNECTED) ── */}
-      {connections.length === 0 && (
+      {connections.length === 0 && providerId !== "opencode-bypass" && (
         <RemoteTunnelBanner />
       )}
 

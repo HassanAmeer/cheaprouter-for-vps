@@ -24,6 +24,7 @@ export const FREE_PROVIDERS = {};
 export const FREE_APIKEY_PROVIDER_IDS = new Set([
   "qoder",
   "opencode",
+  "opencode-bypass",
   "opencode-cli",
   "kilo-code-cli",
   "dahl",
@@ -258,6 +259,7 @@ export function isSelfHostedChatProvider(providerId: unknown): boolean {
 // Dedicated CLI Tools and local daemon-managed providers
 export const CLI_PROVIDER_IDS = new Set([
   "opencode-cli",
+  "opencode-bypass",
   "kilo-code-cli",
   "opencode",
   "codex",

@@ -8,6 +8,7 @@ import {
   ENTERPRISE_CLOUD_PROVIDER_IDS,
   IDE_PROVIDER_IDS,
   CLI_PROVIDER_IDS,
+  getProviderAlias,
   IMAGE_ONLY_PROVIDER_IDS,
   VIDEO_PROVIDER_IDS,
 } from "@/shared/constants/providers";
@@ -267,6 +268,9 @@ function ProvidersPageContent() {
   const [guideModalProvider, setGuideModalProvider] = useState<{ id: string; name: string } | null>(
     null
   );
+  const [cliConnectTarget, setCliConnectTarget] = useState<{ id: string; name?: string } | null>(
+    null
+  );
 
   useEffect(() => {
     const handleRecent = () => setRecentProviderIds(getRecentProviderIds());
@@ -302,9 +306,6 @@ function ProvidersPageContent() {
   // search and configured-only. null = no serviceKind filter.
   const [activeServiceKind, setActiveServiceKind] = useState<string | null>(null);
   const [showServerPortsSheet, setShowServerPortsSheet] = useState(false);
-  const [cliConnectTarget, setCliConnectTarget] = useState<{ id: string; name?: string } | null>(
-    null
-  );
   const notify = useNotificationStore();
   const t = useTranslations("providers");
   const tc = useTranslations("common");
@@ -460,8 +461,15 @@ function ProvidersPageContent() {
     const error = errorConns.length;
     const total = providerConnections.length;
 
-    // Check if all connections are manually disabled
-    const allDisabled = total > 0 && providerConnections.every((c) => c.isActive === false);
+    const alias = getProviderAlias(providerId);
+    const isNoAuthBlocked =
+      blockedProviders.includes(providerId) ||
+      (typeof alias === "string" && blockedProviders.includes(alias));
+
+    // Check if all connections are manually disabled or no-auth provider is blocked in settings
+    const allDisabled =
+      (total > 0 && providerConnections.every((c) => c.isActive === false)) ||
+      (total === 0 && isNoAuthBlocked);
 
     // Get latest error info
     const latestError = errorConns.sort(
@@ -568,20 +576,40 @@ function ProvidersPageContent() {
         providerNodes
       );
     const providerConns = connections.filter(matchesToggle);
-    // Optimistically update UI
-    setConnections((prev) =>
-      prev.map((c) => (matchesToggle(c) ? { ...c, isActive: newActive } : c))
-    );
-    // Fire API calls in parallel
-    await Promise.allSettled(
-      providerConns.map((c) =>
-        fetch(`/api/providers/${c.id}`, {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ isActive: newActive }),
-        })
-      )
-    );
+
+    if (authType === "no-auth" || providerConns.length === 0) {
+      const alias = getProviderAlias(providerId);
+      const keys = new Set([providerId, alias].filter(Boolean) as string[]);
+      const nextBlocked = newActive
+        ? blockedProviders.filter((p) => !keys.has(p))
+        : Array.from(new Set([...blockedProviders, providerId]));
+      setBlockedProviders(nextBlocked);
+      void fetch("/api/settings", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ blockedProviders: nextBlocked }),
+      });
+      notify.info(
+        newActive ? `Provider "${providerId}" enabled` : `Provider "${providerId}" disabled`
+      );
+    }
+
+    if (providerConns.length > 0) {
+      // Optimistically update UI
+      setConnections((prev) =>
+        prev.map((c) => (matchesToggle(c) ? { ...c, isActive: newActive } : c))
+      );
+      // Fire API calls in parallel
+      await Promise.allSettled(
+        providerConns.map((c) =>
+          fetch(`/api/providers/${c.id}`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ isActive: newActive }),
+          })
+        )
+      );
+    }
   };
 
   const [editingNode, setEditingNode] = useState<any | null>(null);

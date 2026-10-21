@@ -2697,8 +2697,13 @@ export async function GET(
         url = `${base}/v1/models`;
       }
     }
-    // OpenRouter / KiloCode: honor per-connection base-URL override when configured.
-    if (provider === "openrouter" || provider === "kilocode" || provider === "ap_kilocode") {
+    // OpenRouter / KiloCode / OpenCode Bypass: honor per-connection base-URL override when configured.
+    if (
+      provider === "openrouter" ||
+      provider === "kilocode" ||
+      provider === "ap_kilocode" ||
+      provider === "opencode-bypass"
+    ) {
       const customBaseUrl = getProviderBaseUrl(connection.providerSpecificData);
       if (customBaseUrl) {
         url = addModelsSuffix(customBaseUrl) || url;

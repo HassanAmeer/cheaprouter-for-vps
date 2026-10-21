@@ -271,9 +271,12 @@ export const CONFIGURABLE_BASE_URL_PROVIDERS = new Set([
   "agnes",
   // Antseed P2P CLI running locally or on VPS (default port 8377)
   "antseed",
+  // OpenCode Free bypass API
+  "opencode-bypass",
 ]);
 
 export const DEFAULT_PROVIDER_BASE_URLS: Record<string, string> = {
+  "opencode-bypass": "https://opencode.ai/inference/v1",
   antseed: "http://127.0.0.1:8377/v1",
   "azure-openai": "https://example-resource.openai.azure.com",
   "azure-ai": "https://example-resource.services.ai.azure.com/openai/v1",
@@ -391,6 +394,7 @@ const BUILTIN_BASE_URL_PLACEHOLDER_EXAMPLES: Readonly<Record<string, string>> = 
   // #12704 — shows the Modal app URL shape the validator demands.
   modal: "https://<workspace>--<app>.modal.run/v1",
   antseed: "http://127.0.0.1:8377/v1",
+  "opencode-bypass": "https://opencode.ai/inference/v1",
 };
 
 // These ids have no literal example: the placeholder is their configured default URL.

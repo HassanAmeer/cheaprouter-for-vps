@@ -27,6 +27,7 @@ import {
   resolveBaseUrl,
 } from "./validation/urlHelpers";
 import { toValidationErrorResult, validationRead } from "./validation/transport";
+import { validateOpencodeBypassProvider } from "./validation/opencodeBypass";
 import {
   validateDeepSeekWebProvider,
   validateGrokWebProvider,
@@ -225,6 +226,8 @@ export async function validateProviderApiKey({
 
   // ── Specialty provider validation ──
   const SPECIALTY_VALIDATORS = {
+    "opencode-bypass": validateOpencodeBypassProvider,
+    "oc-bypass": validateOpencodeBypassProvider,
     "v0-vercel": ({ apiKey, providerSpecificData }: any) =>
       validateV0VercelProvider({ apiKey, providerSpecificData, isLocal }),
     jules: validateJulesProvider,
