@@ -1,10 +1,17 @@
-import { BaseExecutor, type ProviderCredentials } from "./base.ts";
+import {
+  BaseExecutor,
+  type ExecuteInput,
+  type ExecutorExecuteResult,
+  type ProviderCredentials,
+} from "./base.ts";
 import { PROVIDERS } from "../config/constants.ts";
 import {
   buildBypassHeaders,
+  getBypassDispatcher,
   injectFingerprintTools,
   resolveChatCompletionsUrl,
 } from "../../src/lib/providers/opencode-bypass/index.ts";
+import type { Dispatcher } from "undici";
 
 export class OpencodeBypassExecutor extends BaseExecutor {
   constructor(providerId = "opencode-bypass") {
@@ -51,8 +58,11 @@ export class OpencodeBypassExecutor extends BaseExecutor {
 
     const headers: Record<string, string> = {
       ...bypassHeaders,
-      Accept: stream ? "text/event-stream" : "application/json, text/event-stream, */*",
     };
+
+    // Ensure lowercase 'accept' is not duplicated with uppercase 'Accept'
+    delete headers["accept"];
+    headers["Accept"] = stream ? "text/event-stream" : "application/json, text/event-stream, */*";
 
     // If custom API key is provided, attach it (overriding default Bearer public)
     const key = credentials?.apiKey || credentials?.accessToken;
@@ -80,12 +90,16 @@ export class OpencodeBypassExecutor extends BaseExecutor {
       effectiveModel = effectiveModel.slice("oc-bypass/".length);
     }
 
-    body.model = effectiveModel;
-    body.stream = stream;
+    // DO NOT mutate body in place: create a shallow clone of body
+    const clonedBody: Record<string, unknown> = {
+      ...body,
+      model: effectiveModel,
+      stream,
+    };
 
-    // tool_choice: "none" triggers 403 FreeTierError upstream — remove it
-    if (body.tool_choice === "none") {
-      delete body.tool_choice;
+    // tool_choice: "none" triggers 403 FreeTierError upstream — remove it from cloned body
+    if (clonedBody.tool_choice === "none") {
+      delete clonedBody.tool_choice;
     }
 
     // Inject fingerprint tools (read & shell)
@@ -97,11 +111,11 @@ export class OpencodeBypassExecutor extends BaseExecutor {
       if (t?.type === "function" && fn && typeof fn.name === "string") {
         return { name: fn.name, ...fn };
       }
-      return typeof t.name === "string" ? { name: t.name, ...t } : { name: "" };
+      return typeof t?.name === "string" ? { name: t.name, ...t } : { name: "" };
     });
 
     const { tools, placeholderNote } = injectFingerprintTools(simpleTools);
-    body.tools = tools.map((t) => ({
+    clonedBody.tools = tools.map((t) => ({
       type: "function",
       function: {
         name: t.name,
@@ -110,23 +124,65 @@ export class OpencodeBypassExecutor extends BaseExecutor {
       },
     }));
 
-    if (placeholderNote && Array.isArray(body.messages)) {
-      const messages = [...body.messages] as Array<{ role?: string; content?: unknown }>;
-      const first = messages[0];
-      if (first?.role === "system" && typeof first.content === "string") {
-        messages[0] = {
-          ...first,
-          content: `${first.content}\n\n${placeholderNote}`,
-        };
-      } else {
-        messages.unshift({
-          role: "system",
-          content: placeholderNote,
-        });
+    if (Array.isArray(body.messages)) {
+      const messages = (body.messages as Array<Record<string, unknown>>).map((m) => ({ ...m }));
+      if (placeholderNote) {
+        const hasPlaceholder = messages.some(
+          (m) =>
+            m?.role === "system" &&
+            typeof m.content === "string" &&
+            m.content.includes(placeholderNote)
+        );
+        if (!hasPlaceholder) {
+          const first = messages[0];
+          if (first?.role === "system" && typeof first.content === "string") {
+            messages[0] = {
+              ...first,
+              content: `${first.content}\n\n${placeholderNote}`,
+            };
+          } else {
+            messages.unshift({
+              role: "system",
+              content: placeholderNote,
+            });
+          }
+        }
       }
-      body.messages = messages;
+      clonedBody.messages = messages;
     }
 
-    return body;
+    return super.transformRequest(
+      effectiveModel,
+      clonedBody,
+      stream,
+      _credentials as ProviderCredentials
+    );
+  }
+
+  override async execute(input: ExecuteInput): Promise<ExecutorExecuteResult> {
+    const psd = input.credentials?.providerSpecificData as Record<string, unknown> | undefined;
+    const customProxyUrl = typeof psd?.proxyUrl === "string" ? psd.proxyUrl : undefined;
+    const dispatcher = getBypassDispatcher(customProxyUrl);
+
+    if (!dispatcher) {
+      return super.execute(input);
+    }
+
+    const prevFetch = globalThis.fetch;
+    const fetchWithDispatcher = (reqUrl: RequestInfo | URL, init?: RequestInit) => {
+      return prevFetch(reqUrl, {
+        ...init,
+        dispatcher,
+      } as RequestInit & { dispatcher: Dispatcher });
+    };
+
+    try {
+      globalThis.fetch = fetchWithDispatcher as typeof globalThis.fetch;
+      return await super.execute(input);
+    } finally {
+      if (globalThis.fetch === fetchWithDispatcher) {
+        globalThis.fetch = prevFetch;
+      }
+    }
   }
 }

@@ -30,10 +30,13 @@ describe("OpencodeBypassExecutor", () => {
     assert.equal(headers["authorization"] || headers["Authorization"], "Bearer test-key");
 
     // Request transformation
+    const originalMessages = [{ role: "user", content: "hello" }];
+    const originalTools = [{ type: "function", function: { name: "my_tool", description: "test" } }];
     const body: Record<string, unknown> = {
       model: "opencode-bypass/deepseek-v4.1-flash-free",
       tool_choice: "none",
-      messages: [{ role: "user", content: "hello" }],
+      messages: originalMessages,
+      tools: originalTools,
     };
     const transformed = executor.transformRequest(
       "opencode-bypass/deepseek-v4.1-flash-free",
@@ -42,11 +45,27 @@ describe("OpencodeBypassExecutor", () => {
       null
     ) as Record<string, unknown>;
 
+    // Immutability: input body must not be mutated in place
+    assert.equal(body.tool_choice, "none");
+    assert.equal(body.messages, originalMessages);
+    assert.equal(body.tools, originalTools);
+
     assert.equal(transformed.model, "deepseek-v4.1-flash-free");
     assert.equal(transformed.tool_choice, undefined);
     assert.ok(Array.isArray(transformed.tools));
     const tools = transformed.tools as Array<{ function?: { name: string } }>;
     assert.ok(tools.some((t) => t.function?.name === "read"));
     assert.ok(tools.some((t) => t.function?.name === "shell"));
+  });
+
+  it("buildHeaders normalizes duplicate Accept casing", () => {
+    const executor = new OpencodeBypassExecutor("opencode-bypass");
+    const headers = executor.buildHeaders(
+      { apiKey: "test-key" } as any,
+      true,
+      null
+    );
+    assert.equal("accept" in headers, false);
+    assert.equal("Accept" in headers, true);
   });
 });

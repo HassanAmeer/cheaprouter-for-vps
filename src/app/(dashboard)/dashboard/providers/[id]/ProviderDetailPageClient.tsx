@@ -39,6 +39,7 @@ import SiliconFlowEndpointModal from "./components/SiliconFlowEndpointModal";
 import { RemoteTunnelBanner } from "@/shared/components/RemoteTunnelBanner";
 import { CupertinoProviderGuideSheet } from "@/shared/components/CupertinoProviderGuideSheet";
 import OpenCodeBypassDetailPanel from "./components/OpenCodeBypassDetailPanel";
+import AntigravityAccountsSheet from "./components/AntigravityAccountsSheet";
 import { addRecentProvider } from "@/lib/providers/recentProviders";
 
 export default function ProviderDetailPageClient() {
@@ -53,6 +54,7 @@ export default function ProviderDetailPageClient() {
   const [showKimiAuthMethodModal, setShowKimiAuthMethodModal] = useState(false);
   const [showSiliconFlowEndpointModal, setShowSiliconFlowEndpointModal] = useState(false);
   const [showGuideSheet, setShowGuideSheet] = useState(false);
+  const [showAntigravitySheet, setShowAntigravitySheet] = useState(false);
   const [siliconFlowInitialBaseUrl, setSiliconFlowInitialBaseUrl] = useState<string | undefined>(
     undefined
   );
@@ -487,8 +489,48 @@ export default function ProviderDetailPageClient() {
           onFetchModels={handleFetchAllModels}
           isFetchingModels={fetchingAllModels}
           onConfigureBaseUrl={openPrimaryAddFlow}
-          customBaseUrl={connections?.[0]?.baseUrl}
+          customBaseUrl={
+            typeof connections?.[0]?.providerSpecificData?.baseUrl === "string"
+              ? (connections[0].providerSpecificData.baseUrl as string)
+              : undefined
+          }
         />
+      )}
+
+      {/* ── ANTIGRAVITY MULTI-ACCOUNT CLI POOL BANNER ── */}
+      {(providerId === "antigravity" || providerId === "agy") && (
+        <div className="relative overflow-hidden rounded-2xl border border-amber-500/20 bg-gradient-to-r from-amber-950/40 via-[#1C1C1E]/80 to-[#1C1C1E]/60 p-4 sm:p-5 shadow-lg backdrop-blur-xl transition-all">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="flex items-start gap-3.5">
+              <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-amber-500/15 border border-amber-500/30 text-amber-400 shadow-inner">
+                <span className="material-symbols-outlined text-2xl">account_tree</span>
+              </div>
+              <div>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <h3 className="text-sm font-semibold text-white tracking-tight">
+                    Antigravity CLI Accounts Pool
+                  </h3>
+                  <span className="rounded-full bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 text-[10px] font-medium text-amber-300">
+                    Single-Active & Auto-Switch
+                  </span>
+                </div>
+                <p className="text-xs text-white/70 mt-1 leading-relaxed max-w-2xl">
+                  Attach multiple Antigravity CLI accounts. Switch the active account with one click, or let the router automatically failover to the next standby account when quota/rate limits (429) are reached.
+                </p>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setShowAntigravitySheet(true)}
+              className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-semibold shadow-md transition-all hover:scale-[1.02] active:scale-[0.98] shrink-0"
+            >
+              <span className="material-symbols-outlined text-base">layers</span>
+              <span>Manage Accounts Pool</span>
+              <span className="material-symbols-outlined text-sm">arrow_forward</span>
+            </button>
+          </div>
+        </div>
       )}
 
       {/* ── REMOTE TUNNEL HELPER BANNER (WHEN NOT CONNECTED) ── */}
@@ -613,6 +655,16 @@ export default function ProviderDetailPageClient() {
         onClose={() => setShowGuideSheet(false)}
         providerId={providerId}
         providerName={providerInfo?.name || providerId}
+      />
+
+      <AntigravityAccountsSheet
+        isOpen={showAntigravitySheet}
+        onClose={() => setShowAntigravitySheet(false)}
+        providerId={providerId}
+        onAttachAccount={openPrimaryAddFlow}
+        onConnectionChanged={() => {
+          void fetchConnections();
+        }}
       />
     </div>
   );

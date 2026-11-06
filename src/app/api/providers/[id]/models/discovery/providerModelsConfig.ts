@@ -27,7 +27,7 @@ import { shouldUseLiveAlibabaFreeModelDiscovery } from "@cheaproute/open-sse/ser
 import { isDashscopeTextModelId } from "@cheaproute/open-sse/services/dashscopeTextModels.ts";
 import "@cheaproute/open-sse/services/zaiWebCredentials.ts";
 import { buildOpencodeBackgroundHeaders } from "@cheaproute/open-sse/utils/opencodeHeaders.ts";
-import { buildBypassHeaders, mintSession } from "@/lib/providers/opencode-bypass";
+import { buildBypassHeaders, mintSession, CLIENT_UA } from "@/lib/providers/opencode-bypass";
 import { isFeatureFlagEnabled } from "@/shared/utils/featureFlags";
 import { buildChatPlaygroundModelsDiscoveryEntry } from "@cheaproute/open-sse/services/chatplaygroundModels.ts";
 import { normalizeOpenAiLikeModelsResponse, normalizeWorkbuddyModelsResponse } from "./normalizers";
@@ -973,8 +973,12 @@ export const PROVIDER_MODELS_CONFIG: Record<string, ProviderModelsConfigEntry> =
       const session = mintSession();
       return {
         ...buildBypassHeaders(session),
+        "User-Agent": CLIENT_UA,
+        "x-opencode-client": "cli",
+        "x-opencode-session": session,
+        "x-session-affinity": session,
         Accept: "application/json",
-        ...(token && token !== "anonymous" ? { Authorization: `Bearer ${token}` } : {}),
+        authorization: `Bearer ${token || "public"}`,
       };
     },
     parseResponse: (data) => {
@@ -982,9 +986,18 @@ export const PROVIDER_MODELS_CONFIG: Record<string, ProviderModelsConfigEntry> =
         ? data.data
         : Array.isArray(data?.models)
           ? data.models
-          : [];
+          : Array.isArray(data)
+            ? data
+            : [];
       return list.length > 0
-        ? list
+        ? list.map((m: any) => ({
+            id: typeof m === "string" ? m : m.id || m.name,
+            name: typeof m === "string" ? m : m.name || m.id,
+            context_length:
+              typeof m === "object" ? m.limit?.context || m.context_length : undefined,
+            max_output_tokens:
+              typeof m === "object" ? m.limit?.output || m.max_output_tokens : undefined,
+          }))
         : [
             { id: "deepseek-v4.1-flash-free", name: "DeepSeek V4.1 Flash Free" },
             { id: "glm-5.3-flash-free", name: "GLM 5.3 Flash Free" },

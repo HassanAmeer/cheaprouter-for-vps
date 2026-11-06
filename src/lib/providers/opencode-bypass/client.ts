@@ -5,13 +5,6 @@
  * directly hit karta hai — bina heavy OpenCode CLI ke, bina login ke, bina
  * API key ke.
  *
- * Features:
- * - Enable/Disable sirf ek flag se (`OPENCODE_BYPASS_ENABLED`)
- * - RAM: ~0 MB extra (website ke existing Node.js process me chalega)
- * - Zero dependencies (sirf native `fetch` + `crypto`)
- * - OpenAI-compatible request/response format
- * - Streaming support (SSE)
- *
  * Reference: https://github.com/Ebony-Vinyl/dsh-our-free-model
  *
  * @module provider-opencode/opencode-bypass-setup/client
@@ -19,15 +12,15 @@
 
 import { buildBypassHeaders, injectFingerprintTools, UPSTREAM_BASE } from "./fingerprint.ts";
 import { mintSession } from "./session.ts";
+import { getBypassDispatcher } from "./dispatcher.ts";
+import { fetch as undiciFetch } from "undici";
 
-// ============================================================
-//  🔴 MASTER SWITCH — enable/disable flag
-// ============================================================
 export const OPENCODE_BYPASS_ENABLED: boolean = process.env.OPENCODE_BYPASS_ENABLED !== "false";
 
-/** Free lane me available models */
+/** Free lane me default models */
 export const FREE_MODELS = [
   "deepseek-v4.1-flash-free",
+  "kimi-k3",
   "glm-5.3-flash-free",
   "minimax-m3.1-flash-free",
   "beam-free",
@@ -47,14 +40,15 @@ export interface BypassChatMessage {
 }
 
 export interface BypassRequestOptions {
-  model: FreeModel;
+  model: string;
+  baseUrl?: string | undefined;
   messages: BypassChatMessage[];
   /** Default: false */
-  stream?: boolean;
+  stream?: boolean | undefined;
   /** Default: 8192 */
-  maxTokens?: number;
-  sessionId?: string;
-  baseUrl?: string;
+  maxTokens?: number | undefined;
+  sessionId?: string | undefined;
+  signal?: AbortSignal | undefined;
 }
 
 export interface BypassResponse {
@@ -62,21 +56,31 @@ export interface BypassResponse {
   model: string;
   content: string;
   sessionId: string;
-  usage?: {
-    promptTokens: number;
-    completionTokens: number;
-    totalTokens: number;
-  };
+  usage?:
+    | {
+        promptTokens: number;
+        completionTokens: number;
+        totalTokens: number;
+      }
+    | undefined;
 }
 
-export function resolveChatCompletionsUrl(baseUrl?: string): string {
-  const base = (baseUrl?.trim() || UPSTREAM_BASE).replace(/\/+$/, "");
-  if (base.endsWith("/chat/completions")) return base;
+export function resolveChatEndpoint(baseUrl?: string): string {
+  const base = (baseUrl || UPSTREAM_BASE || "https://opencode.ai").trim().replace(/\/+$/, "");
+  if (base.endsWith("/chat/completions")) {
+    return base;
+  }
   if (base.endsWith("/inference/v1") || base.endsWith("/v1") || base.endsWith("/zen/v1")) {
+    return `${base}/chat/completions`;
+  }
+  if (base.includes("/v1/")) {
     return `${base}/chat/completions`;
   }
   return `${base}/inference/v1/chat/completions`;
 }
+
+/** Alias for backward compatibility */
+export const resolveChatCompletionsUrl = resolveChatEndpoint;
 
 /**
  * OpenCode free lane se chat completion lao (non-streaming).
@@ -85,12 +89,9 @@ export function resolveChatCompletionsUrl(baseUrl?: string): string {
 export async function bypassChat(options: BypassRequestOptions): Promise<BypassResponse> {
   const sessionId = options.sessionId ?? mintSession();
   let content = "";
-  await bypassChatStream(
-    { ...options, sessionId },
-    (chunk) => {
-      content += chunk;
-    }
-  );
+  await bypassChatStream({ ...options, sessionId }, (chunk) => {
+    content += chunk;
+  });
   return {
     id: `chatcmpl-${sessionId}`,
     model: options.model,
@@ -106,14 +107,8 @@ export async function bypassChat(options: BypassRequestOptions): Promise<BypassR
 export async function bypassChatStream(
   options: BypassRequestOptions,
   onChunk: (text: string, reasoning?: string) => void,
-  onDone?: (sessionId: string) => void
+  onDone?: (sessionId: string) => void,
 ): Promise<void> {
-  if (!OPENCODE_BYPASS_ENABLED) {
-    throw new Error(
-      "[opencode-bypass] Bypass disabled hai. OPENCODE_BYPASS_ENABLED=true set karo."
-    );
-  }
-
   const sessionId = options.sessionId ?? mintSession();
   const headers = buildBypassHeaders(sessionId, { stream: true });
   const { tools, placeholderNote } = injectFingerprintTools([]);
@@ -149,60 +144,105 @@ export async function bypassChatStream(
     })),
   };
 
-  const url = resolveChatCompletionsUrl(options.baseUrl);
-  const res = await fetch(url, {
+  const endpoint = resolveChatEndpoint(options.baseUrl);
+
+  // If WARP/Privoxy is running, attach dispatcher to bypass datacenter IP 429
+  const dispatcher = await getBypassDispatcher();
+
+  const fetchOptions: any = {
     method: "POST",
     headers,
     body: JSON.stringify(body),
-  });
+    signal: options.signal,
+  };
+
+  let res: any;
+  if (dispatcher) {
+    // When using undici ProxyAgent, we must use undiciFetch so the dispatcher is respected
+    fetchOptions.dispatcher = dispatcher;
+    res = await undiciFetch(endpoint, fetchOptions);
+  } else {
+    res = await globalThis.fetch(endpoint, fetchOptions);
+  }
 
   if (!res.ok) {
     const text = await res.text().catch(() => "");
     throw new Error(`[opencode-bypass] HTTP ${res.status}: ${text.slice(0, 300)}`);
   }
 
-  const reader = res.body?.getReader();
-  if (!reader) throw new Error("[opencode-bypass] No response body");
-
   const decoder = new TextDecoder();
   let buffer = "";
 
-  while (true) {
-    const { done, value } = await reader.read();
-    if (done) break;
-    buffer += decoder.decode(value, { stream: true });
-    const lines = buffer.split("\n");
-    buffer = lines.pop() ?? "";
+  const processLine = (line: string): boolean => {
+    const trimmed = line.trim();
+    if (!trimmed || !trimmed.startsWith("data:")) return false;
+    const data = trimmed.slice(5).trim();
+    if (data === "[DONE]") {
+      onDone?.(sessionId);
+      return true;
+    }
+    try {
+      const chunk = JSON.parse(data) as {
+        choices?: Array<{
+          delta?: {
+            content?: string;
+            reasoning_content?: string;
+            reasoning?: string;
+            thought?: string;
+          };
+          text?: string;
+        }>;
+      };
+      const delta = chunk.choices?.[0]?.delta;
+      const text = delta?.content ?? chunk.choices?.[0]?.text ?? "";
+      const reasoning = delta?.reasoning_content ?? delta?.reasoning ?? delta?.thought;
+      if (text || reasoning) {
+        onChunk(text, reasoning);
+      }
+    } catch {
+      // malformed chunk — skip
+    }
+    return false;
+  };
 
-    for (const line of lines) {
-      const trimmed = line.trim();
-      if (!trimmed || !trimmed.startsWith("data:")) continue;
-      const data = trimmed.slice(5).trim();
-      if (data === "[DONE]") {
-        onDone?.(sessionId);
+  // Handle both WHATWG ReadableStream and Node/undici ReadableStream
+  if (res.body && typeof (res.body as any).getReader === "function") {
+    const reader = (res.body as any).getReader();
+    while (true) {
+      if (options.signal?.aborted) {
+        await reader.cancel().catch(() => {});
         return;
       }
-      try {
-        const chunk = JSON.parse(data) as {
-          choices?: Array<{
-            delta?: {
-              content?: string;
-              reasoning_content?: string;
-              reasoning?: string;
-              thought?: string;
-            };
-            text?: string;
-          }>;
-        };
-        const delta = chunk.choices?.[0]?.delta;
-        const text = delta?.content ?? chunk.choices?.[0]?.text ?? "";
-        const reasoning = delta?.reasoning_content ?? delta?.reasoning ?? delta?.thought;
-        if (text || reasoning) {
-          onChunk(text, reasoning);
-        }
-      } catch {
-        // malformed chunk — skip
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split("\n");
+      buffer = lines.pop() ?? "";
+
+      for (const line of lines) {
+        if (processLine(line)) return;
       }
+    }
+  } else if (res.body && Symbol.asyncIterator in (res.body as any)) {
+    // Async iterable body (undici stream)
+    for await (const chunk of res.body as any) {
+      if (options.signal?.aborted) return;
+      buffer += decoder.decode(chunk, { stream: true });
+      const lines = buffer.split("\n");
+      buffer = lines.pop() ?? "";
+
+      for (const line of lines) {
+        if (processLine(line)) return;
+      }
+    }
+  }
+
+  // Flush remaining buffer at EOF so no trailing chunk is lost
+  buffer += decoder.decode();
+  if (buffer.trim()) {
+    const remainingLines = buffer.split("\n");
+    for (const line of remainingLines) {
+      if (processLine(line)) return;
     }
   }
 

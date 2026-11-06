@@ -72,6 +72,7 @@ import { markQuotaPreflightAccountUnavailable } from "./quotaPreflightUnavailabl
 import { buildNoAuthModelCooldown, pauseCooldownIfPaused } from "./noAuthModelCooldown.ts";
 import { getCreditsMode } from "@cheaproute/open-sse/services/antigravityCredits.ts";
 import { preferAntigravityConnectionsWithStoredProject } from "@cheaproute/open-sse/services/antigravityProjectPersistence.ts";
+import { autoSwitchAntigravityAccountOnLimit } from "./antigravityAutoSwitch.ts";
 import {
   isAccountUnavailable,
   getUnavailableUntil,
@@ -3231,6 +3232,12 @@ export async function markAccountUnavailable(
         cooldownMs: lockout.cooldownMs,
         reason,
       });
+      if (
+        (provider === "antigravity" || provider === "agy") &&
+        (status === 429 || reason === "quota_exhausted" || reason === "rate_limited")
+      ) {
+        autoSwitchAntigravityAccountOnLimit(connectionId, provider).catch(() => {});
+      }
       return { shouldFallback: true, cooldownMs: lockout.cooldownMs };
     }
     const result = fallbackResult;
@@ -3533,6 +3540,21 @@ export async function markAccountUnavailable(
       connectionProvider: conn?.provider,
       permanent: Boolean((result as { permanent?: boolean }).permanent),
     });
+
+    if (
+      (provider === "antigravity" || provider === "agy") &&
+      (status === 429 ||
+        fallbackResult.reason === RateLimitReason.QUOTA_EXHAUSTED ||
+        reason === "rate_limited" ||
+        reason === "quota_exhausted")
+    ) {
+      await autoSwitchAntigravityAccountOnLimit(connectionId, provider).catch((err) => {
+        log.error(
+          "AUTH",
+          `Antigravity auto-switch on limit failed: ${err instanceof Error ? err.message : String(err)}`
+        );
+      });
+    }
 
     if (provider && status && errorMsg) {
       console.error(`❌ ${provider} [${status}]: ${errorMsg}`);

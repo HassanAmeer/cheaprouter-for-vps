@@ -202,15 +202,15 @@ export default function OpenCodeBypassDetailPanel({
         {/* Card 3: Anti-Detection & Gate Bypass */}
         <div className="rounded-xl border border-white/10 bg-black/20 p-3.5 flex flex-col justify-between gap-2">
           <span className="text-[11px] font-medium text-text-muted uppercase tracking-wider">
-            Upstream Protection
+            Upstream &amp; Anti-429 Protection
           </span>
           <div className="text-xs text-white/90 leading-relaxed">
             Auto-injects <code className="text-emerald-300 font-mono text-[10px]">Bearer public</code>,
-            descending bitwise session affinity, and exact OpenCode CLI v2 fingerprint headers.
+            descending bitwise session affinity, and automatic WARP/Privoxy proxy fallback for datacenter IPs.
           </div>
           <div className="flex items-center gap-1.5 text-[11px] text-sky-400/90 font-medium">
             <span className="material-symbols-outlined text-[14px]">verified_user</span>
-            <span>Upstream Free Gate Compatible</span>
+            <span>Upstream Free Gate &amp; Anti-429 Ready</span>
           </div>
         </div>
       </div>

@@ -9,6 +9,7 @@ import { SAFE_OUTBOUND_FETCH_PRESETS, safeOutboundFetch } from "@/shared/network
 import { getProviderOutboundGuard } from "@/shared/network/outboundUrlGuardPolicy";
 import { getModelsByProviderId } from "@/shared/constants/models";
 import { isProviderBlockedByIdOrAlias } from "@/shared/utils/noAuthProviders";
+import { CLIENT_UA, mintSession } from "@/lib/providers/opencode-bypass";
 import { mergeLocalCatalogModels } from "./discovery/helpers";
 
 export function filterModelsForRoute<
@@ -49,11 +50,24 @@ async function fetchLiveNoAuthModels(
   chatOnly: boolean
 ): Promise<NextResponse | null> {
   try {
+    const isBypass = providerId === "opencode-bypass";
+    const bypassSession = isBypass ? mintSession() : null;
     const liveResponse = await safeOutboundFetch(modelsUrl, {
       ...SAFE_OUTBOUND_FETCH_PRESETS.modelsDiscovery,
       guard: getProviderOutboundGuard(),
       method: "GET",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        ...(isBypass
+          ? {
+              "User-Agent": CLIENT_UA,
+              "x-opencode-client": "cli",
+              "x-opencode-session": bypassSession!,
+              "x-session-affinity": bypassSession!,
+              authorization: "Bearer public",
+            }
+          : {}),
+      },
     });
     if (!liveResponse.ok) return null;
 

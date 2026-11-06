@@ -259,7 +259,6 @@ export function isSelfHostedChatProvider(providerId: unknown): boolean {
 // Dedicated CLI Tools and local daemon-managed providers
 export const CLI_PROVIDER_IDS = new Set([
   "opencode-cli",
-  "opencode-bypass",
   "kilo-code-cli",
   "opencode",
   "codex",

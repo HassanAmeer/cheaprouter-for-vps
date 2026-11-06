@@ -33,7 +33,7 @@ export const NOAUTH_PROVIDERS = {
     hasFree: true,
     passthroughModels: true,
     serviceKinds: ["llm"],
-    isLocalCli: true,
+    isLocalCli: false,
     authHint: "Connect to OpenCode free plan directly via API base URL without heavy CLI.",
     freeNote: "Direct API Base URL • Zero CLI daemon • Saves RAM & CPU.",
     notice: {
@@ -258,7 +258,7 @@ export const NOAUTH_PROVIDERS = {
 // upstream path runs through CheapRoute's proxy-aware global fetch. Providers
 // with browser, WebSocket, direct dispatcher, media, or local CLI paths stay
 // hidden until those paths can guarantee the configured provider proxy.
-export const NOAUTH_PROVIDER_PROXY_SUPPORTED = new Set(["opencode"]);
+export const NOAUTH_PROVIDER_PROXY_SUPPORTED = new Set(["opencode", "opencode-bypass"]);
 
 export function supportsNoAuthProviderProxy(providerId: string): boolean {
   return NOAUTH_PROVIDER_PROXY_SUPPORTED.has(providerId);

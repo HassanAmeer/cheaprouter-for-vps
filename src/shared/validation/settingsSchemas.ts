@@ -427,6 +427,7 @@ export const updateSettingsSchema = z.object({
   // Cache control preservation mode
   alwaysPreserveClientCache: z.enum(["auto", "always", "never"]).optional(),
   antigravitySignatureCacheMode: z.enum(signatureCacheModeValues).optional(),
+  antigravityAutoSwitchOnLimit: z.boolean().optional(),
   // Adaptive Volume Routing
   adaptiveVolumeRouting: z.boolean().optional(),
   // Usage token buffer — safety margin added to reported prompt/input token counts.

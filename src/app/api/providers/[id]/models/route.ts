@@ -31,6 +31,7 @@ import { errorResponse, sanitizeErrorMessage } from "@cheaproute/open-sse/utils/
 import { resolveProviderAlias } from "@cheaproute/open-sse/services/providerAlias.ts";
 import "@cheaproute/open-sse/services/qoderCli.ts";
 import { deriveConfigFromRegistryModelsUrl } from "./discoveryConfig";
+import { CLIENT_UA, mintSession } from "@/lib/providers/opencode-bypass";
 import {
   buildTokenPlanCatalogRequest,
   isTokenPlanCatalogProvider,
@@ -290,15 +291,18 @@ export async function GET(
             provDef?.anonymousFallback ||
             id === "kilocode" ||
             id === "ap_kilocode" ||
-            id === "cline"
+            id === "cline" ||
+            id === "opencode-bypass"
           ) {
             connection = {
               id: `${id}-anonymous`,
               provider: id,
               name: `${provDef?.name || id} (Anonymous / Free)`,
-              apiKey: regEntry?.anonymousApiKey || "anonymous",
+              apiKey:
+                regEntry?.anonymousApiKey ||
+                (id === "opencode-bypass" ? "public" : "anonymous"),
               isActive: true,
-              authType: "anonymous",
+              authType: id === "opencode-bypass" ? "public" : "anonymous",
               providerSpecificData: {
                 baseUrl: regEntry?.baseUrl,
                 modelsUrl: regEntry?.modelsUrl,
@@ -1163,13 +1167,27 @@ export async function GET(
 
       for (const modelsUrl of uniqueEndpoints) {
         try {
+          const isBypass = provider === "opencode-bypass";
+          const bypassSession = isBypass ? mintSession() : null;
+          const bypassHeaders: Record<string, string> = isBypass
+            ? {
+                "User-Agent": CLIENT_UA,
+                "x-opencode-client": "cli",
+                "x-opencode-session": bypassSession!,
+                "x-session-affinity": bypassSession!,
+                authorization: `Bearer ${token || "public"}`,
+              }
+            : {};
+
           const response = await safeOutboundFetch(modelsUrl, {
             ...SAFE_OUTBOUND_FETCH_PRESETS.modelsProbe,
             guard: getProviderValidationGuard(),
             proxyConfig: proxy,
             method: "GET",
             headers: {
-              ...(isNamedOpenAIStyleProvider(provider)
+              ...(isBypass
+                ? bypassHeaders
+                : isNamedOpenAIStyleProvider(provider)
                 ? buildNamedOpenAiStyleHeaders(provider, token)
                 : buildOptionalBearerHeaders(token)),
               ...mergedCustomHeaders,
@@ -1183,6 +1201,7 @@ export async function GET(
               Array.isArray(data.data) &&
               (provider === "opencode-cli" ||
                 provider === "kilo-code-cli" ||
+                provider === "opencode-bypass" ||
                 modelsUrl.includes("/api/model"))
             ) {
               models = data.data.map((m: any) => ({
@@ -1207,6 +1226,25 @@ export async function GET(
                 }
               }
               if (extracted.length > 0) models = extracted;
+            }
+            if (!models && provider === "opencode-bypass") {
+              const list = Array.isArray(data?.data)
+                ? data.data
+                : Array.isArray(data?.models)
+                  ? data.models
+                  : Array.isArray(data)
+                    ? data
+                    : [];
+              if (list.length > 0) {
+                models = list.map((m: any) => ({
+                  id: typeof m === "string" ? m : m.id || m.name,
+                  name: typeof m === "string" ? m : m.name || m.id,
+                  context_length:
+                    typeof m === "object" ? m.limit?.context || m.context_length : undefined,
+                  max_output_tokens:
+                    typeof m === "object" ? m.limit?.output || m.max_output_tokens : undefined,
+                }));
+              }
             }
             if (!models) {
               models = isNamedOpenAIStyleProvider(provider)
@@ -2644,8 +2682,13 @@ export async function GET(
       accessToken ||
       apiKey ||
       regEntry?.anonymousApiKey ||
-      (provider === "kilocode" || provider === "ap_kilocode" || provider === "cline"
-        ? "anonymous"
+      (provider === "kilocode" ||
+      provider === "ap_kilocode" ||
+      provider === "cline" ||
+      provider === "opencode-bypass"
+        ? provider === "opencode-bypass"
+          ? "public"
+          : "anonymous"
         : "");
     if (!token) {
       if (!refresh) {
