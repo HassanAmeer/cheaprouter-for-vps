@@ -119,6 +119,7 @@ import {
   mergeSpecialtyCatalogIntoLiveModels,
   buildOptionalBearerHeaders,
   buildNamedOpenAiStyleHeaders,
+  buildCliBasicAuthHeaders,
   enrichOllamaLocalModels,
 } from "./discovery/helpers";
 import {
@@ -1187,6 +1188,8 @@ export async function GET(
             headers: {
               ...(isBypass
                 ? bypassHeaders
+                : provider === "opencode-cli" || provider === "kilo-code-cli"
+                ? buildCliBasicAuthHeaders(provider, token)
                 : isNamedOpenAIStyleProvider(provider)
                 ? buildNamedOpenAiStyleHeaders(provider, token)
                 : buildOptionalBearerHeaders(token)),

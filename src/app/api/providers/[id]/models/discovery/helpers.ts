@@ -96,10 +96,32 @@ export function buildOptionalBearerHeaders(
   };
 }
 
+/**
+ * Headless CLI servers (opencode/kilo)started with OPENCODE_SERVER_PASSWORD
+ * authenticate with HTTP Basic (user `opencode`/`kilo`, password = token) —
+ * mirror the executor's credentials handling so discovery probes succeed.
+ */
+export function buildCliBasicAuthHeaders(
+  provider: string,
+  token: string | null | undefined
+): Record<string, string> {
+  const username = provider === "kilo-code-cli" ? "kilo" : "opencode";
+  return {
+    "Content-Type": "application/json",
+    ...(token
+      ? { Authorization: `Basic ${Buffer.from(`${username}:${token}`).toString("base64")}` }
+      : {}),
+  };
+}
+
 export function buildNamedOpenAiStyleHeaders(
   provider: string,
   token: string | null | undefined
 ): Record<string, string> {
+  if (provider === "opencode-cli" || provider === "kilo-code-cli") {
+    return buildCliBasicAuthHeaders(provider, token);
+  }
+
   const headers = buildOptionalBearerHeaders(token);
 
   if (provider === "reka" && token) {
