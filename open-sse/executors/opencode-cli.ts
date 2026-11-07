@@ -65,11 +65,24 @@ export class OpenCodeCliExecutor extends BaseExecutor {
       }
     }
 
+    // Optional Basic auth for headless CLI servers started with a password.
+    // If the connection has an API key it is sent as the Basic-auth password
+    // (default user "opencode"), matching `opencode serve`'s
+    // OPENCODE_SERVER_USERNAME / OPENCODE_SERVER_PASSWORD convention.
+    const apiKey = credentials?.apiKey?.trim();
+    const username =
+      (typeof psd?.username === "string" && psd.username.trim()) ||
+      (typeof psd?.basicAuthUser === "string" && psd.basicAuthUser.trim()) ||
+      (this.provider === "kilo-code-cli" ? "kilo" : "opencode");
+    const authHeaders: Record<string, string> = apiKey
+      ? { Authorization: `Basic ${Buffer.from(`${username}:${apiKey}`).toString("base64")}` }
+      : {};
+
     try {
       // 1. Create a session on the headless CLI server
       const sessionRes = await fetch(`${baseUrl}/session`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...authHeaders },
         signal,
       });
       if (!sessionRes.ok) {
@@ -85,7 +98,7 @@ export class OpenCodeCliExecutor extends BaseExecutor {
       // 2. Post message to session
       const messageRes = await fetch(`${baseUrl}/session/${session.id}/message`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...authHeaders },
         body: JSON.stringify({
           model: { providerID, modelID },
           parts: [{ type: "text", text: promptText }],
