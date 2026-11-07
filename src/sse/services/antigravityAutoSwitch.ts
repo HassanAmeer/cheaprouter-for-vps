@@ -131,9 +131,18 @@ export async function resumeSingleAntigravityAccount(
     throw new Error(`Target Antigravity connection ${targetConnectionId} not found`);
   }
 
-  // Activate target
+  // Activate target and clear any transient cooldown state
   await updateProviderConnection(targetConnectionId, {
     isActive: true,
+    ...(isTerminalStatus(target.testStatus)
+      ? {}
+      : {
+          testStatus: "active",
+          rateLimitedUntil: null,
+          lastError: null,
+          lastErrorType: null,
+          errorCode: null,
+        }),
   });
 
   // Deactivate all others
@@ -172,6 +181,29 @@ export async function autoSwitchAntigravityAccountOnLimit(
   }
 
   const connections = await getAntigravityConnections(provider);
+
+  // Guard against concurrent thundering-herd: if another healthy account has ALREADY been promoted
+  const alreadyActive = connections.find(
+    (conn) =>
+      conn.isActive &&
+      conn.id !== failedConnectionId &&
+      !isTerminalStatus(conn.testStatus) &&
+      !isRateLimited(conn.rateLimitedUntil)
+  );
+
+  if (alreadyActive) {
+    // Ensure the failed account is marked inactive
+    const failedConn = connections.find((c) => c.id === failedConnectionId);
+    if (failedConn?.isActive) {
+      await updateProviderConnection(failedConnectionId, { isActive: false });
+    }
+    return {
+      switched: true,
+      previousConnectionId: failedConnectionId,
+      nextConnectionId: alreadyActive.id,
+      nextConnectionName: alreadyActive.name,
+    };
+  }
 
   // Find candidate standby accounts
   const candidates = connections.filter((conn) => {

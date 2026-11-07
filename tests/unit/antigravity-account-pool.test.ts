@@ -295,5 +295,28 @@ describe("Antigravity Account Pool & Auto-Switch", () => {
       assert.equal(connections.find((c) => c.id === "ag-1")?.isActive, true);
       assert.equal(connections.find((c) => c.id === "ag-3")?.isActive, false);
     });
+
+    it("prevents redundant promotion when another healthy account is already active", () => {
+      const failedConnectionId = "ag-1";
+      const connections: AntigravityAccountItem[] = [
+        { id: "ag-1", name: "Account 1", provider: "antigravity", isActive: false, testStatus: "unavailable", rateLimitedUntil: new Date(Date.now() + 60_000).toISOString(), lastError: "Rate limited", lastErrorType: "rate_limited", errorCode: 429, priority: 1, providerSpecificData: {} },
+        { id: "ag-2", name: "Account 2 (Just promoted)", provider: "antigravity", isActive: true, testStatus: "active", rateLimitedUntil: null, lastError: null, lastErrorType: null, errorCode: null, priority: 2, providerSpecificData: {} },
+        { id: "ag-3", name: "Account 3", provider: "antigravity", isActive: false, testStatus: "active", rateLimitedUntil: null, lastError: null, lastErrorType: null, errorCode: null, priority: 1, providerSpecificData: {} },
+      ];
+
+      const alreadyActive = connections.find(
+        (conn) =>
+          conn.isActive &&
+          conn.id !== failedConnectionId &&
+          !isTerminalStatus(conn.testStatus) &&
+          !isRateLimited(conn.rateLimitedUntil)
+      );
+
+      assert.ok(alreadyActive);
+      assert.equal(alreadyActive.id, "ag-2");
+      // ag-2 should remain the active account, ag-3 should not be prematurely touched
+      assert.equal(connections.find((c) => c.id === "ag-2")?.isActive, true);
+      assert.equal(connections.find((c) => c.id === "ag-3")?.isActive, false);
+    });
   });
 });
