@@ -1,19 +1,21 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
+
+const DEFAULT_HOST = "201.18.218.29";
+
+function detectHost(): string {
+  if (typeof window === "undefined") return DEFAULT_HOST;
+  const currentHost = window.location.hostname;
+  if (currentHost && currentHost !== "localhost" && currentHost !== "127.0.0.1") {
+    return currentHost;
+  }
+  return DEFAULT_HOST;
+}
 
 export function RemoteTunnelBanner({ customHost }: { customHost?: string }) {
   const [copied, setCopied] = useState(false);
-  const [host, setHost] = useState("201.18.218.29");
-
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      const currentHost = window.location.hostname;
-      if (currentHost && currentHost !== "localhost" && currentHost !== "127.0.0.1") {
-        setHost(currentHost);
-      }
-    }
-  }, []);
+  const [host] = useState(detectHost);
 
   const effectiveHost = customHost || host;
   const command = `ssh -L 20128:localhost:20128 root@${effectiveHost}`;

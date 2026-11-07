@@ -2,6 +2,17 @@ import { BaseExecutor, type ExecuteInput, type ExecutorExecuteResult } from "./b
 import { makeExecutorErrorResult as makeErrorResult } from "../utils/error.ts";
 import { randomUUID } from "node:crypto";
 
+interface OpencodeCliResponse {
+  info?: {
+    error?: {
+      data?: { message?: string };
+      message?: string;
+    } & Record<string, unknown>;
+    tokens?: { total?: number; input?: number; output?: number };
+  };
+  parts?: Array<{ type?: string; text?: string }>;
+}
+
 export class OpenCodeCliExecutor extends BaseExecutor {
   constructor(providerId: string = "opencode-cli") {
     super(providerId, {
@@ -92,7 +103,7 @@ export class OpenCodeCliExecutor extends BaseExecutor {
         );
       }
 
-      const resData = (await messageRes.json()) as any;
+      const resData = (await messageRes.json()) as OpencodeCliResponse;
       if (resData.info?.error) {
         const errObj = resData.info.error;
         const msg = errObj.data?.message || errObj.message || JSON.stringify(errObj);
@@ -100,12 +111,12 @@ export class OpenCodeCliExecutor extends BaseExecutor {
       }
 
       const textParts = (resData.parts || [])
-        .filter((p: any) => p.type === "text")
-        .map((p: any) => p.text)
+        .filter((p) => p.type === "text")
+        .map((p) => p.text)
         .join("");
       const reasoningParts = (resData.parts || [])
-        .filter((p: any) => p.type === "reasoning")
-        .map((p: any) => p.text)
+        .filter((p) => p.type === "reasoning")
+        .map((p) => p.text)
         .join("");
       const totalTokens = resData.info?.tokens?.total || 0;
       const inputTokens = resData.info?.tokens?.input || 0;

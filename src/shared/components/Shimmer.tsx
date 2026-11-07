@@ -7,7 +7,7 @@
  * into rich, realistic skeletons matching each dashboard page layout.
  */
 
-import type { HTMLAttributes, ReactNode, CSSProperties } from "react";
+import type { HTMLAttributes, ReactNode } from "react";
 import { cn } from "@/shared/utils/cn";
 
 export type ShimmerPageVariant =

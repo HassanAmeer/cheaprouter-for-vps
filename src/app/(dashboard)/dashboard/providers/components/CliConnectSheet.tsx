@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import ProviderIcon from "@/shared/components/ProviderIcon";
 import { useNotificationStore } from "@/store/notificationStore";
+import { matchesSearch } from "@/shared/utils/turkishText";
 
 export interface DiscoveredServerPort {
   ip: string;
@@ -121,21 +122,24 @@ function CliConnectSheetPanel({
     }
   }, [isKilo]);
 
-  // Initial scan on mount
+  // Initial scan on mount (deferred so the effect never calls setState synchronously)
   useEffect(() => {
-    void scanPorts();
+    const id = window.setTimeout(() => {
+      void scanPorts();
+    }, 0);
+    return () => window.clearTimeout(id);
   }, [scanPorts]);
 
   // Filtered port list
   const filteredPorts = useMemo(() => {
-    if (!searchQuery.trim()) return ports;
-    const q = searchQuery.toLowerCase().trim();
+    const q = searchQuery.trim();
+    if (!q) return ports;
     return ports.filter(
       (p) =>
         String(p.port).includes(q) ||
-        p.service.toLowerCase().includes(q) ||
-        p.processName.toLowerCase().includes(q) ||
-        p.cmdline.toLowerCase().includes(q)
+        matchesSearch(p.service, q) ||
+        matchesSearch(p.processName, q) ||
+        matchesSearch(p.cmdline, q)
     );
   }, [ports, searchQuery]);
 

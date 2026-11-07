@@ -59,11 +59,13 @@ export default function ProviderImagePicker({
     };
   }, []);
 
-  // Synchronize internal customUrl if external value changes
-  useEffect(() => {
+  // Synchronize internal customUrl if external value changes (adjust state during render)
+  const [prevValue, setPrevValue] = useState(value);
+  if (prevValue !== value) {
+    setPrevValue(value);
     setCustomUrl(value || "");
     setCustomImageError(false);
-  }, [value]);
+  }
 
   const filteredIcons = useMemo(() => {
     if (!searchQuery.trim()) return icons;

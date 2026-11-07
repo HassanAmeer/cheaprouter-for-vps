@@ -61,7 +61,7 @@ describe("OpencodeBypassExecutor", () => {
   it("buildHeaders normalizes duplicate Accept casing", () => {
     const executor = new OpencodeBypassExecutor("opencode-bypass");
     const headers = executor.buildHeaders(
-      { apiKey: "test-key" } as any,
+      { apiKey: "test-key" } as unknown as ProviderCredentials,
       true,
       null
     );
@@ -71,12 +71,12 @@ describe("OpencodeBypassExecutor", () => {
 
   it("execute does not leak dispatcher to unrelated provider URLs", async () => {
     const executor = new OpencodeBypassExecutor("opencode-bypass");
-    let interceptedOptions: any = null;
+    let interceptedOptions: (RequestInit & { dispatcher?: unknown }) | null = null;
     let interceptedUrl: string = "";
 
     const originalFetch = globalThis.fetch;
     try {
-      globalThis.fetch = (async (url: any, init: any) => {
+      globalThis.fetch = (async (url: RequestInfo | URL, init?: RequestInit) => {
         interceptedUrl = String(url);
         interceptedOptions = init;
         return new Response(JSON.stringify({ id: "mock", choices: [{ message: { content: "ok" } }] }), {
@@ -93,7 +93,7 @@ describe("OpencodeBypassExecutor", () => {
         credentials: {
           connectionId: "test-conn",
           providerSpecificData: { proxyUrl: "socks5://127.0.0.1:40000" },
-        } as any,
+        } as unknown as ProviderCredentials,
       });
 
       assert.ok(interceptedUrl.includes("opencode.ai"));

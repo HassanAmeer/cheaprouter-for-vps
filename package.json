@@ -100,7 +100,7 @@
     "postinstall": "node scripts/build/postinstall.mjs",
     "typecheck": "node --max-old-space-size=4096 node_modules/.bin/tsc --noEmit -p tsconfig.json",
     "typecheck:core": "node --max-old-space-size=4096 node_modules/.bin/tsc --noEmit -p tsconfig.json",
-    "lint": "eslint . --cache",
+    "lint": "eslint . --cache --suppressions-location config/quality/eslint-suppressions.json",
     "test": "node --import tsx/esm --test tests/unit/*.test.ts",
     "test:coverage": "node --import tsx/esm --test --experimental-test-coverage tests/unit/*.test.ts"
   },

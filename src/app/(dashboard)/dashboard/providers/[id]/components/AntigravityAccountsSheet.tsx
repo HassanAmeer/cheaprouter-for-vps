@@ -62,7 +62,7 @@ function AntigravityAccountsSheetPanel({
   const [updating, setUpdating] = useState<string | null>(null);
   const [testingId, setTestingId] = useState<string | null>(null);
   const [connections, setConnections] = useState<AntigravityAccountItem[]>([]);
-  const [activeConnectionId, setActiveConnectionId] = useState<string | null>(null);
+  const [nowTs, setNowTs] = useState<number>(() => Date.now());
   const [autoSwitchOnLimit, setAutoSwitchOnLimit] = useState(true);
 
   const fetchPoolState = useCallback(async () => {
@@ -75,7 +75,7 @@ function AntigravityAccountsSheetPanel({
       if (!res.ok) throw new Error("Failed to load Antigravity accounts");
       const data = await res.json();
       setConnections(Array.isArray(data.connections) ? data.connections : []);
-      setActiveConnectionId(data.activeConnectionId || null);
+      setNowTs(Date.now());
       if (typeof data.autoSwitchOnLimit === "boolean") {
         setAutoSwitchOnLimit(data.autoSwitchOnLimit);
       }
@@ -87,7 +87,10 @@ function AntigravityAccountsSheetPanel({
   }, [providerId, notify]);
 
   useEffect(() => {
-    void fetchPoolState();
+    const id = window.setTimeout(() => {
+      void fetchPoolState();
+    }, 0);
+    return () => window.clearTimeout(id);
   }, [fetchPoolState]);
 
   const handleResumeAccount = async (targetId: string) => {
@@ -107,7 +110,6 @@ function AntigravityAccountsSheetPanel({
       }
       const data = await res.json();
       setConnections(Array.isArray(data.connections) ? data.connections : []);
-      setActiveConnectionId(data.activeConnectionId || targetId);
       notify.success("Account resumed & set as active. Standby accounts paused.");
       if (onConnectionChanged) onConnectionChanged();
     } catch (err) {
@@ -339,7 +341,7 @@ function AntigravityAccountsSheetPanel({
                     "CLI";
                   const isRateLimited =
                     Boolean(conn.rateLimitedUntil) &&
-                    new Date(conn.rateLimitedUntil!).getTime() > Date.now();
+                    new Date(conn.rateLimitedUntil).getTime() > nowTs;
 
                   return (
                     <div
