@@ -169,11 +169,30 @@ export class OpencodeBypassExecutor extends BaseExecutor {
     }
 
     const prevFetch = globalThis.fetch;
+    const configuredBaseUrl =
+      typeof psd?.baseUrl === "string" && psd.baseUrl.trim() ? psd.baseUrl.trim() : null;
+
     const fetchWithDispatcher = (reqUrl: RequestInfo | URL, init?: RequestInit) => {
-      return prevFetch(reqUrl, {
-        ...init,
-        dispatcher,
-      } as RequestInit & { dispatcher: Dispatcher });
+      const urlStr =
+        typeof reqUrl === "string"
+          ? reqUrl
+          : reqUrl instanceof URL
+            ? reqUrl.toString()
+            : (reqUrl as Request)?.url || "";
+
+      // Scope dispatcher ONLY to OpenCode bypass target URLs so concurrent calls to other providers are never affected
+      const isOpencodeTarget =
+        urlStr.includes("opencode.ai") ||
+        urlStr.includes("/inference/v1") ||
+        (configuredBaseUrl !== null && urlStr.includes(configuredBaseUrl));
+
+      if (isOpencodeTarget) {
+        return prevFetch(reqUrl, {
+          ...init,
+          dispatcher,
+        } as RequestInit & { dispatcher: Dispatcher });
+      }
+      return prevFetch(reqUrl, init);
     };
 
     try {

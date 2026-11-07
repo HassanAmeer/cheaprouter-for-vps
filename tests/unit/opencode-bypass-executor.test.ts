@@ -68,4 +68,38 @@ describe("OpencodeBypassExecutor", () => {
     assert.equal("accept" in headers, false);
     assert.equal("Accept" in headers, true);
   });
+
+  it("execute does not leak dispatcher to unrelated provider URLs", async () => {
+    const executor = new OpencodeBypassExecutor("opencode-bypass");
+    let interceptedOptions: any = null;
+    let interceptedUrl: string = "";
+
+    const originalFetch = globalThis.fetch;
+    try {
+      globalThis.fetch = (async (url: any, init: any) => {
+        interceptedUrl = String(url);
+        interceptedOptions = init;
+        return new Response(JSON.stringify({ id: "mock", choices: [{ message: { content: "ok" } }] }), {
+          status: 200,
+          headers: { "content-type": "application/json" },
+        });
+      }) as typeof globalThis.fetch;
+
+      // Executing against opencode URL
+      await executor.execute({
+        model: "deepseek-v4.1-flash-free",
+        body: { messages: [{ role: "user", content: "test" }] },
+        stream: false,
+        credentials: {
+          connectionId: "test-conn",
+          providerSpecificData: { proxyUrl: "socks5://127.0.0.1:40000" },
+        } as any,
+      });
+
+      assert.ok(interceptedUrl.includes("opencode.ai"));
+      assert.ok(interceptedOptions?.dispatcher, "Dispatcher should be attached to opencode.ai URL");
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
+  });
 });
