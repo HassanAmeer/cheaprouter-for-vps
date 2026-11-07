@@ -2,6 +2,7 @@ import type BetterSqlite3 from "better-sqlite3";
 import * as nodeModule from "node:module";
 import fs from "node:fs";
 import path from "node:path";
+import { randomBytes } from "node:crypto";
 import { hashPassword } from "./crypto";
 
 const esmRequire = nodeModule.createRequire(
@@ -284,29 +285,71 @@ export function ensureSeeded(handle: BetterSqlite3.Database): void {
     });
   }
 
-  // Ensure default Admin account exists with password '1234'
-  const adminPasswordHash = hashPassword("1234");
-  const adminExists = handle.prepare("SELECT id FROM users WHERE email = 'admin'").get() as { id: number } | undefined;
-  if (adminExists) {
-    handle.prepare("UPDATE users SET password_hash = ?, role = 'admin', status = 'active' WHERE id = ?").run(adminPasswordHash, adminExists.id);
-  } else {
-    handle.prepare(
-      `INSERT INTO users (email, name, password_hash, role, status)
-       VALUES ('admin', 'Administrator', ?, 'admin', 'active')`
-    ).run(adminPasswordHash);
+  // ── Default Admin account ─────────────────────────────────────────────────
+  // Password comes from RESELLER_ADMIN_PASSWORD (recommended). If unset, a
+  // random password is generated ONCE on first boot and printed to the log —
+  // it is never re-applied to an existing admin row afterwards.
+  const envAdminPassword = process.env.RESELLER_ADMIN_PASSWORD?.trim();
+  const adminExists = handle
+    .prepare("SELECT id FROM users WHERE email = 'admin'")
+    .get() as { id: number } | undefined;
+  if (envAdminPassword) {
+    const adminPasswordHash = hashPassword(envAdminPassword);
+    if (adminExists) {
+      handle
+        .prepare("UPDATE users SET password_hash = ?, role = 'admin', status = 'active' WHERE id = ?")
+        .run(adminPasswordHash, adminExists.id);
+    } else {
+      handle
+        .prepare(
+          `INSERT INTO users (email, name, password_hash, role, status)
+           VALUES ('admin', 'Administrator', ?, 'admin', 'active')`
+        )
+        .run(adminPasswordHash);
+    }
+  } else if (!adminExists) {
+    const randomPassword =
+      randomBytes(12).toString("base64url");
+    handle
+      .prepare(
+        `INSERT INTO users (email, name, password_hash, role, status)
+         VALUES ('admin', 'Administrator', ?, 'admin', 'active')`
+      )
+      .run(hashPassword(randomPassword));
+    console.warn(
+      `[reseller-models] Admin account created with a random one-time password: "${randomPassword}". ` +
+        "Set RESELLER_ADMIN_PASSWORD to choose your own, then restart."
+    );
   }
 
-  // Seed demo test users if not present
-  const seedUsers = [
-    { email: "user1@gmail.com", name: "User One", password: "1234", role: "user" },
-    { email: "user2@gmail.com", name: "User Two", password: "1234", role: "user" },
-  ];
-  const insertUser = handle.prepare(
-    `INSERT OR IGNORE INTO users (email, name, password_hash, role, status)
-     VALUES (@email, @name, @password_hash, @role, 'active')`
-  );
-  for (const u of seedUsers) {
-    insertUser.run({ email: u.email, name: u.name, password_hash: hashPassword(u.password), role: u.role });
+  // ── Demo test users (opt-in only) ─────────────────────────────────────────
+  // Demo users are seeded ONLY when RESELLER_SEED_DEMO_USERS=true. Their
+  // password comes from RESELLER_DEMO_PASSWORD, or a random per-user password
+  // printed once to the log. Never seeded with a well-known password.
+  if (process.env.RESELLER_SEED_DEMO_USERS === "true") {
+    const demoPassword = process.env.RESELLER_DEMO_PASSWORD?.trim();
+    const seedUsers = [
+      { email: "user1@gmail.com", name: "User One" },
+      { email: "user2@gmail.com", name: "User Two" },
+    ];
+    const insertUser = handle.prepare(
+      `INSERT OR IGNORE INTO users (email, name, password_hash, role, status)
+       VALUES (@email, @name, @password_hash, @role, 'active')`
+    );
+    for (const u of seedUsers) {
+      const password =
+        demoPassword ||
+        randomBytes(12).toString("base64url");
+      insertUser.run({
+        email: u.email,
+        name: u.name,
+        password_hash: hashPassword(password),
+        role: "user",
+      });
+      if (!demoPassword) {
+        console.warn(`[reseller-models] Demo user ${u.email} password: "${password}"`);
+      }
+    }
   }
 
   // Ensure every user has a default subscription

@@ -15,7 +15,9 @@ import { mintSession } from "./session.ts";
 import { getBypassDispatcher } from "./dispatcher.ts";
 import { fetch as undiciFetch } from "undici";
 
-export const OPENCODE_BYPASS_ENABLED: boolean = process.env.OPENCODE_BYPASS_ENABLED !== "false";
+// Opt-in only: the bypass stays OFF unless OPENCODE_BYPASS_ENABLED=true is set explicitly.
+// Keeps the default install/pass-through clean and matches README + .env.example.
+export const OPENCODE_BYPASS_ENABLED: boolean = process.env.OPENCODE_BYPASS_ENABLED === "true";
 
 /** Free lane me default models */
 export const FREE_MODELS = [

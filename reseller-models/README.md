@@ -12,13 +12,16 @@ npm run seed                 # creates data/reseller.db + default plans/users
 npm run dev                  # http://localhost:3001
 ```
 
-Pre-seeded accounts (password `1234`):
+Seeded accounts (no default well-known passwords anymore):
 
-| Role  | Login              |
-| ----- | ------------------ |
-| Admin | `admin`            |
-| User  | `user1@gmail.com`  |
-| User  | `user2@gmail.com`  |
+| Role  | Login              | How the password is set                                        |
+| ----- | ------------------ | -------------------------------------------------------------- |
+| Admin | `admin`            | `RESELLER_ADMIN_PASSWORD` env, or a random one printed on first boot |
+| User  | `user1@gmail.com`  | Only with `RESELLER_SEED_DEMO_USERS=true`; password = `RESELLER_DEMO_PASSWORD` or random |
+| User  | `user2@gmail.com`  | Only with `RESELLER_SEED_DEMO_USERS=true`; password = `RESELLER_DEMO_PASSWORD` or random |
+
+> Existing `data/reseller.db` files created before this change may still contain the old `1234` password.
+> Set `RESELLER_ADMIN_PASSWORD` once and restart to rotate the admin password, or delete `data/reseller.db` to re-seed fresh.
 
 ## CheapRouter wiring
 
