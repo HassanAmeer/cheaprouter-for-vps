@@ -37,7 +37,7 @@ export function Shimmer({
   return (
     <div
       aria-hidden="true"
-      className={cn("shimmer", className)}
+      className={cn("shimmer max-w-full", className)}
       style={style}
       {...props}
     />
@@ -66,8 +66,8 @@ export function ShimmerHeader({
       )}
       aria-hidden="true"
     >
-      <div className="space-y-2">
-        <div className="flex items-center gap-3">
+      <div className="space-y-2 min-w-0">
+        <div className="flex items-center gap-3 min-w-0">
           <Shimmer className={cn("h-7 sm:h-8", titleWidth)} />
           {badge && <Shimmer className="h-5 w-16 rounded-full" />}
         </div>

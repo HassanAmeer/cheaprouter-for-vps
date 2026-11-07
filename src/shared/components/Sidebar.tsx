@@ -729,6 +729,19 @@ export default function Sidebar({
               </div>
             )}
           </Link>
+          {onClose && (
+            <button
+              type="button"
+              onClick={onClose}
+              aria-label={tc("close")}
+              title={tc("close")}
+              className="lg:hidden rounded-md p-1 text-text-muted/60 transition-colors hover:bg-black/5 hover:text-text-muted dark:hover:bg-white/5 shrink-0"
+            >
+              <span className="material-symbols-outlined text-[20px]" aria-hidden="true">
+                close
+              </span>
+            </button>
+          )}
         </div>
 
         {!collapsed && (

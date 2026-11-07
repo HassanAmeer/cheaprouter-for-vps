@@ -60,6 +60,16 @@ export default function DashboardLayout({ children }) {
     };
   }, []);
 
+  // Escape closes the mobile drawer
+  useEffect(() => {
+    if (!sidebarOpen) return;
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setSidebarOpen(false);
+    };
+    document.addEventListener("keydown", handleEscape);
+    return () => document.removeEventListener("keydown", handleEscape);
+  }, [sidebarOpen]);
+
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key === "k") {
