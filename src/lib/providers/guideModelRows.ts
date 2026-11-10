@@ -33,17 +33,12 @@
  */
 
 import { getModelsByProviderId } from "@cheaproute/open-sse/config/providerModels";
-import { getRegistryEntry } from "@cheaproute/open-sse/config/providerRegistry";
 import {
   FREE_MODEL_BUDGETS,
   grantsFreeAccess,
   type FreeModelBudget,
 } from "@cheaproute/open-sse/config/freeModelCatalog";
-import {
-  MODEL_SPECS,
-  getAuthoritativeContextWindow,
-  getAuthoritativeProviderContextWindow,
-} from "@/shared/constants/modelSpecs";
+import { resolveModelContextWindow } from "@/lib/providers/modelContextWindow";
 import { getPricingForModel } from "@/shared/constants/pricing";
 import { KNOWN_MODEL_PRICING } from "@cheaproute/open-sse/services/providerCostData";
 import { resolveProviderId } from "@/shared/constants/providers";
@@ -204,21 +199,15 @@ function readPrice(provider: string, modelId: string): { input: number; output: 
 function resolveContextWindow(
   providerId: string,
   modelId: string,
-  modelContextLength: number | undefined,
-  providerDefaultContext: number | undefined
+  modelContextLength: number | undefined
 ): string | undefined {
-  const candidates: Array<number | null | undefined> = [
-    modelContextLength,
-    providerDefaultContext,
-    MODEL_SPECS[modelId]?.contextWindow,
-    getAuthoritativeProviderContextWindow(providerId, modelId),
-    getAuthoritativeContextWindow(modelId),
-  ];
-  for (const candidate of candidates) {
-    const formatted = formatContextWindow(candidate ?? undefined);
-    if (formatted) return formatted;
-  }
-  return undefined;
+  return formatContextWindow(
+    resolveModelContextWindow({
+      providerId,
+      modelId,
+      registryContextLength: modelContextLength,
+    }) ?? undefined
+  );
 }
 
 function freeQuotaLabel(entry: FreeModelBudget): string | undefined {
@@ -262,8 +251,6 @@ export function buildGuideModelRows(options: GuideModelRowOptions): GuideModelRo
     getModelsByProviderId(providerId).length > 0
       ? getModelsByProviderId(providerId)
       : getModelsByProviderId(resolvedId);
-  const registryEntry = getRegistryEntry(providerId) ?? getRegistryEntry(resolvedId);
-  const providerDefaultContext = registryEntry?.defaultContextLength;
 
   const modelById = new Map<string, (typeof registryModels)[number]>();
   const modelByBasename = new Map<string, (typeof registryModels)[number]>();
@@ -307,12 +294,7 @@ export function buildGuideModelRows(options: GuideModelRowOptions): GuideModelRo
   const contextFor = (modelId: string, modelContextLength?: number): string | undefined => {
     const live = liveById.get(modelId);
     const liveWindow = live ? liveContextWindow(live) : undefined;
-    return resolveContextWindow(
-      providerId,
-      modelId,
-      liveWindow ?? modelContextLength,
-      providerDefaultContext
-    );
+    return resolveContextWindow(providerId, modelId, liveWindow ?? modelContextLength);
   };
 
   // ── 1. Documented free models (shipped free-tier catalog) ────────────────

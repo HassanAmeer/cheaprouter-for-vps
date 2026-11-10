@@ -174,6 +174,12 @@ export default function DefaultCapabilitiesPromptModal({
       }`}
       aria-modal="true"
       role="dialog"
+      // While closed the sheet stays mounted (for the open/close animation),
+      // but `pointer-events-none` only blocks the MOUSE — its buttons were
+      // still keyboard-focusable and the dialog was still announced. `inert`
+      // takes the whole subtree out of the tab order and the a11y tree.
+      inert={!isOpen}
+      aria-hidden={!isOpen}
     >
       {/* ── Cupertino Frosted Backdrop Overlay ── */}
       <div
@@ -229,7 +235,9 @@ export default function DefaultCapabilitiesPromptModal({
             <p className="text-xs text-text-muted leading-relaxed">
               Select a capability preset below or edit the prompt. When clicking{" "}
               <strong className="text-white font-medium">Test</strong> on any model row, this
-              payload is sent upstream to verify capabilities.
+              payload is sent upstream to verify capabilities. Your own text is used for the
+              text, code, reasoning, search and embedding probes; the vision, image, video,
+              audio and OCR probes keep their media preset because they need a media URL.
             </p>
           </div>
 
@@ -392,8 +400,32 @@ export default function DefaultCapabilitiesPromptModal({
   );
 }
 
+/**
+ * Capability probes whose payload MUST carry a media URL (image / video /
+ * audio / document). The operator's free-text payload cannot replace it, so
+ * these keep their built-in preset; every other capability honours the
+ * operator's own prompt when one was typed.
+ */
+const MEDIA_URL_CAPABILITIES = new Set([
+  "vision",
+  "image_gen",
+  "image",
+  "diffusion",
+  "text-to-image",
+  "palette",
+  "video",
+  "audio",
+  "stt",
+  "ocr",
+]);
+
 export function getPromptForCapability(capabilityKey: string, customPrompt?: string): string {
   const cap = capabilityKey.toLowerCase();
+  const custom = typeof customPrompt === "string" ? customPrompt.trim() : "";
+  if (custom && !MEDIA_URL_CAPABILITIES.has(cap)) {
+    // The operator typed a payload — honour it for this capability too.
+    return custom;
+  }
   if (cap === "vision") {
     return (
       CAPABILITY_PRESETS.find((p) => p.id === "vision-cat")?.prompt ||

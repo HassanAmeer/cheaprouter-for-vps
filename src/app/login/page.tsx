@@ -137,7 +137,10 @@ export default function LoginPage() {
     (oidcEnabled && oidcDisablePasswordLogin === null)
   ) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center p-6">
+      <div
+        id="main-content"
+        className="min-h-screen flex flex-col items-center justify-center p-6"
+      >
         {nodeWarningBanner}
         <div className="flex flex-col items-center gap-3">
           <div className="relative">
@@ -152,7 +155,10 @@ export default function LoginPage() {
 
   if (!hasPassword && !setupComplete) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center p-6">
+      <div
+        id="main-content"
+        className="min-h-screen flex flex-col items-center justify-center p-6"
+      >
         {nodeWarningBanner}
         <div
           className={`w-full max-w-md transition-all duration-700 ease-out ${mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}
@@ -190,7 +196,10 @@ export default function LoginPage() {
 
   if (!hasPassword && setupComplete) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center p-6">
+      <div
+        id="main-content"
+        className="min-h-screen flex flex-col items-center justify-center p-6"
+      >
         {nodeWarningBanner}
         <div
           className={`w-full max-w-md transition-all duration-700 ease-out ${mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}

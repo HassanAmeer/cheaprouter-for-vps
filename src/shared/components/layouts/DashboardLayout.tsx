@@ -120,6 +120,12 @@ export default function DashboardLayout({ children }) {
           top: "var(--ios-safe-top, 0px)",
           bottom: "var(--ios-safe-bottom, 0px)",
         }}
+        // The closed drawer is only translated off-screen — its links and
+        // buttons stayed focusable (keyboard users tabbed into an invisible
+        // menu) and it was still announced by screen readers. `inert` removes
+        // it from the tab order and the accessibility tree.
+        inert={!sidebarOpen}
+        aria-hidden={!sidebarOpen}
       >
         <Sidebar onClose={() => setSidebarOpen(false)} isMacElectron={isMacElectron} />
       </div>

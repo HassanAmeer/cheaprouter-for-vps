@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
@@ -29,6 +29,7 @@ import { findDefaultReferral } from "@/lib/radar/referrals";
 import { useProviderConnections } from "./hooks/useProviderConnections";
 import { useProviderModels } from "./hooks/useProviderModels";
 import ProviderPageHeader from "./components/ProviderPageHeader";
+import { AdaptaTutorialModal } from "./components/AdaptaTutorialModal";
 import AddCustomModelCard from "./components/AddCustomModelCard";
 import AvailableModelsTable from "./components/AvailableModelsTable";
 import DefaultCapabilitiesPromptModal from "../components/DefaultCapabilitiesPromptModal";
@@ -54,6 +55,7 @@ export default function ProviderDetailPageClient() {
   const [showKimiAuthMethodModal, setShowKimiAuthMethodModal] = useState(false);
   const [showSiliconFlowEndpointModal, setShowSiliconFlowEndpointModal] = useState(false);
   const [showGuideSheet, setShowGuideSheet] = useState(false);
+  const [showAdaptaTutorial, setShowAdaptaTutorial] = useState(false);
   const [showAntigravitySheet, setShowAntigravitySheet] = useState(false);
   const [siliconFlowInitialBaseUrl, setSiliconFlowInitialBaseUrl] = useState<string | undefined>(
     undefined
@@ -215,6 +217,28 @@ export default function ProviderDetailPageClient() {
     }
   }, [searchParams]);
 
+  // Load this provider's model metadata (custom models, the synced catalog and
+  // compat overrides) plus the alias map on mount / provider change.
+  //
+  // Without this the page only ever showed the STATIC registry models: every
+  // model the operator imported ("Fetch All Models"), added by hand ("Add
+  // Custom Model") or synced from the provider vanished after a reload, and
+  // the "N models" counter disagreed with the list.
+  // The fetchers are kept in refs: their identity changes whenever the
+  // translation function or the notification store re-renders, and putting them
+  // in the effect deps re-triggered the fetch on every render (an endless
+  // fetch loop).
+  const fetchProviderModelMetaRef = useRef(fetchProviderModelMeta);
+  fetchProviderModelMetaRef.current = fetchProviderModelMeta;
+  const fetchAliasesRef = useRef(fetchAliases);
+  fetchAliasesRef.current = fetchAliases;
+
+  useEffect(() => {
+    if (loading) return;
+    void fetchProviderModelMetaRef.current();
+    void fetchAliasesRef.current();
+  }, [loading, providerId]);
+
   const handleOAuthSuccess = useCallback(async () => {
     setShowOAuthModal(false);
     await fetchConnections();
@@ -257,14 +281,28 @@ export default function ProviderDetailPageClient() {
     if (!confirmed) return;
     setDisconnecting(true);
     try {
-      await Promise.all(
+      // `fetch` does NOT reject on a 4xx/5xx — check the status explicitly so
+      // a rejected delete never reports "Disconnected successfully".
+      const results = await Promise.allSettled(
         connections.map((conn) =>
-          fetch(`/api/providers/${encodeURIComponent(conn.id)}`, { method: "DELETE" })
+          fetch(`/api/providers/${encodeURIComponent(conn.id)}`, { method: "DELETE" }).then(
+            (res) => {
+              if (!res.ok) throw new Error(`HTTP ${res.status}`);
+              return res;
+            }
+          )
         )
       );
+      const failed = results.filter((result) => result.status === "rejected").length;
       await fetchConnections();
       await fetchProviderModelMeta();
-      notify.success("Disconnected successfully");
+      if (failed > 0) {
+        notify.error(
+          `Failed to disconnect ${failed} of ${connections.length} connection(s) — credentials may still be stored`
+        );
+      } else {
+        notify.success("Disconnected successfully");
+      }
     } catch (err) {
       notify.error(err instanceof Error ? err.message : "Failed to disconnect provider");
     } finally {
@@ -435,7 +473,7 @@ export default function ProviderDetailPageClient() {
           connectionsCount={connections.length}
           isOpenAICompatible={isOpenAICompatible}
           isAnthropicProtocolCompatible={isAnthropicProtocolCompatible}
-          onOpenTutorial={() => {}}
+          onOpenTutorial={() => setShowAdaptaTutorial(true)}
           onConnect={openPrimaryAddFlow}
           onDisconnect={handleDisconnect}
           onOpenGuide={() => setShowGuideSheet(true)}
@@ -623,6 +661,13 @@ export default function ProviderDetailPageClient() {
           setShowAddApiKeyModal(false);
           setSiliconFlowInitialBaseUrl(undefined);
         }}
+      />
+
+      {/* The header's "Tutorial" button used to call a no-op handler, so the
+          Adapta setup guide could never be opened. */}
+      <AdaptaTutorialModal
+        isOpen={showAdaptaTutorial}
+        onClose={() => setShowAdaptaTutorial(false)}
       />
 
       <CupertinoProviderGuideSheet

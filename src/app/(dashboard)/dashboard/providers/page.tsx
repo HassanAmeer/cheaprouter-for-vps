@@ -549,23 +549,38 @@ function ProvidersPageContent() {
   };
 
   // Toggle all connections for a provider on/off (or pause/resume a custom provider node)
+  //
+  // Every branch applies the change optimistically and ROLLS IT BACK when the
+  // server rejects it — the card must never claim a state the backend refused,
+  // and the toast must say what actually happened.
   const handleToggleProvider = async (providerId: string, authType: string, newActive: boolean) => {
     // If it's a custom provider node
     const customNode = providerNodes.find((n) => n.id === providerId || n.prefix === providerId);
     if (customNode) {
+      const nodeLabel = customNode.name || customNode.prefix || providerId;
       setProviderNodes((prev) =>
         prev.map((n) => (n.id === customNode.id ? { ...n, isActive: newActive } : n))
       );
-      void fetch(`/api/provider-nodes/${encodeURIComponent(customNode.id)}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ isActive: newActive }),
-      });
-      notify.info(
-        newActive
-          ? `Provider "${customNode.name || customNode.prefix || providerId}" resumed`
-          : `Provider "${customNode.name || customNode.prefix || providerId}" paused`
-      );
+      try {
+        const res = await fetch(`/api/provider-nodes/${encodeURIComponent(customNode.id)}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ isActive: newActive }),
+        });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        notify.info(
+          newActive ? `Provider "${nodeLabel}" resumed` : `Provider "${nodeLabel}" paused`
+        );
+      } catch {
+        setProviderNodes((prev) =>
+          prev.map((n) => (n.id === customNode.id ? { ...n, isActive: !newActive } : n))
+        );
+        notify.error(
+          newActive
+            ? `Failed to resume provider "${nodeLabel}"`
+            : `Failed to pause provider "${nodeLabel}"`
+        );
+      }
     }
 
     const matchesToggle = (c: { provider: string; authType?: string }) =>
@@ -580,18 +595,29 @@ function ProvidersPageContent() {
     if (authType === "no-auth" || providerConns.length === 0) {
       const alias = getProviderAlias(providerId);
       const keys = new Set([providerId, alias].filter(Boolean) as string[]);
+      const previousBlocked = blockedProviders;
       const nextBlocked = newActive
         ? blockedProviders.filter((p) => !keys.has(p))
         : Array.from(new Set([...blockedProviders, providerId]));
       setBlockedProviders(nextBlocked);
-      void fetch("/api/settings", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ blockedProviders: nextBlocked }),
-      });
-      notify.info(
-        newActive ? `Provider "${providerId}" enabled` : `Provider "${providerId}" disabled`
-      );
+      try {
+        const res = await fetch("/api/settings", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ blockedProviders: nextBlocked }),
+        });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        notify.info(
+          newActive ? `Provider "${providerId}" enabled` : `Provider "${providerId}" disabled`
+        );
+      } catch {
+        setBlockedProviders(previousBlocked);
+        notify.error(
+          newActive
+            ? `Failed to enable provider "${providerId}"`
+            : `Failed to disable provider "${providerId}"`
+        );
+      }
     }
 
     if (providerConns.length > 0) {
@@ -600,15 +626,33 @@ function ProvidersPageContent() {
         prev.map((c) => (matchesToggle(c) ? { ...c, isActive: newActive } : c))
       );
       // Fire API calls in parallel
-      await Promise.allSettled(
+      const results = await Promise.allSettled(
         providerConns.map((c) =>
           fetch(`/api/providers/${c.id}`, {
             method: "PUT",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ isActive: newActive }),
+          }).then((res) => {
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            return res;
           })
         )
       );
+      const failed = results.filter((result) => result.status === "rejected").length;
+      if (failed > 0) {
+        // Roll back only the connections whose update was rejected.
+        const failedIds = new Set(
+          results
+            .map((result, index) => (result.status === "rejected" ? providerConns[index].id : null))
+            .filter((id): id is string => Boolean(id))
+        );
+        setConnections((prev) =>
+          prev.map((c) => (failedIds.has(c.id) ? { ...c, isActive: !newActive } : c))
+        );
+        notify.error(
+          `Failed to ${newActive ? "enable" : "disable"} ${failed} connection(s) of "${providerId}"`
+        );
+      }
     }
   };
 
@@ -1178,33 +1222,52 @@ function ProvidersPageContent() {
                       </span>
                       <h2 className="text-xl font-semibold text-text-main">Recent Providers</h2>
                       <span className="px-2 py-0.5 rounded-full bg-primary/10 text-primary text-xs font-semibold">
-                        {recentEntries.length}
+                        {filteredRecentEntries.length}
                       </span>
                     </div>
                     <p className="text-xs text-text-muted hidden sm:block">
                       Providers you recently viewed, tested, or configured
                     </p>
                   </div>
-                  <div
-                    className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4"
-                    data-testid="recent-providers-grid"
-                  >
-                    {recentEntries.map((entry) => (
-                      <HighlightableProviderCard
-                        key={`recent-${entry.providerId}`}
-                        providerId={entry.providerId}
-                        provider={entry.provider}
-                        stats={entry.stats}
-                        authType={getCompactProviderAuthType(entry, showFreeOnly)}
-                        onToggle={(active) =>
-                          handleToggleProvider(entry.providerId, entry.toggleAuthType, active)
-                        }
-                        onEdit={handleEditCustomProvider}
-                        onDelete={handleDeleteCustomProvider}
-                        onOpenGuide={(id, name) => setGuideModalProvider({ id, name })}
-                      />
-                    ))}
-                  </div>
+                  {/* The search box applies here too — the recent list used to
+                      ignore it, so typing a query changed nothing on this tab
+                      and the count badge disagreed with the grid. */}
+                  {filteredRecentEntries.length === 0 ? (
+                    <div
+                      className="flex items-center justify-center gap-2 py-8 border border-dashed border-border rounded-xl text-text-muted text-sm"
+                      data-testid="recent-no-match"
+                    >
+                      <span className="material-symbols-outlined text-[18px]">search_off</span>
+                      <span>
+                        {providerText(
+                          t,
+                          "noRecentProvidersMatch",
+                          "No recent providers match your search."
+                        )}
+                      </span>
+                    </div>
+                  ) : (
+                    <div
+                      className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4"
+                      data-testid="recent-providers-grid"
+                    >
+                      {filteredRecentEntries.map((entry) => (
+                        <HighlightableProviderCard
+                          key={`recent-${entry.providerId}`}
+                          providerId={entry.providerId}
+                          provider={entry.provider}
+                          stats={entry.stats}
+                          authType={getCompactProviderAuthType(entry, showFreeOnly)}
+                          onToggle={(active) =>
+                            handleToggleProvider(entry.providerId, entry.toggleAuthType, active)
+                          }
+                          onEdit={handleEditCustomProvider}
+                          onDelete={handleDeleteCustomProvider}
+                          onOpenGuide={(id, name) => setGuideModalProvider({ id, name })}
+                        />
+                      ))}
+                    </div>
+                  )}
                 </div>
               ) : (
                 <div
@@ -1405,6 +1468,16 @@ function ProvidersPageContent() {
                             onClick={() => setShowCustomProviderForm((prev) => !prev)}
                           >
                             {t("customProviderTitle")}
+                          </Button>
+                          {/* The import-from-file modal existed but NOTHING could
+                              open it — the feature was unreachable from the UI. */}
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            icon="upload_file"
+                            onClick={() => setShowImportFromFileModal(true)}
+                          >
+                            Import from file
                           </Button>
                         </div>
                       </div>

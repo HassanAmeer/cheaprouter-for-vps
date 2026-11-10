@@ -667,12 +667,9 @@ export default function Sidebar({
         )}
         style={{ paddingTop: isMacElectron ? "var(--desktop-safe-top)" : undefined }}
       >
-        <a
-          href="#main-content"
-          className="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:p-3 focus:bg-primary focus:text-white focus:rounded-md focus:m-2"
-        >
-          {t("skipToContent")}
-        </a>
+        {/* The page already provides the "skip to content" link (root layout).
+            A second one here produced three identical skip links per page
+            (the sidebar itself is rendered twice: desktop + mobile drawer). */}
 
         {/* Brand row: the expand/collapse toggle sits on the LEFT of the logo +
             name/version block, so the whole row acts as the sidebar control.
@@ -722,9 +719,12 @@ export default function Sidebar({
             </div>
             {!collapsed && (
               <div className="flex flex-col min-w-0">
-                <h1 className="text-sm font-semibold tracking-tight text-text-main truncate">
+                {/* Not a heading: the page title owns the single <h1>. The
+                    sidebar is rendered twice (desktop + mobile drawer), so an
+                    <h1> here duplicated it on every dashboard page. */}
+                <span className="text-sm font-semibold tracking-tight text-text-main truncate">
                   {customAppName || APP_CONFIG.name}
-                </h1>
+                </span>
                 <span className="text-[10px] text-text-muted">v{APP_CONFIG.version}</span>
               </div>
             )}

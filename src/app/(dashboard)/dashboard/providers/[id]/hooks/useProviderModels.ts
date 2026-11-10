@@ -137,7 +137,18 @@ export function useProviderModels(
       const res = await fetch(`/api/provider-models?provider=${encodeURIComponent(providerId)}`, {
         cache: "no-store",
       });
-      if (!res.ok) return;
+      if (!res.ok) {
+        // Silent failure here looked like "my models vanished" — the table
+        // simply showed the static catalog with no explanation.
+        notify.error(
+          providerText(
+            t,
+            "modelMetaLoadFailed",
+            "Could not load this provider's models — showing the static catalog only"
+          )
+        );
+        return;
+      }
       const data = await res.json();
       setModelMeta({
         customModels: data.models || [],
@@ -164,7 +175,7 @@ export function useProviderModels(
     } catch (e) {
       console.error("fetchProviderModelMeta", e);
     }
-  }, [providerId, isSearchProvider]);
+  }, [providerId, isSearchProvider, notify, t]);
 
   return {
     modelMeta,

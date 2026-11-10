@@ -218,7 +218,19 @@ export default function Header({
             <span className="material-symbols-outlined text-[24px]">menu</span>
           </button>
         )}
-        {title && <h1 className="text-base font-semibold text-text-main truncate">{title}</h1>}
+        {/* The desktop title below is the page's <h1>. This mobile copy is
+            display:none on desktop and the desktop copy is display:none on
+            mobile, so exactly ONE of them is in the accessibility tree at any
+            viewport — two <h1>s per page were announced twice. */}
+        {title && (
+          <span
+            role="heading"
+            aria-level={1}
+            className="text-base font-semibold text-text-main truncate"
+          >
+            {title}
+          </span>
+        )}
       </div>
 
       {/* Page title with icon - desktop */}

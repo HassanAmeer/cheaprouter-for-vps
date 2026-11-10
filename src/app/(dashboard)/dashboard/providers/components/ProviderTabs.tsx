@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useTransition } from "react";
+import { useState, useCallback, useEffect, useTransition } from "react";
 import { ProviderTab, PROVIDER_TABS_CONFIG } from "../hooks/useProviderTabs";
 
 export function ProviderTabs({
@@ -13,6 +13,13 @@ export function ProviderTabs({
   const [activeTab, setActiveTab] = useState<ProviderTab>(initialTab as ProviderTab);
   const [pendingTab, setPendingTab] = useState<ProviderTab | null>(null);
   const [, startTransition] = useTransition();
+
+  // The page can switch tabs on its own (e.g. the empty state's "Browse All
+  // Providers" button). Without this sync the tab bar kept highlighting the
+  // OLD tab while the content already showed the new one.
+  useEffect(() => {
+    setActiveTab(initialTab as ProviderTab);
+  }, [initialTab]);
 
   const handleTabChange = useCallback(
     (tab: ProviderTab) => {

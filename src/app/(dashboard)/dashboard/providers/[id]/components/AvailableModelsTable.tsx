@@ -5,6 +5,10 @@ import { useNotificationStore } from "@/store/notificationStore";
 import { matchesSearch } from "@/shared/utils/turkishText";
 import { getPromptForCapability } from "@/app/(dashboard)/dashboard/providers/components/DefaultCapabilitiesPromptModal";
 import { isFreeModel } from "@/shared/utils/freeModels";
+import {
+  formatContextWindowLabel,
+  resolveModelContextWindow,
+} from "@/lib/providers/modelContextWindow";
 
 export interface ModelEntry {
   id: string;
@@ -38,17 +42,9 @@ export interface AvailableModelsTableProps {
   connectionId?: string;
 }
 
-export function formatContextWindow(tokens?: number): string {
-  if (!tokens || tokens <= 0) return "—";
-  if (tokens >= 1_000_000) {
-    const m = tokens / 1_000_000;
-    return `${Number.isInteger(m) ? m : m.toFixed(1)}M`;
-  }
-  if (tokens >= 1_000) {
-    const k = tokens / 1_000;
-    return `${Number.isInteger(k) ? k : k.toFixed(0)}K`;
-  }
-  return String(tokens);
+/** Context window label — "—" when no source knows the window. */
+export function formatContextWindow(tokens?: number | null): string {
+  return formatContextWindowLabel(tokens);
 }
 
 import { detectModelCapabilities } from "@/shared/utils/modelCapabilities";
@@ -190,7 +186,8 @@ export default function AvailableModelsTable({
                   status: c.testStatus === "verified" ? "ok" : "error",
                   latencyMs: typeof c.testLatencyMs === "number" ? c.testLatencyMs : undefined,
                   snippet: c.testStatus === "verified" ? (c.testResponse ?? "OK (200)") : undefined,
-                  error: c.testStatus === "failed" ? (c.testResponse ?? "Model test failed") : undefined,
+                  error:
+                    c.testStatus === "failed" ? (c.testResponse ?? "Model test failed") : undefined,
                 };
               }
             }
@@ -250,13 +247,14 @@ export default function AvailableModelsTable({
   const handleRunTest = async (modelId: string) => {
     const model = models.find((m) => m.id === modelId);
     const caps = model ? getModelCapabilities(model) : null;
-    const defaultCap = caps?.hasImageGen && !caps?.hasChat
-      ? "image"
-      : caps?.hasEmbedding && !caps?.hasChat
-        ? "embedding"
-        : caps?.hasAudio && !caps?.hasChat
-          ? "audio"
-          : "text";
+    const defaultCap =
+      caps?.hasImageGen && !caps?.hasChat
+        ? "image"
+        : caps?.hasEmbedding && !caps?.hasChat
+          ? "embedding"
+          : caps?.hasAudio && !caps?.hasChat
+            ? "audio"
+            : "text";
     const selectedCap = selectedCapabilities[modelId] || defaultCap;
     const promptToRun = getPromptForCapability(selectedCap, testPrompt);
     setTestingModelId(modelId);
@@ -363,9 +361,12 @@ export default function AvailableModelsTable({
           </span>
         </div>
 
-        <div className="flex items-center gap-2.5">
+        {/* Wraps on narrow screens: the search field (min 220px) plus the
+            "Fetch All Models" button did not fit a 375px viewport and the
+            button was clipped by the container's overflow-hidden. */}
+        <div className="flex flex-wrap items-center gap-2.5 min-w-0">
           {/* Search Input */}
-          <div className="relative min-w-[220px]">
+          <div className="relative min-w-[180px] flex-1 sm:flex-none sm:w-[220px]">
             <span className="material-symbols-outlined absolute left-2.5 top-1/2 -translate-y-1/2 text-[16px] text-[#737373]">
               search
             </span>
@@ -384,7 +385,7 @@ export default function AvailableModelsTable({
               type="button"
               disabled={isFetchingModels}
               onClick={() => void onFetchModels()}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-white text-black hover:bg-[#E5E5E5] transition-colors disabled:opacity-50 cursor-pointer shadow-sm shrink-0"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-white text-black hover:bg-[#E5E5E5] transition-colors disabled:opacity-50 cursor-pointer shadow-sm shrink-0 whitespace-nowrap"
               title="Query upstream /v1/models to fetch and synchronize all available models"
             >
               <span
@@ -481,7 +482,9 @@ export default function AvailableModelsTable({
                   <span className="material-symbols-outlined text-[32px] animate-spin block mb-3 text-white">
                     progress_activity
                   </span>
-                  <p className="text-sm font-medium text-white">Fetching AI models from upstream provider...</p>
+                  <p className="text-sm font-medium text-white">
+                    Fetching AI models from upstream provider...
+                  </p>
                   <p className="text-xs text-[#737373] mt-1">This will take just a few seconds.</p>
                 </td>
               </tr>
@@ -503,20 +506,36 @@ export default function AvailableModelsTable({
                 const isTesting = testingModelId === model.id;
                 const testResult = testResults[model.id];
 
-                // Detect context window
-                const rawTokens =
-                  model.contextWindowOverride || model.max_input_tokens || model.inputTokenLimit;
+                // Context window: operator override → synced row → registry
+                // model → registry provider default → static model spec.
+                // (Before this chain the column read only the override/synced
+                // fields, so every static catalog model showed "—".)
+                const rawTokens = resolveModelContextWindow({
+                  providerId,
+                  modelId: model.id,
+                  registryContextLength:
+                    typeof model.contextLength === "number" ? model.contextLength : undefined,
+                  override:
+                    typeof model.contextWindowOverride === "number"
+                      ? model.contextWindowOverride
+                      : undefined,
+                  syncedMaxInputTokens:
+                    typeof model.max_input_tokens === "number" ? model.max_input_tokens : undefined,
+                  syncedInputTokenLimit:
+                    typeof model.inputTokenLimit === "number" ? model.inputTokenLimit : undefined,
+                });
                 const contextStr = formatContextWindow(rawTokens);
 
                 // Detect capabilities using unified helper
                 const caps = getModelCapabilities(model);
-                const defaultCap = caps.hasImageGen && !caps.hasChat
-                  ? "image"
-                  : caps.hasEmbedding && !caps.hasChat
-                    ? "embedding"
-                    : caps.hasAudio && !caps.hasChat
-                      ? "audio"
-                      : "text";
+                const defaultCap =
+                  caps.hasImageGen && !caps.hasChat
+                    ? "image"
+                    : caps.hasEmbedding && !caps.hasChat
+                      ? "embedding"
+                      : caps.hasAudio && !caps.hasChat
+                        ? "audio"
+                        : "text";
                 const selectedCap = selectedCapabilities[model.id] || defaultCap;
 
                 return (
@@ -580,7 +599,9 @@ export default function AvailableModelsTable({
                             type="button"
                             onClick={() => handleSelectCapability(model.id, "text")}
                             title={`Text / Chat: Conversational dialogue & instructions (${
-                              selectedCap === "text" ? "Active for test" : "Click to select for test"
+                              selectedCap === "text"
+                                ? "Active for test"
+                                : "Click to select for test"
                             })`}
                             className={`size-6 rounded-md text-[11px] font-medium transition-all duration-150 inline-flex items-center justify-center cursor-pointer ${
                               selectedCap === "text"
@@ -638,7 +659,9 @@ export default function AvailableModelsTable({
                             type="button"
                             onClick={() => handleSelectCapability(model.id, "code")}
                             title={`Code: Programming, debugging & syntax (${
-                              selectedCap === "code" ? "Active for test" : "Click to select for test"
+                              selectedCap === "code"
+                                ? "Active for test"
+                                : "Click to select for test"
                             })`}
                             className={`size-6 rounded-md text-[11px] font-medium transition-all duration-150 inline-flex items-center justify-center cursor-pointer ${
                               selectedCap === "code"
@@ -736,7 +759,9 @@ export default function AvailableModelsTable({
                             type="button"
                             onClick={() => handleSelectCapability(model.id, "embedding")}
                             title={`Embedding: Vector semantic representations (${
-                              selectedCap === "embedding" ? "Active for test" : "Click to select for test"
+                              selectedCap === "embedding"
+                                ? "Active for test"
+                                : "Click to select for test"
                             })`}
                             className={`size-6 rounded-md text-[11px] font-medium transition-all duration-150 inline-flex items-center justify-center cursor-pointer ${
                               selectedCap === "embedding"
