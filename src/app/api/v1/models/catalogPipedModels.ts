@@ -92,13 +92,21 @@ export function buildPipedModelRow(cust: PipedModelCustomization, timestamp: num
  * @param authorize Optional per-key authorizer. When provided, a customization
  *   the authorizer rejects is NOT re-added — the catalog then honours the key's
  *   model allow-list / deny-list exactly like every other row.
+ * @param isBlockedProvider Optional predicate for a blocked provider. A
+ *   customization of a blocked provider is not re-added either — the block must
+ *   not be undone by this "ensure present" pass.
  */
 export async function ensurePipedModelRows(
   models: CatalogModelRow[],
   customizations: PipedModelCustomization[],
-  opts: { timestamp: number; authorize?: (row: CatalogModelRow) => Promise<boolean> }
+  opts: {
+    timestamp: number;
+    authorize?: (row: CatalogModelRow) => Promise<boolean>;
+    isBlockedProvider?: (providerId: string) => boolean;
+  }
 ): Promise<CatalogModelRow[]> {
   for (const cust of customizations) {
+    if (opts.isBlockedProvider?.(cust.providerId)) continue;
     if (isPipedModelRowPresent(models, cust)) continue;
     const row = buildPipedModelRow(cust, opts.timestamp);
     if (opts.authorize && !(await opts.authorize(row))) continue;

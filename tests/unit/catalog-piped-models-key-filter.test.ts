@@ -88,4 +88,22 @@ describe("piped model rows honour the per-key model authorizer", () => {
     await ensurePipedModelRows(models, [cust], { timestamp: 1700000000 });
     assert.equal(models.length, 1);
   });
+
+  it("does NOT re-add a row of a blocked provider", async () => {
+    const models: CatalogModelRow[] = [];
+    await ensurePipedModelRows(models, [cust], {
+      timestamp: 1700000000,
+      isBlockedProvider: (providerId) => providerId === "pollinations-text",
+    });
+    assert.equal(models.length, 0);
+  });
+
+  it("re-adds a row of a provider that is not blocked", async () => {
+    const models: CatalogModelRow[] = [];
+    await ensurePipedModelRows(models, [cust], {
+      timestamp: 1700000000,
+      isBlockedProvider: () => false,
+    });
+    assert.equal(models.length, 1);
+  });
 });

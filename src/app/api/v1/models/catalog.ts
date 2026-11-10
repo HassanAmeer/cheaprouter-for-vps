@@ -335,6 +335,20 @@ async function buildUnifiedModelsResponseCore(
     const aliasMaps = { aliasToProviderId, providerIdToAlias };
     // Issue #96: Allow blocking specific providers from the models list
     const blockedProviders = normalizeBlockedProviderSet(settings.blockedProviders);
+    /**
+     * Whether a provider is blocked — checked in every id form it may be
+     * published under (raw provider id, the provider's alias/prefix and the
+     * canonical provider id). A block that only matched the canonical id left
+     * the alias-prefixed rows of that provider visible in the listing.
+     */
+    const isProviderBlockedInCatalog = (
+      providerId: string,
+      alias?: string,
+      canonicalProviderId?: string
+    ): boolean =>
+      blockedProviders.has(providerId) ||
+      Boolean(alias && blockedProviders.has(alias)) ||
+      Boolean(canonicalProviderId && blockedProviders.has(canonicalProviderId));
     // #6316: Opt-in filter — hide paid-only models via `isFreeModel()`. Only applied to
     // PROVIDER_MODELS + OpenRouter loops (where pricing metadata / :free suffix / catalog
     // membership is available). Modality registries (embedding/image/rerank/audio/
@@ -1266,6 +1280,10 @@ async function buildUnifiedModelsResponseCore(
         const prefix = providerIdToPrefix[providerId];
         const alias = prefix || providerIdToAlias[providerId] || providerId;
         const canonicalProviderId = resolveCanonicalProviderId(alias, providerId);
+        // The rows are published under the alias prefix, so a provider blocked by
+        // its ALIAS must be filtered here too (the id-only check above let the
+        // alias-prefixed rows through).
+        if (isProviderBlockedInCatalog(providerId, alias, canonicalProviderId)) continue;
         // #12058: see the static loop — the alias row is the only row here.
         const selfAliased = canonicalProviderId === alias;
         const parentProviderType = nodeIdToProviderType[providerId];
@@ -1739,6 +1757,10 @@ async function buildUnifiedModelsResponseCore(
           !(parentProviderType && activeAliases.has(parentProviderType))
         )
           continue;
+        // A blocked provider must not advertise its operator-defined models either
+        // (the static/synced loops already honour blockedProviders; this loop did
+        // not, so a blocked provider's custom models stayed in the listing).
+        if (isProviderBlockedInCatalog(providerId, alias, canonicalProviderId)) continue;
 
         for (const model of providerCustomModels) {
           const modelId = typeof model.id === "string" ? model.id : null;
@@ -2002,6 +2024,8 @@ async function buildUnifiedModelsResponseCore(
       const prefix = providerIdToPrefix[providerId];
       const alias = prefix || providerIdToAlias[providerId] || providerId;
       const canonicalProviderId = resolveCanonicalProviderId(alias, providerId);
+      // The rows are published under the alias prefix — honour a block by alias too.
+      if (isProviderBlockedInCatalog(providerId, alias, canonicalProviderId)) continue;
 
       for (const model of fallbackModels) {
         const modelId = typeof model.id === "string" ? model.id : null;
@@ -2250,9 +2274,11 @@ async function buildUnifiedModelsResponseCore(
       // Ensure every active customization is present in the final models list.
       // Rows a restricted API key may not call are NOT re-added: this re-add
       // runs AFTER the per-key filter, so it must apply the same predicate.
+      // Rows of a BLOCKED provider are not re-added either.
       await ensurePipedModelRows(finalModels as CatalogModelRow[], validActiveCustomizations, {
         timestamp,
         authorize: keyModelAuthorizer ?? undefined,
+        isBlockedProvider: (providerId: string) => isProviderBlockedInCatalog(providerId),
       });
 
       // Enrich all models with custom aliases, names, context windows, and full 6-field pricing
