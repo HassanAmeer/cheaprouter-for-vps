@@ -43,7 +43,7 @@ async function main() {
       waitUntil: "domcontentloaded",
       timeout: 180000,
     });
-    await page.waitForTimeout(4000);
+    await page.waitForTimeout(9000);
     const info = await page.evaluate(() => {
       const main = document.querySelector("main");
       const text = (main?.innerText || "").replace(/\n{2,}/g, "\n").trim();

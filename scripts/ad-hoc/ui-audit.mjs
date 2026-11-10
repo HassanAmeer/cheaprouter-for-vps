@@ -143,6 +143,9 @@ const AUDIT = () => {
       if (el.className && String(el.className).includes("sr-only")) return false;
       const style = getComputedStyle(el);
       if (style.visibility === "hidden" || style.display === "none") return false;
+      // `inert` subtrees are out of the tab order — off-screen is fine there.
+      if (el.closest("[inert]")) return false;
+      if (el.tabIndex < 0) return false;
       return true;
     })
     .slice(0, 15)
