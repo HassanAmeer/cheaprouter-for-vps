@@ -1,37 +1,32 @@
 /**
  * Batch model-test endpoint.
  *
- * Loops sequentially over `modelIds` so the `withRateLimit` Bottleneck can
- * serialize dispatches against the upstream provider/connection. Stops the
- * loop early if it sees `CONSECUTIVE_RATE_LIMIT_STOP_THRESHOLD` rate-limited
- * results in a row — a 429 storm usually means the upstream is down and the
- * remaining models will only burn the timeout window.
+ * Probes every requested model of a provider and returns one result per
+ * model. The probes run with BOUNDED PARALLELISM (see `runModelBatchTest`),
+ * so a batch of 40 models no longer costs 40 x latency.
  *
- * When `autoHideFailed` is true, models that return a hard error (NOT
- * rate-limited) are persisted as hidden via `setModelIsHidden`.
+ * Two response modes:
+ *
+ *  - default: one JSON body `{ results: { [modelId]: entry } }` (unchanged
+ *    contract for existing callers),
+ *  - `stream: true`: NDJSON — one line per FINISHED model
+ *    (`{"modelId":"…","entry":{…}}`) followed by a summary line
+ *    (`{"done":true,…}`), so the dashboard can paint each model the moment it
+ *    resolves instead of waiting for the whole batch.
+ *
+ * The batch still stops early when it sees a run of rate-limited results
+ * (a 429 storm means the upstream is down) and web-session providers that ban
+ * burst probes stay strictly sequential.
  */
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { requireManagementAuth } from "@/lib/api/requireManagementAuth";
-import { DEFAULT_MODEL_TEST_TIMEOUT_MS, runSingleModelTest } from "@/lib/api/modelTestRunner";
-import { setModelIsHidden } from "@/lib/db/models";
-import { upsertCustomization } from "@/lib/db/providerModelCustomizations";
-import { sanitizeErrorMessage } from "@cheaproute/open-sse/utils/error";
+import { runModelBatchTest, type BatchTestResultEntry } from "@/lib/api/modelBatchTest";
 import { getSettings } from "@/lib/db/settings";
 import { getProviderConnections } from "@/lib/db/providers";
-import { isFreeModel, providerHasFreeModels } from "@/shared/utils/freeModels";
 import * as log from "@/sse/utils/logger";
 
-const CONSECUTIVE_RATE_LIMIT_STOP_THRESHOLD = 3;
-/** Web-session providers (esp. Arena/CF) ban burst probes — pause between models. */
-const SLOW_PROBE_PROVIDERS = new Set(["lmarena", "lma"]);
-/** Fixed inter-model delay for SLOW_PROBE_PROVIDERS (no env — avoids doc-sync drift). */
-const SLOW_PROBE_DELAY_MS = 3500;
-const CONSECUTIVE_BOT_STOP_THRESHOLD = 2;
-
-function sleep(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
+export type { BatchTestResultEntry } from "@/lib/api/modelBatchTest";
 
 const testAllSchema = z.object({
   providerId: z.string().min(1),
@@ -39,39 +34,11 @@ const testAllSchema = z.object({
   connectionId: z.string().optional(),
   respectRateLimit: z.boolean().optional().default(true),
   autoHideFailed: z.boolean().optional().default(false),
+  /** NDJSON streaming mode — one line per finished model. */
+  stream: z.boolean().optional().default(false),
+  /** Concurrent probes for this provider (clamped server-side). */
+  concurrency: z.number().int().min(1).max(16).optional(),
 });
-
-export interface BatchTestResultEntry {
-  status: "ok" | "error" | "slow";
-  latencyMs: number;
-  responseText?: string;
-  error?: string;
-  statusCode?: number;
-  rateLimited?: boolean;
-  isTransient?: boolean;
-  isQuota?: boolean;
-  hidden?: boolean;
-  isTimeout?: boolean;
-  skipped?: boolean;
-}
-
-function toBatchEntry(
-  result: Awaited<ReturnType<typeof runSingleModelTest>>
-): BatchTestResultEntry {
-  const entry: BatchTestResultEntry = {
-    status: result.status === "ok" ? "ok" : result.status === "slow" ? "slow" : "error",
-    latencyMs: result.latencyMs,
-  };
-  if (result.responseText !== undefined) entry.responseText = result.responseText;
-  if (result.error !== undefined) entry.error = result.error;
-  if (result.statusCode !== undefined) entry.statusCode = result.statusCode;
-  if (result.rateLimited === true) entry.rateLimited = true;
-  if (result.isTransient === true) entry.isTransient = true;
-  if (result.isQuota === true) entry.isQuota = true;
-  if (result.isTimeout === true) entry.isTimeout = true;
-  if (result.skipped === true) entry.skipped = true;
-  return entry;
-}
 
 export async function POST(request: Request) {
   const authError = await requireManagementAuth(request);
@@ -96,15 +63,29 @@ export async function POST(request: Request) {
   if (!validation.success) {
     return NextResponse.json({ error: validation.error.format() }, { status: 400 });
   }
-  const { providerId, modelIds, connectionId, respectRateLimit, autoHideFailed } = validation.data;
+  const {
+    providerId,
+    modelIds,
+    connectionId,
+    respectRateLimit,
+    autoHideFailed,
+    stream,
+    concurrency,
+  } = validation.data;
   const providerConnections = await getProviderConnections({ provider: providerId });
-  if (providerConnections.length > 0 && providerConnections.every((connection) => connection.isActive === false)) {
-    return NextResponse.json({ error: { message: `Provider ${providerId} has no active connections` } }, { status: 409 });
+  if (
+    providerConnections.length > 0 &&
+    providerConnections.every((connection) => connection.isActive === false)
+  ) {
+    return NextResponse.json(
+      { error: { message: `Provider ${providerId} has no active connections` } },
+      { status: 409 }
+    );
   }
 
   // #6328 (follow-up to #6495): REMOVE — not just hide — paid Test-all dispatches
-  // when hidePaidModels is on. Paid ids are skipped inside the loop with a
-  // "Skipped" entry; the skip does NOT touch the consecutive-rate-limit halt
+  // when hidePaidModels is on. Paid ids are skipped inside the run without
+  // dispatching; the skip does NOT touch the consecutive-rate-limit halt
   // counter (skips are not upstream failures). Fail open on settings read.
   let hidePaid = false;
   try {
@@ -121,186 +102,106 @@ export async function POST(request: Request) {
       hasConnection: Boolean(connectionId),
       respectRateLimit,
       autoHideFailed,
+      stream,
+      concurrency,
     }
   );
 
-  const results: Record<string, BatchTestResultEntry> = {};
-  let consecutiveRateLimits = 0;
-  let consecutiveBotBlocks = 0;
-  let stoppedEarly = false;
-  let stopReason: "consecutive_rate_limits" | "consecutive_bot_blocks" | undefined;
-  const slowProbe = SLOW_PROBE_PROVIDERS.has(providerId);
-  let testedUpstream = 0;
+  if (stream) {
+    const encoder = new TextEncoder();
+    const streamResponse = new ReadableStream({
+      async start(controller) {
+        const send = (payload: unknown) => {
+          try {
+            controller.enqueue(encoder.encode(`${JSON.stringify(payload)}\n`));
+          } catch {
+            // Client disconnected mid-stream — the batch keeps running, the
+            // write is simply dropped.
+          }
+        };
 
-  for (const modelId of modelIds) {
-    // #6328: skip paid ids without dispatching; do not increment
-    // consecutiveRateLimits — skip is not a rate-limited failure.
-    if (
-      hidePaid &&
-      !(providerHasFreeModels(providerId) && isFreeModel(providerId, { id: modelId }))
-    ) {
-      results[modelId] = {
-        status: "error",
-        latencyMs: 0,
-        error: "Skipped: paid model with hidePaidModels enabled",
-      };
-      continue;
-    }
+        try {
+          const outcome = await runModelBatchTest({
+            providerId,
+            modelIds,
+            connectionId,
+            respectRateLimit,
+            autoHideFailed,
+            hidePaidModels: hidePaid,
+            ...(concurrency ? { concurrency } : {}),
+            onResult: (modelId: string, entry: BatchTestResultEntry) => {
+              send({ modelId, entry });
+            },
+          });
 
-    let entry: BatchTestResultEntry;
-    try {
-      // Space out Arena/CF probes — sequential alone still looks like a burst.
-      if (slowProbe && testedUpstream > 0 && SLOW_PROBE_DELAY_MS > 0) {
-        await sleep(SLOW_PROBE_DELAY_MS);
-      }
-      // `runSingleModelTest` only engages the Bottleneck rate limiter when
-      // `connectionId` is provided. To honor `respectRateLimit=false`, we
-      // omit the connectionId so the runner bypasses `withRateLimit`.
-      const effectiveConnectionId =
-        connectionId && respectRateLimit !== false ? connectionId : undefined;
-      const result = await runSingleModelTest({
-        providerId,
-        modelId,
-        ...(effectiveConnectionId ? { connectionId: effectiveConnectionId } : {}),
-        timeoutMs: DEFAULT_MODEL_TEST_TIMEOUT_MS,
-        streamChat: true,
-      });
-      entry = toBatchEntry(result);
-      testedUpstream += 1;
-    } catch (error: unknown) {
-      log.error("MODEL_TEST_ALL", `Unexpected error testing model ${modelId}`, {
-        providerId,
-        modelId,
-        error: sanitizeErrorMessage(error),
-      });
-      entry = {
-        status: "error",
-        latencyMs: 0,
-        error: sanitizeErrorMessage(error) || "Unknown error",
-      };
-    }
+          send({
+            done: true,
+            tested: outcome.tested,
+            stoppedEarly: outcome.stoppedEarly,
+            ...(outcome.stopReason ? { stopReason: outcome.stopReason } : {}),
+          });
 
-    if (entry.rateLimited) {
-      consecutiveRateLimits += 1;
-    } else {
-      consecutiveRateLimits = 0;
-    }
-
-    // #9511: quota entries (403 with "insufficient balance" etc.) are NOT
-    // bot-blocks — they should not count toward the bot-block stop threshold.
-    const botBlocked =
-      !entry.isQuota &&
-      (entry.statusCode === 403 ||
-        (typeof entry.error === "string" &&
-          /cloudflare|bot management|recaptcha|cf-chl|just a moment/i.test(entry.error)));
-    if (botBlocked) {
-      consecutiveBotBlocks += 1;
-    } else if (entry.status === "ok") {
-      consecutiveBotBlocks = 0;
-    }
-
-    if (
-      autoHideFailed &&
-      entry.status === "error" &&
-      !entry.rateLimited &&
-      !entry.isTimeout &&
-      !entry.isTransient &&
-      !entry.isQuota &&
-      // #14780: a skipped probe (web-session provider) never ran — not a failure.
-      !entry.skipped
-    ) {
-      try {
-        await setModelIsHidden(providerId, modelId, true);
-        entry.hidden = true;
-        log.info("MODEL_TEST_ALL", `Auto-hidden model ${modelId} after test failure`, {
-          providerId,
-          modelId,
-        });
-      } catch (hideError: unknown) {
-        log.error("MODEL_TEST_ALL", `Failed to auto-hide model ${modelId}`, {
-          providerId,
-          modelId,
-          error: sanitizeErrorMessage(hideError),
-        });
-      }
-    }
-
-    results[modelId] = entry;
-    if (!entry.skipped) {
-      try {
-        const isOk = entry.status === "ok";
-        upsertCustomization({
-          providerId,
-          originalModelId: modelId,
-          isTested: true,
-          testStatus: isOk ? "verified" : "failed",
-          testHttpStatus: entry.statusCode ?? (isOk ? 200 : 500),
-          testLatencyMs: entry.latencyMs,
-          testResponse:
-            (typeof entry.responseText === "string" ? entry.responseText.slice(0, 500) : null) ||
-            (typeof entry.error === "string" ? entry.error.slice(0, 500) : null),
-        });
-      } catch (custErr) {
-        log.warn("MODEL_TEST_ALL", `Failed to persist customization for ${modelId}: ${custErr}`);
-      }
-    }
-    log.info(
-      "MODEL_TEST_ALL",
-      `Tested ${modelId}: ${entry.status}${entry.rateLimited ? " (rate-limited)" : ""}${entry.isTimeout ? " (timeout)" : ""}`,
-      {
-        providerId,
-        modelId,
-        latencyMs: entry.latencyMs,
-        rateLimited: entry.rateLimited,
-        isTimeout: entry.isTimeout,
-        hidden: entry.hidden,
-      }
-    );
-
-    if (consecutiveRateLimits >= CONSECUTIVE_RATE_LIMIT_STOP_THRESHOLD) {
-      stoppedEarly = true;
-      stopReason = "consecutive_rate_limits";
-      log.warn(
-        "MODEL_TEST_ALL",
-        `Stopping batch early after ${consecutiveRateLimits} consecutive rate-limited results`,
-        {
-          providerId,
-          testedCount: Object.keys(results).length,
-          totalCount: modelIds.length,
+          log.info(
+            "MODEL_TEST_ALL",
+            `Batch test complete: ${Object.keys(outcome.results).length}/${modelIds.length} model(s)`,
+            {
+              providerId,
+              tested: Object.keys(outcome.results).length,
+              total: modelIds.length,
+              stoppedEarly: outcome.stoppedEarly,
+            }
+          );
+        } catch (error: unknown) {
+          log.error("MODEL_TEST_ALL", "Batch test failed", {
+            providerId,
+            error: error instanceof Error ? error.message : "unknown",
+          });
+          send({ done: true, error: "Batch test failed" });
+        } finally {
+          try {
+            controller.close();
+          } catch {
+            // already closed
+          }
         }
-      );
-      break;
-    }
+      },
+    });
 
-    if (slowProbe && consecutiveBotBlocks >= CONSECUTIVE_BOT_STOP_THRESHOLD) {
-      stoppedEarly = true;
-      stopReason = "consecutive_bot_blocks";
-      log.warn(
-        "MODEL_TEST_ALL",
-        `Stopping batch early after ${consecutiveBotBlocks} consecutive bot/Cloudflare blocks (avoid session ban)`,
-        {
-          providerId,
-          testedCount: Object.keys(results).length,
-          totalCount: modelIds.length,
-        }
-      );
-      break;
-    }
+    return new Response(streamResponse, {
+      status: 200,
+      headers: {
+        "Content-Type": "application/x-ndjson; charset=utf-8",
+        "Cache-Control": "no-store, no-transform",
+        "X-Accel-Buffering": "no",
+      },
+    });
   }
+
+  const outcome = await runModelBatchTest({
+    providerId,
+    modelIds,
+    connectionId,
+    respectRateLimit,
+    autoHideFailed,
+    hidePaidModels: hidePaid,
+    ...(concurrency ? { concurrency } : {}),
+  });
 
   log.info(
     "MODEL_TEST_ALL",
-    `Batch test complete: ${Object.keys(results).length}/${modelIds.length} model(s)`,
+    `Batch test complete: ${Object.keys(outcome.results).length}/${modelIds.length} model(s)`,
     {
       providerId,
-      tested: Object.keys(results).length,
+      tested: Object.keys(outcome.results).length,
       total: modelIds.length,
-      stoppedEarly,
+      stoppedEarly: outcome.stoppedEarly,
     }
   );
 
   return NextResponse.json({
-    results,
-    ...(stoppedEarly && stopReason ? { stoppedEarly: true, stopReason } : {}),
+    results: outcome.results,
+    ...(outcome.stoppedEarly && outcome.stopReason
+      ? { stoppedEarly: true, stopReason: outcome.stopReason }
+      : {}),
   });
 }

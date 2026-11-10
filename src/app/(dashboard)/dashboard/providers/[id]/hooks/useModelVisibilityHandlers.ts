@@ -32,6 +32,7 @@ import {
 } from "../providerPageHelpers";
 import { useNotificationStore } from "@/store/notificationStore";
 import { extractApiErrorMessage } from "@/shared/http/apiErrorMessage";
+import { runParallelModelTests } from "@/shared/utils/modelBatchTestClient";
 
 type NotifyStore = ReturnType<typeof useNotificationStore>;
 
@@ -116,7 +117,9 @@ export function useModelVisibilityHandlers({
   const [clearingModels, setClearingModels] = useState(false);
   const [modelFilter, setModelFilter] = useState("");
   const [testingModelId, setTestingModelId] = useState<string | null>(null);
-  const [modelTestStatus, setModelTestStatus] = useState<Record<string, "ok" | "error" | "quota">>({});
+  const [modelTestStatus, setModelTestStatus] = useState<Record<string, "ok" | "error" | "quota">>(
+    {}
+  );
   const [testingAll, setTestingAll] = useState(false);
   const [testProgress, setTestProgress] = useState<{ done: number; total: number } | null>(null);
   const [autoHideFailed, setAutoHideFailed] = useState(false);
@@ -325,7 +328,7 @@ export function useModelVisibilityHandlers({
         );
         setModelTestStatus((prev) => ({ ...prev, [modelId]: "error" }));
       }
-    } catch  {
+    } catch {
       notify.error(providerText(t, "modelTestNetworkError", "Network error testing model"));
       setModelTestStatus((prev) => ({ ...prev, [modelId]: "error" }));
     } finally {
@@ -348,60 +351,45 @@ export function useModelVisibilityHandlers({
     let error = 0;
     let hiddenCount = 0;
 
-    const CHUNK_SIZE = 3;
-    for (let i = 0; i < targets.length; i += CHUNK_SIZE) {
-      const chunk = targets.slice(i, i + CHUNK_SIZE);
-      await Promise.all(
-        chunk.map(async ({ modelId, fullModel }) => {
-          try {
-            const result: {
-              results?: Record<
-                string,
-                {
-                  status?: "ok" | "error" | "slow";
-                  rateLimited?: boolean;
-                  isTimeout?: boolean;
-                  error?: string;
-                }
-              >;
-            } = await fetch("/api/models/test-all", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                providerId: providerId,
-                connectionId: selectedConnection?.id,
-                modelIds: [fullModel],
-              }),
-            }).then((r) => r.json());
+    // The API keys its results by the FULL model id ("provider/model"), while
+    // the rows are addressed by the short id — map back for the status paint.
+    const shortIdByFullId = new Map(targets.map((target) => [target.fullModel, target.modelId]));
 
-            const entry = result.results?.[fullModel];
-            const outcome = evaluateTestAllEntry(entry, autoHideFailed);
-            // #9511: paint "quota" status for quota-exhausted models (amber badge),
-            // "ok" for healthy, "error" for genuine failures.
-            setModelTestStatus((prev) => ({
-              ...prev,
-              [modelId]: outcome.isQuota ? "quota" : outcome.status,
-            }));
-            if (outcome.status === "ok") {
-              ok++;
-            } else {
-              error++;
-              if (outcome.shouldHide) {
-                // Hidden flag keyed by providerId — same as the manual eye toggle and the read
-                // (fetchProviderModelMeta). providerStorageAlias wrote it under the alias while the
-                // read looked under the canonical id, so auto-hide never reflected.
-                await handleToggleModelHidden(providerId, modelId, true);
-                hiddenCount++;
-              }
-            }
-          } catch  {
-            error++;
-            setModelTestStatus((prev) => ({ ...prev, [modelId]: "error" }));
+    // One request per provider; the endpoint probes the models in parallel and
+    // streams each result back as soon as it lands.
+    await runParallelModelTests({
+      groups: [
+        {
+          providerId,
+          connectionId: selectedConnection?.id,
+          modelIds: targets.map((target) => target.fullModel),
+          autoHideFailed,
+        },
+      ],
+      onResult: async ({ modelId: fullModel, entry }) => {
+        const modelId = shortIdByFullId.get(fullModel) ?? fullModel;
+        const outcome = evaluateTestAllEntry(entry, autoHideFailed);
+        // #9511: paint "quota" status for quota-exhausted models (amber badge),
+        // "ok" for healthy, "error" for genuine failures.
+        setModelTestStatus((prev) => ({
+          ...prev,
+          [modelId]: outcome.isQuota ? "quota" : outcome.status,
+        }));
+        if (outcome.status === "ok") {
+          ok++;
+        } else {
+          error++;
+          if (outcome.shouldHide) {
+            // Hidden flag keyed by providerId — same as the manual eye toggle and the read
+            // (fetchProviderModelMeta). providerStorageAlias wrote it under the alias while the
+            // read looked under the canonical id, so auto-hide never reflected.
+            await handleToggleModelHidden(providerId, modelId, true);
+            hiddenCount++;
           }
-          setTestProgress((prev) => (prev ? { done: prev.done + 1, total: prev.total } : null));
-        })
-      );
-    }
+        }
+      },
+      onProgress: (done) => setTestProgress((prev) => (prev ? { ...prev, done } : null)),
+    });
 
     notify.info(testAllResultsText(t, ok, ok + error));
     if (hiddenCount > 0) {

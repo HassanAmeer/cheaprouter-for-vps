@@ -8,7 +8,7 @@ import { filterUnavailableModelRows } from "@/lib/providers/mergeProviderModelLi
  *
  * Preserves the Bug #3610 fix intact:
  *   - autoHideFailed is threaded from the outer component (shared checkbox).
- *   - buildPassthroughTestBody / shouldSwitchToVisibleFilter come from the
+ *   - shouldSwitchToVisibleFilter comes from the
  *     leaf helper providerPageHelpers.ts.
  *
  * Never imports from ProviderDetailPageClient.
@@ -27,12 +27,12 @@ import {
   providerText,
   testAllResultsText,
   evaluateTestAllEntry,
-  buildPassthroughTestBody,
   shouldSwitchToVisibleFilter,
   type CompatModelRow,
 } from "../providerPageHelpers";
 import { ModelVisibilityToolbar } from "./ModelRow";
 import { sortModelsFreeFirst, isModelFreeBadge } from "@/shared/utils/freeModels";
+import { runParallelModelTests } from "@/shared/utils/modelBatchTestClient";
 import { useStrictFreeBadge } from "./useStrictFreeBadge";
 import PassthroughModelRow from "./PassthroughModelRow";
 
@@ -157,52 +157,35 @@ export default function PassthroughModelsSection({
     let error = 0;
     let hiddenCount = 0;
 
-    for (const model of modelsToTest) {
-      try {
-        const result: {
-          results?: Record<
-            string,
-            {
-              status?: "ok" | "error" | "slow";
-              rateLimited?: boolean;
-              isTimeout?: boolean;
-              error?: string;
-            }
-          >;
-        } = await fetch("/api/models/test-all", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
+    // One request for the whole provider: the endpoint probes the models in
+    // parallel and streams each result back the moment it lands.
+    await runParallelModelTests({
+      groups: [
+        {
+          providerId,
+          connectionId,
+          modelIds: modelsToTest.map((model) => model.modelId),
           // Bug #3610 fix 2: pass autoHideFailed so the server persists the hide
-          body: JSON.stringify(
-            buildPassthroughTestBody({
-              providerId,
-              connectionId,
-              modelId: model.modelId,
-              autoHideFailed,
-            })
-          ),
-        }).then((r) => r.json());
-
-        const entry = result.results?.[model.modelId];
+          autoHideFailed,
+        },
+      ],
+      onResult: async ({ modelId, entry }) => {
         const outcome = evaluateTestAllEntry(entry, autoHideFailed);
         // #9511: paint "quota" status for quota-exhausted models (amber badge),
         // "ok" for healthy, "error" for genuine failures.
-        onModelTestStatusChange?.(model.modelId, outcome.isQuota ? "quota" : outcome.status);
+        onModelTestStatusChange?.(modelId, outcome.isQuota ? "quota" : outcome.status);
         if (outcome.status === "ok") {
           ok++;
         } else {
           error++;
           if (outcome.shouldHide) {
-            await onToggleHidden(model.modelId, true);
+            await onToggleHidden(modelId, true);
             hiddenCount++;
           }
         }
-      } catch {
-        error++;
-        onModelTestStatusChange?.(model.modelId, "error");
-      }
-      setTestProgress((prev) => (prev ? { done: prev.done + 1, total: prev.total } : null));
-    }
+      },
+      onProgress: (done) => setTestProgress((prev) => (prev ? { ...prev, done } : null)),
+    });
 
     notify.info(testAllResultsText(t, ok, ok + error));
     if (hiddenCount > 0) {

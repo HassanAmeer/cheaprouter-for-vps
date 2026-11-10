@@ -11,7 +11,6 @@ import {
   isProviderModelHidden,
   buildProviderTestTargets,
   toggleProviderSelection,
-  chunkItems,
   isProviderTestEntryWorking,
   formatProviderTestResults,
   collectWorkingModelsToSelect,
@@ -34,6 +33,7 @@ import {
 } from "@/shared/constants/providers";
 import { hasEligibleConnectionForModel } from "@/domain/connectionModelRules";
 import { useNotificationStore } from "@/store/notificationStore";
+import { runParallelModelTests } from "@/shared/utils/modelBatchTestClient";
 
 // Provider order: OAuth first, then no-auth, then API Key (matches dashboard/providers)
 const PROVIDER_ORDER = [
@@ -737,38 +737,32 @@ export default function ModelSelectModal({
     let ok = 0;
     let error = 0;
 
-    for (const chunk of chunkItems(flat)) {
-      await Promise.all(
-        chunk.map(async ({ providerId, connectionId, modelId }) => {
-          try {
-            const result: {
-              results?: Record<string, { status?: string | null }>;
-            } = await fetch("/api/models/test-all", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                providerId,
-                connectionId,
-                modelIds: [modelId],
-              }),
-            }).then((r) => r.json());
-
-            const entry = result.results?.[modelId];
-            const working = isProviderTestEntryWorking(entry);
-            if (working) ok++;
-            else error++;
-            setModelTestStatus((prev) => ({
-              ...prev,
-              [modelId]: working ? "ok" : "error",
-            }));
-          } catch {
-            error++;
-            setModelTestStatus((prev) => ({ ...prev, [modelId]: "error" }));
-          }
-          setTestProgress((prev) => (prev ? { done: prev.done + 1, total: prev.total } : null));
-        })
-      );
+    // One request per provider (models probed in parallel server-side, results
+    // streamed back per model); providers themselves are probed in parallel.
+    const groupsByProvider = new Map<
+      string,
+      { providerId: string; connectionId?: string; modelIds: string[] }
+    >();
+    for (const { providerId, connectionId, modelId } of flat) {
+      const key = `${providerId}\u0000${connectionId ?? ""}`;
+      const group = groupsByProvider.get(key) ?? { providerId, connectionId, modelIds: [] };
+      group.modelIds.push(modelId);
+      groupsByProvider.set(key, group);
     }
+
+    await runParallelModelTests({
+      groups: Array.from(groupsByProvider.values()),
+      onResult: ({ modelId, entry }) => {
+        const working = isProviderTestEntryWorking(entry);
+        if (working) ok++;
+        else error++;
+        setModelTestStatus((prev) => ({
+          ...prev,
+          [modelId]: working ? "ok" : "error",
+        }));
+      },
+      onProgress: (done) => setTestProgress((prev) => (prev ? { ...prev, done } : null)),
+    });
 
     const total = ok + error;
     notify.info(
