@@ -10,6 +10,11 @@ import {
   APIKEY_PROVIDERS,
   AI_PROVIDERS,
 } from "@/shared/constants/providers";
+import {
+  buildGuideModelRows,
+  type GuidePricingMode,
+  type LiveGuideModel,
+} from "@/lib/providers/guideModelRows";
 
 export interface ProviderGuideData {
   authTypeBadge: string;
@@ -44,7 +49,12 @@ export interface ProviderGuideData {
     dailyQuota?: string;
     contextWindow?: string;
     pricing?: string;
+    /** True when the model can be used without paying. */
+    isFree?: boolean;
   }>;
+
+  /** How many models the provider exposes and how many of them are free. */
+  modelStats?: { total: number; freeCount: number };
 
   connectSteps: Array<{
     step: number;
@@ -347,10 +357,10 @@ export const PROVIDER_GUIDES: Record<string, ProviderGuideData> = {
     limits: {
       rateLimitBadge: "10,000 Neurons / Day ($0.00)",
       rateLimitDetail:
-        "Cloudflare grants 10,000 free Neurons every 24 hours ($0.00 billable cost). In real usage, 10,000 neurons equals roughly 100,000–150,000 LLM output tokens or ~200 full chat requests on models like Llama 3.3 70B and DeepSeek R1 Distill 32B. Per-minute limit: 300 requests/minute per account.",
+        "Cloudflare grants 10,000 free Neurons every 24 hours ($0.00 billable cost). In real usage, 10,000 neurons equals roughly 100,000–150,000 LLM output tokens or ~150 full chat responses on models like Llama 3.3 70B and DeepSeek R1 Distill 32B. Per-minute limit: 300 requests/minute per account.",
       quotaReset: "Resets every day at 00:00 UTC (hard reset, no rollover).",
       rpm: "300 req/min",
-      rpd: "~200 full chats/day",
+      rpd: "~150 full chats/day",
       dailyLimit: "10,000 Neurons/day ($0.00)",
     },
     freeModels: [
@@ -360,7 +370,7 @@ export const PROVIDER_GUIDES: Record<string, ProviderGuideData> = {
         pricing: "Free Tier ($0.00)",
         contextWindow: "128k",
         rpm: "300 RPM",
-        dailyQuota: "10k Neurons/day (~200 chats)",
+        dailyQuota: "10k Neurons/day (~150 chats)",
         notes: "Flagship open weights model",
       },
       {
@@ -369,7 +379,7 @@ export const PROVIDER_GUIDES: Record<string, ProviderGuideData> = {
         pricing: "Free Tier ($0.00)",
         contextWindow: "64k",
         rpm: "300 RPM",
-        dailyQuota: "10k Neurons/day (~200 chats)",
+        dailyQuota: "10k Neurons/day (~150 chats)",
         notes: "High reasoning & coding",
       },
       {
@@ -387,7 +397,7 @@ export const PROVIDER_GUIDES: Record<string, ProviderGuideData> = {
         pricing: "Free Tier ($0.00)",
         contextWindow: "128k",
         rpm: "300 RPM",
-        dailyQuota: "10k Neurons/day (~400 chats)",
+        dailyQuota: "10k Neurons/day (~300 chats)",
         notes: "Ultra fast low-neuron inference",
       },
       {
@@ -2173,29 +2183,32 @@ PROVIDER_GUIDES["aihorde-community"] = PROVIDER_GUIDES["aihorde"];
 PROVIDER_GUIDES["devin-cli"] = PROVIDER_GUIDES["devin"];
 PROVIDER_GUIDES["devin-cli-agentic"] = PROVIDER_GUIDES["devin"];
 PROVIDER_GUIDES["devin-desktop"] = PROVIDER_GUIDES["devin"];
+// Gemini ships under two catalog ids ("gemini" OAuth + "ap_google" API key) —
+// the hand-written guide lives under "google", which is not a catalog id, so
+// without these aliases the whole Gemini guide was unreachable.
+PROVIDER_GUIDES["gemini"] = PROVIDER_GUIDES["google"];
+PROVIDER_GUIDES["ap_google"] = PROVIDER_GUIDES["google"];
 
 /**
  * Universal Fallback Resolver:
  * Produces accurate Requirements, Human-Readable Limits, and Step 1/2/3 How to Connect
  * for ANY of the 370 providers in CheapRouter that does not have an explicit manual override.
+ *
+ * The MODEL LIST is never hand-written: it is recomputed from the live catalog
+ * sources (provider registry + shipped free-tier catalog + pricing table) on
+ * every resolve, so ids, context windows and the free/paid badge always match
+ * what the router can actually serve. The hand-written `PROVIDER_GUIDES` entries
+ * keep only the narrative parts (requirements, provider-level limits, connect
+ * steps) — and a curated model row survives only while its id still exists in
+ * one of those sources.
  */
 export function resolveProviderGuide(
   providerId: string,
   providerName: string,
-  providerData?: any
+  providerData?: any,
+  liveModels?: LiveGuideModel[]
 ): ProviderGuideData {
-  const directMatch =
-    PROVIDER_GUIDES[providerId] ||
-    (providerId === "cloudflare-ai" ? PROVIDER_GUIDES["cloudflare"] : undefined) ||
-    (providerId === "cloudflare" ? PROVIDER_GUIDES["cloudflare-ai"] : undefined) ||
-    (providerId === "github-models" ? PROVIDER_GUIDES["github"] : undefined) ||
-    (providerId === "pollinations-text" ? PROVIDER_GUIDES["pollinations"] : undefined);
-
-  if (directMatch) {
-    return directMatch;
-  }
-
-  // Look up catalog metadata
+  // Look up catalog metadata (needed for the pricing mode of every branch)
   const catalogEntry =
     providerData ||
     (AI_PROVIDERS as Record<string, any>)[providerId] ||
@@ -2222,6 +2235,43 @@ export function resolveProviderGuide(
   const hasFree = catalogEntry.hasFree === true || isNoAuth;
   const apiKeyUrl = catalogEntry.apiKeyUrl || catalogEntry.website || "";
 
+  const directMatch =
+    PROVIDER_GUIDES[providerId] ||
+    (providerId === "cloudflare-ai" ? PROVIDER_GUIDES["cloudflare"] : undefined) ||
+    (providerId === "cloudflare" ? PROVIDER_GUIDES["cloudflare-ai"] : undefined) ||
+    (providerId === "github-models" ? PROVIDER_GUIDES["github"] : undefined) ||
+    (providerId === "pollinations-text" ? PROVIDER_GUIDES["pollinations"] : undefined);
+
+  // How the provider's models are billed — decides the free/paid badge.
+  const pricingMode: GuidePricingMode =
+    isNoAuth || isLocal
+      ? "always-free"
+      : isWebCookie
+        ? "web-session"
+        : directMatch?.isCompletelyFree
+          ? "free-tier"
+          : "standard";
+
+  /** Model rows derived from the live catalog (never from a stale list). */
+  const catalogRows = (curated?: ProviderGuideData["freeModels"]) => {
+    const built = buildGuideModelRows({
+      providerId,
+      providerName,
+      curated,
+      pricingMode,
+      liveModels,
+    });
+    return { rows: built.rows, modelStats: { total: built.total, freeCount: built.freeCount } };
+  };
+
+  if (directMatch) {
+    const { rows, modelStats } = catalogRows(directMatch.freeModels);
+    return { ...directMatch, freeModels: rows, modelStats };
+  }
+
+  // Fallback branches share the same catalog-derived model rows.
+  const { rows: catalogModelRows, modelStats: catalogModelStats } = catalogRows();
+
   if (isNoAuth) {
     return {
       authTypeBadge: "100% Free • No Auth",
@@ -2241,13 +2291,16 @@ export function resolveProviderGuide(
           "Keyless anonymous tier. Throughput is governed by dynamic community rate limits (typically 20 to 30 requests per minute with automatic sliding resets). No token deductions or billing counters.",
         quotaReset: "Sliding dynamic window.",
       },
-      freeModels: [
-        {
-          id: `${providerId}/default`,
-          name: `${providerName} Model`,
-          notes: "Default open endpoint",
-        },
-      ],
+      freeModels: catalogModelRows.length
+        ? catalogModelRows
+        : [
+            {
+              id: `${providerId}/default`,
+              name: `${providerName} Model`,
+              notes: "Default open endpoint",
+            },
+          ],
+      modelStats: catalogModelStats,
       connectSteps: [
         {
           step: 1,
@@ -2289,7 +2342,8 @@ export function resolveProviderGuide(
           "Governed by your web session allowance on the provider's official chat interface. No API token billing.",
         quotaReset: "Rolling browser session reset window.",
       },
-      freeModels: [],
+      freeModels: catalogModelRows,
+      modelStats: catalogModelStats,
       connectSteps: [
         {
           step: 1,
@@ -2336,19 +2390,8 @@ export function resolveProviderGuide(
           "Rate limits and token quotas as governed by your OAuth account tier.",
         quotaReset: "Governed by upstream provider policy.",
       },
-      freeModels:
-        Array.isArray(catalogEntry.models) && catalogEntry.models.length > 0
-          ? catalogEntry.models.slice(0, 10).map((m: any) => ({
-              id: typeof m === "string" ? m : m.id || `${providerId}/model`,
-              name: typeof m === "string" ? m : m.name || m.id || `${providerName} Model`,
-              pricing: hasFree ? "Free Tier / Included" : "Standard Tier",
-              contextWindow:
-                typeof m === "object" && m.context_length
-                  ? `${Math.round(m.context_length / 1000)}k`
-                  : undefined,
-              notes: "Available for routing once connected",
-            }))
-          : [],
+      freeModels: catalogModelRows,
+      modelStats: catalogModelStats,
       connectSteps: [
         {
           step: 1,
@@ -2390,19 +2433,8 @@ export function resolveProviderGuide(
           "Runs directly on your machine or VPS. Zero network cost, no rate limit, no token charges.",
         quotaReset: "Unlimited local speed.",
       },
-      freeModels:
-        Array.isArray(catalogEntry.models) && catalogEntry.models.length > 0
-          ? catalogEntry.models.slice(0, 10).map((m: any) => ({
-              id: typeof m === "string" ? m : m.id || `${providerId}/model`,
-              name: typeof m === "string" ? m : m.name || m.id || `${providerName} Model`,
-              pricing: "100% Free / Local",
-              contextWindow:
-                typeof m === "object" && m.context_length
-                  ? `${Math.round(m.context_length / 1000)}k`
-                  : undefined,
-              notes: "Local hardware inference",
-            }))
-          : [],
+      freeModels: catalogModelRows,
+      modelStats: catalogModelStats,
       connectSteps: [
         {
           step: 1,
@@ -2449,19 +2481,8 @@ export function resolveProviderGuide(
         "Limits typically scale from 15 to 60 requests per minute depending on provider account tier. 1,000,000 tokens ≈ roughly 750,000 words or 2,000 chat messages.",
       quotaReset: "Resets dynamically or daily according to upstream dashboard.",
     },
-    freeModels:
-      Array.isArray(catalogEntry.models) && catalogEntry.models.length > 0
-        ? catalogEntry.models.slice(0, 10).map((m: any) => ({
-            id: typeof m === "string" ? m : m.id || `${providerId}/model`,
-            name: typeof m === "string" ? m : m.name || m.id || `${providerName} Model`,
-            pricing: hasFree ? "Free Tier / Included" : "Standard Tier",
-            contextWindow:
-              typeof m === "object" && m.context_length
-                ? `${Math.round(m.context_length / 1000)}k`
-                : undefined,
-            notes: "Available for routing once connected",
-          }))
-        : [],
+    freeModels: catalogModelRows,
+    modelStats: catalogModelStats,
     connectSteps: [
       {
         step: 1,
@@ -2495,6 +2516,12 @@ interface CupertinoProviderGuideSheetProps {
   providerName: string;
   provider?: any;
   authType?: string;
+  /**
+   * Models discovered on this instance (synced catalog). Richer than the static
+   * registry: it carries the live context window and the free/paid flag the
+   * provider itself reported.
+   */
+  liveModels?: LiveGuideModel[];
 }
 
 export function CupertinoProviderGuideSheet({
@@ -2503,6 +2530,7 @@ export function CupertinoProviderGuideSheet({
   providerId,
   providerName,
   provider,
+  liveModels,
 }: CupertinoProviderGuideSheetProps) {
   const { copied, copy } = useCopyToClipboard();
   // EXACTLY 3 Tabs as requested:
@@ -2513,7 +2541,7 @@ export function CupertinoProviderGuideSheet({
 
   if (!isOpen) return null;
 
-  const guide = resolveProviderGuide(providerId, providerName, provider);
+  const guide = resolveProviderGuide(providerId, providerName, provider, liveModels);
 
   return (
     <div className="fixed inset-0 z-50 overflow-hidden font-sans">
@@ -2592,7 +2620,7 @@ export function CupertinoProviderGuideSheet({
                   : "text-white/50 hover:text-white/80"
               }`}
             >
-              Free / Limits {guide.freeModels?.length > 0 && `(${guide.freeModels.length})`}
+              Models & Limits {guide.freeModels?.length > 0 && `(${guide.freeModels.length})`}
             </button>
             <button
               type="button"
@@ -2745,17 +2773,19 @@ export function CupertinoProviderGuideSheet({
                 )}
               </div>
 
-              {/* Free Models List */}
+              {/* Provider Models (free & paid) */}
               <div className="rounded-xl border border-white/10 bg-white/5 p-2.5 space-y-2">
                 <div className="flex items-center justify-between text-[10px] font-semibold uppercase tracking-wider text-white/60">
                   <div className="flex items-center gap-1.5">
                     <span className="material-symbols-outlined text-[13px] text-sky-400">
                       smart_toy
                     </span>
-                    Available Free / Trial Models
+                    Provider Models — Free &amp; Paid
                   </div>
                   <span className="text-[10px] text-white/40">
-                    {guide.freeModels?.length || 0} models
+                    {guide.modelStats
+                      ? `${guide.modelStats.freeCount} free of ${guide.modelStats.total}`
+                      : `${guide.freeModels?.length || 0} models`}
                   </span>
                 </div>
 
@@ -2772,7 +2802,13 @@ export function CupertinoProviderGuideSheet({
                               {m.name}
                             </span>
                             {m.pricing && (
-                              <span className="px-1.5 py-0.5 rounded text-[9px] font-mono font-semibold bg-emerald-500/15 text-emerald-300 border border-emerald-500/20 shrink-0">
+                              <span
+                                className={`px-1.5 py-0.5 rounded text-[9px] font-mono font-semibold border shrink-0 ${
+                                  m.isFree === false
+                                    ? "bg-white/5 text-white/70 border-white/15"
+                                    : "bg-emerald-500/15 text-emerald-300 border-emerald-500/20"
+                                }`}
+                              >
                                 {m.pricing}
                               </span>
                             )}

@@ -206,6 +206,15 @@ export default function ProviderDetailPageClient() {
     }
   }, [searchParams, openPrimaryAddFlow]);
 
+  // Handle URL ?action=guide (e.g. from ProviderCard "info" button fallback).
+  // Opens the same Cupertino guide sheet that the header info icon opens, so
+  // every provider exposes the guide through the header info affordance.
+  useEffect(() => {
+    if (searchParams?.get("action") === "guide") {
+      queueMicrotask(() => setShowGuideSheet(true));
+    }
+  }, [searchParams]);
+
   const handleOAuthSuccess = useCallback(async () => {
     setShowOAuthModal(false);
     await fetchConnections();
@@ -448,40 +457,6 @@ export default function ProviderDetailPageClient() {
         </div>
       </div>
 
-      {/* ── CUPERTINO QUICK GUIDE & MODEL INFO BANNER ── */}
-      <div className="relative overflow-hidden rounded-2xl border border-sky-500/20 bg-gradient-to-r from-sky-950/40 via-[#1C1C1E]/80 to-[#1C1C1E]/60 p-4 sm:p-5 shadow-lg backdrop-blur-xl transition-all">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div className="flex items-start gap-3.5">
-            <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-sky-500/15 border border-sky-500/30 text-sky-400 shadow-inner">
-              <span className="material-symbols-outlined text-2xl">info</span>
-            </div>
-            <div>
-              <div className="flex items-center gap-2 flex-wrap">
-                <h3 className="text-sm font-semibold text-white tracking-tight">
-                  {providerInfo.name} — Quick Guide & Free Models
-                </h3>
-                <span className="rounded-full bg-sky-500/10 border border-sky-500/20 px-2 py-0.5 text-[10px] font-medium text-sky-300">
-                  Cupertino iOS Guide
-                </span>
-              </div>
-              <p className="text-xs text-white/70 mt-1 leading-relaxed max-w-2xl">
-                Bina login ya web session ke zariye model chalane ka tareeqa, CLI configuration aur live free models dekhne ke liye guide kholein.
-              </p>
-            </div>
-          </div>
-
-          <button
-            type="button"
-            onClick={() => setShowGuideSheet(true)}
-            className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-sky-500 hover:bg-sky-400 text-slate-950 text-xs font-semibold shadow-md transition-all hover:scale-[1.02] active:scale-[0.98] shrink-0"
-          >
-            <span className="material-symbols-outlined text-base">menu_book</span>
-            <span>Open iOS Guide & Models</span>
-            <span className="material-symbols-outlined text-sm">arrow_forward</span>
-          </button>
-        </div>
-      </div>
-
       {/* ── OPENCODE BYPASS DEDICATED PANEL (DETAILS, DIRECT BASE URL & CONTROLS) ── */}
       {providerId === "opencode-bypass" && (
         <OpenCodeBypassDetailPanel
@@ -655,6 +630,7 @@ export default function ProviderDetailPageClient() {
         onClose={() => setShowGuideSheet(false)}
         providerId={providerId}
         providerName={providerInfo?.name || providerId}
+        liveModels={syncedAvailableModels}
       />
 
       <AntigravityAccountsSheet
