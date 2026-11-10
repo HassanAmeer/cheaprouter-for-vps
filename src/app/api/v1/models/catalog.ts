@@ -81,6 +81,7 @@ import {
   selectCompatibleNodeForPrefix,
 } from "@/lib/providerNodePrefixes";
 import { applyCatalogPostFilters, finalizeCatalogResponse } from "./catalogResponse";
+import { ensurePipedModelRows, type CatalogModelRow } from "./catalogPipedModels";
 import {
   isNoAuthProviderBlocked,
   isNoAuthProviderKey,
@@ -2043,6 +2044,10 @@ async function buildUnifiedModelsResponseCore(
     // Filter by API key permissions if requested
     const apiKey = extractApiKey(request);
     let finalModels = models;
+    // Per-key model authorizer, kept for the piped-model re-add further down
+    // (those rows are re-added AFTER this filter, so without it they bypassed
+    // the key's allow-list / deny-list entirely).
+    let keyModelAuthorizer: ((row: CatalogModelRow) => Promise<boolean>) | null = null;
     if (apiKey) {
       const { getApiKeyMetadata } = await import("@/lib/db/apiKeys");
       const { isCatalogModelAllowedForKey } = await import("./catalogKeyFilter");
@@ -2072,6 +2077,18 @@ async function buildUnifiedModelsResponseCore(
         // only provider models, `all` (the default) both. This is a listing
         // preference, not an access control — dispatch is unaffected either way.
         const catalogScope = keyMeta.catalogScope ?? "all";
+        // A key that restricts models (allow-list, deny-list or "public models
+        // only") must not see rows it may not call — the same predicate the
+        // main filter below uses, kept for the piped-model re-add further down.
+        const hasModelRestrictions =
+          keyMeta.modelAccessMode === "restricted" ||
+          Boolean(keyMeta.allowedModels?.length) ||
+          Boolean(keyMeta.blockedModels?.length) ||
+          keyMeta.disableNonPublicModels === true;
+        if (hasModelRestrictions) {
+          keyModelAuthorizer = (row: CatalogModelRow) =>
+            isCatalogModelAllowedForKey(apiKey, row, keyMeta.blockedModels);
+        }
         const filtered = [];
         for (const m of models) {
           const isComboRow = m.owned_by === "combo";
@@ -2230,44 +2247,13 @@ async function buildUnifiedModelsResponseCore(
       // Strictly expose ONLY user combos and active piped models from connected providers
       finalModels = finalModels.filter((m: any) => isUserCombo(m) || isMatchingPipedModel(m));
 
-      // Ensure every active customization is present in the final models list
-      for (const cust of validActiveCustomizations) {
-        const idToCheck = cust.customAlias || `${cust.providerId}/${cust.originalModelId}`;
-        const alreadyPresent = finalModels.some((m: any) => {
-          if (
-            cust.customAlias &&
-            (m.id === cust.customAlias || m.customAlias === cust.customAlias)
-          ) {
-            return true;
-          }
-          const pid = typeof m.owned_by === "string" ? m.owned_by : "";
-          const root = typeof m.root === "string" ? m.root : "";
-          const mid = typeof m.id === "string" ? m.id : "";
-          const bareId = mid.includes("/") ? mid.slice(mid.indexOf("/") + 1) : mid;
-          return (
-            (pid === cust.providerId || !pid) &&
-            (root === cust.originalModelId ||
-              bareId === cust.originalModelId ||
-              mid === cust.originalModelId)
-          );
-        });
-
-        if (!alreadyPresent) {
-          finalModels.push({
-            id: idToCheck,
-            object: "model",
-            created: timestamp,
-            owned_by: cust.providerId,
-            permission: [],
-            root: cust.originalModelId,
-            parent: null,
-            name: cust.customName || cust.originalModelId,
-            display_name: cust.customName || cust.originalModelId,
-            context_window: cust.contextWindow ?? null,
-            context_length: cust.contextWindow ?? null,
-          });
-        }
-      }
+      // Ensure every active customization is present in the final models list.
+      // Rows a restricted API key may not call are NOT re-added: this re-add
+      // runs AFTER the per-key filter, so it must apply the same predicate.
+      await ensurePipedModelRows(finalModels as CatalogModelRow[], validActiveCustomizations, {
+        timestamp,
+        authorize: keyModelAuthorizer ?? undefined,
+      });
 
       // Enrich all models with custom aliases, names, context windows, and full 6-field pricing
       for (const m of finalModels as any[]) {
@@ -2328,8 +2314,7 @@ async function buildUnifiedModelsResponseCore(
             m.context_window = m.context_length ?? null;
           }
 
-          const pricingTier =
-            cust.pricingTier || (cust.isFreeOverride === false ? "paid" : "free");
+          const pricingTier = cust.pricingTier || (cust.isFreeOverride === false ? "paid" : "free");
           const inputCost = cust.inputCost ?? 0;
           const cacheCost = cust.cacheCost ?? 0;
           const outputCost = cust.outputCost ?? 0;
