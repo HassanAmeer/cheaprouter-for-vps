@@ -43,6 +43,11 @@ export interface AvailableModelsTableProps {
 }
 
 /** Context window label — "—" when no source knows the window. */
+/** How many model rows are rendered before the operator asks for more. */
+const INITIAL_VISIBLE_ROWS = 200;
+/** How many additional rows each "Show more" click adds. */
+const VISIBLE_ROWS_STEP = 300;
+
 export function formatContextWindow(tokens?: number | null): string {
   return formatContextWindowLabel(tokens);
 }
@@ -122,6 +127,10 @@ export default function AvailableModelsTable({
 }: AvailableModelsTableProps) {
   const notify = useNotificationStore();
   const [search, setSearch] = useState("");
+  // Providers with a big live catalog (OpenCode CLI ships thousands of ids)
+  // rendered every row at once — tens of thousands of DOM nodes for one table.
+  // The list now grows on demand instead.
+  const [visibleRowLimit, setVisibleRowLimit] = useState(INITIAL_VISIBLE_ROWS);
   const [capabilityFilter, setCapabilityFilter] = useState<string>("all");
   const [selectedCapabilities, setSelectedCapabilities] = useState<Record<string, string>>({});
   const [testingModelId, setTestingModelId] = useState<string | null>(null);
@@ -339,6 +348,16 @@ export default function AvailableModelsTable({
     return counts;
   }, [models]);
 
+  // A new search/filter starts from the top again (derived-state pattern:
+  // adjusting the state during render avoids an extra paint and the
+  // set-state-in-effect lint rule).
+  const filterKey = `${search}|${capabilityFilter}`;
+  const [lastFilterKey, setLastFilterKey] = useState(filterKey);
+  if (filterKey !== lastFilterKey) {
+    setLastFilterKey(filterKey);
+    setVisibleRowLimit(INITIAL_VISIBLE_ROWS);
+  }
+
   const filteredModels = useMemo(() => {
     return models.filter((m) => {
       if (capabilityFilter !== "all" && !matchesCapabilityFilter(m, capabilityFilter)) {
@@ -498,7 +517,7 @@ export default function AvailableModelsTable({
                 </td>
               </tr>
             ) : (
-              filteredModels.map((model) => {
+              filteredModels.slice(0, visibleRowLimit).map((model) => {
                 const isActive = !model.isHidden;
                 const isFree =
                   Boolean(model.isFree) ||
@@ -882,6 +901,27 @@ export default function AvailableModelsTable({
             )}
           </tbody>
         </table>
+
+        {/* Big catalogs (thousands of live ids) are revealed on demand instead
+            of rendering every row at once. */}
+        {filteredModels.length > visibleRowLimit && (
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-2 px-5 py-3 border-t border-[#262626]/80 bg-[#161616]">
+            <p className="text-[11px] text-[#8e8e93]">
+              Showing {Math.min(visibleRowLimit, filteredModels.length)} of {filteredModels.length}{" "}
+              models — use the search box to narrow the list.
+            </p>
+            <button
+              type="button"
+              onClick={() => setVisibleRowLimit((limit) => limit + VISIBLE_ROWS_STEP)}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-white text-black hover:bg-[#E5E5E5] transition-colors cursor-pointer shadow-sm shrink-0"
+            >
+              <span className="material-symbols-outlined text-[15px]">expand_more</span>
+              <span>
+                Show {Math.min(VISIBLE_ROWS_STEP, filteredModels.length - visibleRowLimit)} more
+              </span>
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
