@@ -33,6 +33,18 @@ ALIAS_TO_PROVIDER_ID["agy"] = "antigravity";
 ALIAS_TO_PROVIDER_ID["aq"] = "amazon-q";
 // cloudflare/ is the common prefix for cloudflare-ai provider.
 ALIAS_TO_PROVIDER_ID["cloudflare"] = "cloudflare-ai";
+// No-auth/libre display aliases advertised by the dashboard + /v1/models under
+// {alias}/{model}. Without explicit entries the identity fallback returns the
+// alias itself ("horde"), which no executor knows — the request fell through
+// to the default OpenAI upstream with the anonymous Horde key and came back
+// 401, an opaque failure for every catalog-advertised `horde/...` id.
+ALIAS_TO_PROVIDER_ID["horde"] = "aihorde";
+// Web-cookie free tiers advertised under their short display aliases.
+ALIAS_TO_PROVIDER_ID["genspark"] = "genspark-web";
+ALIAS_TO_PROVIDER_ID["copilot"] = "copilot-web";
+ALIAS_TO_PROVIDER_ID["ven"] = "venice-web";
+ALIAS_TO_PROVIDER_ID["firefly"] = "adobe-firefly";
+ALIAS_TO_PROVIDER_ID["poe"] = "poe-web";
 
 /**
  * Resolve provider alias to provider ID
