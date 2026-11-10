@@ -41,6 +41,16 @@ export const FREE_APIKEY_PROVIDER_IDS = new Set([
   // key for higher queue priority. The no-auth page still enables the provider;
   // this flag admits an optional apikey connection so that stored key is used.
   "aihorde",
+  // Remaining credential-less providers (no key, cookie or CLI login is needed to
+  // reach them). Admitted here for the same reason as `auggie`/`zcode` above:
+  // POST /api/providers accepts an optional connection row for display,
+  // priority and testStatus tracking — no apiKey is ever required or sent.
+  "uncloseai",
+  "pollinations-text",
+  "cloudflare-playground",
+  "veoaifree-web",
+  "codex-app-server",
+  "devin-cli-agentic",
 ]);
 
 export function supportsApiKeyOnFreeProvider(providerId: unknown): boolean {
