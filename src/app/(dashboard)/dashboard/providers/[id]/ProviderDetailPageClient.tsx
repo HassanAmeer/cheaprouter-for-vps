@@ -33,6 +33,7 @@ import { AdaptaTutorialModal } from "./components/AdaptaTutorialModal";
 import AddCustomModelCard from "./components/AddCustomModelCard";
 import AvailableModelsTable from "./components/AvailableModelsTable";
 import ConnectionsTab from "./components/ConnectionsTab";
+import type { ResolvedModelMetadataMap } from "@/shared/types/modelMetadata";
 import EditConnectionModal from "./components/modals/EditConnectionModal";
 import DefaultCapabilitiesPromptModal from "../components/DefaultCapabilitiesPromptModal";
 import EditCustomProviderSheet from "./components/EditCustomProviderSheet";
@@ -63,6 +64,11 @@ export default function ProviderDetailPageClient() {
   // redesign — you could connect but never see or edit a credential.
   const [detailTab, setDetailTab] = useState<"models" | "connections">("models");
   const [editingConnection, setEditingConnection] = useState<any>(null);
+  // REAL per-model metadata (context window + capabilities + their source),
+  // resolved server-side from operator overrides → models.dev → live discovery
+  // → the provider registry. The table falls back to name heuristics only for
+  // what no source knows, and marks those rows as inferred.
+  const [resolvedModelMetadata, setResolvedModelMetadata] = useState<ResolvedModelMetadataMap>({});
   const [showAntigravitySheet, setShowAntigravitySheet] = useState(false);
   const [siliconFlowInitialBaseUrl, setSiliconFlowInitialBaseUrl] = useState<string | undefined>(
     undefined
@@ -265,6 +271,21 @@ export default function ProviderDetailPageClient() {
     if (loading) return;
     void fetchProviderModelMetaRef.current();
     void fetchAliasesRef.current();
+    // Resolved capabilities + context windows (measured, with their source).
+    void (async () => {
+      try {
+        const res = await fetch(`/api/models/metadata?provider=${encodeURIComponent(providerId)}`, {
+          cache: "no-store",
+        });
+        if (!res.ok) return;
+        const data = await res.json();
+        if (data?.models && typeof data.models === "object") {
+          setResolvedModelMetadata(data.models as ResolvedModelMetadataMap);
+        }
+      } catch {
+        // The table keeps working with the catalog-derived values.
+      }
+    })();
   }, [loading, providerId]);
 
   const handleOAuthSuccess = useCallback(async () => {
@@ -680,6 +701,7 @@ export default function ProviderDetailPageClient() {
             isFetchingModels={fetchingAllModels}
             fetchError={fetchError}
             connectionId={connections?.[0]?.id}
+            resolvedMetadata={resolvedModelMetadata}
           />
         </>
       )}

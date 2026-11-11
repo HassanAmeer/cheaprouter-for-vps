@@ -278,6 +278,13 @@ export async function getSettings() {
     // Default ON: resellers can supply BYOK provider keys unless the operator
     // flips the master toggle off.
     byokEnabled: true,
+    // Real per-model capabilities + context windows. The models.dev catalog is
+    // the only source that publishes MEASURED modality/limit data for ~200
+    // providers; without it the dashboard can only guess from the model name
+    // ("*-vl" → vision). Enabled by default so the provider page shows
+    // measured facts; the periodic sync is read-only and can be turned off with
+    // MODELS_DEV_SYNC_ENABLED=0 or from Settings → AI.
+    modelsDevSyncEnabled: true,
     // #6977: Opt-in per-connection auto-ping that warms a Codex OAuth connection's
     // quota window right after it resets, so the first real request doesn't land in
     // a cold window. `connections` maps connection id -> enabled. Default empty map

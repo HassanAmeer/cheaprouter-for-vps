@@ -9,6 +9,7 @@ import {
   formatContextWindowLabel,
   resolveModelContextWindow,
 } from "@/lib/providers/modelContextWindow";
+import type { ResolvedModelMetadata, ResolvedModelMetadataMap } from "@/shared/types/modelMetadata";
 
 export interface ModelEntry {
   id: string;
@@ -40,6 +41,12 @@ export interface AvailableModelsTableProps {
   isFetchingModels?: boolean;
   fetchError?: string | null;
   connectionId?: string;
+  /**
+   * REAL per-model metadata resolved by the server (context window +
+   * capabilities + their source). When a model has no entry here, the row
+   * falls back to the name heuristic and says so.
+   */
+  resolvedMetadata?: ResolvedModelMetadataMap;
 }
 
 /** Context window label — "—" when no source knows the window. */
@@ -56,6 +63,76 @@ import { detectModelCapabilities } from "@/shared/utils/modelCapabilities";
 
 export function getModelCapabilities(model: ModelEntry) {
   return detectModelCapabilities(model);
+}
+
+/**
+ * Capability set for one model row.
+ *
+ * The server-resolved metadata (operator overrides → models.dev → live
+ * discovery → registry) is authoritative; the name-heuristic is only consulted
+ * for capabilities no source has an opinion about, and the row then reports
+ * that part as inferred.
+ */
+export function resolveRowCapabilities(
+  model: ModelEntry,
+  resolved?: ResolvedModelMetadata
+): { caps: ReturnType<typeof detectModelCapabilities>; inferred: boolean } {
+  const heuristic = detectModelCapabilities(model);
+  if (!resolved) return { caps: heuristic, inferred: true };
+
+  const real = resolved.capabilities;
+  const modIn = (real.modalitiesInput ?? []).map((m) => String(m).toLowerCase());
+  const modOut = (real.modalitiesOutput ?? []).map((m) => String(m).toLowerCase());
+
+  let inferred = false;
+  const pick = (measured: boolean | null | undefined, guess: boolean): boolean => {
+    if (measured === true || measured === false) return measured;
+    // Nothing measured: the badge (if any) comes from the name heuristic, so
+    // the row is only "inferred" when that heuristic actually shows a badge.
+    if (guess) inferred = true;
+    return guess;
+  };
+
+  const hasVision = pick(real.vision, heuristic.hasVision || modIn.includes("image"));
+  const hasReasoning = pick(real.reasoning, heuristic.hasReasoning);
+  const hasTools = pick(real.tools, heuristic.hasTools);
+  const hasAudio = pick(real.audio, heuristic.hasAudio || modIn.includes("audio"));
+  const hasVideo = pick(real.video, heuristic.hasVideo || modOut.includes("video"));
+  const hasEmbedding =
+    modOut.includes("embeddings") || modOut.includes("embedding")
+      ? true
+      : pick(null, heuristic.hasEmbedding);
+  const hasImageGen =
+    modOut.includes("image") && !modIn.includes("text") ? true : pick(null, heuristic.hasImageGen);
+  // "code" and "search" have no measured source yet — the heuristic answers,
+  // so a badge shown for them is always an inference.
+  if (heuristic.hasCode) inferred = true;
+  if (heuristic.hasSearch) inferred = true;
+
+  const isPureSpecialty =
+    hasEmbedding ||
+    matchesSearch(model.id, "rerank") ||
+    (hasAudio && !hasVision && modIn.length > 0 && !modIn.includes("text")) ||
+    (hasImageGen && !hasVision);
+  const hasChat = !isPureSpecialty;
+
+  return {
+    caps: {
+      hasChat,
+      hasCode: heuristic.hasCode,
+      hasVision,
+      hasReasoning,
+      hasImageGen,
+      hasVideo,
+      hasSearch: heuristic.hasSearch,
+      hasAudio,
+      hasEmbedding,
+      hasTools,
+      capabilities: heuristic.capabilities,
+      ...(heuristic.isFree !== undefined ? { isFree: heuristic.isFree } : {}),
+    },
+    inferred,
+  };
 }
 
 export const CAPABILITY_FILTER_BUTTONS = [
@@ -124,6 +201,7 @@ export default function AvailableModelsTable({
   isFetchingModels = false,
   fetchError = null,
   connectionId,
+  resolvedMetadata,
 }: AvailableModelsTableProps) {
   const notify = useNotificationStore();
   const [search, setSearch] = useState("");
@@ -525,28 +603,39 @@ export default function AvailableModelsTable({
                 const isTesting = testingModelId === model.id;
                 const testResult = testResults[model.id];
 
-                // Context window: operator override → synced row → registry
-                // model → registry provider default → static model spec.
-                // (Before this chain the column read only the override/synced
-                // fields, so every static catalog model showed "—".)
-                const rawTokens = resolveModelContextWindow({
-                  providerId,
-                  modelId: model.id,
-                  registryContextLength:
-                    typeof model.contextLength === "number" ? model.contextLength : undefined,
-                  override:
-                    typeof model.contextWindowOverride === "number"
-                      ? model.contextWindowOverride
-                      : undefined,
-                  syncedMaxInputTokens:
-                    typeof model.max_input_tokens === "number" ? model.max_input_tokens : undefined,
-                  syncedInputTokenLimit:
-                    typeof model.inputTokenLimit === "number" ? model.inputTokenLimit : undefined,
-                });
+                // Context window + capabilities: the server-resolved facts win
+                // (operator override → models.dev → live discovery → registry);
+                // the name heuristic only fills the gaps and the row says so.
+                const resolvedContext = resolvedMetadata?.[model.id]?.contextWindow ?? null;
+                const contextSource = resolvedMetadata?.[model.id]?.contextSource ?? "none";
+                const { caps, inferred: capsInferred } = resolveRowCapabilities(
+                  model,
+                  resolvedMetadata?.[model.id]
+                );
+
+                // Fallback chain when the server knows nothing: operator override
+                // → synced row → registry model → registry provider default →
+                // static model spec.
+                const rawTokens =
+                  resolvedContext ??
+                  resolveModelContextWindow({
+                    providerId,
+                    modelId: model.id,
+                    registryContextLength:
+                      typeof model.contextLength === "number" ? model.contextLength : undefined,
+                    override:
+                      typeof model.contextWindowOverride === "number"
+                        ? model.contextWindowOverride
+                        : undefined,
+                    syncedMaxInputTokens:
+                      typeof model.max_input_tokens === "number"
+                        ? model.max_input_tokens
+                        : undefined,
+                    syncedInputTokenLimit:
+                      typeof model.inputTokenLimit === "number" ? model.inputTokenLimit : undefined,
+                  });
                 const contextStr = formatContextWindow(rawTokens);
 
-                // Detect capabilities using unified helper
-                const caps = getModelCapabilities(model);
                 const defaultCap =
                   caps.hasImageGen && !caps.hasChat
                     ? "image"
@@ -603,15 +692,45 @@ export default function AvailableModelsTable({
                       </div>
                     </td>
 
-                    {/* Context Limit */}
+                    {/* Context Limit — the source is shown on hover so a number
+                        is never mistaken for a measurement when it is not. */}
                     <td className="py-3 px-4 text-center align-middle">
-                      <span className="inline-block px-2 py-0.5 rounded text-xs font-mono bg-[#1c1c1c] text-[#C0C0C0] border border-[#333]">
+                      <span
+                        title={
+                          contextSource === "models.dev"
+                            ? "Context window measured by the models.dev catalog"
+                            : contextSource === "live"
+                              ? "Context window reported by the provider during model discovery"
+                              : contextSource === "registry"
+                                ? "Context window from CheapRoute's provider registry"
+                                : "No source published a context window for this model yet"
+                        }
+                        className={`inline-block px-2 py-0.5 rounded text-xs font-mono border ${
+                          contextSource === "none"
+                            ? "bg-transparent text-[#5a5a5a] border-[#2a2a2a]"
+                            : "bg-[#1c1c1c] text-[#C0C0C0] border-[#333]"
+                        }`}
+                      >
                         {contextStr}
                       </span>
                     </td>
 
-                    {/* Interactive Capabilities for Testing */}
-                    <td className="py-3 px-4 text-center align-middle">
+                    {/* Interactive Capabilities for Testing — the hover text says
+                        whether the badges are measured or inferred from the name. */}
+                    <td
+                      className="py-3 px-4 text-center align-middle"
+                      title={
+                        resolvedMetadata?.[model.id]?.capabilitySource === "models.dev"
+                          ? "Capabilities measured by the models.dev catalog"
+                          : resolvedMetadata?.[model.id]?.capabilitySource === "live"
+                            ? "Capabilities reported by the provider during model discovery"
+                            : resolvedMetadata?.[model.id]?.capabilitySource === "registry"
+                              ? "Capabilities from CheapRoute's provider registry"
+                              : capsInferred
+                                ? "No source has published these capabilities — inferred from the model name"
+                                : "Capabilities resolved from the catalog"
+                      }
+                    >
                       <div className="inline-flex items-center justify-center gap-1 flex-wrap">
                         {caps.hasChat && (
                           <button

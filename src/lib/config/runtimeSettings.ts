@@ -72,7 +72,7 @@ const DEFAULT_RUNTIME_SETTINGS_SNAPSHOT: RuntimeSettingsSnapshot = {
   antigravitySignatureCacheMode: "enabled",
   usageTokenBuffer: null,
   hideHealthCheckLogs: false,
-  modelsDevSyncEnabled: false,
+  modelsDevSyncEnabled: true,
   modelsDevSyncInterval: null,
   corsOrigins: "",
   ccBridgeTransforms: null,
