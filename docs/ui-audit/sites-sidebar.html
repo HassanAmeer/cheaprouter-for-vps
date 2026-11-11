@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Sites — sidebar switcher (design)</title>
+<style>
+  :root{
+    --bg:#0B0B0F; --panel:#121218; --panel2:#16161E; --line:#26262F; --ink:#ECECF1; --muted:#8E8E9C;
+    --indigo:#7C6BFF; --indigo-dim:#221E44; --emerald:#34D399; --emerald-dim:#0E2A22;
+    --amber:#FBBF24; --amber-dim:#2A2010; --rose:#FB7185; --rose-dim:#2C141A; --sky:#38BDF8; --sky-dim:#0E2430;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font:14px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,Helvetica,Arial,sans-serif;
+    -webkit-font-smoothing:antialiased}
+  .app{display:flex;min-height:1000px}
+  .side{width:252px;flex:0 0 252px;background:#0E0E13;border-right:1px solid var(--line);padding:14px 12px}
+  .brand{display:flex;align-items:center;gap:9px;padding:2px 6px 12px}
+  .logo{width:28px;height:28px;border-radius:8px;background:#ECECF1;color:#0B0B0F;display:grid;place-items:center;font-weight:800;font-size:12px}
+  .brand b{font-size:13.5px} .brand span{display:block;font-size:10px;color:var(--muted)}
+  .switcher{margin:2px 0 10px;background:var(--panel2);border:1px solid var(--line);border-radius:11px;padding:9px 10px;position:relative}
+  .sw-top{display:flex;align-items:center;gap:8px}
+  .sw-dot{width:8px;height:8px;border-radius:99px;background:var(--emerald);box-shadow:0 0 0 3px #0E2A22}
+  .sw-name{font-weight:650;font-size:13px;flex:1;min-width:0}
+  .sw-sub{font-size:10.5px;color:var(--muted);margin-top:1px}
+  .sw-btn{width:22px;height:22px;border-radius:6px;border:1px solid var(--line2);background:#1A1A22;color:#C9C9DC;
+    display:grid;place-items:center;font-size:13px;font-weight:700}
+  .sw-btn.pri{background:var(--indigo);border-color:var(--indigo);color:#0B0B0F}
+  .subs{margin-top:9px;border-top:1px dashed var(--line);padding-top:8px;display:flex;flex-direction:column;gap:4px}
+  .sub{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:10.5px;color:#9C9CAA;display:flex;gap:6px;align-items:center}
+  .sub i{width:5px;height:5px;border-radius:99px;background:#4A4A58;display:inline-block}
+  .grp{font-size:9.5px;font-weight:800;letter-spacing:.11em;color:#6A6A78;padding:12px 8px 5px}
+  .nav{display:flex;align-items:center;gap:9px;padding:7px 9px;border-radius:8px;color:#B9B9C6;font-size:12.5px}
+  .nav.on{background:#1B1B26;color:#fff}
+  .dot{width:6px;height:6px;border-radius:99px;background:#4A4A58}
+  .dot.g{background:var(--emerald)}
+  .main{flex:1;min-width:0}
+  .top{display:flex;align-items:center;gap:12px;padding:16px 24px;border-bottom:1px solid var(--line)}
+  .top h1{font-size:19px;margin:0;letter-spacing:-.01em}
+  .top p{margin:1px 0 0;font-size:12px;color:var(--muted)}
+  .chip{font-size:10px;font-weight:700;padding:3px 8px;border-radius:999px;background:var(--indigo-dim);color:#B9AEFF;border:1px solid #3B3470}
+  .content{padding:18px 24px}
+  .grid{display:grid;grid-template-columns:1.15fr .85fr;gap:14px}
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px 16px;margin-bottom:14px}
+  .panel h3{margin:0 0 3px;font-size:13.5px;display:flex;align-items:center;gap:8px}
+  .meta{font-size:11.5px;color:var(--muted)}
+  pre.json{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:11px;line-height:1.65;color:#C9C9DC;
+    background:#0E0E13;border:1px solid var(--line);border-radius:10px;padding:11px 13px;margin:10px 0 0;overflow:auto}
+  .k{color:#B9AEFF} .s{color:#7BE8C0} .n{color:#F5D48A} .c{color:#8E8E9C}
+  .row{display:flex;align-items:center;gap:9px;padding:8px 0;border-top:1px dashed var(--line)}
+  .row:first-of-type{border-top:0}
+  .ic{flex:0 0 26px;height:26px;border-radius:8px;display:grid;place-items:center;font-size:12px;font-weight:700;color:#0B0B0F}
+  .t{font-weight:600;font-size:13px}
+  .d{font-size:11.5px;color:var(--muted);margin-top:1px}
+  .pill{font-size:10px;font-weight:700;padding:2px 8px;border-radius:999px;border:1px solid transparent}
+  .pill.i{background:var(--indigo-dim);color:#B9AEFF;border-color:#3B3470}
+  .pill.e{background:var(--emerald-dim);color:#7BE8C0;border-color:#1E5A46}
+  .pill.a{background:var(--amber-dim);color:#F5D48A;border-color:#5A4413}
+  .pill.s{background:var(--sky-dim);color:#8FDBFB;border-color:#1C4A63}
+  .note{padding:11px 13px;border-radius:12px;border:1px dashed #1E5A46;background:#0F2019;color:#A7F3D6;font-size:12px}
+  .note.warn{border-color:#5A4413;background:#221A0E;color:#F5D48A}
+  .foot{margin-top:12px;font-size:11.5px;color:var(--muted);text-align:center}
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="side">
+    <div class="brand"><div class="logo">CR</div><div><b>CheapRoute</b><span>v1.0.0</span></div></div>
+
+    <!-- SITE SWITCHER + ADD -->
+    <div class="switcher">
+      <div class="sw-top">
+        <span class="sw-dot"></span>
+        <div style="flex:1;min-width:0">
+          <div class="sw-name">Site A — blog</div>
+          <div class="sw-sub">active site · scope: global</div>
+        </div>
+        <span class="sw-btn">▾</span>
+        <span class="sw-btn pri">+</span>
+      </div>
+      <div class="subs">
+        <div class="sub"><i></i>site-a.myapp.com</div>
+        <div class="sub"><i></i>www.site-a.myapp.com</div>
+        <div class="sub"><i></i>api.site-a.myapp.com</div>
+      </div>
+    </div>
+
+    <div class="grp">Top</div>
+    <div class="nav"><span class="dot"></span>Home</div>
+    <div class="grp">CheapProxy</div>
+    <div class="nav on"><span class="dot g"></span>Providers</div>
+    <div class="nav"><span class="dot g"></span>Combos</div>
+    <div class="nav"><span class="dot"></span>Pipe Models</div>
+    <div class="nav"><span class="dot"></span>Limits Bank</div>
+    <div class="nav"><span class="dot"></span>Users</div>
+    <div class="nav"><span class="dot"></span>API Keys</div>
+    <div class="nav"><span class="dot"></span>API Endpoints</div>
+    <div class="nav"><span class="dot"></span>Usage</div>
+    <div class="grp">Dev Tools</div>
+    <div class="nav"><span class="dot"></span>Logs</div>
+    <div class="nav"><span class="dot"></span>Playground</div>
+  </aside>
+
+  <main class="main">
+    <header class="top">
+      <div><h1>Providers</h1><p>Sirf Site A — blog ke providers</p></div>
+      <div style="margin-left:auto"><span class="chip">Site A — blog</span></div>
+    </header>
+
+    <div class="content">
+      <div class="grid">
+        <div>
+          <div class="panel">
+            <h3>config/sites.json <span class="pill e">speed</span></h3>
+            <div class="meta">Subdomains ka source of truth — boot par ek baar read → in-memory Map (request path par zero I/O).</div>
+<pre class="json">{
+  <span class="k">"sites"</span>: [
+    { <span class="k">"id"</span>: <span class="s">"site-a"</span>, <span class="k">"name"</span>: <span class="s">"Site A — blog"</span>,
+      <span class="k">"subdomains"</span>: [<span class="s">"site-a.myapp.com"</span>, <span class="s">"www.site-a.myapp.com"</span>, <span class="s">"api.site-a.myapp.com"</span>] },
+    { <span class="k">"id"</span>: <span class="s">"site-b"</span>, <span class="k">"name"</span>: <span class="s">"Site B — app"</span>,
+      <span class="k">"subdomains"</span>: [<span class="s">"site-b.myapp.com"</span>] }
+  ]
+}</pre>
+          </div>
+
+          <div class="panel">
+            <h3>Resolve order — har request</h3>
+            <div class="row"><div class="ic" style="background:#34D399">1</div><div><div class="t">Host header → in-memory Map</div><div class="d">site-a.myapp.com → site-a · O(1), koi DB nahi</div></div></div>
+            <div class="row"><div class="ic" style="background:#38BDF8">2</div><div><div class="t">API key → api_keys.site_id</div><div class="d">sirf tab jab key resolve ho</div></div></div>
+            <div class="row"><div class="ic" style="background:#FBBF24">3</div><div><div class="t">X-CheapRoute-Site</div><div class="d">nginx proxy/CDN ke peeche</div></div></div>
+            <div class="row"><div class="ic" style="background:#64748B">4</div><div><div class="t">default → global scope</div><div class="d">kuch nahi mila</div></div></div>
+            <div class="note">⚡ Host lookup <b>memory me</b> hota hai — JSON file sirf boot par (ya "+" add site par) reload hoti hai. Request path par koi disk/DB hit nahi.</div>
+          </div>
+        </div>
+
+        <div>
+          <div class="panel">
+            <h3>"+" → Add site</h3>
+            <div class="meta">Naam + subdomains (comma/newline).</div>
+            <div class="row"><div class="ic" style="background:#7C6BFF">1</div><div><div class="t">Name</div><div class="d">Site C — docs</div></div></div>
+            <div class="row"><div class="ic" style="background:#7C6BFF">2</div><div><div class="t">Subdomains</div><div class="d">site-c.myapp.com, docs.site-c.myapp.com</div></div></div>
+            <div class="row"><div class="ic" style="background:#34D399">3</div><div><div class="t">config/sites.json me append</div><div class="d">atomic write → map reload → foran active</div></div></div>
+            <div class="row"><div class="ic" style="background:#34D399">4</div><div><div class="t">DB bootstrap rows</div><div class="d">site + routes + limits (empty)</div></div></div>
+          </div>
+
+          <div class="panel">
+            <h3>Site switch = scope switch</h3>
+            <div class="row"><div class="ic" style="background:#8E8E9C">▾</div><div><div class="t">Dropdown se site badlein</div><div class="d">?site=&lt;id&gt; → UI + API dono filter</div></div></div>
+            <div class="row"><div class="ic" style="background:#8E8E9C">◎</div><div><div class="t">Sidebar badal jata hai</div><div class="d">Providers/Keys/Usage/Logs us site ke</div></div></div>
+            <div class="row"><div class="ic" style="background:#8E8E9C">◈</div><div><div class="t">Top par badge</div><div class="d">active site hamesha dikhta hai</div></div></div>
+            <div class="note warn">🐾 Wildcard TLS <b>*.myapp.com</b> — har subdomain bina alag cert ke.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+</body>
+</html>
