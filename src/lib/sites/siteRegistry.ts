@@ -45,6 +45,8 @@ let cache: {
   sites: SiteDefinition[];
   byHost: Map<string, string>;
   filePath: string | null;
+  /** mtime of the parsed file — used to detect hand edits (dashboard path only). */
+  mtimeMs: number;
 } | null = null;
 
 function resolveSitesFilePath(): string | null {
