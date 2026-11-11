@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Routes — design</title>
+<style>
+  :root{
+    --bg:#0B0B0F; --panel:#121218; --panel2:#16161E; --line:#26262F; --ink:#ECECF1; --muted:#8E8E9C;
+    --indigo:#7C6BFF; --indigo-dim:#221E44; --emerald:#34D399; --emerald-dim:#0E2A22;
+    --amber:#FBBF24; --amber-dim:#2A2010; --rose:#FB7185; --sky:#38BDF8; --line2:#333341;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font:14px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,Helvetica,Arial,sans-serif;
+    -webkit-font-smoothing:antialiased}
+  .app{display:flex;min-height:960px}
+  .side{width:220px;flex:0 0 220px;background:#0E0E13;border-right:1px solid var(--line);padding:14px 12px}
+  .brand{display:flex;align-items:center;gap:9px;padding:2px 6px 14px}
+  .logo{width:28px;height:28px;border-radius:8px;background:#ECECF1;color:#0B0B0F;display:grid;place-items:center;font-weight:800;font-size:12px}
+  .brand b{font-size:13.5px} .brand span{display:block;font-size:10px;color:var(--muted)}
+  .grp{font-size:9.5px;font-weight:800;letter-spacing:.11em;color:#6A6A78;padding:12px 8px 5px}
+  .nav{display:flex;align-items:center;gap:9px;padding:7px 9px;border-radius:8px;color:#B9B9C6;font-size:12.5px}
+  .nav.on{background:#1B1B26;color:#fff}
+  .dot{width:6px;height:6px;border-radius:99px;background:#4A4A58}
+  .dot.g{background:var(--emerald)}
+  .main{flex:1;min-width:0;padding:0 0 30px}
+  .top{display:flex;align-items:center;gap:12px;padding:16px 24px;border-bottom:1px solid var(--line)}
+  .top h1{font-size:19px;margin:0;letter-spacing:-.01em}
+  .top p{margin:1px 0 0;font-size:12px;color:var(--muted)}
+  .btn{border:1px solid var(--line2);background:#1A1A22;color:#D9D9E4;border-radius:9px;padding:7px 12px;font-size:12px;font-weight:600}
+  .btn.pri{background:var(--indigo);border-color:var(--indigo);color:#0B0B0F}
+  .content{padding:18px 24px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px 16px}
+  .card h3{margin:0 0 3px;font-size:13.5px;display:flex;align-items:center;gap:8px}
+  .meta{font-size:11.5px;color:var(--muted)}
+  .routes{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px}
+  .route{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:15px 16px;position:relative;overflow:hidden}
+  .route.v1{border-color:#3B3470;background:linear-gradient(180deg,#171533 0%,#121218 55%)}
+  .route.bf{border-color:#1E5A46;background:linear-gradient(180deg,#0F2A22 0%,#121218 55%)}
+  .pill{font-size:10px;font-weight:700;letter-spacing:.04em;padding:2px 8px;border-radius:999px;border:1px solid transparent}
+  .pill.i{background:var(--indigo-dim);color:#B9AEFF;border-color:#3B3470}
+  .pill.e{background:var(--emerald-dim);color:#7BE8C0;border-color:#1E5A46}
+  .pill.a{background:var(--amber-dim);color:#F5D48A;border-color:#5A4413}
+  .pill.s{background:var(--sky-dim);color:#8FDBFB;border-color:#1C4A63}
+  .url{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;color:#C9C9DC;background:#0E0E13;border:1px solid var(--line);border-radius:8px;padding:7px 9px;margin:9px 0 10px;display:flex;justify-content:space-between}
+  .kv{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:10px}
+  .kvi{background:#0E0E13;border:1px solid var(--line);border-radius:9px;padding:8px 10px}
+  .kvi .l{font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:700}
+  .kvi .v{font-size:14px;font-weight:700;margin-top:2px}
+  .bar{height:6px;border-radius:99px;background:#1E1E28;overflow:hidden;margin-top:6px}
+  .bar i{display:block;height:100%;border-radius:99px}
+  .models{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px}
+  .m{font-size:10.5px;border:1px solid var(--line2);background:#15151C;border-radius:7px;padding:3px 8px;color:#B9B9C6}
+  .m.f{border-color:#1E5A46;color:#7BE8C0;background:#0F2019}
+  table{width:100%;border-collapse:collapse;font-size:12px}
+  th{text-align:left;font-size:9.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);padding:8px 10px;border-bottom:1px solid var(--line);font-weight:700}
+  td{padding:9px 10px;border-bottom:1px solid #1B1B24;color:#D5D5DF}
+  td .m{font-size:10.5px}
+  .num{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:11.5px}
+  .note{margin-top:12px;padding:11px 13px;border-radius:12px;border:1px dashed #5C2430;background:#22131A;color:#FFC2CD;font-size:12px}
+  .note b{color:#fff}
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="side">
+    <div class="brand"><div class="logo">CR</div><div><b>CheapRoute</b><span>v1.0.0</span></div></div>
+    <div class="grp">Top</div>
+    <div class="nav"><span class="dot"></span>Home</div>
+    <div class="grp">CheapProxy</div>
+    <div class="nav"><span class="dot g"></span>Providers</div>
+    <div class="nav on"><span class="dot g"></span>Combos</div>
+    <div class="nav"><span class="dot"></span>Pipe Models</div>
+    <div class="nav"><span class="dot"></span>Limits Bank</div>
+    <div class="nav"><span class="dot"></span>Users</div>
+    <div class="nav"><span class="dot"></span>API Keys</div>
+    <div class="nav"><span class="dot"></span>API Endpoints</div>
+    <div class="nav"><span class="dot"></span>Usage</div>
+    <div class="grp">Dev Tools</div>
+    <div class="nav"><span class="dot"></span>Logs</div>
+    <div class="nav"><span class="dot"></span>Playground</div>
+  </aside>
+
+  <main class="main">
+    <header class="top">
+      <div><h1>Routes</h1><p>Published endpoints — /v1 (selected) · /bestfree (free-first)</p></div>
+      <div style="margin-left:auto;display:flex;gap:9px">
+        <button class="btn">+ Custom route</button>
+        <button class="btn pri">+ Preset: /v1</button>
+        <button class="btn">+ Preset: /bestfree</button>
+      </div>
+    </header>
+
+    <div class="content">
+      <div class="routes">
+        <div class="route v1">
+          <h3><span class="pill i">/v1</span> OpenAI-compatible · selected models</h3>
+          <div class="meta">Follows exactly the models you selected (10–20). Priority order, failover to the next connection.</div>
+          <div class="url"><span>POST https://host/v1/chat/completions</span><span class="pill s">scope: global</span></div>
+          <div class="kv">
+            <div class="kvi"><div class="l">Models</div><div class="v">18</div></div>
+            <div class="kvi"><div class="l">RPM / model</div><div class="v">20</div><div class="bar"><i style="width:38%;background:#7C6BFF"></i></div></div>
+            <div class="kvi"><div class="l">Users</div><div class="v">4</div></div>
+          </div>
+          <div class="models">
+            <span class="m f">gpt-5.6-luna</span><span class="m f">gpt-5.6-terra</span><span class="m">claude-opus-5</span>
+            <span class="m">glm-4.7</span><span class="m">kimi-k2.7</span><span class="m">+13 more</span>
+          </div>
+        </div>
+
+        <div class="route bf">
+          <h3><span class="pill e">/bestfree</span> OpenAI-compatible · free-first</h3>
+          <div class="meta">Free subset only — free pool first (round-robin), paid only as fallback.</div>
+          <div class="url"><span>POST https://host/bestfree/v1/chat/completions</span><span class="pill a">scope: free-tier</span></div>
+          <div class="kv">
+            <div class="kvi"><div class="l">Free models</div><div class="v">12</div></div>
+            <div class="kvi"><div class="l">Free quota used</div><div class="v">38%</div><div class="bar"><i style="width:38%;background:#34D399"></i></div></div>
+            <div class="kvi"><div class="l">Calls today</div><div class="v">1.2k</div></div>
+          </div>
+          <div class="models">
+            <span class="m f">gpt-5.6-luna</span><span class="m f">glm-4.7</span><span class="m f">kimi-k2.7-code</span>
+            <span class="m f">+9 more</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>Per-user usage <span class="pill s">route-scoped</span></h3>
+        <div class="meta">Har user ka apna usage — route × model ke hisaab se, Limits Bank ke against.</div>
+        <table style="margin-top:10px">
+          <thead><tr><th>User</th><th>Route</th><th>Model</th><th>Calls</th><th>Tokens</th><th>RPM limit</th><th>Budget used</th></tr></thead>
+          <tbody>
+            <tr><td>ali@client.com</td><td><span class="m f">/bestfree</span></td><td class="num">gpt-5.6-luna</td><td class="num">412</td><td class="num">1.2M</td><td class="num">20</td><td><span class="pill a">64%</span></td></tr>
+            <tr><td>ali@client.com</td><td><span class="m f">/v1</span></td><td class="num">claude-opus-5</td><td class="num">38</td><td class="num">210k</td><td class="num">5</td><td><span class="pill e">12%</span></td></tr>
+            <tr><td>sara@site-b.io</td><td><span class="m f">/v1</span></td><td class="num">glm-4.7</td><td class="num">903</td><td class="num">4.8M</td><td class="num">20</td><td><span class="pill a">71%</span></td></tr>
+            <tr><td>free-user@site-a.io</td><td><span class="m f">/bestfree</span></td><td class="num">kimi-k2.7-code</td><td class="num">1.9k</td><td class="num">6.1M</td><td class="num">30</td><td><span class="pill a">88%</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="note">
+        <b>⚠ Ek setting, teen surfaces:</b> <code>publishedProviders</code> — Providers → Reseller/BYOK (editor) + Endpoint → Showcase Providers (editor #2) + Users → Allowed Providers (stat).
+        <b>Fix: ek editor rakho, doosri jagah sirf link.</b>
+      </div>
+    </div>
+  </main>
+</div>
+</body>
+</html>

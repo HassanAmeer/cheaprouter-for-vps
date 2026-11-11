@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Reseller / BYOK flow</title>
+<style>
+  :root{
+    --bg:#F7F7F8; --card:#fff; --line:#E6E6E9; --ink:#15161A; --muted:#6B7280;
+    --indigo:#4F46E5; --indigo-soft:#EEF0FF; --emerald:#059669; --emerald-soft:#E7F6F0;
+    --amber:#B45309; --amber-soft:#FDF2E2; --rose:#BE123C; --rose-soft:#FDE8EC;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font:14px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,Helvetica,Arial,sans-serif;
+    -webkit-font-smoothing:antialiased}
+  .wrap{max-width:1180px;margin:0 auto;padding:34px 28px 44px}
+  h1{font-size:26px;letter-spacing:-.02em;margin:0 0 4px}
+  .sub{color:var(--muted);margin:0 0 24px;font-size:14px}
+  .lanes{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+  .lane{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px 18px}
+  .lane h2{font-size:13px;text-transform:uppercase;letter-spacing:.09em;margin:0 0 12px;color:var(--muted)}
+  .lane.op h2{color:var(--indigo)} .lane.us h2{color:var(--emerald)}
+  .step{display:flex;gap:11px;padding:9px 0;border-top:1px dashed var(--line)}
+  .step:first-of-type{border-top:0}
+  .ic{flex:0 0 28px;height:28px;border-radius:9px;display:grid;place-items:center;font-size:14px;color:#fff}
+  .t{font-weight:600;font-size:13.5px}
+  .d{font-size:12px;color:var(--muted);margin-top:1px}
+  code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:11.5px;background:#F1F1F3;padding:1px 5px;border-radius:5px}
+  .flow{margin-top:18px;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px 18px}
+  .flow h2{font-size:14px;margin:0 0 12px}
+  .rail{display:flex;align-items:stretch;gap:0;flex-wrap:wrap}
+  .node{border:1px solid var(--line);background:#FCFCFD;border-radius:12px;padding:10px 12px;min-width:150px;flex:1}
+  .node .k{font-size:9.5px;letter-spacing:.09em;text-transform:uppercase;font-weight:700;color:var(--muted)}
+  .node .t{font-weight:600;font-size:13px;margin-top:2px}
+  .node .d{font-size:11.5px;color:var(--muted);margin-top:2px}
+  .ar{align-self:center;color:#B4B4BC;font-size:18px;padding:0 7px}
+  .yes{background:var(--emerald-soft);border-color:#CDEBDF}
+  .no{background:var(--amber-soft);border-color:#F4DCB8}
+  .br{margin-top:12px;padding:11px 13px;border-radius:12px;border:1px dashed #F0C4CE;background:var(--rose-soft);
+    color:var(--rose);font-size:12.5px}
+  .two{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:18px}
+  .box{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 16px}
+  .box h3{margin:0 0 8px;font-size:13.5px;display:flex;align-items:center;gap:8px}
+  .pill{font-size:10.5px;font-weight:700;padding:2px 8px;border-radius:999px}
+  .pill.ok{background:var(--emerald-soft);color:var(--emerald)}
+  .pill.warn{background:var(--rose-soft);color:var(--rose)}
+  ul{margin:0;padding-left:17px;font-size:12.5px;color:#3A3A3F}
+  li{margin:4px 0}
+  .foot{margin-top:16px;font-size:12px;color:var(--muted)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Reseller / BYOK — poora flow</h1>
+  <p class="sub">CheapRoute · do actors, ek policy, teen surfaces</p>
+
+  <div class="lanes">
+    <div class="lane op">
+      <h2>A Operator (aap)</h2>
+      <div class="step"><div class="ic" style="background:#4F46E5">1</div><div><div class="t">Providers connect karo</div><div class="d">API key / OAuth / local — aapke apne credentials</div></div></div>
+      <div class="step"><div class="ic" style="background:#0EA5E9">2</div><div><div class="t">Exposure decide karo</div><div class="d"><code>publishedProviders</code> → kaun se providers resold catalog me dikhein (khali = sab)</div></div></div>
+      <div class="step"><div class="ic" style="background:#8B5CF6">3</div><div><div class="t">BYOK master switch</div><div class="d"><code>byokEnabled</code> (default ON) — OFF ⇒ user ki apni key reject</div></div></div>
+      <div class="step"><div class="ic" style="background:#64748B">4</div><div><div class="t">Pooled credential</div><div class="d">jab user ki key use na ho → aapka connection key chalta hai</div></div></div>
+    </div>
+
+    <div class="lane us">
+      <h2>B Resold user (aapka customer)</h2>
+      <div class="step"><div class="ic" style="background:#059669">A</div><div><div class="t">Account + plan</div><div class="d">email, plan tier, token budget, RPM, model quotas</div></div></div>
+      <div class="step"><div class="ic" style="background:#059669">1</div><div><div class="t">Scoped API key</div><div class="d">budget + model allowlist + expiry + rate limit</div></div></div>
+      <div class="step"><div class="ic" style="background:#10B981">2</div><div><div class="t">Apni provider key (BYOK)</div><div class="d">OpenAI/Anthropic… apna key — pause bhi ho sakta hai</div></div></div>
+      <div class="step"><div class="ic" style="background:#22C55E">3</div><div class="t">Billing user ki</div><div class="d">BYOK key se request = user charge, aapka zero</div></div>
+    </div>
+  </div>
+
+  <div class="flow">
+    <h2>FLOW Request kaise route hoti hai</h2>
+    <div class="rail">
+      <div class="node"><div class="k">Incoming</div><div class="t">User ki API key</div><div class="d">+ optional <code>x-upstream-key</code> (BYOK)</div></div>
+      <div class="ar">→</div>
+      <div class="node"><div class="k">Check 1</div><div class="t">Master switch ON?</div><div class="d"><code>byokEnabled !== false</code></div></div>
+      <div class="ar">→</div>
+      <div class="node"><div class="k">Check 2</div><div class="t">Key paused?</div><div class="d">per-key <code>isPaused</code></div></div>
+      <div class="ar">→</div>
+      <div class="node yes"><div class="k">Haan</div><div class="t">BYOK key use</div><div class="d">user ki key se upstream</div></div>
+      <div class="ar">/</div>
+      <div class="node no"><div class="k">Nahi</div><div class="t">Pooled credential</div><div class="d">operator ka connection key</div></div>
+    </div>
+    <div class="br">! <b>Ek setting, teen surfaces:</b> <code>publishedProviders</code> — Providers tab (✏️ editor) + Endpoint → Showcase Providers (✏️ editor #2) + Users → Allowed Providers (👀 stat). Do editor ⇒ last-write-wins, panels stale ho sakte hain. <b>Fix: ek editor rakho, doosri jagah sirf link.</b></div>
+  </div>
+
+  <div class="two">
+    <div class="box">
+      <h3><span class="pill ok">OK Theek hai</span> Flow ki story</h3>
+      <ul>
+        <li>B Users page = <b>logon ka kaam</b> (account, plan, keys, usage)</li>
+        <li>2 Providers/Endpoint = <b>policy</b> (kaun expose, BYOK on/off)</li>
+        <li>3 Reseller tab apni jagah theek hai — editor consolidate karna hai</li>
+      </ul>
+    </div>
+    <div class="box">
+      <h3><span class="pill warn">! Aapke instance par abhi</span></h3>
+      <ul>
+        <li>B <b>4 reseller users</b> (users + keys)</li>
+        <li>2 <code>publishedProviders = []</code> → <b>sab providers expose</b></li>
+        <li>3 BYOK master switch <b>ON</b> (default)</li>
+      </ul>
+    </div>
+  </div>
+
+  <p class="foot">CheapRoute · flow review · 2026-11-11</p>
+</div>
+</body>
+</html>

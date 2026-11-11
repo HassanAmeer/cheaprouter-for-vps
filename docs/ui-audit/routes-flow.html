@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Routes · Limits · Failover — flow</title>
+<style>
+  :root{
+    --bg:#0B0B0F; --card:#121218; --card2:#16161E; --line:#26262F; --ink:#ECECF1; --muted:#8E8E9C;
+    --indigo:#7C6BFF; --indigo-dim:#221E44; --emerald:#34D399; --emerald-dim:#0E2A22;
+    --amber:#FBBF24; --amber-dim:#2A2010; --rose:#FB7185; --rose-dim:#2C141A; --sky:#38BDF8; --sky-dim:#0E2430;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font:14px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,Helvetica,Arial,sans-serif;
+    -webkit-font-smoothing:antialiased}
+  .wrap{max-width:1240px;margin:0 auto;padding:34px 26px 46px}
+  h1{font-size:26px;letter-spacing:-.02em;margin:0 0 4px}
+  .sub{color:var(--muted);margin:0 0 22px;font-size:13.5px}
+  .panel{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px 18px;margin-bottom:14px}
+  .panel h2{font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:0 0 12px}
+  .rail{display:flex;align-items:stretch;flex-wrap:wrap;gap:0}
+  .node{background:var(--card2);border:1px solid var(--line);border-radius:12px;padding:10px 12px;min-width:148px;flex:1}
+  .node .k{font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;font-weight:700;color:var(--muted)}
+  .node .t{font-weight:600;font-size:13px;margin-top:3px}
+  .node .d{font-size:11.5px;color:var(--muted);margin-top:2px}
+  .node.i{border-color:#3B3470;background:var(--indigo-dim)} .node.i .t{color:#B9AEFF}
+  .node.e{border-color:#1E5A46;background:var(--emerald-dim)} .node.e .t{color:#7BE8C0}
+  .node.a{border-color:#5A4413;background:var(--amber-dim)} .node.a .t{color:#F5D48A}
+  .node.s{border-color:#1C4A63;background:var(--sky-dim)} .node.s .t{color:#8FDBFB}
+  .node.r{border-color:#5C2430;background:var(--rose-dim)} .node.r .t{color:#FFA9B8}
+  .ar{align-self:center;color:#4A4A58;font-size:17px;padding:0 7px}
+  .two{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  .lanes{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  .lane{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:15px 16px}
+  .lane h2{font-size:12px;letter-spacing:.09em;text-transform:uppercase;margin:0 0 11px}
+  .lane.op h2{color:var(--indigo)} .lane.us h2{color:var(--emerald)}
+  .step{display:flex;gap:10px;padding:8px 0;border-top:1px dashed var(--line)}
+  .step:first-of-type{border-top:0}
+  .ic{flex:0 0 26px;height:26px;border-radius:8px;display:grid;place-items:center;font-size:12px;font-weight:700;color:#0B0B0F}
+  .t{font-weight:600;font-size:13px}
+  .d{font-size:11.5px;color:var(--muted);margin-top:1px}
+  code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:11px;background:#1C1C25;border:1px solid var(--line);padding:1px 5px;border-radius:5px;color:#C9C9DC}
+  .note{margin-top:11px;padding:10px 12px;border-radius:11px;border:1px dashed #5C2430;background:var(--rose-dim);color:#FFC2CD;font-size:12px}
+  .note.ok{border-color:#1E5A46;background:var(--emerald-dim);color:#A7F3D6}
+  .foot{margin-top:12px;font-size:11.5px;color:var(--muted);text-align:center}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Routes · Limits · Failover — flow</h1>
+  <p class="sub">CheapRoute · operator setup → request → per-user scope → custom-provider failover</p>
+
+  <div class="panel">
+    <h2>Flow A · operator setup (ek baar)</h2>
+    <div class="rail">
+      <div class="node i"><div class="k">1</div><div class="t">Connect provider</div><div class="d">custom · OAuth · API key</div></div>
+      <div class="ar">→</div>
+      <div class="node i"><div class="k">2</div><div class="t">Fetch models</div><div class="d">"kaam karne wale" rakho</div></div>
+      <div class="ar">→</div>
+      <div class="node i"><div class="k">3</div><div class="t">Alias / rename</div><div class="d">Luna Fast</div></div>
+      <div class="ar">→</div>
+      <div class="node a"><div class="k">4</div><div class="t">Per-model RPM</div><div class="d">Limits Bank</div></div>
+      <div class="ar">→</div>
+      <div class="node e"><div class="k">5</div><div class="t">Route banao</div><div class="d">/v1 · /bestfree</div></div>
+      <div class="ar">→</div>
+      <div class="node e"><div class="k">6</div><div class="t">Publish</div><div class="d">URL + key → frontend</div></div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>Flow B · request (har call)</h2>
+    <div class="rail">
+      <div class="node s"><div class="k">1</div><div class="t">Route resolve</div><div class="d">scope-aware</div></div>
+      <div class="ar">→</div>
+      <div class="node s"><div class="k">2</div><div class="t">Candidates</div><div class="d">enabled ∩ route ∩ quota</div></div>
+      <div class="ar">→</div>
+      <div class="node e"><div class="k">3</div><div class="t">Strategy</div><div class="d">free-first → RR → paid</div></div>
+      <div class="ar">→</div>
+      <div class="node i"><div class="k">4</div><div class="t">Connection</div><div class="d">priority order</div></div>
+      <div class="ar">→</div>
+      <div class="node a"><div class="k">5</div><div class="t">Limits Bank</div><div class="d">RPM bucket + budget</div></div>
+      <div class="ar">→</div>
+      <div class="node"><div class="k">6</div><div class="t">Usage charge</div><div class="d">user · model · route</div></div>
+      <div class="ar">→</div>
+      <div class="node e"><div class="k">7</div><div class="t">Stream</div><div class="d">response</div></div>
+    </div>
+  </div>
+
+  <div class="two">
+    <div class="panel" style="margin:0">
+      <h2>Flow C · per-user / per-site</h2>
+      <div class="rail">
+        <div class="node s"><div class="k">1</div><div class="t">User key</div><div class="d">scope match</div></div>
+        <div class="ar">→</div>
+        <div class="node e"><div class="k">2</div><div class="t">Route A</div><div class="d">us user ki list</div></div>
+        <div class="ar">→</div>
+        <div class="node"><div class="k">3</div><div class="t">Usage</div><div class="d">user · model · route</div></div>
+      </div>
+      <div class="note ok">Frontend site → <code>/v1/models?scope=site-A</code> → sirf us site ke models</div>
+    </div>
+
+    <div class="panel" style="margin:0">
+      <h2>Flow D · custom-provider failover</h2>
+      <div class="rail">
+        <div class="node i"><div class="k">1</div><div class="t">conn #1</div><div class="d">base A · priority 1</div></div>
+        <div class="ar">→✗</div>
+        <div class="node i"><div class="k">2</div><div class="t">conn #2</div><div class="d">base B · priority 2</div></div>
+        <div class="ar">→✗</div>
+        <div class="node r"><div class="k">3</div><div class="t">Error</div><div class="d">circuit breaker</div></div>
+      </div>
+      <div class="note">Cross-site failover: combo step → doosri site ka backend (already supported)</div>
+    </div>
+  </div>
+
+  <div class="lanes" style="margin-top:14px">
+    <div class="lane op">
+      <h2>A · Aap (operator)</h2>
+      <div class="step"><div class="ic" style="background:#7C6BFF">1</div><div><div class="t">Providers connect</div><div class="d">custom · OAuth · API key</div></div></div>
+      <div class="step"><div class="ic" style="background:#7C6BFF">2</div><div><div class="t">Models: sirf kaam karne wale</div><div class="d">alias / rename · per-minute limit</div></div></div>
+      <div class="step"><div class="ic" style="background:#34D399">3</div><div><div class="t">Routes: /v1 · /bestfree</div><div class="d">scope: global · site · user-tier</div></div></div>
+      <div class="step"><div class="ic" style="background:#FBBF24">4</div><div><div class="t">Limits Bank</div><div class="d">har model par RPM, sab routes par</div></div></div>
+    </div>
+    <div class="lane us">
+      <h2>B · User (customer)</h2>
+      <div class="step"><div class="ic" style="background:#34D399">1</div><div><div class="t">Scoped API key</div><div class="d">uska route + uski model list</div></div></div>
+      <div class="step"><div class="ic" style="background:#38BDF8">2</div><div><div class="t">Call karta hai</div><div class="d">OpenAI-compatible</div></div></div>
+      <div class="step"><div class="ic" style="background:#FBBF24">3</div><div><div class="t">Usage + quota</div><div class="d">kitna use kiya</div></div></div>
+      <div class="step"><div class="ic" style="background:#FB7185">4</div><div><div class="t">BYOK (optional)</div><div class="d">apni key → user billed</div></div></div>
+    </div>
+  </div>
+
+  <p class="foot">CheapRoute · flow review · 2026-11-11</p>
+</div>
+</body>
+</html>
