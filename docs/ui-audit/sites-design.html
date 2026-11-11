@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Sites · subdomains — design</title>
+<style>
+  :root{
+    --bg:#0B0B0F; --panel:#121218; --panel2:#16161E; --line:#26262F; --ink:#ECECF1; --muted:#8E8E9C;
+    --indigo:#7C6BFF; --indigo-dim:#221E44; --emerald:#34D399; --emerald-dim:#0E2A22;
+    --amber:#FBBF24; --amber-dim:#2A2010; --rose:#FB7185; --rose-dim:#2C141A; --sky:#38BDF8; --sky-dim:#0E2430;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font:14px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,Helvetica,Arial,sans-serif;
+    -webkit-font-smoothing:antialiased}
+  .app{display:flex;min-height:980px}
+  .side{width:218px;flex:0 0 218px;background:#0E0E13;border-right:1px solid var(--line);padding:14px 12px}
+  .brand{display:flex;align-items:center;gap:9px;padding:2px 6px 14px}
+  .logo{width:28px;height:28px;border-radius:8px;background:#ECECF1;color:#0B0B0F;display:grid;place-items:center;font-weight:800;font-size:12px}
+  .brand b{font-size:13.5px} .brand span{display:block;font-size:10px;color:var(--muted)}
+  .grp{font-size:9.5px;font-weight:800;letter-spacing:.11em;color:#6A6A78;padding:12px 8px 5px}
+  .nav{display:flex;align-items:center;gap:9px;padding:7px 9px;border-radius:8px;color:#B9B9C6;font-size:12.5px}
+  .nav.on{background:#1B1B26;color:#fff}
+  .dot{width:6px;height:6px;border-radius:99px;background:#4A4A58}
+  .dot.g{background:var(--emerald)}
+  .main{flex:1;min-width:0}
+  .top{display:flex;align-items:center;gap:12px;padding:16px 24px;border-bottom:1px solid var(--line)}
+  .top h1{font-size:19px;margin:0;letter-spacing:-.01em}
+  .top p{margin:1px 0 0;font-size:12px;color:var(--muted)}
+  .btn{border:1px solid #333341;background:#1A1A22;color:#D9D9E4;border-radius:9px;padding:7px 12px;font-size:12px;font-weight:600}
+  .btn.pri{background:var(--indigo);border-color:var(--indigo);color:#0B0B0F}
+  .content{padding:18px 24px}
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px 16px;margin-bottom:14px}
+  .panel h3{margin:0 0 3px;font-size:13.5px;display:flex;align-items:center;gap:8px}
+  .meta{font-size:11.5px;color:var(--muted)}
+  .pill{font-size:10px;font-weight:700;letter-spacing:.04em;padding:2px 8px;border-radius:999px;border:1px solid transparent}
+  .pill.i{background:var(--indigo-dim);color:#B9AEFF;border-color:#3B3470}
+  .pill.e{background:var(--emerald-dim);color:#7BE8C0;border-color:#1E5A46}
+  .pill.a{background:var(--amber-dim);color:#F5D48A;border-color:#5A4413}
+  .pill.s{background:var(--sky-dim);color:#8FDBFB;border-color:#1C4A63}
+  .pill.g{background:#1B1B24;color:#8E8E9C;border-color:#2A2A36}
+  .sites{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}
+  .site{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:15px 16px}
+  .site.a{border-color:#3B3470} .site.b{border-color:#1C4A63}
+  .host{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;color:#C9C9DC;background:#0E0E13;border:1px solid var(--line);border-radius:8px;padding:7px 9px;margin:9px 0 10px;display:flex;justify-content:space-between}
+  .kv{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:10px}
+  .kvi{background:#0E0E13;border:1px solid var(--line);border-radius:9px;padding:8px 10px}
+  .kvi .l{font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:700}
+  .kvi .v{font-size:14px;font-weight:700;margin-top:2px}
+  .bar{height:6px;border-radius:99px;background:#1E1E28;overflow:hidden;margin-top:6px}
+  .bar i{display:block;height:100%;border-radius:99px}
+  .resolve{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+  .r{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:10px 12px}
+  .r .k{font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;font-weight:700;color:var(--muted)}
+  .r .t{font-weight:600;font-size:12.5px;margin-top:3px}
+  .r .d{font-size:11px;color:var(--muted);margin-top:2px}
+  table{width:100%;border-collapse:collapse;font-size:12px}
+  th{text-align:left;font-size:9.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);padding:8px 10px;border-bottom:1px solid var(--line);font-weight:700}
+  td{padding:9px 10px;border-bottom:1px solid #1B1B24;color:#D5D5DF}
+  .num{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:11.5px}
+  .note{margin-top:12px;padding:11px 13px;border-radius:12px;border:1px dashed #5C2430;background:#22131A;color:#FFC2CD;font-size:12px}
+  .flowline{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:11.5px;color:#C9C9DC;background:#0E0E13;border:1px solid var(--line);border-radius:10px;padding:11px 13px;margin-top:10px;line-height:1.9}
+  .flowline b{color:#fff} .g{color:#7BE8C0} .i{color:#B9AEFF} .a{color:#F5D48A}
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="side">
+    <div class="brand"><div class="logo">CR</div><div><b>CheapRoute</b><span>v1.0.0</span></div></div>
+    <div class="grp">Top</div>
+    <div class="nav"><span class="dot"></span>Home</div>
+    <div class="grp">CheapProxy</div>
+    <div class="nav"><span class="dot g"></span>Providers</div>
+    <div class="nav"><span class="dot g"></span>Combos</div>
+    <div class="nav"><span class="dot"></span>Pipe Models</div>
+    <div class="nav"><span class="dot"></span>Limits Bank</div>
+    <div class="nav on"><span class="dot g"></span>Sites</div>
+    <div class="nav"><span class="dot"></span>Users</div>
+    <div class="nav"><span class="dot"></span>API Keys</div>
+    <div class="nav"><span class="dot"></span>API Endpoints</div>
+    <div class="nav"><span class="dot"></span>Usage</div>
+    <div class="grp">Dev Tools</div>
+    <div class="nav"><span class="dot"></span>Logs</div>
+    <div class="nav"><span class="dot"></span>Playground</div>
+  </aside>
+
+  <main class="main">
+    <header class="top">
+      <div><h1>Sites</h1><p>Har website = apna subdomain, apne routes, apna usage</p></div>
+      <div style="margin-left:auto;display:flex;gap:9px">
+        <button class="btn">+ Site</button>
+        <button class="btn pri">+ Site-scoped key</button>
+      </div>
+    </header>
+
+    <div class="content">
+      <div class="sites">
+        <div class="site a">
+          <h3><span class="pill i">Site A</span> Site A — blog</h3>
+          <div class="meta">Display naam wohi jo aap dekhna chahte ho; slug routing key hai.</div>
+          <div class="host"><span>site-a.myapp.com</span><span class="pill e">active</span></div>
+          <div class="kv">
+            <div class="kvi"><div class="l">Routes</div><div class="v">/v1</div></div>
+            <div class="kvi"><div class="l">Models</div><div class="v">18</div></div>
+            <div class="kvi"><div class="l">Calls today</div><div class="v">1.4k</div><div class="bar"><i style="width:52%;background:#7C6BFF"></i></div></div>
+          </div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap">
+            <span class="pill g">scope: global</span><span class="pill g">keys: 2</span><span class="pill a">budget 64%</span>
+          </div>
+        </div>
+
+        <div class="site b">
+          <h3><span class="pill s">Site B</span> Site B — app</h3>
+          <div class="meta">Same backend, alag routes + alag model list + alag usage.</div>
+          <div class="host"><span>site-b.myapp.com</span><span class="pill e">active</span></div>
+          <div class="kv">
+            <div class="kvi"><div class="l">Routes</div><div class="v">/bestfree</div></div>
+            <div class="kvi"><div class="l">Models</div><div class="v">12</div></div>
+            <div class="kvi"><div class="l">Calls today</div><div class="v">3.1k</div><div class="bar"><i style="width:78%;background:#38BDF8"></i></div></div>
+          </div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap">
+            <span class="pill g">scope: free-tier</span><span class="pill g">keys: 1</span><span class="pill a">budget 88%</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h3>Site resolve — request aate hi</h3>
+        <div class="meta">Pehla signal jeetta hai; host/header sirf fallback (proxy/CDN ke peeche bhi chale).</div>
+        <div class="resolve" style="margin-top:11px">
+          <div class="r"><div class="k">1 · primary</div><div class="t">API key → site_id</div><div class="d">api_keys.site_id</div></div>
+          <div class="r"><div class="k">2 · fallback</div><div class="t">Host header</div><div class="d">site-a.myapp.com → slug</div></div>
+          <div class="r"><div class="k">3 · fallback</div><div class="t">X-CheapRoute-Site</div><div class="d">nginx sets it</div></div>
+          <div class="r"><div class="k">4 · default</div><div class="t">Global scope</div><div class="d">kuch nahi mila</div></div>
+        </div>
+        <div class="flowline">
+<b>request</b> → <span class="i">site resolve</span> → <span class="i">route (site ∩ key)</span> →
+<span class="i">models (site exposed ∩ route)</span> → <span class="g">free-first / priority / RR</span> →
+<span class="a">limits: site → route → model</span> → <span class="g">usage: site × user × route × model</span>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h3>Per-site usage</h3>
+        <div class="meta">Site × route × model — aapki har website ka apna hisaab.</div>
+        <table style="margin-top:10px">
+          <thead><tr><th>Site</th><th>Route</th><th>Model</th><th>Calls</th><th>Tokens</th><th>Budget used</th></tr></thead>
+          <tbody>
+            <tr><td><span class="pill i">site-a</span></td><td class="num">/v1</td><td class="num">gpt-5.6-luna</td><td class="num">1.1k</td><td class="num">3.4M</td><td><span class="pill a">64%</span></td></tr>
+            <tr><td><span class="pill i">site-a</span></td><td class="num">/v1</td><td class="num">claude-opus-5</td><td class="num">212</td><td class="num">1.2M</td><td><span class="pill e">18%</span></td></tr>
+            <tr><td><span class="pill s">site-b</span></td><td class="num">/bestfree</td><td class="num">glm-4.7</td><td class="num">2.4k</td><td class="num">7.1M</td><td><span class="pill a">88%</span></td></tr>
+            <tr><td><span class="pill s">site-b</span></td><td class="num">/bestfree</td><td class="num">kimi-k2.7-code</td><td class="num">700</td><td class="num">2.2M</td><td><span class="pill e">31%</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="note">
+        <b>🔐 TLS:</b> ek wildcard cert <code>*.myapp.com</code> (Let's Encrypt DNS-01) → har subdomain bina per-site cert ke chalega.
+        <code>server_name ~^(?&lt;sub&gt;[a-z0-9-]+)\.myapp\.com$;</code> + <code>proxy_set_header X-CheapRoute-Site $sub;</code>
+      </div>
+    </div>
+  </main>
+</div>
+</body>
+</html>
