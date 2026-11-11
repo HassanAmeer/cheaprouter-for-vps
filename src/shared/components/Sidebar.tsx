@@ -11,6 +11,7 @@ import {
 } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import SiteSwitcher from "./SiteSwitcher";
 import { cn } from "@/shared/utils/cn";
 import { getActiveSidebarHref } from "@/shared/utils/sidebarRouteMatch";
 import { filterSidebarSectionsByQuery } from "@/shared/utils/sidebarSearch";
@@ -509,7 +510,9 @@ export default function Sidebar({
         id,
         label,
         x: isRtl
-          ? (typeof window !== "undefined" ? window.innerWidth - (sidebarRect?.left ?? 0) + 8 : 72)
+          ? typeof window !== "undefined"
+            ? window.innerWidth - (sidebarRect?.left ?? 0) + 8
+            : 72
           : (sidebarRect?.right ?? 64) + 8,
         y: rect.top + rect.height / 2,
         isRtl,
@@ -728,6 +731,10 @@ export default function Sidebar({
                 <span className="text-[10px] text-text-muted">v{APP_CONFIG.version}</span>
               </div>
             )}
+
+            {/* Site switcher — which of the operator's websites is active.
+              The whole sidebar scopes to the selected site (?site=<id>). */}
+            {!collapsed && <SiteSwitcher />}
           </Link>
           {onClose && (
             <button
