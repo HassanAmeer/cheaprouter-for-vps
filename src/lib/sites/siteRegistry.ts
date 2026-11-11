@@ -105,7 +105,13 @@ function buildCache(): NonNullable<typeof cache> {
   for (const site of sites) {
     for (const host of site.subdomains) byHost.set(host, site.id);
   }
-  return { sites, byHost, filePath };
+  let mtimeMs = 0;
+  try {
+    if (filePath) mtimeMs = fs.statSync(filePath).mtimeMs;
+  } catch {
+    // ignore
+  }
+  return { sites, byHost, filePath, mtimeMs };
 }
 
 /** The in-memory registry (parsed once per process). */
@@ -120,8 +126,28 @@ export function reloadSiteRegistry(): SiteDefinition[] {
   return cache.sites;
 }
 
+/**
+ * The site list for the DASHBOARD.
+ *
+ * Unlike the request-path resolver (which must stay I/O free), this re-checks
+ * the file's mtime so a hand-edited `config/sites.json` shows up without a
+ * restart. It is called from the dashboard/API only — never per request.
+ */
 export function listSites(): SiteDefinition[] {
-  return getSiteRegistry().sites;
+  const registry = getSiteRegistry();
+  const filePath = registry.filePath ?? resolveSitesFilePath();
+  if (!filePath) return registry.sites;
+  try {
+    const stat = fs.statSync(filePath);
+    if (registry.mtimeMs !== stat.mtimeMs) {
+      cache = buildCache();
+      cache.mtimeMs = stat.mtimeMs;
+      return cache.sites;
+    }
+  } catch {
+    // File vanished — keep the last known state.
+  }
+  return registry.sites;
 }
 
 /** Resolve a site id from a Host header (no DB, no disk). */
