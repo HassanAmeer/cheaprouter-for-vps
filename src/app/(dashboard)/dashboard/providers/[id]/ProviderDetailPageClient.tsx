@@ -32,6 +32,8 @@ import ProviderPageHeader from "./components/ProviderPageHeader";
 import { AdaptaTutorialModal } from "./components/AdaptaTutorialModal";
 import AddCustomModelCard from "./components/AddCustomModelCard";
 import AvailableModelsTable from "./components/AvailableModelsTable";
+import ConnectionsTab from "./components/ConnectionsTab";
+import EditConnectionModal from "./components/modals/EditConnectionModal";
 import DefaultCapabilitiesPromptModal from "../components/DefaultCapabilitiesPromptModal";
 import EditCustomProviderSheet from "./components/EditCustomProviderSheet";
 import AddApiKeyModal from "./components/modals/AddApiKeyModal";
@@ -56,6 +58,11 @@ export default function ProviderDetailPageClient() {
   const [showSiliconFlowEndpointModal, setShowSiliconFlowEndpointModal] = useState(false);
   const [showGuideSheet, setShowGuideSheet] = useState(false);
   const [showAdaptaTutorial, setShowAdaptaTutorial] = useState(false);
+  // Detail page tabs: the models of a provider and the credentials that make
+  // them reachable. The connection list used to live here and was lost in the
+  // redesign — you could connect but never see or edit a credential.
+  const [detailTab, setDetailTab] = useState<"models" | "connections">("models");
+  const [editingConnection, setEditingConnection] = useState<any>(null);
   const [showAntigravitySheet, setShowAntigravitySheet] = useState(false);
   const [siliconFlowInitialBaseUrl, setSiliconFlowInitialBaseUrl] = useState<string | undefined>(
     undefined
@@ -73,7 +80,26 @@ export default function ProviderDetailPageClient() {
   const [fetchingAllModels, setFetchingAllModels] = useState(false);
   const [fetchError, setFetchError] = useState<string | null>(null);
 
-  const { connections, providerNode, loading, fetchConnections } = useProviderConnections(
+  const {
+    connections,
+    providerNode,
+    loading,
+    fetchConnections,
+    retestingId,
+    cpaProviderEnabled,
+    upstreamProxyMode,
+    upstreamProxyFallbackBackend,
+    handleUpdateConnectionStatus,
+    handleToggleRateLimit,
+    handleRetestConnection,
+    handleRefreshToken,
+    handleSwapPriority,
+    handleToggleProxyEnabled,
+    handleTogglePerKeyProxyEnabled,
+    handleToggleCliproxyapiMode,
+    handleSetUpstreamProxyMode,
+    deleteConfirm,
+  } = useProviderConnections(
     providerId,
     isOpenAICompatibleProvider(providerId) ||
       isAnthropicCompatibleProvider(providerId) ||
@@ -229,9 +255,11 @@ export default function ProviderDetailPageClient() {
   // in the effect deps re-triggered the fetch on every render (an endless
   // fetch loop).
   const fetchProviderModelMetaRef = useRef(fetchProviderModelMeta);
-  fetchProviderModelMetaRef.current = fetchProviderModelMeta;
   const fetchAliasesRef = useRef(fetchAliases);
-  fetchAliasesRef.current = fetchAliases;
+  useEffect(() => {
+    fetchProviderModelMetaRef.current = fetchProviderModelMeta;
+    fetchAliasesRef.current = fetchAliases;
+  });
 
   useEffect(() => {
     if (loading) return;
@@ -308,7 +336,14 @@ export default function ProviderDetailPageClient() {
     } finally {
       setDisconnecting(false);
     }
-  }, [connections, providerInfo?.name, providerId, fetchConnections, fetchProviderModelMeta, notify]);
+  }, [
+    connections,
+    providerInfo?.name,
+    providerId,
+    fetchConnections,
+    fetchProviderModelMeta,
+    notify,
+  ]);
 
   const handleFetchAllModels = async () => {
     setFetchingAllModels(true);
@@ -370,7 +405,9 @@ export default function ProviderDetailPageClient() {
                 ? { inputTokenLimit: m.max_input_tokens }
                 : {}),
               ...(Array.isArray(m.capabilities) ? { capabilities: m.capabilities } : {}),
-              ...(m.supportsVision !== undefined ? { supportsVision: Boolean(m.supportsVision) } : {}),
+              ...(m.supportsVision !== undefined
+                ? { supportsVision: Boolean(m.supportsVision) }
+                : {}),
               ...(m.reasoning !== undefined ? { reasoning: Boolean(m.reasoning) } : {}),
             };
           }),
@@ -528,7 +565,9 @@ export default function ProviderDetailPageClient() {
                   </span>
                 </div>
                 <p className="text-xs text-white/70 mt-1 leading-relaxed max-w-2xl">
-                  Attach multiple Antigravity CLI accounts. Switch the active account with one click, or let the router automatically failover to the next standby account when quota/rate limits (429) are reached.
+                  Attach multiple Antigravity CLI accounts. Switch the active account with one
+                  click, or let the router automatically failover to the next standby account when
+                  quota/rate limits (429) are reached.
                 </p>
               </div>
             </div>
@@ -547,27 +586,168 @@ export default function ProviderDetailPageClient() {
       )}
 
       {/* ── REMOTE TUNNEL HELPER BANNER (WHEN NOT CONNECTED) ── */}
-      {connections.length === 0 && providerId !== "opencode-bypass" && (
-        <RemoteTunnelBanner />
+      {connections.length === 0 && providerId !== "opencode-bypass" && <RemoteTunnelBanner />}
+
+      {/* ── DETAIL TABS: MODELS | CONNECTIONS ── */}
+      <div className="flex items-center gap-1 border-b border-border" role="tablist">
+        <button
+          type="button"
+          role="tab"
+          aria-selected={detailTab === "models"}
+          onClick={() => setDetailTab("models")}
+          className={`inline-flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors ${
+            detailTab === "models"
+              ? "border-primary text-text-main"
+              : "border-transparent text-text-muted hover:text-text-main hover:border-border"
+          }`}
+        >
+          <span className="material-symbols-outlined text-[16px]">dns</span>
+          Models
+        </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={detailTab === "connections"}
+          onClick={() => setDetailTab("connections")}
+          className={`inline-flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors ${
+            detailTab === "connections"
+              ? "border-primary text-text-main"
+              : "border-transparent text-text-muted hover:text-text-main hover:border-border"
+          }`}
+        >
+          <span className="material-symbols-outlined text-[16px]">link</span>
+          Connections
+          {connections.length > 0 && (
+            <span className="text-[11px] bg-bg-subtle border border-border text-text-muted rounded-full px-1.5 py-0.5 font-mono">
+              {connections.length}
+            </span>
+          )}
+        </button>
+      </div>
+
+      {detailTab === "connections" ? (
+        <ConnectionsTab
+          connections={connections}
+          providerId={providerId}
+          retestingId={retestingId}
+          cpaProviderEnabled={cpaProviderEnabled}
+          upstreamProxyMode={upstreamProxyMode}
+          upstreamProxyFallbackBackend={upstreamProxyFallbackBackend}
+          onToggleActive={handleUpdateConnectionStatus}
+          onToggleRateLimit={handleToggleRateLimit}
+          onRetest={handleRetestConnection}
+          onEdit={(connection) => setEditingConnection(connection)}
+          onDelete={(id, name) => deleteConfirm.request(id, name)}
+          onMoveUp={(connection) => {
+            const sorted = [...connections].sort(
+              (a, b) => (a.priority ?? 999) - (b.priority ?? 999)
+            );
+            const index = sorted.findIndex((c) => c.id === connection.id);
+            if (index > 0) void handleSwapPriority(connection, sorted[index - 1]);
+          }}
+          onMoveDown={(connection) => {
+            const sorted = [...connections].sort(
+              (a, b) => (a.priority ?? 999) - (b.priority ?? 999)
+            );
+            const index = sorted.findIndex((c) => c.id === connection.id);
+            if (index !== -1 && index < sorted.length - 1) {
+              void handleSwapPriority(connection, sorted[index + 1]);
+            }
+          }}
+          onRefreshToken={handleRefreshToken}
+          onToggleProxyEnabled={handleToggleProxyEnabled}
+          onTogglePerKeyProxyEnabled={handleTogglePerKeyProxyEnabled}
+          onToggleCliproxyapiMode={handleToggleCliproxyapiMode}
+          onSetUpstreamProxyMode={handleSetUpstreamProxyMode}
+          onAddConnection={openPrimaryAddFlow}
+          onDisconnectAll={connections.length > 0 ? handleDisconnect : undefined}
+        />
+      ) : (
+        <>
+          {/* ── SECTION 1: ➕ "Add Custom Model" Form ── */}
+          <AddCustomModelCard providerId={providerId} onModelAdded={fetchProviderModelMeta} />
+
+          {/* ── SECTION 2: 📋 AVAILABLE MODELS TABLE (with "Fetch All Models" in header) ── */}
+          <AvailableModelsTable
+            providerId={providerId}
+            providerDisplayAlias={providerDisplayAlias}
+            models={models}
+            testPrompt={testPrompt}
+            onRefreshModels={fetchProviderModelMeta}
+            copied={copied}
+            onCopy={copy}
+            onFetchModels={handleFetchAllModels}
+            isFetchingModels={fetchingAllModels}
+            fetchError={fetchError}
+            connectionId={connections?.[0]?.id}
+          />
+        </>
       )}
 
-      {/* ── SECTION 1: ➕ "Add Custom Model" Form ── */}
-      <AddCustomModelCard providerId={providerId} onModelAdded={fetchProviderModelMeta} />
+      {/* ── EDIT CONNECTION MODAL ── */}
+      {editingConnection && (
+        <EditConnectionModal
+          isOpen={Boolean(editingConnection)}
+          connection={editingConnection}
+          providerId={providerId}
+          providerWebsite={providerInfo?.website}
+          onClose={() => setEditingConnection(null)}
+          onSave={async (data: unknown) => {
+            const res = await fetch(`/api/providers/${encodeURIComponent(editingConnection.id)}`, {
+              method: "PUT",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(data),
+            });
+            if (!res.ok) {
+              const error = await res.json().catch(() => ({}));
+              throw new Error(error?.error || "Failed to save connection");
+            }
+            setEditingConnection(null);
+            await fetchConnections();
+          }}
+        />
+      )}
 
-      {/* ── SECTION 2: 📋 AVAILABLE MODELS TABLE (with "Fetch All Models" in header) ── */}
-      <AvailableModelsTable
-        providerId={providerId}
-        providerDisplayAlias={providerDisplayAlias}
-        models={models}
-        testPrompt={testPrompt}
-        onRefreshModels={fetchProviderModelMeta}
-        copied={copied}
-        onCopy={copy}
-        onFetchModels={handleFetchAllModels}
-        isFetchingModels={fetchingAllModels}
-        fetchError={fetchError}
-        connectionId={connections?.[0]?.id}
-      />
+      {/* ── DELETE CONNECTION CONFIRM ── */}
+      {deleteConfirm.connection && (
+        <div
+          className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 backdrop-blur-sm"
+          onClick={deleteConfirm.cancel}
+        >
+          <div
+            className="relative bg-bg-primary border border-border rounded-xl w-full max-w-[420px] mx-4 p-5 shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+            role="alertdialog"
+            aria-modal="true"
+          >
+            <h3 className="font-semibold text-text-main">Delete connection</h3>
+            <p className="text-sm text-text-muted mt-2">
+              Remove{" "}
+              <strong className="text-text-main">
+                {deleteConfirm.connection.name || deleteConfirm.connection.id}
+              </strong>{" "}
+              and its stored credentials? This cannot be undone.
+            </p>
+            <div className="flex justify-end gap-2 mt-5">
+              <button
+                type="button"
+                onClick={deleteConfirm.cancel}
+                className="px-3 py-1.5 rounded-lg border border-border text-text-muted hover:text-text-primary text-xs font-medium"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={deleteConfirm.deleting}
+                onClick={() => void deleteConfirm.confirm()}
+                className="px-3 py-1.5 rounded-lg bg-red-500 text-white text-xs font-semibold hover:bg-red-400 disabled:opacity-60"
+              >
+                {deleteConfirm.deleting ? "Deleting…" : "Delete"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {providerNode && (
         <EditCustomProviderSheet
