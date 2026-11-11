@@ -1,0 +1,199 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Providers — proposed IA</title>
+<style>
+  :root{
+    --bg:#FAFAFA; --card:#FFFFFF; --line:#E5E5E7; --ink:#111214; --muted:#8A8A8E;
+    --indigo:#4F46E5; --indigo-soft:#EEF0FF; --emerald:#059669; --emerald-soft:#E7F6F0;
+    --amber:#B45309; --amber-soft:#FDF2E2; --blue:#2563EB; --violet:#7C3AED; --cyan:#0891B2;
+    --pink:#DB2777; --lime:#65A30D; --rose:#E11D48;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font:14px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,Helvetica,Arial,sans-serif;
+    -webkit-font-smoothing:antialiased}
+  .app{display:flex;min-height:900px}
+  /* ── sidebar ── */
+  .side{width:236px;flex:0 0 236px;background:#fff;border-right:1px solid var(--line);
+    padding:14px 12px;display:flex;flex-direction:column;gap:6px}
+  .brand{display:flex;align-items:center;gap:10px;padding:4px 6px 12px}
+  .logo{width:30px;height:30px;border-radius:8px;background:#15161A;display:grid;place-items:center;color:#fff;font-size:13px;font-weight:700}
+  .brand b{font-size:14px;display:block;line-height:1.2}
+  .brand span{font-size:10.5px;color:var(--muted)}
+  .searchbox{display:flex;align-items:center;gap:8px;border:1px solid var(--line);border-radius:9px;
+    padding:7px 10px;color:var(--muted);font-size:12.5px;margin-bottom:10px}
+  .grp{font-size:10px;font-weight:700;letter-spacing:.09em;color:#A0A0A6;text-transform:uppercase;
+    padding:12px 8px 4px}
+  .nav{display:flex;align-items:center;gap:10px;padding:8px 9px;border-radius:9px;color:#3A3A3F}
+  .nav .ic{width:19px;height:19px;border-radius:5px;display:grid;place-items:center;font-size:11px;color:#fff;font-weight:700;flex:0 0 19px}
+  .nav .tx{min-width:0}
+  .nav .tx b{display:block;font-size:13px;font-weight:500;line-height:1.25}
+  .nav .tx span{font-size:10.5px;color:var(--muted);display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .nav.on{background:#F1F2F7}
+  .nav.on .tx b{font-weight:650}
+  .dot{width:6px;height:6px;border-radius:99px;margin-left:auto}
+  /* ── main ── */
+  .main{flex:1;min-width:0;padding:0 0 28px}
+  .top{display:flex;align-items:center;gap:14px;padding:18px 28px;border-bottom:1px solid var(--line);background:#fff}
+  .hicon{width:34px;height:34px;border-radius:9px;background:var(--indigo-soft);color:var(--indigo);
+    display:grid;place-items:center;font-size:15px;font-weight:700}
+  .top h1{font-size:19px;margin:0;letter-spacing:-.01em}
+  .top p{margin:1px 0 0;font-size:12.5px;color:var(--muted)}
+  .tools{margin-left:auto;display:flex;align-items:center;gap:10px}
+  .pill{border:1px solid var(--line);border-radius:9px;padding:6px 11px;font-size:12.5px;color:#55555B;display:flex;gap:7px;align-items:center}
+  .round{width:30px;height:30px;border-radius:9px;border:1px solid var(--line);display:grid;place-items:center;color:#55555B;font-size:14px}
+  .tabs{display:flex;gap:6px;padding:14px 28px 0;border-bottom:1px solid var(--line);background:#fff}
+  .tab{padding:9px 13px;font-size:13.5px;color:var(--muted);border-bottom:2px solid transparent;display:flex;gap:7px;align-items:center}
+  .tab.on{color:var(--ink);font-weight:620;border-bottom-color:var(--indigo)}
+  .tab .c{font-size:11px;background:#F1F1F3;border-radius:99px;padding:1px 7px;color:#6A6A70;font-weight:600}
+  .tab.on .c{background:var(--indigo-soft);color:var(--indigo)}
+  .content{padding:18px 28px}
+  .toolbar{display:flex;gap:10px;align-items:center;margin-bottom:16px}
+  .fld{flex:1;max-width:420px;border:1px solid var(--line);border-radius:10px;background:#fff;padding:9px 12px;
+    color:#A5A5AA;font-size:13px;display:flex;gap:9px;align-items:center}
+  .chip{border:1px solid var(--line);background:#fff;border-radius:9px;padding:8px 12px;font-size:12.5px;color:#55555B;display:flex;gap:7px;align-items:center}
+  .btn{border:1px solid var(--line);background:#fff;border-radius:9px;padding:8px 13px;font-size:12.5px;font-weight:600;color:#15161A}
+  .btn.dark{background:#15161A;color:#fff;border-color:#15161A}
+  .btn.pri{background:var(--indigo);color:#fff;border-color:var(--indigo)}
+  .sec{background:#fff;border:1px solid var(--line);border-radius:13px;margin-bottom:9px;overflow:hidden}
+  .sec .hd{display:flex;align-items:center;gap:11px;padding:12px 15px;text-align:left}
+  .sec .hd > div:nth-child(2){flex:1;min-width:0}
+  .sec .hd .nm{font-size:14px;font-weight:650}
+  .sec .hd .ds{font-size:12px;color:var(--muted);margin-top:1px}
+  .sec .hd .cnt{font-size:11px;background:#F1F1F3;color:#5A5A60;border-radius:99px;padding:2px 8px;font-weight:650}
+  .chev{margin-left:auto;color:#9A9AA0;font-size:15px}
+  .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:11px;padding:0 15px 15px}
+  .pc{border:1px solid var(--line);border-radius:11px;padding:12px}
+  .pc .top{display:flex;gap:10px;align-items:center;padding:0;border:0;background:none}
+  .pc .pl{width:30px;height:30px;border-radius:8px;display:grid;place-items:center;color:#fff;font-weight:700;font-size:13px}
+  .pc .nm{font-size:13.5px;font-weight:620}
+  .tags{display:flex;gap:6px;margin-top:9px;align-items:center}
+  .tagx{font-size:10.5px;border:1px solid var(--line);border-radius:6px;padding:2px 7px;color:#77777D}
+  .free{font-size:10.5px;background:var(--emerald-soft);color:var(--emerald);border:1px solid #CDEBDF;border-radius:6px;padding:2px 7px;font-weight:650}
+  .conn{margin-left:auto;font-size:11px;color:var(--emerald);display:flex;align-items:center;gap:4px;font-weight:600}
+  .row{display:flex;gap:10px;align-items:center;padding:12px 15px;border-top:1px dashed var(--line)}
+  .hint{font-size:12px;color:var(--muted);margin-top:4px}
+</style>
+</head>
+<body>
+<div class="app">
+  <!-- ───────── SIDEBAR (proposed) ───────── -->
+  <aside class="side">
+    <div class="brand">
+      <div class="logo">CR</div>
+      <div><b>CheapRoute</b><span>v1.0.0</span></div>
+    </div>
+    <div class="searchbox">⌕ &nbsp;Search</div>
+
+    <div class="grp">Overview</div>
+    <div class="nav"><div class="ic" style="background:var(--blue)">H</div><div class="tx"><b>Home</b><span>Dashboard overview</span></div></div>
+
+    <div class="grp">Routing</div>
+    <div class="nav on"><div class="ic" style="background:var(--indigo)">P</div><div class="tx"><b>Providers</b><span>Manage AI providers</span></div><div class="dot" style="background:var(--emerald)"></div></div>
+    <div class="nav"><div class="ic" style="background:var(--violet)">C</div><div class="tx"><b>Combos</b><span>Routes &amp; fallbacks</span></div><div class="dot" style="background:var(--emerald)"></div></div>
+    <div class="nav"><div class="ic" style="background:var(--cyan)">M</div><div class="tx"><b>Models</b><span>Activate, alias &amp; test</span></div></div>
+    <div class="nav"><div class="ic" style="background:var(--rose)">Q</div><div class="tx"><b>Quotas</b><span>Model &amp; combo limits</span></div></div>
+
+    <div class="grp">Access</div>
+    <div class="nav"><div class="ic" style="background:var(--amber)">K</div><div class="tx"><b>API Keys</b><span>Keys &amp; access rules</span></div></div>
+    <div class="nav"><div class="ic" style="background:var(--blue)">E</div><div class="tx"><b>Endpoints</b><span>Catalog &amp; reference</span></div></div>
+    <div class="nav"><div class="ic" style="background:var(--lime)">U</div><div class="tx"><b>Usage</b><span>Tokens &amp; spend</span></div></div>
+
+    <div class="grp">Tools</div>
+    <div class="nav"><div class="ic" style="background:#6B7280">L</div><div class="tx"><b>Logs</b><span>Requests, proxy, console</span></div></div>
+    <div class="nav"><div class="ic" style="background:#6B7280">▶</div><div class="tx"><b>Playground</b><span>Live testbench</span></div></div>
+
+    <div class="grp">Admin</div>
+    <div class="nav"><div class="ic" style="background:var(--emerald)">A</div><div class="tx"><b>Users</b><span>Reseller users &amp; plans</span></div></div>
+    <div class="nav"><div class="ic" style="background:var(--violet)">◐</div><div class="tx"><b>Appearance</b><span>Theme &amp; layout</span></div></div>
+  </aside>
+
+  <!-- ───────── MAIN ───────── -->
+  <main class="main">
+    <header class="top">
+      <div class="hicon">▤</div>
+      <div><h1>Providers</h1><p>Connect, test and route AI providers</p></div>
+      <div class="tools">
+        <div class="pill">⌕ &nbsp;Quick nav &nbsp;<span style="color:#B0B0B5;border:1px solid var(--line);border-radius:5px;padding:1px 5px;font-size:11px">Ctrl+K</span></div>
+        <div class="round">◐</div>
+        <div class="round" style="color:var(--emerald)">✓</div>
+        <div class="round">⇥</div>
+      </div>
+    </header>
+
+    <nav class="tabs">
+      <div class="tab on">All <span class="c">422</span></div>
+      <div class="tab">Connected <span class="c">21</span></div>
+      <div class="tab">Needs setup <span class="c">401</span></div>
+      <div class="tab">Recent <span class="c">6</span></div>
+    </nav>
+
+    <div class="content">
+      <div class="toolbar">
+        <div class="fld">⌕ &nbsp;Search providers or models…</div>
+        <div class="chip">▾ &nbsp;All media</div>
+        <div class="chip">▾ &nbsp;All types</div>
+        <div class="btn" style="margin-left:auto">&#9654; &nbsp;Test all</div>
+        <div class="btn dark">+ &nbsp;Custom provider</div>
+      </div>
+
+      <!-- collapsed sections -->
+      <div class="sec">
+        <div class="hd"><div class="dot" style="background:var(--blue);margin-left:2px"></div>
+          <div><div class="nm">OAuth providers</div><div class="ds">Sign in once — tokens refresh themselves</div></div>
+          <span class="cnt">18</span><span class="chev">⌄</span></div>
+      </div>
+      <div class="sec">
+        <div class="hd"><div class="dot" style="background:var(--indigo)"></div>
+          <div><div class="nm">API key providers</div><div class="ds">Bring your own key · 1 connected</div></div>
+          <span class="cnt">293</span><span class="chev">⌃</span></div>
+        <div class="grid">
+          <div class="pc"><div class="top"><div class="pl" style="background:#111">O</div><div><div class="nm">OpenAI</div></div>
+            <div class="conn">● 1 Connected</div></div>
+            <div class="tags"><span class="free">FREE</span><span class="tagx">Chat</span><span class="tagx">Vision</span></div></div>
+          <div class="pc"><div class="top"><div class="pl" style="background:#10A37F">C</div><div><div class="nm">ChatGPT Plus</div></div>
+            <div class="conn">● Connected</div></div>
+            <div class="tags"><span class="tagx">Chat</span></div></div>
+          <div class="pc"><div class="top"><div class="pl" style="background:#7C3AED">A</div><div><div class="nm">Anthropic</div></div></div>
+            <div class="tags"><span class="free">FREE</span><span class="tagx">Chat</span></div></div>
+          <div class="pc"><div class="top"><div class="pl" style="background:#4285F4">G</div><div><div class="nm">Google Gemini</div></div></div>
+            <div class="tags"><span class="free">FREE</span><span class="tagx">Chat</span></div></div>
+          <div class="pc"><div class="top"><div class="pl" style="background:#111">M</div><div><div class="nm">Mistral</div></div></div>
+            <div class="tags"><span class="tagx">Chat</span></div></div>
+          <div class="pc"><div class="top"><div class="pl" style="background:#0F172A">G</div><div><div class="nm">Groq</div></div></div>
+            <div class="tags"><span class="free">FREE</span><span class="tagx">Chat</span></div></div>
+          <div class="pc"><div class="top"><div class="pl" style="background:#FF4D4F">D</div><div><div class="nm">DeepSeek</div></div></div>
+            <div class="tags"><span class="free">FREE</span><span class="tagx">Reasoning</span></div></div>
+          <div class="pc"><div class="top"><div class="pl" style="background:#EC4899">P</div><div><div class="nm">Perplexity</div></div></div>
+            <div class="tags"><span class="tagx">Search</span></div></div>
+        </div>
+      </div>
+      <div class="sec">
+        <div class="hd"><div class="dot" style="background:var(--cyan)"></div>
+          <div><div class="nm">CLI &amp; local tools</div><div class="ds">Daemons on your machine or VPS</div></div>
+          <span class="cnt">12</span><span class="chev">⌄</span></div>
+      </div>
+      <div class="sec">
+        <div class="hd"><div class="dot" style="background:var(--violet)"></div>
+          <div><div class="nm">Web cookie providers</div><div class="ds">Browser-session credentials</div></div>
+          <span class="cnt">38</span><span class="chev">⌄</span></div>
+      </div>
+      <div class="sec">
+        <div class="hd"><div class="dot" style="background:var(--emerald)"></div>
+          <div><div class="nm">Free tier providers</div><div class="ds">$0.00 tiers with real quotas</div></div>
+          <span class="cnt">174</span><span class="chev">⌄</span></div>
+      </div>
+      <div class="sec">
+        <div class="hd"><div class="dot" style="background:var(--amber)"></div>
+          <div><div class="nm">Local &amp; custom endpoints</div><div class="ds">OpenAI-compatible servers you host</div></div>
+          <span class="cnt">17</span><span class="chev">⌄</span></div>
+      </div>
+
+      <p class="hint">One axis per level: <b>status</b> in the tabs, <b>type</b> in the collapsed sections, <b>media</b> in the toolbar — no duplicated taxonomy, one count per section.</p>
+    </div>
+  </main>
+</div>
+</body>
+</html>

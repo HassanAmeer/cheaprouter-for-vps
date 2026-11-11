@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>CheapRoute — Providers IA & Flow</title>
+<style>
+  :root{
+    --bg:#F7F7F8; --card:#FFFFFF; --line:#E6E6E9; --ink:#15161A; --muted:#6B7280;
+    --indigo:#4F46E5; --indigo-soft:#EEF0FF; --emerald:#059669; --emerald-soft:#E7F6F0;
+    --amber:#B45309; --amber-soft:#FEF3E2; --rose:#BE123C; --rose-soft:#FDE8EC;
+    --slate:#334155;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,Helvetica,Arial,sans-serif;
+    -webkit-font-smoothing:antialiased;}
+  .wrap{max-width:1280px;margin:0 auto;padding:40px 32px 56px}
+  h1{font-size:30px;letter-spacing:-.02em;margin:0 0 6px}
+  .sub{color:var(--muted);margin:0 0 28px;font-size:16px}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:22px}
+  .col{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:20px}
+  .col h2{font-size:15px;margin:0 0 4px;display:flex;align-items:center;gap:8px}
+  .col .tag{font-size:11px;font-weight:600;padding:3px 8px;border-radius:999px;letter-spacing:.02em}
+  .bad{background:var(--rose-soft);color:var(--rose)}
+  .good{background:var(--emerald-soft);color:var(--emerald)}
+  .neutral{background:var(--indigo-soft);color:var(--indigo)}
+  .note{color:var(--muted);font-size:13px;margin:0 0 14px}
+  ul{list-style:none;margin:0;padding:0}
+  li{display:flex;gap:10px;padding:9px 0;border-top:1px dashed var(--line);font-size:14px}
+  li:first-child{border-top:0}
+  .ico{flex:0 0 20px;height:20px;border-radius:6px;display:grid;place-items:center;font-size:12px;font-weight:700;color:#fff;margin-top:1px}
+  .ico.x{background:var(--rose)} .ico.o{background:var(--amber)} .ico.c{background:var(--indigo)} .ico.k{background:var(--emerald)}
+  li b{font-weight:600}
+  .flow{margin-top:26px}
+  .steps{display:flex;align-items:stretch;gap:0;flex-wrap:wrap}
+  .step{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 14px;min-width:150px}
+  .step .k{font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:700}
+  .step .t{font-weight:600;font-size:14px;margin-top:3px}
+  .step .d{font-size:12px;color:var(--muted);margin-top:2px}
+  .arrow{align-self:center;color:#B4B4BC;font-size:20px;padding:0 8px}
+  .panel{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:20px;margin-top:22px}
+  .panel h3{margin:0 0 14px;font-size:15px}
+  .cols3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+  .mini{border:1px solid var(--line);border-radius:12px;padding:14px}
+  .mini h4{margin:0 0 6px;font-size:13.5px}
+  .mini p{margin:0;font-size:12.5px;color:var(--muted)}
+  .metrics{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
+  .m{background:#FAFAFB;border:1px solid var(--line);border-radius:10px;padding:8px 12px;font-size:12.5px}
+  .m b{font-size:15px;display:block}
+  .legend{margin-top:8px;font-size:12px;color:var(--muted)}
+  .stripe{height:6px;border-radius:99px;margin:18px 0 4px;background:linear-gradient(90deg,var(--rose),var(--amber),var(--emerald))}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Providers — information architecture &amp; flow</h1>
+  <p class="sub">Live audit of the running instance (1280px + 375px walk, DOM/a11y checks) versus the recommended structure.</p>
+
+  <div class="grid">
+    <div class="col">
+      <h2><span class="tag bad">TODAY</span> Three taxonomies, one page</h2>
+      <p class="note">The same grouping is expressed three times — and the numbers disagree.</p>
+      <ul>
+        <li><span class="ico x">1</span><span><b>Tab row</b> — All / Recent / Connected / Unconnected / Reseller&nbsp;API</span></li>
+        <li><span class="ico x">2</span><span><b>15 auth-type chips</b> — OAuth 2/18, API&nbsp;Key 1/293, Free&nbsp;Tier 12/174 …</span></li>
+        <li><span class="ico x">3</span><span><b>~18 stacked sections</b> — “OAuth Providers 3/22”, “API Key Providers …”</span></li>
+        <li><span class="ico x">!</span><span>Chips say <b>OAuth 2/18</b>, the section right below says <b>3/22</b> — same thing, two numbers</span></li>
+        <li><span class="ico x">!</span><span>“Reseller API Manage” is a <b>tenant feature</b> sitting in the provider tabs</span></li>
+        <li><span class="ico o">~</span><span>Sidebar: 8 items in <b>CheapProxy</b> mixing routing + reseller + endpoints; an <b>API group with a single item</b></span></li>
+        <li><span class="ico o">~</span><span>Jargon labels: <b>Pipe Models</b>, <b>Limits Bank</b>; subtitles clipped to “Group providers for …”</span></li>
+        <li><span class="ico x">✕</span><span>Provider detail: <b>no connections list</b> — you can connect but not see/edit a credential</span></li>
+      </ul>
+    </div>
+
+    <div class="col">
+      <h2><span class="tag good">RECOMMENDED</span> One axis per level</h2>
+      <p class="note">Sidebar = task · Page = status · Section = type (collapsed).</p>
+      <ul>
+        <li><span class="ico k">1</span><span><b>Status tabs only</b> — All / Connected / Needs&nbsp;setup / Recent</span></li>
+        <li><span class="ico k">2</span><span><b>Type becomes collapsed sections</b> with counts; only the matching ones auto-expand</span></li>
+        <li><span class="ico k">3</span><span><b>15 chips removed</b> — the media chips (Image/Video/Audio/Embedding) stay, they are a real second axis</span></li>
+        <li><span class="ico k">4</span><span><b>One count per section</b> — chips and headers can never disagree again</span></li>
+        <li><span class="ico k">5</span><span><b>Reseller API</b> moves to Admin (tenant concern, not a provider)</span></li>
+        <li><span class="ico k">6</span><span><b>Sidebar regrouped</b> — Overview / Routing / Access / Tools / Admin; Endpoints + Reference merged</span></li>
+        <li><span class="ico k">7</span><span><b>Plain labels</b> — “Models”, “Quotas”, “Users”</span></li>
+        <li><span class="ico k">✓</span><span>Detail page = <b>Models | Connections | Guide</b> tabs — connections UI comes back</span></li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="panel flow">
+    <h3>Target flow</h3>
+    <div class="steps">
+      <div class="step"><div class="k">Sidebar</div><div class="t">Providers</div><div class="d">task-level nav</div></div>
+      <div class="arrow">→</div>
+      <div class="step"><div class="k">Status tab</div><div class="t">Connected / Needs setup</div><div class="d">one axis</div></div>
+      <div class="arrow">→</div>
+      <div class="step"><div class="k">Type sections</div><div class="t">OAuth 18 · API Key 293</div><div class="d">collapsed, counted</div></div>
+      <div class="arrow">→</div>
+      <div class="step"><div class="k">Card</div><div class="t">Provider</div><div class="d">free badge · status</div></div>
+      <div class="arrow">→</div>
+      <div class="step"><div class="k">Detail</div><div class="t">Models | Connections | Guide</div><div class="d">3 clear tabs</div></div>
+      <div class="arrow">→</div>
+      <div class="step"><div class="k">Action</div><div class="t">Connect · Test all · Add to route</div><div class="d">routes = combos</div></div>
+    </div>
+    <div class="metrics">
+      <div class="m"><b>4</b>status tabs</div>
+      <div class="m"><b>6</b>collapsed type sections</div>
+      <div class="m"><b>0</b>duplicate taxonomies</div>
+      <div class="m"><b>3</b>detail tabs</div>
+      <div class="m"><b>1</b>count per section</div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h3>Sidebar — regrouped</h3>
+    <div class="cols3">
+      <div class="mini"><h4>OVERVIEW</h4><p>Home · Dashboard overview</p></div>
+      <div class="mini"><h4>ROUTING</h4><p>Providers · Combos · Models · Quotas</p></div>
+      <div class="mini"><h4>ACCESS</h4><p>API Keys · Endpoints (Reference inside) · Usage</p></div>
+      <div class="mini"><h4>TOOLS</h4><p>Logs · Proxy · Console · Playground</p></div>
+      <div class="mini"><h4>ADMIN</h4><p>Users · Appearance · Restart / Shutdown</p></div>
+      <div class="mini"><h4>NEW — inside Combos</h4><p>Routes: <b>/v1</b> (pinned model) · <b>/bestfree</b> (free-first pool)</p></div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h3>What already landed in this pass (verified live)</h3>
+    <div class="cols3">
+      <div class="mini"><h4>Accurate data</h4><p>Context window, free/paid and limits now come from the registry + shipped free-tier catalog + pricing table — no more “—”.</p></div>
+      <div class="mini"><h4>Truthful actions</h4><p>Pause / enable / disconnect roll back and toast honestly when the API rejects the change.</p></div>
+      <div class="mini"><h4>Shell predictability</h4><p>One skip link, one heading per page, closed drawer is inert, capabilities sheet is inert when closed.</p></div>
+      <div class="mini"><h4>Search everywhere</h4><p>Recent tab honours the search box; counts match the grid.</p></div>
+      <div class="mini"><h4>Fast big catalogs</h4><p>2 608 models → 200 rows + “Show more” (73k → 6k DOM nodes).</p></div>
+      <div class="mini"><h4>Parallel testing</h4><p>“Test all” now probes models concurrently and streams each result as it lands.</p></div>
+    </div>
+    <p class="legend">Verified on the live instance: 9/9 automated UI checks pass at 1280px and 375px.</p>
+  </div>
+
+  <div class="stripe"></div>
+  <p class="legend">CheapRoute · UI audit &amp; flow review · 2026-11-11</p>
+</div>
+</body>
+</html>
