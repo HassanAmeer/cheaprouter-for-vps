@@ -14,7 +14,7 @@ const TOP_STANDALONE_ITEMS: readonly SidebarItemDefinition[] = [
   },
 ];
 
-// CheapProxy section: Providers, Combos, Pipe Models, Limits, Users, API Keys, Usage
+// ROUTING — the things that decide WHERE a request goes.
 const CHEAP_PROXY_ITEMS: readonly SidebarItemDefinition[] = [
   {
     id: "providers",
@@ -34,7 +34,7 @@ const CHEAP_PROXY_ITEMS: readonly SidebarItemDefinition[] = [
     id: "manage-models",
     href: "/dashboard/manage-models",
     i18nKey: "manageModels",
-    labelFallback: "Pipe Models",
+    labelFallback: "Models",
     subtitleKey: "manageModelsSubtitle",
     subtitleFallback: "Activate, alias & test models",
     icon: "tune",
@@ -43,20 +43,15 @@ const CHEAP_PROXY_ITEMS: readonly SidebarItemDefinition[] = [
     id: "limits",
     href: "/dashboard/limits",
     i18nKey: "limits",
-    labelFallback: "Limits Bank",
+    labelFallback: "Quotas",
     subtitleKey: "limitsSubtitle",
-    subtitleFallback: "Model & combo token limits bank",
+    subtitleFallback: "Model & combo token limits",
     icon: "speed",
   },
-  {
-    id: "users",
-    href: "/dashboard/users",
-    i18nKey: "users",
-    labelFallback: "Users",
-    subtitleKey: "usersSubtitle",
-    subtitleFallback: "Reseller users, plans & BYOK keys",
-    icon: "groups",
-  },
+];
+
+// ACCESS — who may call what.
+const ACCESS_ITEMS: readonly SidebarItemDefinition[] = [
   {
     id: "api-manager",
     href: "/dashboard/api-manager",
@@ -70,7 +65,7 @@ const CHEAP_PROXY_ITEMS: readonly SidebarItemDefinition[] = [
     i18nKey: "apiEndpoints",
     labelFallback: "Endpoints",
     subtitleKey: "apiEndpointsSubtitle",
-    subtitleFallback: "Visual endpoint catalog & integration guides",
+    subtitleFallback: "Catalog, keys & reference",
     icon: "api",
   },
   {
@@ -84,7 +79,20 @@ const CHEAP_PROXY_ITEMS: readonly SidebarItemDefinition[] = [
   },
 ];
 
-// API section: Developer Docs & Reference
+// ADMIN — multi-tenant / tenant administration.
+const ADMIN_ITEMS: readonly SidebarItemDefinition[] = [
+  {
+    id: "users",
+    href: "/dashboard/users",
+    i18nKey: "users",
+    labelFallback: "Users",
+    subtitleKey: "usersSubtitle",
+    subtitleFallback: "Reseller users, plans & BYOK keys",
+    icon: "groups",
+  },
+];
+
+// API Reference — the interactive developer docs for the gateway.
 const API_NAV_ITEMS: readonly SidebarItemDefinition[] = [
   {
     id: "api-docs",
@@ -96,7 +104,6 @@ const API_NAV_ITEMS: readonly SidebarItemDefinition[] = [
     icon: "menu_book",
   },
 ];
-
 
 // Dev Tools section: Logs, Proxy Logs, Console Logs
 const DEVTOOLS_ITEMS: readonly SidebarItemDefinition[] = [
@@ -154,33 +161,33 @@ export const SIDEBAR_SECTIONS: readonly SidebarSectionDefinition[] = [
     children: TOP_STANDALONE_ITEMS,
     showTitle: false,
   },
-  // 2. CheapProxy: Providers, Combos, API Keys
+  // 2. Routing: Providers, Combos, Models, Quotas
   {
     id: "cheap-proxy",
-    titleKey: "cheapProxySection",
-    titleFallback: "CheapProxy",
+    titleKey: "routingSection",
+    titleFallback: "Routing",
     children: CHEAP_PROXY_ITEMS,
   },
-  // 3. API: Endpoints + Docs
+  // 3. Access: API Keys, Endpoints, Usage
   {
     id: "api",
-    titleKey: "apiSection",
-    titleFallback: "API",
-    children: API_NAV_ITEMS,
+    titleKey: "accessSection",
+    titleFallback: "Access",
+    children: [...ACCESS_ITEMS, ...API_NAV_ITEMS],
   },
-  // 5. Dev Tools: Logs
+  // 4. Tools: Logs + Playground
   {
     id: "devtools",
-    titleKey: "devtoolsSection",
-    titleFallback: "Dev Tools",
+    titleKey: "toolsSection",
+    titleFallback: "Tools",
     children: DEVTOOLS_ITEMS,
   },
-  // 6. Bottom standalone: Theme (no section label)
+  // 5. Admin: Users + Appearance
   {
     id: "bottom",
-    titleKey: "settings",
-    titleFallback: "Settings",
-    children: BOTTOM_STANDALONE_ITEMS,
-    showTitle: false,
+    titleKey: "adminSection",
+    titleFallback: "Admin",
+    children: [...ADMIN_ITEMS, ...BOTTOM_STANDALONE_ITEMS],
+    showTitle: true,
   },
 ] as const;
