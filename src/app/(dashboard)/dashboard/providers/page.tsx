@@ -902,6 +902,42 @@ function ProvidersPageContent() {
   const upstreamProxyEntriesAll = buildStaticProviderEntries("upstream-proxy", getProviderStats);
   const upstreamProxyEntries = filterEntries(upstreamProxyEntriesAll);
 
+  // Provider catalog for the website exposure picker (id + display name,
+  // de-duplicated by id — compatible nodes are listed separately below).
+  const siteProviderOptions = (() => {
+    const seen = new Set<string>();
+    const options: { id: string; name: string }[] = [];
+    const add = (id: unknown, name: unknown) => {
+      const providerId = String(id ?? "").trim();
+      if (!providerId || seen.has(providerId)) return;
+      seen.add(providerId);
+      options.push({
+        id: providerId,
+        name: String(name ?? "").trim() || providerId,
+      });
+    };
+    for (const entry of [
+      ...oauthProviderEntriesAll,
+      ...noAuthEntriesAll,
+      ...llmProviderEntriesAll,
+      ...aggregatorProviderEntriesAll,
+      ...imageProviderEntriesAll,
+      ...enterpriseProviderEntriesAll,
+      ...videoProviderEntriesAll,
+      ...embeddingRerankProviderEntriesAll,
+      ...webCookieProviderEntriesAll,
+      ...localProviderEntriesAll,
+      ...searchProviderEntriesAll,
+      ...audioProviderEntriesAll,
+      ...cloudAgentProviderEntriesAll,
+      ...upstreamProxyEntriesAll,
+    ]) {
+      add(entry.providerId, entry.provider?.name);
+    }
+    for (const provider of compatibleProviders) add(provider.id, provider.name);
+    return options.sort((a, b) => a.name.localeCompare(b.name));
+  })();
+
   const mapCompatibleEntry = (provider: (typeof compatibleProviders)[number]) => {
     const rawStats = getProviderStats(provider.id, "apikey");
     const hasBaseUrl = Boolean(provider.baseUrl && provider.baseUrl.trim().length > 0);
@@ -1233,8 +1269,9 @@ function ProvidersPageContent() {
         <ProviderTabs initialTab={activeTab} onTabChange={setActiveTab} />
 
         {/* Website scope — provider credentials stay global; a site only scopes
-            what it exposes (models/routes/keys/usage). */}
-        <SiteScopeBar />
+            what it exposes (models/routes/keys/usage). Sites themselves are
+            added right here (name + subdomains) from the same dropdown. */}
+        <SiteScopeBar providers={siteProviderOptions} />
 
         {/* Reseller API — exposure + master BYOK switch */}
         {activeTab === "reseller-api" && <ResellerApiPanel />}

@@ -6,17 +6,12 @@
  * `config/sites.json` — the same file the in-memory resolver reads at boot.
  */
 import { NextRequest, NextResponse } from "next/server";
-import { z } from "zod";
 import { requireManagementAuth } from "@/lib/api/requireManagementAuth";
 import { addSite, listSites, reloadSiteRegistry } from "@/lib/sites/siteRegistry";
 import { upsertSiteRecord } from "@/lib/db/sites";
+import { addSiteSchema } from "@/lib/sites/siteInput";
 
 export const dynamic = "force-dynamic";
-
-const addSiteSchema = z.object({
-  name: z.string().min(1).max(120),
-  subdomains: z.array(z.string().min(1).max(253)).min(1).max(50),
-});
 
 export async function GET(request: NextRequest) {
   const authError = await requireManagementAuth(request);
@@ -43,7 +38,7 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const result = addSite(parsed.data);
+  const result = addSite({ name: parsed.data.name, subdomains: parsed.data.subdomains });
   if (!result.ok || !result.site) {
     return NextResponse.json(
       { error: { message: result.error || "Failed to add site" } },
