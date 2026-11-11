@@ -2,9 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { Card, Input } from "@/shared/components";
-import { useNotificationStore } from "@/store/notificationStore";
 import type { ProviderDisplayMode } from "../providerPageStorage";
-import { CategoryDot } from "./CategoryDot";
 
 type ProviderMessageTranslator = ((key: string, values?: Record<string, unknown>) => string) & {
   has?: (key: string) => boolean;
@@ -103,7 +101,7 @@ export default function ProviderSummaryCard({
   searchQuery,
   setModelSearchQuery,
   setSearchQuery,
-  showFreeOnly,
+  showFreeOnly: _showFreeOnly,
   summaryStats,
   t,
   tc,
@@ -188,28 +186,6 @@ export default function ProviderSummaryCard({
   const [pendingServiceKindKey, setPendingServiceKindKey] = useState<string | null>(null);
   const [, startTransition] = useTransition();
 
-  const handleCategoryClick = (cat: (typeof categories)[number]) => {
-    const key = cat.key ?? "all";
-    setPendingCategoryKey(key);
-
-    if (cat.stat.total === 0) {
-      useNotificationStore.getState().info(
-        providerText(
-          t,
-          "noProvidersForCategory",
-          `${cat.label}: 0 providers available`
-        )
-      );
-    }
-
-    startTransition(() => {
-      onCategoryChange(cat.key, cat.key === "free");
-      setTimeout(() => {
-        setPendingCategoryKey(null);
-      }, 250);
-    });
-  };
-
   const handleServiceKindClick = (key: string) => {
     const nextKey = activeServiceKind === key ? null : key;
     setPendingServiceKindKey(key);
@@ -281,42 +257,50 @@ export default function ProviderSummaryCard({
           </button>
         </div>
 
+        {/* The type filter is a single control now. It used to be a row of 15
+            pills that repeated the very same grouping the sections below
+            already showed (with slightly different counts). */}
         <div className="border-t border-border pt-3 flex flex-wrap items-center gap-2">
-          {categories.map((cat) => {
-            const isActive =
-              (cat.key === null && !activeCategory && !showFreeOnly) ||
-              (cat.key === "free" && showFreeOnly) ||
-              (cat.key !== "free" &&
-                cat.key !== null &&
-                !showFreeOnly &&
-                activeCategory === cat.key);
-            const isLoading = pendingCategoryKey === (cat.key ?? "all");
-            return (
-              <button
-                key={cat.key ?? "all"}
-                onClick={() => handleCategoryClick(cat)}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs font-medium transition-colors ${
-                  isActive
-                    ? "bg-primary text-white border-primary"
-                    : "bg-bg-subtle border-border text-text-muted hover:text-text-primary hover:border-primary/30"
-                }`}
-                title={cat.title || cat.label}
-              >
-                {isLoading ? (
-                  <span className="material-symbols-outlined text-[13px] animate-spin">
-                    progress_activity
-                  </span>
-                ) : (
-                  cat.color && <CategoryDot color={cat.color} label={cat.label} />
-                )}
-                <span>{cat.label}</span>
-                <span className={`text-[11px] ${isActive ? "text-white/80" : "text-text-muted"}`}>
-                  {cat.stat.configured}
-                  <span className="opacity-70">/{cat.stat.total}</span>
-                </span>
-              </button>
-            );
-          })}
+          <label
+            htmlFor="provider-type-filter"
+            className="text-[11px] font-medium uppercase tracking-wide text-text-muted mr-1"
+          >
+            {providerText(t, "filterByType", "Type")}
+          </label>
+          <div className="relative">
+            <select
+              id="provider-type-filter"
+              value={activeCategory ?? ""}
+              onChange={(e) => {
+                const key = e.target.value || null;
+                setPendingCategoryKey(key ?? "all");
+                onCategoryChange(key, key === "free");
+                setTimeout(() => setPendingCategoryKey(null), 250);
+              }}
+              aria-label={providerText(t, "filterByType", "Type")}
+              className="appearance-none pl-3 pr-8 py-1.5 rounded-lg border border-border bg-bg-subtle text-xs font-medium text-text-main hover:border-primary/40 focus:outline-none focus:border-primary/50 cursor-pointer"
+            >
+              <option value="">
+                {providerText(t, "allTypes", "All types")} ({summaryStats.all.configured}/
+                {summaryStats.all.total})
+              </option>
+              {categories
+                .filter((cat) => cat.key !== null && cat.stat.total > 0)
+                .map((cat) => (
+                  <option key={cat.key ?? "all"} value={cat.key ?? ""}>
+                    {cat.label} ({cat.stat.configured}/{cat.stat.total})
+                  </option>
+                ))}
+            </select>
+            <span className="material-symbols-outlined text-[16px] text-text-muted pointer-events-none absolute right-2 top-1/2 -translate-y-1/2">
+              expand_more
+            </span>
+          </div>
+          {pendingCategoryKey && (
+            <span className="material-symbols-outlined text-[14px] text-text-muted animate-spin">
+              progress_activity
+            </span>
+          )}
         </div>
 
         <div className="border-t border-border pt-3 flex flex-wrap items-center gap-2">
@@ -337,7 +321,9 @@ export default function ProviderSummaryCard({
                     : "bg-bg-subtle border-border text-text-muted hover:text-text-primary hover:border-primary/30"
                 }`}
               >
-                <span className={`material-symbols-outlined text-[14px] ${isLoading ? "animate-spin" : ""}`}>
+                <span
+                  className={`material-symbols-outlined text-[14px] ${isLoading ? "animate-spin" : ""}`}
+                >
                   {isLoading ? "progress_activity" : chip.icon}
                 </span>
                 <span>{providerText(t, chip.labelKey, chip.fallback)}</span>
