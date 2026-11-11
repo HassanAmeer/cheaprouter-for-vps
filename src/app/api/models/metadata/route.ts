@@ -2,9 +2,10 @@
  * GET /api/models/metadata?provider=<id>[&ids=a,b,c]
  *
  * REAL per-model metadata for the dashboard: context window + capabilities,
- * resolved by the SAME server resolver the /v1/models catalog uses —
+ * with the source of each fact, resolved from the SAME places the router
+ * resolves them:
  *
- *   operator overrides → models.dev synced capabilities → live-discovered rows
+ *   operator override → models.dev (measured) → live provider discovery
  *   → provider registry → static model specs
  *
  * Why this exists: the provider page rendered NAME-HEURISTIC capability chips
@@ -12,26 +13,43 @@
  * column, because a browser component cannot read the DB where the real facts
  * live. The router already knew the truth; the UI was guessing.
  *
- * Every fact comes back with its source, so the UI can show what is measured
- * ("models.dev", "live", "registry") and what is only inferred ("none").
+ * Performance note: the resolution reads the synced capability rows ONCE (a
+ * bulk snapshot) and then answers every model from memory. Calling the full
+ * per-model resolver here cost ~1s per model (it re-entered the cold DB path
+ * per lookup), which made the page unusable for big providers.
  */
 import { NextRequest, NextResponse } from "next/server";
 import { requireManagementAuth } from "@/lib/api/requireManagementAuth";
 import { getModelsByProviderId } from "@cheaproute/open-sse/config/providerModels";
+import { PROVIDER_ID_TO_ALIAS } from "@cheaproute/open-sse/config/providerModels";
 import { getActiveSyncedCatalog } from "@/lib/db/models/activeSyncedCatalog";
 import { getCustomModels } from "@/lib/db/models";
-import {
-  createModelCapabilityResolutionSnapshot,
-  getResolvedModelCapabilities,
-} from "@/lib/modelCapabilities";
-import { getSyncedCapabilities } from "@/lib/modelsDevSync";
+import { createModelCapabilityResolutionSnapshot } from "@/lib/modelCapabilities";
 import { resolveProviderId } from "@/shared/constants/providers";
+import { MODEL_SPECS } from "@/shared/constants/modelSpecs";
 import type { ResolvedModelMetadata } from "@/shared/types/modelMetadata";
 
 export const dynamic = "force-dynamic";
 
 /** Hard cap so one huge provider cannot blow up the response. */
 const MAX_MODELS = 4000;
+
+interface DevCapabilityRow {
+  tool_call?: boolean | null;
+  reasoning?: boolean | null;
+  attachment?: boolean | null;
+  structured_output?: boolean | null;
+  modalities_input?: string;
+  modalities_output?: string;
+  limit_context?: number | null;
+  limit_input?: number | null;
+  limit_output?: number | null;
+  knowledge_cutoff?: string | null;
+  release_date?: string | null;
+  status?: string | null;
+  family?: string | null;
+  open_weights?: boolean | null;
+}
 
 async function collectModelIds(provider: string): Promise<string[]> {
   const ids = new Set<string>();
@@ -81,6 +99,7 @@ export async function GET(request: NextRequest) {
   }
 
   const resolvedProvider = resolveProviderId(provider) || provider;
+  const providerAlias = PROVIDER_ID_TO_ALIAS[provider] || provider;
   const requestedIds = (searchParams.get("ids") || "")
     .split(",")
     .map((id) => id.trim())
@@ -89,9 +108,9 @@ export async function GET(request: NextRequest) {
   const ids = requestedIds.length ? requestedIds : await collectModelIds(provider);
   const limited = ids.slice(0, MAX_MODELS);
 
+  // One bulk read of every capability source; everything below is in-memory.
   const snapshot = createModelCapabilityResolutionSnapshot();
-  const modelsDev = getSyncedCapabilities(provider);
-  const modelsDevAlt = modelsDev[provider] ? modelsDev : getSyncedCapabilities(resolvedProvider);
+  const devRows = snapshot.synced as unknown as Record<string, Record<string, DevCapabilityRow>>;
 
   const liveRows = new Map<string, Record<string, unknown>>();
   try {
@@ -109,38 +128,41 @@ export async function GET(request: NextRequest) {
   const out: Record<string, ResolvedModelMetadata> = {};
 
   for (const id of limited) {
-    const caps = getResolvedModelCapabilities({ provider, model: id }, undefined, snapshot);
     const registryModel = registryById.get(id);
     const liveRow = liveRows.get(id);
-    const devRow = (modelsDevAlt?.[id] ?? null) as {
-      attachment?: boolean | null;
-      reasoning?: boolean | null;
-      tool_call?: boolean | null;
-      limit_context?: number | null;
-      modalities_input?: string;
-      modalities_output?: string;
-    } | null;
+    const devRow: DevCapabilityRow | null =
+      devRows?.[provider]?.[id] ??
+      devRows?.[resolvedProvider]?.[id] ??
+      devRows?.[providerAlias]?.[id] ??
+      null;
 
     // ── context window: the first source that MEASURED it wins ───────────
-    const devContext = typeof devRow?.limit_context === "number" ? devRow.limit_context : null;
-    const liveContext = typeof liveRow?.contextWindow === "number" ? liveRow.contextWindow : null;
+    const override = snapshot.contextOverrides.get(provider)?.get(id);
+    const devContext =
+      typeof devRow?.limit_context === "number" && devRow.limit_context > 0
+        ? devRow.limit_context
+        : null;
+    const liveContext =
+      typeof liveRow?.contextWindow === "number" ? (liveRow.contextWindow as number) : null;
     const registryContext =
       typeof registryModel?.contextLength === "number" ? registryModel.contextLength : null;
-    const specContext =
-      typeof caps.contextWindow === "number" && caps.contextWindow > 0 ? caps.contextWindow : null;
+    const specContext = MODEL_SPECS[id]?.contextWindow;
 
     let contextSource: ResolvedModelMetadata["contextSource"] = "none";
     let contextWindow: number | null = null;
-    if (devContext) {
+    if (typeof override === "number" && override > 0) {
+      contextSource = "registry";
+      contextWindow = override;
+    } else if (devContext) {
       contextSource = "models.dev";
       contextWindow = devContext;
-    } else if (liveContext) {
+    } else if (liveContext && liveContext > 0) {
       contextSource = "live";
       contextWindow = liveContext;
-    } else if (registryContext) {
+    } else if (registryContext && registryContext > 0) {
       contextSource = "registry";
       contextWindow = registryContext;
-    } else if (specContext) {
+    } else if (specContext && specContext > 0) {
       contextSource = "registry";
       contextWindow = specContext;
     }
@@ -182,10 +204,10 @@ export async function GET(request: NextRequest) {
 
     const modalitiesInput = devModalitiesIn.length
       ? devModalitiesIn
-      : (caps.modalitiesInput ?? []).map((m) => String(m).toLowerCase());
-    const modalitiesOutput = devModalitiesOut.length
-      ? devModalitiesOut
-      : (caps.modalitiesOutput ?? []).map((m) => String(m).toLowerCase());
+      : ((liveRow?.supportedEndpoints as unknown[] | undefined)?.map((e) =>
+          String(e).toLowerCase()
+        ) ?? []);
+    const modalitiesOutput = devModalitiesOut;
 
     const audio = measured(
       null,
@@ -201,27 +223,27 @@ export async function GET(request: NextRequest) {
 
     out[id] = {
       contextWindow,
-      maxInputTokens: caps.maxInputTokens ?? null,
-      maxOutputTokens: caps.maxOutputTokens ?? null,
+      maxInputTokens: typeof devRow?.limit_input === "number" ? devRow.limit_input : null,
+      maxOutputTokens: typeof devRow?.limit_output === "number" ? devRow.limit_output : null,
       capabilities: {
         vision,
-        reasoning: reasoning ?? null,
+        reasoning,
         tools,
-        audio: (audio ?? modalitiesInput.includes("audio")) ? true : null,
-        video: (video ?? modalitiesOutput.includes("video")) ? true : null,
-        attachment: caps.attachment ?? null,
-        structuredOutput: caps.structuredOutput ?? null,
+        audio: audio ?? (modalitiesInput.includes("audio") ? true : null),
+        video: video ?? (modalitiesOutput.includes("video") ? true : null),
+        attachment: devRow?.attachment ?? null,
+        structuredOutput: devRow?.structured_output ?? null,
         modalitiesInput,
         modalitiesOutput,
       },
       contextSource,
       capabilitySource,
       meta: {
-        family: caps.family ?? null,
-        status: caps.status ?? null,
-        openWeights: caps.openWeights ?? null,
-        knowledgeCutoff: caps.knowledgeCutoff ?? null,
-        releaseDate: caps.releaseDate ?? null,
+        family: devRow?.family ?? null,
+        status: devRow?.status ?? null,
+        openWeights: devRow?.open_weights ?? null,
+        knowledgeCutoff: devRow?.knowledge_cutoff ?? null,
+        releaseDate: devRow?.release_date ?? null,
       },
     };
   }
