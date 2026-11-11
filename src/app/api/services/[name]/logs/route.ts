@@ -15,6 +15,7 @@ import type { NextRequest } from "next/server";
 import { getSupervisor } from "@/lib/services/registry";
 import { createErrorResponse } from "@/lib/api/errorResponse";
 import type { LogLine } from "@/lib/services/types";
+import { matchesSearch } from "@/shared/utils/turkishText";
 
 const MAX_TAIL = 1000;
 const DEFAULT_TAIL = 200;
@@ -45,11 +46,9 @@ async function getOrInitNamedSupervisor(name: string) {
     const { getOrInitSupervisor } = await import("../../bifrost/_lib");
     return getOrInitSupervisor();
   }
-  if (name === "dario") {
-    const { getOrInitSupervisor } = await import("../../dario/_lib");
-    return getOrInitSupervisor();
-  }
-
+  // dario: no embedded-service supervisor in this fork (the installer exists
+  // but no `_lib` was ever wired). Returning null → 404 "Service 'dario' not
+  // found", which is the correct behaviour for an unregistered service.
   return null;
 }
 
@@ -92,7 +91,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       }
 
       const applyFilter = (line: LogLine) =>
-        filterLower === null || line.line.toLowerCase().includes(filterLower);
+        filterLower === null || matchesSearch(line.line, filterLower);
 
       // Send initial snapshot
       const snapshot = buffer.snapshot().filter(applyFilter).slice(-tail);
