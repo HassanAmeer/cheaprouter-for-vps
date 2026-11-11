@@ -45,6 +45,8 @@ import {
   isCommonChatGptWebRetirementError,
 } from "@/shared/constants/chatgptWebRetirement";
 import { ensureSemanticCacheDbBridge } from "@/lib/cache/semanticCacheDbBridge";
+import { resolveRequestSiteContext } from "@/lib/sites/siteRequestContext";
+import { runWithCallLogApiKeyContext } from "@/lib/usage/callLogApiKeyContext";
 
 let initPromise = null;
 
@@ -322,6 +324,11 @@ export async function POST(request) {
       request.headers.get("x-correlation-id")
     );
 
+    // Multi-tenant scope: resolve the site (host → X-CheapRoute-Site → API key)
+    // once here and bind it to the request, so every call log / usage row
+    // written downstream carries the same `site_id`.
+    const siteContext = await resolveRequestSiteContext(request);
+
     if (wantsStreaming) {
       const reqId = callerCorrelationId ?? generateRequestId();
       const {
@@ -332,7 +339,9 @@ export async function POST(request) {
       // client cancels while handleChat is still pending, earlyStreamKeepalive will cancel the
       // eventual handler body; only that confirmed cleanup releases heavyweight capacity.
       const handlerResponse = releaseChatAdmissionAfterHandler(
-        handleChat(request, null, parsedBody, reqId, routeDeadlineSignal),
+        runWithCallLogApiKeyContext(siteContext, () =>
+          handleChat(request, null, parsedBody, reqId, routeDeadlineSignal)
+        ),
         admission.lease,
         { signal: routeDeadlineSignal }
       );
@@ -351,7 +360,9 @@ export async function POST(request) {
 
     return finishAdmission(
       withCompressionHeaderEcho(
-        await handleChat(request, null, parsedBody, callerCorrelationId ?? undefined),
+        await runWithCallLogApiKeyContext(siteContext, () =>
+          handleChat(request, null, parsedBody, callerCorrelationId ?? undefined)
+        ),
         compressionRequestHeader
       )
     );

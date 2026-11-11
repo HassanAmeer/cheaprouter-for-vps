@@ -22,6 +22,10 @@ const CHEAP_PROXY_ITEMS: readonly SidebarItemDefinition[] = [
     i18nKey: "providers",
     subtitleKey: "providersSubtitle",
     icon: "dns",
+    // Provider connections are shared by every site — only models/routes/keys
+    // are per-site. The badge says so without a per-provider indicator.
+    badgeKey: "providersGlobalBadge",
+    badgeFallback: "Global",
   },
   {
     id: "combos",

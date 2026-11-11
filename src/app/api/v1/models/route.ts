@@ -1,6 +1,8 @@
 import { after } from "next/server";
 
 import { getUnifiedModelsResponse } from "./catalog";
+import { scopeModelsResponseForSite } from "@/lib/sites/siteModelFilter";
+import { resolveRequestSiteContext } from "@/lib/sites/siteRequestContext";
 
 /**
  * Handle CORS preflight
@@ -33,11 +35,17 @@ export async function HEAD() {
  * GET /v1/models - OpenAI compatible models list
  */
 export async function GET(request: Request) {
-  return getUnifiedModelsResponse(
+  const response = await getUnifiedModelsResponse(
     request,
     {},
     {
       scheduleBackgroundRefresh: (task) => after(task),
     }
   );
+  // Multi-tenant: expose only this site's providers/models. A site with no
+  // explicit allowlist (or a site-less request) gets the cached catalog as-is.
+  return scopeModelsResponseForSite(response, async () => {
+    const context = await resolveRequestSiteContext(request);
+    return context.siteId;
+  });
 }

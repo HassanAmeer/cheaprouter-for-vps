@@ -105,10 +105,15 @@ export interface RequestLoggerV2Handle {
 type RequestLoggerV2InitialProps = {
   initialSelectedId?: string;
   initialCorrelationId?: string;
+  /**
+   * Multi-tenant site scope. When set, the list only shows logs attributed to
+   * that website (`?site=<id>` on the page, set by the site selector).
+   */
+  siteFilter?: string;
 };
 const RequestLoggerV2 = forwardRef<RequestLoggerV2Handle, RequestLoggerV2InitialProps>(
   (props, ref) => {
-    const { initialSelectedId, initialCorrelationId } = props;
+    const { initialSelectedId, initialCorrelationId, siteFilter } = props;
     const t = useTranslations("requestLogger");
     const tCache = useTranslations("cache");
     const { emailsVisible } = useEmailPrivacyStore();
@@ -268,6 +273,7 @@ const RequestLoggerV2 = forwardRef<RequestLoggerV2Handle, RequestLoggerV2Initial
           if (selectedAccount) params.set("account", selectedAccount);
           if (selectedApiKey) params.set("apiKey", selectedApiKey);
           if (correlationIdFilter) params.set("correlationId", correlationIdFilter);
+          if (siteFilter) params.set("site", siteFilter);
           params.set("limit", String(limit));
 
           const res = await fetch(`/api/usage/call-logs?${params}`);
@@ -298,6 +304,7 @@ const RequestLoggerV2 = forwardRef<RequestLoggerV2Handle, RequestLoggerV2Initial
         selectedProvider,
         selectedApiKey,
         correlationIdFilter,
+        siteFilter,
         limit,
       ]
     );

@@ -13,7 +13,7 @@ import { getDbInstance } from "../db/core";
 import { getRequestDetailLogByCallLogId } from "../db/detailedLogs";
 import { shouldPersistToDisk } from "./migrations";
 import { updateRequestTokensById } from "./usageHistory";
-import { getCallLogApiKeyContext } from "./callLogApiKeyContext";
+import { getCallLogApiKeyContext, getCallLogSiteId } from "./callLogApiKeyContext";
 import { serializeResilienceActions, resetResilienceActions } from "./resilienceActionsContext";
 import { parseResilienceActions } from "./resilienceActionsParse";
 import {
@@ -609,6 +609,10 @@ async function saveCallLogOperation(entry: any): Promise<void> {
     // (resolveAccountName, artifact write) may cross async boundaries.
     const resilienceActions = serializeResilienceActions();
     const hasResilienceColumn = hasCallLogsColumn("resilience_actions");
+    // Multi-tenant attribution (migration 212). Optional column: an older DB
+    // that predates the migration keeps logging without it.
+    const hasSiteColumn = hasCallLogsColumn("site_id");
+    const logSiteId = entry.siteId || getCallLogSiteId();
 
     const account = await resolveAccountName(entry.connectionId || null);
     const rawProvider: string = entry.provider || "-";
@@ -791,6 +795,9 @@ async function saveCallLogOperation(entry: any): Promise<void> {
     // Optional column (migration 191) — only fixed identifiers are spliced in.
     const resilienceCol = hasResilienceColumn ? ", resilience_actions" : "";
     const resilienceParam = hasResilienceColumn ? ", @resilienceActions" : "";
+    // Optional column (migration 212) — multi-tenant site attribution.
+    const siteCol = hasSiteColumn ? ", site_id" : "";
+    const siteParam = hasSiteColumn ? ", @siteId" : "";
     const insertStmt = db.prepare(
       `
       INSERT INTO call_logs (
@@ -806,7 +813,7 @@ async function saveCallLogOperation(entry: any): Promise<void> {
         has_request_body, has_response_body, has_pipeline_details, request_summary,
         correlation_id, model_pinned, session_tag, response_id, error_type,
         video_content_removed, has_content, usage_provenance,
-        added_wait_ms, added_wait_cause${resilienceCol}
+        added_wait_ms, added_wait_cause${resilienceCol}${siteCol}
       )
       VALUES (
         @id, @timestamp, @method, @path, @status, @model, @requestedModel, @provider,
@@ -821,7 +828,7 @@ async function saveCallLogOperation(entry: any): Promise<void> {
         @hasRequestBody, @hasResponseBody, @hasPipelineDetails, @requestSummary,
         @correlationId, @modelPinned, @sessionTag, @responseId, @errorType,
         @videoContentRemoved, @hasContent, @usageProvenance,
-        @addedWaitMs, @addedWaitCause${resilienceParam}
+        @addedWaitMs, @addedWaitCause${resilienceParam}${siteParam}
       )
     `
     );
@@ -835,6 +842,7 @@ async function saveCallLogOperation(entry: any): Promise<void> {
       hasRequestBody: protectedRequestBody !== null ? 1 : 0,
       hasResponseBody: protectedResponseBody !== null ? 1 : 0,
       resilienceActions,
+      siteId: logSiteId,
       hasPipelineDetails: protectedPipelinePayloads ? 1 : 0,
       requestSummary,
     };
@@ -1014,6 +1022,12 @@ export async function getCallLogs(filter: any = {}) {
   }
   pushLikeFilter(conditions, params, "correlation_id", "correlationId", filter.correlationId);
   pushLikeFilter(conditions, params, "session_tag", "sessionTag", filter.sessionTag);
+  // Multi-tenant filter (migration 212). Guarded because the column is optional
+  // on a DB that predates the migration.
+  if (filter.siteId && hasCallLogsColumn("site_id")) {
+    conditions.push("cl.site_id = @siteFilterId");
+    params.siteFilterId = String(filter.siteId);
+  }
   if (filter.combo) {
     conditions.push("cl.combo_name IS NOT NULL");
   }

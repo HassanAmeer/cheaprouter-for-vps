@@ -9,6 +9,7 @@ import {
   IDE_PROVIDER_IDS,
   CLI_PROVIDER_IDS,
   getProviderAlias,
+  resolveProviderId,
   IMAGE_ONLY_PROVIDER_IDS,
   VIDEO_PROVIDER_IDS,
 } from "@/shared/constants/providers";
@@ -40,6 +41,8 @@ import {
 import type { ProviderEntry, OpenRouterProviderStatsEntry } from "./providerPageUtils";
 import { OpenRouterProviderStatsProvider } from "./context/openRouterProviderStatsContext";
 import { ProviderTabs } from "./components/ProviderTabs";
+import { SiteScopeBar } from "@/shared/components/SiteScopeBar";
+import { useSiteScope } from "@/shared/hooks/useSiteScope";
 import {
   ProviderSectionIndex,
   type ProviderSectionIndexItem,
@@ -352,6 +355,10 @@ function ProvidersPageContent() {
   const ccCompatibleLabel = t("ccCompatibleLabel");
   const addCcCompatibleLabel = t("addCcCompatible");
   const searchParams = useSearchParams();
+  // Multi-tenant scope: `?site=` (set by the website dropdown and the sidebar
+  // switcher). An allowlisted site shows only the providers it exposes.
+  const activeSiteId = searchParams?.get("site") || "";
+  const siteScope = useSiteScope(activeSiteId || null);
 
   const { displayModePreferenceReady } = useProviderUrlFilters({
     searchParams,
@@ -816,8 +823,8 @@ function ProvidersPageContent() {
   const connectionStatusFilter: "all" | "connected" | "unconnected" =
     activeTab === "connected" ? "connected" : activeTab === "unconnected" ? "unconnected" : "all";
 
-  const filterEntries = <T,>(entries: ProviderEntry<T>[], explicitFreeOnly?: boolean) =>
-    filterConfiguredProviderEntries(
+  const filterEntries = <T,>(entries: ProviderEntry<T>[], explicitFreeOnly?: boolean) => {
+    const filtered = filterConfiguredProviderEntries(
       entries,
       effectiveShowConfiguredOnly,
       searchQuery,
@@ -828,6 +835,19 @@ function ProvidersPageContent() {
       connections,
       connectionStatusFilter
     );
+    // Site scope: `providers === null` = the site inherits the global pool.
+    const allowed = siteScope.providers;
+    if (!allowed) return filtered;
+    return filtered.filter((entry) => {
+      const providerId = String(entry.providerId ?? "");
+      if (!providerId) return true;
+      return (
+        allowed.has(providerId) ||
+        allowed.has(getProviderAlias(providerId)) ||
+        allowed.has(resolveProviderId(providerId))
+      );
+    });
+  };
 
   const oauthProviderEntriesAll = buildStaticProviderEntries("oauth", getProviderStats);
   const oauthProviderEntries = filterEntries(oauthProviderEntriesAll);
@@ -1211,6 +1231,10 @@ function ProvidersPageContent() {
         <DeprecatedProviderBanner />
 
         <ProviderTabs initialTab={activeTab} onTabChange={setActiveTab} />
+
+        {/* Website scope — provider credentials stay global; a site only scopes
+            what it exposes (models/routes/keys/usage). */}
+        <SiteScopeBar />
 
         {/* Reseller API — exposure + master BYOK switch */}
         {activeTab === "reseller-api" && <ResellerApiPanel />}

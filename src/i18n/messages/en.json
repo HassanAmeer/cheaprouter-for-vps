@@ -1233,6 +1233,7 @@
     "batchGroup": "Batch",
     "homeSubtitle": "Dashboard overview",
     "providersSubtitle": "Manage AI providers",
+    "providersGlobalBadge": "Global",
     "modelCatalog": "Models & Combos",
     "modelCatalogSubtitle": "Browse models and combos across providers",
     "quotaTrackerSubtitle": "Track usage limits",

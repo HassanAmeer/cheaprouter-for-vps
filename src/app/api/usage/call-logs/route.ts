@@ -78,6 +78,12 @@ export function rowMatchesFilter(row: any, filter: Record<string, any>): boolean
   ) {
     return false;
   }
+  // Multi-tenant site scope. In-memory (pending/active) rows carry the site
+  // only when the request was tagged, so an untagged row is excluded rather
+  // than silently leaking into every site's view.
+  if (filter.siteId && String(row?.siteId || "") !== String(filter.siteId)) {
+    return false;
+  }
   if (filter.combo && row?.comboName == null) {
     return false;
   }
@@ -238,6 +244,8 @@ export async function GET(request: Request) {
     if (searchParams.get("provider")) filter.provider = searchParams.get("provider");
     if (searchParams.get("account")) filter.account = searchParams.get("account");
     if (searchParams.get("apiKey")) filter.apiKey = searchParams.get("apiKey");
+    // Multi-tenant: `?site=<id>` scopes the log list to one website.
+    if (searchParams.get("site")) filter.siteId = searchParams.get("site");
     if (searchParams.get("combo")) filter.combo = searchParams.get("combo");
     if (searchParams.get("search")) filter.search = searchParams.get("search");
     if (searchParams.get("correlationId")) filter.correlationId = searchParams.get("correlationId");

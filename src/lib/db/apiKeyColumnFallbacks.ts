@@ -72,4 +72,5 @@ export const API_KEY_COLUMN_FALLBACKS = [
     definition:
       "catalog_scope TEXT NOT NULL DEFAULT 'all' CHECK (catalog_scope IN ('all', 'combos', 'models'))",
   },
+  { name: "site_id", definition: "site_id TEXT" },
 ] as const;

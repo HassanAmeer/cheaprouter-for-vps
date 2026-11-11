@@ -545,7 +545,14 @@ export default function Sidebar({
         </span>
         {!collapsed && (
           <div className="flex min-w-0 flex-1 flex-col">
-            <span className="truncate text-sm font-medium">{item.label}</span>
+            <span className="flex min-w-0 items-center gap-1.5">
+              <span className="truncate text-sm font-medium">{item.label}</span>
+              {item.badgeKey && (
+                <span className="shrink-0 rounded border border-text-muted/25 px-1 text-[9px] font-semibold uppercase leading-4 tracking-wide opacity-60">
+                  {getSidebarLabel(item.badgeKey, item.badgeFallback ?? "")}
+                </span>
+              )}
+            </span>
             {item.subtitle && (
               <span className="truncate text-[10px] text-text-muted/60">{item.subtitle}</span>
             )}

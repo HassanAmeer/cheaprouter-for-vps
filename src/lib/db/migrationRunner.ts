@@ -623,6 +623,17 @@ function isSchemaAlreadyApplied(
       // Same shape as 179/181/183/184/187: ensureProxyLogsColumns may have
       // added headers_ms at boot. Keyed by version only.
       return hasColumn(db, "proxy_logs", "headers_ms");
+    case "212":
+      // Multi-tenant sites: the tables + the three site_id columns. A DB that
+      // already carries them must not re-run the ALTERs (duplicate column).
+      return (
+        hasTable(db, "sites") &&
+        hasTable(db, "site_providers") &&
+        hasTable(db, "site_routes") &&
+        hasColumn(db, "api_keys", "site_id") &&
+        hasColumn(db, "call_logs", "site_id") &&
+        hasColumn(db, "usage_history", "site_id")
+      );
     default:
       return false;
   }

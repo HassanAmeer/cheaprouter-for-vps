@@ -9,6 +9,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { requireManagementAuth } from "@/lib/api/requireManagementAuth";
 import { addSite, listSites, reloadSiteRegistry } from "@/lib/sites/siteRegistry";
+import { upsertSiteRecord } from "@/lib/db/sites";
 
 export const dynamic = "force-dynamic";
 
@@ -53,6 +54,16 @@ export async function POST(request: NextRequest) {
   // Re-read so the in-memory map is hot even when the file was written by a
   // different process (e.g. a second instance behind the same nginx).
   reloadSiteRegistry();
+
+  // Mirror the identity into the DB (the operational side lives there).
+  // Best-effort: a DB hiccup must not fail the site creation itself.
+  if (result.site) {
+    upsertSiteRecord({
+      id: result.site.id,
+      name: result.site.name,
+      subdomains: result.site.subdomains,
+    });
+  }
 
   return NextResponse.json({ site: result.site, sites: listSites() });
 }

@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { ConfirmModal, RequestLoggerV2 } from "@/shared/components";
+import { SiteScopeBar } from "@/shared/components/SiteScopeBar";
 import { useTranslations } from "next-intl";
 import { buildLogExportUrl, readLogExportTruncation } from "@/shared/utils/logExport";
 
@@ -37,6 +38,8 @@ function LogsPageContent() {
   // effect — mirrored from initialId on purpose.
   const [initialId] = useState(() => searchParams.get("id"));
   const [initialCorrelationId] = useState(() => searchParams.get("correlationId"));
+  // Live (not frozen): switching website must re-query the list immediately.
+  const siteFilter = searchParams?.get("site") || "";
 
   const [showExport, setShowExport] = useState(false);
   const [exporting, setExporting] = useState(false);
@@ -136,6 +139,9 @@ function LogsPageContent() {
 
   return (
     <div className="flex flex-col gap-6">
+      {/* Multi-tenant scope: filters the request log list to one website. */}
+      <SiteScopeBar />
+
       <div className="flex-shrink-0 flex items-center justify-between gap-4 flex-wrap">
         <h2 className="text-lg font-semibold text-text-main">{t("requestLogs")}</h2>
 
@@ -242,10 +248,11 @@ function LogsPageContent() {
 
       <div className="min-h-0">
         <RequestLoggerV2
-          key={requestLogKey}
+          key={`${requestLogKey}:${siteFilter}`}
           ref={requestLoggerRef}
           initialSelectedId={initialId}
           initialCorrelationId={initialCorrelationId}
+          siteFilter={siteFilter}
         />
       </div>
 

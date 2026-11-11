@@ -51,6 +51,13 @@ export interface SidebarItemDefinition {
   exact?: boolean;
   external?: boolean;
   featureFlagKey?: string;
+  /**
+   * Small inline badge rendered next to the label (e.g. "Global" on
+   * Providers, which are shared by every site). i18n key resolved against
+   * the sidebar namespace; falls back to `badgeFallback`.
+   */
+  badgeKey?: string;
+  badgeFallback?: string;
 }
 
 export interface SidebarItemGroup {

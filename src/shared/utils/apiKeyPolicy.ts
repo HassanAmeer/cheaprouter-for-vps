@@ -106,6 +106,8 @@ export interface ApiKeyMetadata {
   compressionEnabled?: boolean;
   allowAutoCombos?: boolean;
   catalogScope?: "all" | "combos" | "models";
+  /** Owning site (multi-tenant). NULL/undefined = a global key. */
+  siteId?: string | null;
 }
 
 /**

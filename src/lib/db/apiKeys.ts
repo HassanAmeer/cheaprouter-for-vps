@@ -139,6 +139,8 @@ interface ApiKeyMetadata {
   compressionEnabled: boolean;
   allowAutoCombos: boolean;
   catalogScope: "all" | "combos" | "models";
+  /** Owning site (multi-tenant). NULL = a global key usable by every site. */
+  siteId: string | null;
 }
 
 interface ApiKeyRow extends JsonRecord {
@@ -245,6 +247,7 @@ interface ApiKeyView extends JsonRecord {
   compressionEnabled: boolean;
   allowAutoCombos: boolean;
   catalogScope: "all" | "combos" | "models";
+  siteId?: string | null;
 }
 
 // LRU cache for API key validation (valid keys only)
@@ -475,7 +478,7 @@ function getPreparedStatements(db: ApiKeysDbLike): ApiKeysStatements {
       "SELECT id, expires_at, revoked_at, is_active, is_banned FROM api_keys WHERE key = ? OR key_hash = ?"
     );
     _stmtGetKeyMetadata = db.prepare<ApiKeyRow>(
-      "SELECT id, name, machine_id, model_access_mode, allowed_models, blocked_models, allowed_combos, allowed_connections, allowed_quotas, no_log, auto_resolve, is_active, access_schedule, max_requests_per_day, max_requests_per_minute, throttle_delay_ms, max_sessions, revoked_at, expires_at, ip_allowlist, scopes, rate_limits, is_banned, key_hash, allowed_endpoints, stream_default_mode, cache_default_mode, codex_service_mode, disable_non_public_models, allow_usage_command, usage_limit_enabled, daily_usage_limit_usd, weekly_usage_limit_usd, chaos_mode_enabled, compression_enabled, allow_auto_combos, catalog_scope, proxy_id FROM api_keys WHERE key = ? OR key_hash = ?"
+      "SELECT id, name, machine_id, model_access_mode, allowed_models, blocked_models, allowed_combos, allowed_connections, allowed_quotas, no_log, auto_resolve, is_active, access_schedule, max_requests_per_day, max_requests_per_minute, throttle_delay_ms, max_sessions, revoked_at, expires_at, ip_allowlist, scopes, rate_limits, is_banned, key_hash, allowed_endpoints, stream_default_mode, cache_default_mode, codex_service_mode, disable_non_public_models, allow_usage_command, usage_limit_enabled, daily_usage_limit_usd, weekly_usage_limit_usd, chaos_mode_enabled, compression_enabled, allow_auto_combos, catalog_scope, proxy_id, site_id FROM api_keys WHERE key = ? OR key_hash = ?"
     );
     _stmtInsertKey = db.prepare(
       "INSERT INTO api_keys (id, name, key, machine_id, model_access_mode, allowed_models, allowed_combos, allowed_connections, no_log, created_at, key_prefix, key_hash, scopes, expires_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
@@ -1444,6 +1447,8 @@ export async function getApiKeyMetadata(
       compressionEnabled: true,
       allowAutoCombos: true,
       catalogScope: "all",
+      // The env key is global: it is usable from every site.
+      siteId: null,
       ...selfLoopKeyOverrides(key),
     };
   }
@@ -1541,6 +1546,14 @@ export async function getApiKeyMetadata(
     catalogScope: parseCatalogScope(
       (record as JsonRecord).catalog_scope ?? (record as JsonRecord).catalogScope
     ),
+    // Multi-tenant: the key's owning site, or NULL for a global key.
+    siteId:
+      typeof record.site_id === "string" && record.site_id.trim() !== ""
+        ? record.site_id.trim()
+        : typeof (record as JsonRecord).siteId === "string" &&
+            String((record as JsonRecord).siteId).trim() !== ""
+          ? String((record as JsonRecord).siteId).trim()
+          : null,
     ...parseApiKeyUsageLimitFields(record as JsonRecord),
   };
 

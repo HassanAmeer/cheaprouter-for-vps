@@ -394,6 +394,15 @@ async function computeAnalyticsResponse(request: Request): Promise<Response> {
     const conditions = [];
     const params: Record<string, string> = {};
 
+    // Multi-tenant site scope. Applied BOTH to the outer WHERE (usage_history /
+    // call_logs aggregates) and inside the unified source (raw leg) — the daily
+    // summaries carry no site attribution, so a site-scoped report is raw-only.
+    const siteId = (searchParams.get("site") || "").trim();
+    if (siteId) {
+      conditions.push("site_id = @siteFilterId");
+      params.siteFilterId = siteId;
+    }
+
     if (sinceIso) {
       conditions.push("timestamp >= @since");
       params.since = sinceIso;
@@ -429,6 +438,9 @@ async function computeAnalyticsResponse(request: Request): Promise<Response> {
       rawCutoffDate,
       apiKeyWhere,
       apiKeyParams: apiKeyParamEntries,
+      // Multi-tenant: `?site=<id>` restricts the whole report to one website.
+      siteWhere: siteId ? "site_id = @siteFilterId" : "",
+      siteParams: siteId ? { siteFilterId: siteId } : {},
     });
 
     // Fetch pricing data for cost calculation (no rows loaded)

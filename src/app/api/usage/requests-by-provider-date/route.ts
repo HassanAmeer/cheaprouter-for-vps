@@ -103,6 +103,7 @@ export async function GET(request: Request) {
     const singleDate = searchParams.get("date") || undefined;
     const { sinceIso, untilIso } = resolveDateWindow(searchParams, range);
     const rawCutoffDate = await resolveRawCutoffDate();
+    const siteId = (searchParams.get("site") || "").trim();
 
     const { unifiedSource, unifiedParams } = buildUnifiedSource({
       sinceIso,
@@ -110,6 +111,9 @@ export async function GET(request: Request) {
       rawCutoffDate,
       apiKeyWhere: "",
       apiKeyParams: {},
+      // Multi-tenant: `?site=<id>` scopes the daily chart to one website.
+      siteWhere: siteId ? "site_id = @siteFilterId" : "",
+      siteParams: siteId ? { siteFilterId: siteId } : {},
     });
 
     const rows = getProviderDailyUsageRows(unifiedSource, unifiedParams);

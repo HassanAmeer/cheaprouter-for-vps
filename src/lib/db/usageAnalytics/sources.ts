@@ -27,6 +27,14 @@ export interface BuildUnifiedSourceOptions {
   apiKeyWhere: string;
   /** Named-param entries for the apiKey placeholders (apiKey0, apiKey1, …). */
   apiKeyParams: AnalyticsParams;
+  /**
+   * SQL condition fragment for multi-tenant site filtering, e.g. `site_id = @siteId`.
+   * Empty string = no site filter. A site filter forces the raw-only leg, exactly
+   * like an API-key filter: the daily summaries carry no site attribution.
+   */
+  siteWhere?: string;
+  /** Named-param entries for the site placeholders. */
+  siteParams?: AnalyticsParams;
 }
 
 export interface UnifiedSourceResult {
@@ -46,11 +54,12 @@ export interface UnifiedSourceResult {
  * the subquery — no additional outer WHERE is needed.
  */
 export function buildUnifiedSource(opts: BuildUnifiedSourceOptions): UnifiedSourceResult {
-  const { sinceIso, untilIso, rawCutoffDate, apiKeyWhere, apiKeyParams } = opts;
+  const { sinceIso, untilIso, rawCutoffDate, apiKeyWhere, apiKeyParams, siteWhere, siteParams } =
+    opts;
   const sinceDate = sinceIso?.split("T")[0] ?? null;
 
   // Include summaries only when the window starts before rawCutoffDate and no api_key filter is active.
-  const needsAggregated = (!sinceDate || sinceDate < rawCutoffDate) && !apiKeyWhere;
+  const needsAggregated = (!sinceDate || sinceDate < rawCutoffDate) && !apiKeyWhere && !siteWhere;
 
   const unifiedParams: AnalyticsParams = {};
 
@@ -70,6 +79,10 @@ export function buildUnifiedSource(opts: BuildUnifiedSourceOptions): UnifiedSour
   if (apiKeyWhere) {
     rawConditions.push(apiKeyWhere);
     Object.assign(unifiedParams, apiKeyParams);
+  }
+  if (siteWhere) {
+    rawConditions.push(siteWhere);
+    Object.assign(unifiedParams, siteParams ?? {});
   }
   const rawWhere = rawConditions.length > 0 ? `WHERE ${rawConditions.join(" AND ")}` : "";
 
@@ -154,10 +167,18 @@ export function buildUnifiedSource(opts: BuildUnifiedSourceOptions): UnifiedSour
  * than the main analytics query — no connection_id / api_key columns needed).
  */
 export function buildPresetUnifiedSource(opts: BuildUnifiedSourceOptions): UnifiedSourceResult {
-  const { sinceIso, untilIso: _untilIso, rawCutoffDate, apiKeyWhere, apiKeyParams } = opts;
+  const {
+    sinceIso,
+    untilIso: _untilIso,
+    rawCutoffDate,
+    apiKeyWhere,
+    apiKeyParams,
+    siteWhere,
+    siteParams,
+  } = opts;
   const sinceDate = sinceIso?.split("T")[0] ?? null;
 
-  const needsAggregated = (!sinceDate || sinceDate < rawCutoffDate) && !apiKeyWhere;
+  const needsAggregated = (!sinceDate || sinceDate < rawCutoffDate) && !apiKeyWhere && !siteWhere;
 
   const presetParams: AnalyticsParams = {};
 
@@ -172,6 +193,10 @@ export function buildPresetUnifiedSource(opts: BuildUnifiedSourceOptions): Unifi
   if (apiKeyWhere) {
     rawConditions.push(apiKeyWhere);
     Object.assign(presetParams, apiKeyParams);
+  }
+  if (siteWhere) {
+    rawConditions.push(siteWhere);
+    Object.assign(presetParams, siteParams ?? {});
   }
   const presetRawWhere = rawConditions.length > 0 ? `WHERE ${rawConditions.join(" AND ")}` : "";
 

@@ -37,6 +37,7 @@ import {
 } from "./completedRequestDetails";
 import { shouldPersistToDisk } from "./migrations";
 import { emitUsageRecorded } from "./usageEvents";
+import { getCallLogSiteId } from "./callLogApiKeyContext";
 import {
   getLoggedInputTokens,
   getLoggedOutputTokens,
@@ -841,6 +842,8 @@ export async function getUsageDb(sinceIso?: string | null, limit?: number, curso
 export interface UsageEntry {
   provider?: string | null;
   model?: string | null;
+  /** Owning site (multi-tenant), or null for the global scope. */
+  siteId?: string | null;
   /** Raw or normalized token usage — see the interface doc above. */
   tokens?: unknown;
   status?: string | null;
@@ -867,6 +870,29 @@ export interface UsageEntry {
 /**
  * Save request usage entry to SQLite.
  */
+/**
+ * Does `usage_history` have this column yet?
+ *
+ * Multi-tenant attribution (`site_id`, migration 212) is optional: a DB that
+ * predates the migration must keep recording usage. Cached only once the column
+ * IS found, so a DB migrated while the process is already running recovers on
+ * the next write instead of staying "absent" forever.
+ */
+let usageHistorySiteColumnPresent = false;
+
+function hasUsageHistoryColumn(columnName: string): boolean {
+  if (usageHistorySiteColumnPresent) return true;
+  try {
+    const db = getDbInstance();
+    const rows = db.prepare("PRAGMA table_info(usage_history)").all() as Array<{ name?: string }>;
+    const found = rows.some((row) => row.name === columnName);
+    if (found) usageHistorySiteColumnPresent = true;
+    return found;
+  } catch {
+    return false;
+  }
+}
+
 export async function saveRequestUsage(entry: UsageEntry) {
   if (!shouldPersistToDisk) return;
 
@@ -893,6 +919,11 @@ export async function saveRequestUsage(entry: UsageEntry) {
     // + connectionId + apiKeyId + token counts. If only the endpoint is missing
     // on the existing row, fill it in rather than inserting a duplicate.
     let inserted = false;
+
+    // Multi-tenant attribution (migration 212). Optional column: a DB that
+    // predates the migration keeps recording usage without it.
+    const hasSiteColumn = hasUsageHistoryColumn("site_id");
+    const usageSiteId = entry.siteId || getCallLogSiteId();
 
     db.transaction(() => {
       const existing = db
@@ -940,8 +971,12 @@ export async function saveRequestUsage(entry: UsageEntry) {
         INSERT INTO usage_history (provider, model, connection_id, account_key, account_label,
           account_label_priority, api_key_id, api_key_name, tokens_input, tokens_output,
           tokens_cache_read, tokens_cache_creation, tokens_reasoning, service_tier, status, success,
-          latency_ms, ttft_ms, error_code, combo_strategy, endpoint, cpa_auth_index, timestamp)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          latency_ms, ttft_ms, error_code, combo_strategy, endpoint, cpa_auth_index, timestamp${
+            hasSiteColumn ? ", site_id" : ""
+          })
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?${
+          hasSiteColumn ? ", ?" : ""
+        })
       `
       ).run(
         entry.provider ? resolveProviderId(entry.provider) : null,
@@ -970,7 +1005,8 @@ export async function saveRequestUsage(entry: UsageEntry) {
         entry.comboStrategy || entry.combo_strategy || null,
         entry.endpoint || null,
         entry.cpaAuthIndex || null,
-        timestamp
+        timestamp,
+        ...(hasSiteColumn ? [usageSiteId] : [])
       );
 
       inserted = true;

@@ -1,7 +1,9 @@
 "use client";
 
 import { useState, useEffect, useCallback, useMemo } from "react";
+import { useSearchParams } from "next/navigation";
 import Card from "@/shared/components/Card";
+import { SiteScopeBar } from "@/shared/components/SiteScopeBar";
 import ProviderIcon from "@/shared/components/ProviderIcon";
 import { fmtCompact as fmt, fmtFull, fmtCost } from "@/shared/utils/formatting";
 import { useRecharts, DarkTooltip, ChartLoadingCard } from "@/shared/components/analytics/rechartsCore";
@@ -90,6 +92,9 @@ export default function UsageDashboardClient() {
   const [chartMetric, setChartMetric] = useState<"tokens" | "requests">("tokens");
 
   const recharts = useRecharts();
+  const searchParams = useSearchParams();
+  // Multi-tenant: `?site=` (website dropdown) scopes every usage query.
+  const siteId = searchParams?.get("site") || "";
 
   const fetchData = useCallback(async (isRefresh = false) => {
     try {
@@ -100,6 +105,7 @@ export default function UsageDashboardClient() {
         range,
         includeFlatRateEstimates: "true",
       });
+      if (siteId) params.set("site", siteId);
 
       const [resAnalytics, resProviderDaily] = await Promise.all([
         fetch(`/api/usage/analytics?${params.toString()}`),
@@ -127,7 +133,7 @@ export default function UsageDashboardClient() {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [range]);
+  }, [range, siteId]);
 
   useEffect(() => {
     const timer = window.setTimeout(() => void fetchData(), 0);
@@ -284,6 +290,9 @@ export default function UsageDashboardClient() {
 
   return (
     <div className="flex flex-col gap-6 pb-12">
+      {/* ── Website scope (multi-tenant) ─────────────────────────────────── */}
+      <SiteScopeBar />
+
       {/* ── Top Header & Controls ────────────────────────────────────────── */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-border pb-5">
         <div>
