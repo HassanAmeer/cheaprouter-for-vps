@@ -1,6 +1,6 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { parseNewSite } from "../../../src/lib/sites/siteInput";
+import { addSiteSchema, deriveSiteName, parseNewSite } from "../../../src/lib/sites/siteInput";
 
 describe("parseNewSite", () => {
   it("accepts a name + subdomains and normalizes them", () => {
@@ -13,6 +13,20 @@ describe("parseNewSite", () => {
       ok: true,
       name: "My Site",
       subdomains: ["router.example.com", "*.example.com"],
+    });
+  });
+
+  it("derives the label from the first domain when no name is given", () => {
+    assert.deepEqual(parseNewSite({ subdomains: ["Shop.Example.com"] }), {
+      ok: true,
+      name: "shop.example.com",
+      subdomains: ["shop.example.com"],
+    });
+    // Adding a website is one field: the dashboard sends only `subdomains`.
+    assert.deepEqual(parseNewSite({ name: "", subdomains: ["example.com"] }), {
+      ok: true,
+      name: "example.com",
+      subdomains: ["example.com"],
     });
   });
 
@@ -30,9 +44,19 @@ describe("parseNewSite", () => {
     ]);
   });
 
-  it("rejects an empty name", () => {
-    const result = parseNewSite({ name: "   ", subdomains: ["example.com"] });
-    assert.equal(result.ok, false);
+  it("accepts a POST body with only subdomains (the API derives the name)", () => {
+    const parsed = addSiteSchema.safeParse({ subdomains: ["router.example.com"] });
+    assert.equal(parsed.success, true);
+    assert.deepEqual(parsed.success ? parsed.data : null, {
+      name: "router.example.com",
+      subdomains: ["router.example.com"],
+    });
+  });
+
+  it("derives a name that ignores a wildcard prefix and a port", () => {
+    assert.equal(deriveSiteName(["*.example.com"]), "example.com");
+    assert.equal(deriveSiteName(["localhost:20128"]), "localhost");
+    assert.equal(deriveSiteName([]), "site");
   });
 
   it("rejects an empty subdomain list", () => {

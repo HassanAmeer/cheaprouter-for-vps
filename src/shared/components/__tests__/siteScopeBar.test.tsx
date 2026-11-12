@@ -123,28 +123,26 @@ describe("SiteScopeBar", () => {
     expect(replace).toHaveBeenCalledWith("/dashboard/providers?site=tokendeal", { scroll: false });
   });
 
-  it("adds a site (name + subdomains) through POST /api/sites and selects it", async () => {
+  it("adds a website from the domain alone (no name field) through POST /api/sites", async () => {
     const { container } = renderBar();
     await flushLoad();
 
     act(() => {
-      buttonByText(container, "Add site")?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+      buttonByText(container, "Add website")?.dispatchEvent(
+        new MouseEvent("click", { bubbles: true })
+      );
     });
 
-    const nameInput = container.querySelector<HTMLInputElement>(
-      'input[aria-label="Site name"]'
+    // One field only — the display label is derived from the domain.
+    expect(container.querySelector('input[aria-label="Site name"]')).toBeNull();
+    const domainInput = container.querySelector<HTMLInputElement>(
+      'input[aria-label="Website domain"]'
     )!;
-    const subdomainsInput = container.querySelector<HTMLInputElement>(
-      'input[aria-label="Site subdomains"]'
-    )!;
-    expect(nameInput).not.toBeNull();
-    expect(subdomainsInput).not.toBeNull();
+    expect(domainInput).not.toBeNull();
 
     await act(async () => {
-      nameInput.value = "Tokendeal";
-      nameInput.dispatchEvent(new Event("input", { bubbles: true }));
-      subdomainsInput.value = "router.tokendeal.cloud";
-      subdomainsInput.dispatchEvent(new Event("input", { bubbles: true }));
+      domainInput.value = "router.tokendeal.cloud";
+      domainInput.dispatchEvent(new Event("input", { bubbles: true }));
     });
 
     fetchMock.mockResolvedValueOnce(
@@ -155,7 +153,9 @@ describe("SiteScopeBar", () => {
     );
 
     await act(async () => {
-      buttonByText(container, "Add site")?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+      buttonByText(container, "Add website")?.dispatchEvent(
+        new MouseEvent("click", { bubbles: true })
+      );
     });
 
     const postCall = fetchMock.mock.calls.find(
@@ -163,7 +163,8 @@ describe("SiteScopeBar", () => {
     );
     expect(postCall).toBeDefined();
     const body = JSON.parse(String((postCall![1] as RequestInit).body));
-    expect(body).toEqual({ name: "Tokendeal", subdomains: ["router.tokendeal.cloud"] });
+    // No `name` key: the server derives it from the first domain.
+    expect(body).toEqual({ subdomains: ["router.tokendeal.cloud"] });
     // The new site is selected right away so its exposure can be edited.
     expect(replace).toHaveBeenCalledWith("/dashboard/providers?site=tokendeal", { scroll: false });
   });
@@ -173,25 +174,24 @@ describe("SiteScopeBar", () => {
     await flushLoad();
 
     act(() => {
-      buttonByText(container, "Add site")?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+      buttonByText(container, "Add website")?.dispatchEvent(
+        new MouseEvent("click", { bubbles: true })
+      );
     });
 
-    const nameInput = container.querySelector<HTMLInputElement>(
-      'input[aria-label="Site name"]'
-    )!;
-    const subdomainsInput = container.querySelector<HTMLInputElement>(
-      'input[aria-label="Site subdomains"]'
+    const domainInput = container.querySelector<HTMLInputElement>(
+      'input[aria-label="Website domain"]'
     )!;
 
     await act(async () => {
-      nameInput.value = "Site";
-      nameInput.dispatchEvent(new Event("input", { bubbles: true }));
-      subdomainsInput.value = "https://example.com";
-      subdomainsInput.dispatchEvent(new Event("input", { bubbles: true }));
+      domainInput.value = "https://example.com";
+      domainInput.dispatchEvent(new Event("input", { bubbles: true }));
     });
 
     act(() => {
-      buttonByText(container, "Add site")?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+      buttonByText(container, "Add website")?.dispatchEvent(
+        new MouseEvent("click", { bubbles: true })
+      );
     });
 
     expect(container.textContent).toMatch(/host like/i);
@@ -239,7 +239,8 @@ describe("SiteScopeBar", () => {
 
     const patchCall = fetchMock.mock.calls.find(
       ([input, init]) =>
-        String(input) === "/api/sites/tokendeal" && (init as RequestInit | undefined)?.method === "PATCH"
+        String(input) === "/api/sites/tokendeal" &&
+        (init as RequestInit | undefined)?.method === "PATCH"
     );
     expect(patchCall).toBeDefined();
     const body = JSON.parse(String((patchCall![1] as RequestInit).body));

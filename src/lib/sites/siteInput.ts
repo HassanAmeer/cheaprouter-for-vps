@@ -25,25 +25,22 @@ const subdomainSchema = z
   .min(1)
   .max(SITE_SUBDOMAIN_MAX)
   .transform((value) => value.toLowerCase())
-  .refine(
-    (value) => {
-      // Format: a bare host, a wildcard host (`*.example.com`) or a host with a
-      // port (`localhost:20128`) — never a scheme or a path.
-      if (
-        !/^(?:\*\.)?[a-z0-9](?:[a-z0-9-]*[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]*[a-z0-9])?)*(?::\d{1,5})?$/.test(
-          value
-        )
-      ) {
-        return false;
-      }
-      // A bare single-label host (e.g. "localhost") is only allowed with a
-      // port; multi-label hosts are allowed without one.
-      const host = value.replace(/^\*\./, "").split(":")[0] ?? "";
-      if (host.includes(".")) return true;
-      return /:\d{1,5}$/.test(value);
-    },
-    "Use a host like app.example.com, *.example.com or localhost:20128"
-  );
+  .refine((value) => {
+    // Format: a bare host, a wildcard host (`*.example.com`) or a host with a
+    // port (`localhost:20128`) — never a scheme or a path.
+    if (
+      !/^(?:\*\.)?[a-z0-9](?:[a-z0-9-]*[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]*[a-z0-9])?)*(?::\d{1,5})?$/.test(
+        value
+      )
+    ) {
+      return false;
+    }
+    // A bare single-label host (e.g. "localhost") is only allowed with a
+    // port; multi-label hosts are allowed without one.
+    const host = value.replace(/^\*\./, "").split(":")[0] ?? "";
+    if (host.includes(".")) return true;
+    return /:\d{1,5}$/.test(value);
+  }, "Use a host like app.example.com, *.example.com or localhost:20128");
 
 export const siteNameSchema = z
   .string()
@@ -52,19 +49,43 @@ export const siteNameSchema = z
   .max(SITE_NAME_MAX)
   .transform((value) => value.replace(/\s+/g, " "));
 
-export const addSiteSchema = z.object({
-  name: siteNameSchema,
-  subdomains: z.array(subdomainSchema).min(1).max(SITE_SUBDOMAINS_MAX),
-});
+/**
+ * The label shown next to a site when the operator did not type one.
+ *
+ * Adding a website is ONE field — the domain. The name is therefore derived
+ * from the first host (`*.example.com` → `example.com`,
+ * `shop.example.com` → `shop.example.com`) instead of asking for a second,
+ * purely cosmetic value.
+ */
+export function deriveSiteName(subdomains: string[]): string {
+  const first = (subdomains[0] ?? "").trim();
+  const host = first.replace(/^\*\./, "").replace(/:\d{1,5}$/, "");
+  return host || "site";
+}
+
+/** An empty string means "not provided" (the form no longer sends a name). */
+const optionalSiteName = z.preprocess(
+  (value) => (typeof value === "string" && value.trim() === "" ? undefined : value),
+  siteNameSchema.optional()
+);
+
+export const addSiteSchema = z
+  .object({
+    name: optionalSiteName,
+    subdomains: z.array(subdomainSchema).min(1).max(SITE_SUBDOMAINS_MAX),
+  })
+  .transform((value) => ({
+    name: value.name && value.name.trim() ? value.name : deriveSiteName(value.subdomains),
+    subdomains: value.subdomains,
+  }));
 
 export type AddSiteInput = z.infer<typeof addSiteSchema>;
 
 export type AddSiteResult =
-  | { ok: true; name: string; subdomains: string[] }
-  | { ok: false; error: string };
+  { ok: true; name: string; subdomains: string[] } | { ok: false; error: string };
 
 /** Parse + normalize operator input (dashboard form or API body). */
-export function parseNewSite(input: { name: unknown; subdomains: unknown }): AddSiteResult {
+export function parseNewSite(input: { name?: unknown; subdomains: unknown }): AddSiteResult {
   const subdomains = Array.isArray(input.subdomains)
     ? input.subdomains
     : typeof input.subdomains === "string"

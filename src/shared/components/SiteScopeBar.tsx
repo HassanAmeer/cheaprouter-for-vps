@@ -57,11 +57,10 @@ export function SiteScopeBar({ providers }: SiteScopeBarProps) {
 
   // ── "Add site" inline form ────────────────────────────────────────────────
   const [showAddSite, setShowAddSite] = useState(false);
-  const [siteName, setSiteName] = useState("");
   const [siteSubdomains, setSiteSubdomains] = useState("");
   const [addingSite, setAddingSite] = useState(false);
   const [addSiteError, setAddSiteError] = useState<string | null>(null);
-  const siteNameRef = useRef<HTMLInputElement>(null);
+  const domainInputRef = useRef<HTMLInputElement>(null);
 
   const activeSiteId = searchParams?.get("site") || "";
   const scope = useSiteScope(activeSiteId || null);
@@ -156,11 +155,11 @@ export function SiteScopeBar({ providers }: SiteScopeBarProps) {
     setShowAddSite(true);
     setAddSiteError(null);
     // Focus after the form is on screen (React commits before the frame).
-    requestAnimationFrame(() => siteNameRef.current?.focus());
+    requestAnimationFrame(() => domainInputRef.current?.focus());
   };
 
   const submitAddSite = async () => {
-    const parsed = parseNewSite({ name: siteName, subdomains: siteSubdomains });
+    const parsed = parseNewSite({ subdomains: siteSubdomains });
     if (!parsed.ok) {
       setAddSiteError((parsed as { error: string }).error);
       return;
@@ -171,7 +170,8 @@ export function SiteScopeBar({ providers }: SiteScopeBarProps) {
       const res = await fetch("/api/sites", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: parsed.name, subdomains: parsed.subdomains }),
+        // No name: the first domain is the label (one-field form).
+        body: JSON.stringify({ subdomains: parsed.subdomains }),
       });
       const data = await res.json().catch(() => ({}));
       const created = data?.site as SiteOption | undefined;
@@ -186,7 +186,6 @@ export function SiteScopeBar({ providers }: SiteScopeBarProps) {
         );
       });
       setShowAddSite(false);
-      setSiteName("");
       setSiteSubdomains("");
       // Select the new site so its exposure can be edited immediately.
       selectSite(created.id);
@@ -228,7 +227,7 @@ export function SiteScopeBar({ providers }: SiteScopeBarProps) {
           <span className="material-symbols-outlined text-[14px] leading-none">
             {showAddSite ? "close" : "add"}
           </span>
-          {showAddSite ? "Cancel" : "Add site"}
+          {showAddSite ? "Cancel" : "Add website"}
         </button>
 
         <span className="min-w-0 flex-1 truncate text-[11px] text-text-muted">
@@ -246,25 +245,9 @@ export function SiteScopeBar({ providers }: SiteScopeBarProps) {
           data-testid="add-site-form"
         >
           <label className="flex flex-col gap-1 text-[11px] text-text-muted">
-            Site name
+            Domain or subdomain
             <input
-              ref={siteNameRef}
-              value={siteName}
-              onChange={(event) => setSiteName(event.target.value)}
-              onKeyDown={(event) => {
-                if (event.key === "Enter") {
-                  event.preventDefault();
-                  void submitAddSite();
-                }
-              }}
-              placeholder="Tokendeal"
-              aria-label="Site name"
-              className={`w-[180px] ${inputClass}`}
-            />
-          </label>
-          <label className="flex flex-col gap-1 text-[11px] text-text-muted">
-            Subdomains (comma or space separated)
-            <input
+              ref={domainInputRef}
               value={siteSubdomains}
               onChange={(event) => setSiteSubdomains(event.target.value)}
               onKeyDown={(event) => {
@@ -273,18 +256,18 @@ export function SiteScopeBar({ providers }: SiteScopeBarProps) {
                   void submitAddSite();
                 }
               }}
-              placeholder="router.example.com, *.example.com"
-              aria-label="Site subdomains"
-              className={`w-[280px] ${inputClass}`}
+              placeholder="example.com, shop.example.com"
+              aria-label="Website domain"
+              className={`w-[320px] ${inputClass}`}
             />
           </label>
           <button
             type="button"
             onClick={() => void submitAddSite()}
-            disabled={addingSite || !siteName.trim() || !siteSubdomains.trim()}
+            disabled={addingSite || !siteSubdomains.trim()}
             className={`px-3 py-1 rounded-lg bg-[image:var(--grad-brand)] text-white text-[11px] font-semibold shadow-sm hover:brightness-105 disabled:opacity-50 disabled:hover:brightness-100 ${inputClass} border-0`}
           >
-            {addingSite ? "Adding…" : "Add site"}
+            {addingSite ? "Adding…" : "Add website"}
           </button>
           {addSiteError && <span className="text-[11px] text-red-400">{addSiteError}</span>}
         </div>
@@ -314,7 +297,9 @@ export function SiteScopeBar({ providers }: SiteScopeBarProps) {
                     aria-label={`Stop exposing ${row.provider}`}
                     className="text-text-muted hover:text-red-400 disabled:opacity-50"
                   >
-                    <span className="material-symbols-outlined text-[13px] leading-none">close</span>
+                    <span className="material-symbols-outlined text-[13px] leading-none">
+                      close
+                    </span>
                   </button>
                 </span>
               ))}
@@ -337,11 +322,7 @@ export function SiteScopeBar({ providers }: SiteScopeBarProps) {
             >
               <option value="">Expose a provider…</option>
               {providerOptions.map((option) => (
-                <option
-                  key={option.id}
-                  value={option.id}
-                  disabled={exposed.includes(option.id)}
-                >
+                <option key={option.id} value={option.id} disabled={exposed.includes(option.id)}>
                   {option.name === option.id ? option.id : `${option.name} (${option.id})`}
                 </option>
               ))}

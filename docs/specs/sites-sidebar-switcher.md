@@ -36,12 +36,14 @@
 }
 ```
 
-| Kya | Kahan |
-| --- | --- |
-| Site ki **subdomains** (routing truth) | `config/sites.json` (repo file) |
-| Site ki **operational** data (routes, exposed models, keys, limits, usage) | DB (site_id se) |
+| Kya                                                                        | Kahan                                                                                            |
+| -------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
+| Site ki **subdomains** (routing truth)                                     | `config/sites.json` (repo file)                                                                  |
+| Site ka **naam**                                                           | optional — na dene par pehle domain se derive hota hai (`shop.example.com` → `shop.example.com`) |
+| Site ki **operational** data (routes, exposed models, keys, limits, usage) | DB (site_id se)                                                                                  |
 
-**➕ "Add site" button** → JSON file me append (atomic write) → in-memory map reload →
+**➕ "Add website" button** → sirf **domain / subdomain** maangta hai (ek hi field, koi
+name/description nahi) → JSON file me append (atomic write) → in-memory map reload →
 foran active. (File hi source of truth — DB me duplicate nahi.)
 
 ---
@@ -89,7 +91,7 @@ aaj model catalog cache chalta hai) → request path par DB nahi.
 - 🎯 **Site select = scope switch** → Providers/Keys/Usage/Logs sab us site ke (query
   param `?site=<id>` ya header — UI + API dono).
 - 🏷️ **Top par dropdown** yaad dilata hai ke abhi konsa site active hai.
-- ➕ **"+"** → naya site (naam + subdomains) → JSON file + DB rows.
+- ➕ **"+"** → naya website (sirf domain/subdomain) → JSON file + DB rows.
 
 ---
 
@@ -98,7 +100,7 @@ aaj model catalog cache chalta hai) → request path par DB nahi.
 ```
 Side bar dropdown → "Site B — app"
    → sidebar ab Site B dikhata hai (providers/keys/usage us site ke)
-   → "+" → naya site (naam + subdomains list)
+   → "+" → naya website (sirf domain/subdomain)
    → us site ke liye routes/keys/limits assign
    → usage alag alag
 ```

@@ -25,6 +25,7 @@
 
 import fs from "node:fs";
 import path from "node:path";
+import { deriveSiteName } from "./siteInput";
 
 export interface SiteDefinition {
   /** Stable id (used in URLs and as the DB key). */
@@ -182,13 +183,14 @@ export interface AddSiteResult {
  * Writes atomically (temp file + rename) so a crash mid-write can never
  * leave a truncated sites file behind.
  */
-export function addSite(input: { name: string; subdomains: string[] }): AddSiteResult {
-  const name = (input.name || "").trim();
+export function addSite(input: { name?: string; subdomains: string[] }): AddSiteResult {
   const subdomains = Array.from(
     new Set((input.subdomains || []).map((s) => normalizeHost(String(s))).filter(Boolean))
   );
-  if (!name) return { ok: false, error: "Site name is required" };
-  if (subdomains.length === 0) return { ok: false, error: "At least one subdomain is required" };
+  if (subdomains.length === 0) return { ok: false, error: "At least one domain is required" };
+  // Adding a website only needs its domain — derive the label when the caller
+  // did not supply one (the dashboard form does not ask for it any more).
+  const name = (input.name || "").trim() || deriveSiteName(subdomains);
 
   const registry = getSiteRegistry();
   const filePath = registry.filePath ?? resolveSitesFilePath();

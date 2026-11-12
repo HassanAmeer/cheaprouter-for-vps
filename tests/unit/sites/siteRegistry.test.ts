@@ -29,9 +29,8 @@ fs.writeFileSync(
   "utf8"
 );
 
-const { addSite, listSites, reloadSiteRegistry, resolveSiteIdByHost } = await import(
-  "../../../src/lib/sites/siteRegistry.ts"
-);
+const { addSite, listSites, reloadSiteRegistry, resolveSiteIdByHost } =
+  await import("../../../src/lib/sites/siteRegistry.ts");
 
 describe("site registry", () => {
   before(() => {
@@ -79,8 +78,22 @@ describe("site registry", () => {
     assert.match(result.error ?? "", /already belongs/);
   });
 
-  it("requires a name and at least one subdomain", () => {
-    assert.equal(addSite({ name: "", subdomains: ["x.myapp.com"] }).ok, false);
-    assert.equal(addSite({ name: "No subdomain", subdomains: [] }).ok, false);
+  it("derives the name from the domain when none is given", () => {
+    const result = addSite({ subdomains: ["shop.example.org"] });
+    assert.equal(result.ok, true);
+    assert.equal(result.site?.name, "shop.example.org");
+    assert.equal(result.site?.id, "shop");
+
+    const written = JSON.parse(fs.readFileSync(sitesFile, "utf8"));
+    assert.equal(written.sites.at(-1).name, "shop.example.org");
+
+    // An explicitly empty name means "not given" too.
+    const empty = addSite({ name: "   ", subdomains: ["blog.example.org"] });
+    assert.equal(empty.ok, true);
+    assert.equal(empty.site?.name, "blog.example.org");
+  });
+
+  it("requires at least one domain", () => {
+    assert.equal(addSite({ subdomains: [] }).ok, false);
   });
 });

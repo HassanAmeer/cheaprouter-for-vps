@@ -3,10 +3,11 @@
 /**
  * Sidebar website switcher.
  *
- * A "site" is one of the operator's frontends: a display name plus one or
- * more subdomains. The list lives in `config/sites.json` (see
- * `src/lib/sites/siteRegistry.ts`) — the dashboard reads it through
- * `/api/sites` and can add a site from the picker.
+ * A "site" is one of the operator's frontends. Adding one takes a single
+ * field — the domain/subdomain; the display label is derived from that host
+ * (`deriveSiteName` in `src/lib/sites/siteInput.ts`). The list lives in
+ * `config/sites.json` (see `src/lib/sites/siteRegistry.ts`) — the dashboard
+ * reads it through `/api/sites`.
  *
  * Placement: the `nav` variant (the default in `Sidebar`) renders a compact
  * Cupertino-style pill directly under the Providers item, tight against it.
@@ -43,7 +44,6 @@ export function SiteSwitcher({ variant = "header" }: SiteSwitcherProps = {}) {
   const [sites, setSites] = useState<SiteItem[]>([]);
   const [open, setOpen] = useState(false);
   const [showAdd, setShowAdd] = useState(false);
-  const [name, setName] = useState("");
   const [subdomains, setSubdomains] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -111,14 +111,14 @@ export function SiteSwitcher({ variant = "header" }: SiteSwitcherProps = {}) {
       const res = await fetch("/api/sites", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: name.trim(), subdomains: list }),
+        // No name: the server derives the label from the first domain.
+        body: JSON.stringify({ subdomains: list }),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
         setError(data?.error?.message || "Failed to add site");
         return;
       }
-      setName("");
       setSubdomains("");
       setShowAdd(false);
       await loadSites();
@@ -138,20 +138,13 @@ export function SiteSwitcher({ variant = "header" }: SiteSwitcherProps = {}) {
       {showAdd ? (
         <div className="rounded-xl border border-border bg-bg-subtle p-3 space-y-2">
           <div className="text-[11px] font-semibold uppercase tracking-wider text-text-muted">
-            New site
+            New website
           </div>
-          <input
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder="Site name (e.g. Site A — blog)"
-            aria-label="Site name"
-            className="w-full rounded-lg border border-border bg-bg-primary px-2.5 py-1.5 text-xs text-text-main placeholder:text-text-muted focus:outline-none focus:border-primary/50"
-          />
           <textarea
             value={subdomains}
             onChange={(e) => setSubdomains(e.target.value)}
-            placeholder={"subdomains, one per line\nsite-a.myapp.com\nwww.site-a.myapp.com"}
-            aria-label="Subdomains"
+            placeholder={"domain or subdomain, one per line\nexample.com\nshop.example.com"}
+            aria-label="Website domain"
             rows={3}
             className="w-full resize-none rounded-lg border border-border bg-bg-primary px-2.5 py-1.5 font-mono text-[11px] text-text-main placeholder:text-text-muted focus:outline-none focus:border-primary/50"
           />
@@ -160,10 +153,10 @@ export function SiteSwitcher({ variant = "header" }: SiteSwitcherProps = {}) {
             <button
               type="button"
               onClick={submitSite}
-              disabled={saving || !name.trim() || !subdomains.trim()}
+              disabled={saving || !subdomains.trim()}
               className="rounded-lg bg-primary px-2.5 py-1 text-[11px] font-semibold text-white disabled:opacity-50"
             >
-              {saving ? "Adding…" : "Add site"}
+              {saving ? "Adding…" : "Add website"}
             </button>
             <button
               type="button"
@@ -302,7 +295,7 @@ export function SiteSwitcher({ variant = "header" }: SiteSwitcherProps = {}) {
               >
                 add
               </span>
-              Add site
+              Add website
             </button>
           </div>
         </div>
