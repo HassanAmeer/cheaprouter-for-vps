@@ -43,10 +43,6 @@ import { OpenRouterProviderStatsProvider } from "./context/openRouterProviderSta
 import { ProviderTabs } from "./components/ProviderTabs";
 import { SiteScopeBar } from "@/shared/components/SiteScopeBar";
 import { useSiteScope } from "@/shared/hooks/useSiteScope";
-import {
-  ProviderSectionIndex,
-  type ProviderSectionIndexItem,
-} from "./components/ProviderSectionIndex";
 import ResellerApiPanel from "./components/ResellerApiPanel";
 import {
   shouldSyncProviderDisplayMode,
@@ -1089,147 +1085,6 @@ function ProvidersPageContent() {
     return <ShimmerPageLoader variant="providers" />;
   }
 
-  // One row per provider type, with the SAME count the section header shows —
-  // the old 15 auth-type chips carried a second, slightly different count for
-  // the very same grouping, which is why "OAuth 2/18" sat right above
-  // "OAuth Providers 3/22".
-  const sectionIndexItems: ProviderSectionIndexItem[] = [
-    {
-      key: "compatible",
-      label: t("compatibleLabel"),
-      description: t("compatibleProvidersDesc"),
-      dotColor: "bg-orange-500",
-      icon: "hub",
-      configured: summaryStats.compatible.configured,
-      total: summaryStats.compatible.total,
-    },
-    {
-      key: "oauth",
-      label: t("oauthProviders"),
-      description: t("oauthProvidersDesc"),
-      dotColor: "bg-blue-500",
-      icon: "vpn_key",
-      configured: summaryStats.oauth.configured,
-      total: summaryStats.oauth.total,
-    },
-    {
-      key: "ide",
-      label: t("ideProviders") || "IDE Providers",
-      description: t("ideProvidersDesc") || "Editors and IDEs with a built-in AI plan.",
-      dotColor: "bg-cyan-500",
-      icon: "code",
-      configured: summaryStats.ide.configured,
-      total: summaryStats.ide.total,
-    },
-    {
-      key: "cli",
-      label: providerText(t, "cliProviders", "CLI & Local Agent Tools"),
-      description: providerText(
-        t,
-        "cliProvidersDesc",
-        "CLIs and local daemons that run on your machine or VPS."
-      ),
-      dotColor: "bg-emerald-600",
-      icon: "terminal",
-      configured: summaryStats.cli.configured,
-      total: summaryStats.cli.total,
-    },
-    {
-      key: "apikey",
-      label: t("apiKeyProviders"),
-      description: t("apiKeyProvidersDesc"),
-      dotColor: "bg-amber-500",
-      icon: "key",
-      configured: summaryStats.apikey.configured,
-      total: summaryStats.apikey.total,
-    },
-    {
-      key: "free",
-      label: t("freeTierProviders"),
-      description: t("freeAggregated"),
-      dotColor: "bg-green-500",
-      icon: "volunteer_activism",
-      configured: summaryStats.free.configured,
-      total: summaryStats.free.total,
-    },
-    {
-      key: "noauth",
-      label: t("noAuthLabel"),
-      description: providerText(
-        t,
-        "noAuthProvidersDesc",
-        "Keyless providers that work without any credential."
-      ),
-      dotColor: "bg-stone-500",
-      icon: "bolt",
-      configured: summaryStats.noauth.configured,
-      total: summaryStats.noauth.total,
-    },
-    {
-      key: "webcookie",
-      label: t("webCookieProviders"),
-      description: t("webCookieProvidersDesc"),
-      dotColor: "bg-purple-500",
-      icon: "cookie",
-      configured: summaryStats.webcookie.configured,
-      total: summaryStats.webcookie.total,
-    },
-    {
-      key: "upstream-proxy",
-      label: t("upstreamProxyLabel"),
-      description: t("upstreamProxyProvidersDesc"),
-      dotColor: "bg-indigo-500",
-      icon: "lan",
-      configured: summaryStats.upstreamproxy.configured,
-      total: summaryStats.upstreamproxy.total,
-    },
-    {
-      key: "webfetch",
-      label: t("webFetch"),
-      description: t("webFetchProvidersDesc"),
-      dotColor: "bg-orange-500",
-      icon: "language",
-      configured: summaryStats.webfetch.configured,
-      total: summaryStats.webfetch.total,
-    },
-    {
-      key: "cloudagent",
-      label: t("cloudAgentProviders"),
-      description: t("cloudAgentProvidersDesc"),
-      dotColor: "bg-violet-500",
-      icon: "cloud",
-      configured: summaryStats.cloudagent.configured,
-      total: summaryStats.cloudagent.total,
-    },
-    {
-      key: "local",
-      label: t("localProviders"),
-      description: t("localProvidersDesc"),
-      dotColor: "bg-emerald-500",
-      icon: "memory",
-      configured: summaryStats.local.configured,
-      total: summaryStats.local.total,
-    },
-    {
-      key: "search",
-      label: providerText(t, "categorySearch", "Search"),
-      description: t("searchProvidersDesc"),
-      dotColor: "bg-teal-500",
-      icon: "travel_explore",
-      configured: summaryStats.search.configured,
-      total: summaryStats.search.total,
-    },
-    {
-      key: "audio",
-      label: providerText(t, "categoryAudio", "Audio"),
-      description: t("audioProvidersDesc"),
-      dotColor: "bg-rose-500",
-      icon: "record_voice_over",
-      configured: summaryStats.audio.configured,
-      total: summaryStats.audio.total,
-    },
-  ];
-
   const totalVisibleEntriesCount =
     (showSectionFromTab("oauth")
       ? oauthProviderEntries.filter(
@@ -1602,228 +1457,118 @@ function ProvidersPageContent() {
                   </div>
                 )}
 
-                {/* All types → a compact index of the types (one row, one count).
-                    A chosen type → that section only. The old layout rendered
-                    every section at once AND repeated the same grouping as 15
-                    chips above it. */}
-                {activeTab === "all-providers" && activeCategory === null ? (
-                  <ProviderSectionIndex
-                    items={sectionIndexItems}
-                    onSelect={(key) => {
-                      setActiveCategory(key);
-                      setShowFreeOnly(key === "free");
-                    }}
-                  />
-                ) : (
-                  <>
-                    {/* API Key Compatible Providers — dynamic (OpenAI/Anthropic compatible) */}
-                    {showSectionFromTab("compatible") &&
-                      (activeTab === "all-providers" || compatibleProviderEntries.length > 0) && (
-                        <div className="flex flex-col gap-4">
-                          <div className="flex flex-wrap items-center gap-2">
-                            <h2 className="text-xl font-semibold flex items-center gap-2 flex-1 min-w-0">
-                              <button
-                                type="button"
-                                onClick={() => setIsCompatibleCollapsed((prev) => !prev)}
-                                className="flex items-center gap-2 hover:text-primary transition-colors cursor-pointer text-left focus:outline-none"
-                                title={
-                                  isCompatibleCollapsed
-                                    ? "Expand Custom Providers"
-                                    : "Collapse Custom Providers"
-                                }
-                              >
-                                <span>Custom & Compatible Providers</span>
-                                <span
-                                  className="size-2.5 rounded-full bg-orange-500"
-                                  title={t("compatibleLabel")}
-                                />
-                                <span className="material-symbols-outlined text-[20px] text-text-muted transition-transform duration-200">
-                                  {isCompatibleCollapsed ? "expand_more" : "expand_less"}
-                                </span>
-                              </button>
-                              <ProviderCountBadge
-                                {...countConfigured(compatibleProviderEntriesAll)}
-                              />
-                            </h2>
-                            <div className="flex flex-wrap gap-2">
-                              {(compatibleProviders.length > 0 ||
-                                anthropicCompatibleProviders.length > 0 ||
-                                ccCompatibleProviders.length > 0) && (
-                                <button
-                                  onClick={() => handleBatchTest("compatible")}
-                                  disabled={!!testingMode}
-                                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
-                                    testingMode === "compatible"
-                                      ? "bg-primary/20 border-primary/40 text-primary animate-pulse"
-                                      : "bg-bg-subtle border-border text-text-muted hover:text-text-primary hover:border-primary/40"
-                                  }`}
-                                  title={t("testAllCompatible")}
-                                >
-                                  <span
-                                    className={`material-symbols-outlined text-[14px]${testingMode === "compatible" ? " animate-spin" : ""}`}
-                                  >
-                                    play_arrow
-                                  </span>
-                                  {testingMode === "compatible" ? t("testing") : t("testAll")}
-                                </button>
-                              )}
-                              {ccCompatibleProviderEnabled && (
-                                <Button
-                                  size="sm"
-                                  icon="add"
-                                  onClick={() => setShowAddCcCompatibleModal(true)}
-                                >
-                                  {addCcCompatibleLabel}
-                                </Button>
-                              )}
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                icon="lan"
-                                onClick={() => setShowServerPortsSheet(true)}
-                              >
-                                Check Server Ports
-                              </Button>
-                              <Button
-                                size="sm"
-                                icon={showCustomProviderForm ? "expand_less" : "add"}
-                                onClick={() => setShowCustomProviderForm((prev) => !prev)}
-                              >
-                                {t("customProviderTitle")}
-                              </Button>
-                              {/* The import-from-file modal existed but NOTHING could
-                              open it — the feature was unreachable from the UI. */}
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                icon="upload_file"
-                                onClick={() => setShowImportFromFileModal(true)}
-                              >
-                                Import from file
-                              </Button>
-                            </div>
-                          </div>
-                          {!isCompatibleCollapsed && (
-                            <>
-                              <p className="text-sm text-text-muted -mt-2">
-                                {t("compatibleProvidersDesc")}
-                              </p>
-                              {showCustomProviderForm && (
-                                <CustomProviderInlineForm
-                                  onCreated={(node) => {
-                                    setProviderNodes((prev) => upsertProviderNodeById(prev, node));
-                                  }}
-                                  onConnectionCreated={async () => {
-                                    setConnections((await loadProviderPageData()).connections);
-                                  }}
-                                />
-                              )}
-                              {compatibleProviders.length === 0 &&
-                              anthropicCompatibleProviders.length === 0 &&
-                              ccCompatibleProviders.length === 0 ? (
-                                <div className="flex items-center justify-center gap-2 py-2 border border-dashed border-border rounded-xl text-text-muted text-sm">
-                                  <span className="material-symbols-outlined text-[18px]">
-                                    extension
-                                  </span>
-                                  <span>{t("noCompatibleYet")}</span>
-                                </div>
-                              ) : (
-                                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 gap-3">
-                                  {compatibleProviderEntries.map(
-                                    ({
-                                      providerId,
-                                      provider,
-                                      stats,
-                                      displayAuthType,
-                                      toggleAuthType,
-                                    }) => (
-                                      <HighlightableProviderCard
-                                        key={providerId}
-                                        providerId={providerId}
-                                        provider={provider}
-                                        stats={stats}
-                                        authType={displayAuthType}
-                                        onToggle={(active) =>
-                                          handleToggleProvider(providerId, toggleAuthType, active)
-                                        }
-                                        onEdit={handleEditCustomProvider}
-                                        onDelete={handleDeleteCustomProvider}
-                                      />
-                                    )
-                                  )}
-                                </div>
-                              )}
-                            </>
-                          )}
-                        </div>
-                      )}
-
-                    {/* OAuth Providers (including providers that expose free tiers via OAuth) */}
-                    {showSectionFromTab("oauth") &&
-                      (activeTab === "all-providers" ||
-                        oauthProviderEntries.filter((e) => !IDE_PROVIDER_IDS.has(e.providerId))
-                          .length > 0) && (
-                        <div className="flex flex-col gap-4">
-                          <div className="flex flex-wrap items-center gap-2">
-                            <h2 className="text-xl font-semibold flex items-center gap-2 flex-1 min-w-0">
-                              {t("oauthProviders")}{" "}
+                {/* API Key Compatible Providers — dynamic (OpenAI/Anthropic compatible) */}
+                {showSectionFromTab("compatible") &&
+                  (activeTab === "all-providers" || compatibleProviderEntries.length > 0) && (
+                    <div className="flex flex-col gap-4">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <h2 className="text-xl font-semibold flex items-center gap-2 flex-1 min-w-0">
+                          <button
+                            type="button"
+                            onClick={() => setIsCompatibleCollapsed((prev) => !prev)}
+                            className="flex items-center gap-2 hover:text-primary transition-colors cursor-pointer text-left focus:outline-none"
+                            title={
+                              isCompatibleCollapsed
+                                ? "Expand Custom Providers"
+                                : "Collapse Custom Providers"
+                            }
+                          >
+                            <span>Custom & Compatible Providers</span>
+                            <span
+                              className="size-2.5 rounded-full bg-orange-500"
+                              title={t("compatibleLabel")}
+                            />
+                            <span className="material-symbols-outlined text-[20px] text-text-muted transition-transform duration-200">
+                              {isCompatibleCollapsed ? "expand_more" : "expand_less"}
+                            </span>
+                          </button>
+                          <ProviderCountBadge {...countConfigured(compatibleProviderEntriesAll)} />
+                        </h2>
+                        <div className="flex flex-wrap gap-2">
+                          {(compatibleProviders.length > 0 ||
+                            anthropicCompatibleProviders.length > 0 ||
+                            ccCompatibleProviders.length > 0) && (
+                            <button
+                              onClick={() => handleBatchTest("compatible")}
+                              disabled={!!testingMode}
+                              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
+                                testingMode === "compatible"
+                                  ? "bg-primary/20 border-primary/40 text-primary animate-pulse"
+                                  : "bg-bg-subtle border-border text-text-muted hover:text-text-primary hover:border-primary/40"
+                              }`}
+                              title={t("testAllCompatible")}
+                            >
                               <span
-                                className="size-2.5 rounded-full bg-blue-500"
-                                title={t("oauthLabel")}
-                              />
-                              <ProviderCountBadge
-                                {...countConfigured(
-                                  oauthProviderEntriesAll.filter(
-                                    (e) => !IDE_PROVIDER_IDS.has(e.providerId)
-                                  )
-                                )}
-                              />
-                            </h2>
-                            <div className="flex items-center gap-2">
-                              {oauthEnvRepairStatus?.available &&
-                                oauthEnvRepairStatus.missingCount > 0 && (
-                                  <button
-                                    onClick={handleRepairEnv}
-                                    disabled={repairingEnv}
-                                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
-                                      repairingEnv
-                                        ? "bg-primary/20 border-primary/40 text-primary animate-pulse"
-                                        : "bg-bg-subtle border-border text-text-muted hover:text-text-primary hover:border-primary/40"
-                                    }`}
-                                    title={t("repairEnvHint")}
-                                    aria-label={t("repairEnv")}
-                                  >
-                                    <span className="material-symbols-outlined text-[14px]">
-                                      {repairingEnv ? "sync" : "settings_backup_restore"}
-                                    </span>
-                                    {repairingEnv ? t("repairEnvWorking") : t("repairEnv")}
-                                  </button>
-                                )}
-                              <button
-                                onClick={() => handleBatchTest("oauth")}
-                                disabled={!!testingMode}
-                                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
-                                  testingMode === "oauth"
-                                    ? "bg-primary/20 border-primary/40 text-primary animate-pulse"
-                                    : "bg-bg-subtle border-border text-text-muted hover:text-text-primary hover:border-primary/40"
-                                }`}
-                                title={t("testAllOAuth")}
-                                aria-label={t("testAllOAuth")}
+                                className={`material-symbols-outlined text-[14px]${testingMode === "compatible" ? " animate-spin" : ""}`}
                               >
-                                <span
-                                  className={`material-symbols-outlined text-[14px]${testingMode === "oauth" ? " animate-spin" : ""}`}
-                                >
-                                  play_arrow
-                                </span>
-                                {testingMode === "oauth" ? t("testing") : t("testAll")}
-                              </button>
+                                play_arrow
+                              </span>
+                              {testingMode === "compatible" ? t("testing") : t("testAll")}
+                            </button>
+                          )}
+                          {ccCompatibleProviderEnabled && (
+                            <Button
+                              size="sm"
+                              icon="add"
+                              onClick={() => setShowAddCcCompatibleModal(true)}
+                            >
+                              {addCcCompatibleLabel}
+                            </Button>
+                          )}
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            icon="lan"
+                            onClick={() => setShowServerPortsSheet(true)}
+                          >
+                            Check Server Ports
+                          </Button>
+                          <Button
+                            size="sm"
+                            icon={showCustomProviderForm ? "expand_less" : "add"}
+                            onClick={() => setShowCustomProviderForm((prev) => !prev)}
+                          >
+                            {t("customProviderTitle")}
+                          </Button>
+                          {/* The import-from-file modal existed but NOTHING could
+                              open it — the feature was unreachable from the UI. */}
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            icon="upload_file"
+                            onClick={() => setShowImportFromFileModal(true)}
+                          >
+                            Import from file
+                          </Button>
+                        </div>
+                      </div>
+                      {!isCompatibleCollapsed && (
+                        <>
+                          <p className="text-sm text-text-muted -mt-2">
+                            {t("compatibleProvidersDesc")}
+                          </p>
+                          {showCustomProviderForm && (
+                            <CustomProviderInlineForm
+                              onCreated={(node) => {
+                                setProviderNodes((prev) => upsertProviderNodeById(prev, node));
+                              }}
+                              onConnectionCreated={async () => {
+                                setConnections((await loadProviderPageData()).connections);
+                              }}
+                            />
+                          )}
+                          {compatibleProviders.length === 0 &&
+                          anthropicCompatibleProviders.length === 0 &&
+                          ccCompatibleProviders.length === 0 ? (
+                            <div className="flex items-center justify-center gap-2 py-2 border border-dashed border-border rounded-xl text-text-muted text-sm">
+                              <span className="material-symbols-outlined text-[18px]">
+                                extension
+                              </span>
+                              <span>{t("noCompatibleYet")}</span>
                             </div>
-                          </div>
-                          <p className="text-sm text-text-muted -mt-2">{t("oauthProvidersDesc")}</p>
-                          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 gap-3">
-                            {oauthProviderEntries
-                              .filter((e) => !IDE_PROVIDER_IDS.has(e.providerId))
-                              .map(
+                          ) : (
+                            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 gap-3">
+                              {compatibleProviderEntries.map(
                                 ({
                                   providerId,
                                   provider,
@@ -1840,813 +1585,869 @@ function ProvidersPageContent() {
                                     onToggle={(active) =>
                                       handleToggleProvider(providerId, toggleAuthType, active)
                                     }
-                                  />
-                                )
-                              )}
-                          </div>
-                        </div>
-                      )}
-
-                    {/* IDE Providers (Cursor, Zed, Trae) — editors with built-in AI subscription */}
-                    {showSectionFromTab("ide") &&
-                      (activeTab === "all-providers" || ideProviderEntries.length > 0) && (
-                        <div className="flex flex-col gap-4">
-                          <div className="flex flex-wrap items-center gap-2">
-                            <h2 className="text-xl font-semibold flex items-center gap-2 flex-1 min-w-0">
-                              {t("ideProviders") || "IDE Providers"}{" "}
-                              <span
-                                className="size-2.5 rounded-full bg-cyan-500"
-                                title={t("ideProviders") || "IDE Providers"}
-                              />
-                              <ProviderCountBadge {...countConfigured(ideProviderEntriesAll)} />
-                            </h2>
-                            <button
-                              onClick={() => handleBatchTest("ide")}
-                              disabled={!!testingMode}
-                              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
-                                testingMode === "ide"
-                                  ? "bg-primary/20 border-primary/40 text-primary animate-pulse"
-                                  : "bg-bg-subtle border-border text-text-muted hover:text-text-primary hover:border-primary/40"
-                              }`}
-                              title={t("testAll")}
-                              aria-label={t("testAll")}
-                            >
-                              <span
-                                className={`material-symbols-outlined text-[14px]${testingMode === "ide" ? " animate-spin" : ""}`}
-                              >
-                                play_arrow
-                              </span>
-                              {testingMode === "ide" ? t("testing") : t("testAll")}
-                            </button>
-                          </div>
-                          <p className="text-sm text-text-muted -mt-2">
-                            {t("ideProvidersDesc") ||
-                              "Editors with built-in AI subscription. Use the provider page to import credentials directly from the IDE's keychain."}
-                          </p>
-                          {ideProviderEntries.length === 0 ? (
-                            <div className="rounded-lg border border-dashed border-border bg-bg-subtle p-6 text-center text-sm text-text-muted">
-                              {t("noIdeProviders") || "No IDE providers match the current filters."}
-                            </div>
-                          ) : (
-                            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 gap-3">
-                              {ideProviderEntries.map(
-                                ({
-                                  providerId,
-                                  provider,
-                                  stats,
-                                  displayAuthType,
-                                  toggleAuthType,
-                                }) => (
-                                  <HighlightableProviderCard
-                                    key={`ide-${providerId}`}
-                                    providerId={providerId}
-                                    provider={provider}
-                                    stats={stats}
-                                    authType={displayAuthType}
-                                    onToggle={(active) =>
-                                      handleToggleProvider(providerId, toggleAuthType, active)
-                                    }
+                                    onEdit={handleEditCustomProvider}
+                                    onDelete={handleDeleteCustomProvider}
                                   />
                                 )
                               )}
                             </div>
                           )}
-                        </div>
+                        </>
                       )}
+                    </div>
+                  )}
 
-                    {/* CLI & Local Tools (OpenCode CLI, Codex CLI, Antseed, Antigravity, Claude Code, Augment, ZCode, etc.) */}
-                    {showSectionFromTab("cli") &&
-                      (activeTab === "all-providers" || cliProviderEntries.length > 0) && (
-                        <div className="flex flex-col gap-4">
-                          <div className="flex flex-wrap items-center gap-2">
-                            <h2 className="text-xl font-semibold flex items-center gap-2 flex-1 min-w-0">
-                              {providerText(t, "cliProviders", "CLI & Local Agent Tools")}{" "}
-                              <span
-                                className="size-2.5 rounded-full bg-emerald-600"
-                                title={providerText(t, "cliProviders", "CLI & Local Agent Tools")}
-                              />
-                              <ProviderCountBadge {...countConfigured(cliProviderEntriesAll)} />
-                            </h2>
-                            <button
-                              onClick={() => handleBatchTest("cli")}
-                              disabled={!!testingMode}
-                              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
-                                testingMode === "cli"
-                                  ? "bg-primary/20 border-primary/40 text-primary animate-pulse"
-                                  : "bg-bg-subtle border-border text-text-muted hover:text-text-primary hover:border-primary/40"
-                              }`}
-                              title={t("testAll")}
-                              aria-label={t("testAll")}
-                            >
-                              <span
-                                className={`material-symbols-outlined text-[14px]${testingMode === "cli" ? " animate-spin" : ""}`}
-                              >
-                                play_arrow
-                              </span>
-                              {testingMode === "cli" ? t("testing") : t("testAll")}
-                            </button>
-                          </div>
-                          <p className="text-sm text-text-muted -mt-2">
-                            {providerText(
-                              t,
-                              "cliProvidersDesc",
-                              "Command-line tools, local daemons, and background agents (OpenCode CLI, Codex CLI, Antseed, Antigravity, Claude Code, Augment, ZCode). CheapRouter coordinates directly with your installed CLIs and local daemon servers."
+                {/* OAuth Providers (including providers that expose free tiers via OAuth) */}
+                {showSectionFromTab("oauth") &&
+                  (activeTab === "all-providers" ||
+                    oauthProviderEntries.filter((e) => !IDE_PROVIDER_IDS.has(e.providerId)).length >
+                      0) && (
+                    <div className="flex flex-col gap-4">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <h2 className="text-xl font-semibold flex items-center gap-2 flex-1 min-w-0">
+                          {t("oauthProviders")}{" "}
+                          <span
+                            className="size-2.5 rounded-full bg-blue-500"
+                            title={t("oauthLabel")}
+                          />
+                          <ProviderCountBadge
+                            {...countConfigured(
+                              oauthProviderEntriesAll.filter(
+                                (e) => !IDE_PROVIDER_IDS.has(e.providerId)
+                              )
                             )}
-                          </p>
-                          {cliProviderEntries.length === 0 ? (
-                            <div className="rounded-lg border border-dashed border-border bg-bg-subtle p-6 text-center text-sm text-text-muted">
-                              {providerText(
-                                t,
-                                "noCliProviders",
-                                "No CLI providers match the current filters."
-                              )}
-                            </div>
-                          ) : (
-                            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 gap-3">
-                              {cliProviderEntries.map(
-                                ({
-                                  providerId,
-                                  provider,
-                                  stats,
-                                  displayAuthType,
-                                  toggleAuthType,
-                                }) => (
-                                  <HighlightableProviderCard
-                                    key={`cli-${providerId}`}
-                                    providerId={providerId}
-                                    provider={provider}
-                                    stats={stats}
-                                    authType={displayAuthType}
-                                    onConnectCli={(id, name) => setCliConnectTarget({ id, name })}
-                                    onToggle={(active) =>
-                                      handleToggleProvider(providerId, toggleAuthType, active)
-                                    }
-                                  />
-                                )
-                              )}
-                            </div>
-                          )}
-                        </div>
-                      )}
-
-                    {/* Web / Cookie Providers */}
-                    {showSectionFromTab("web") && webCookieProviderEntries.length > 0 && (
-                      <div className="flex flex-col gap-4">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <h2 className="text-xl font-semibold flex items-center gap-2 flex-1 min-w-0">
-                            {t("webCookieProviders")}{" "}
-                            <span
-                              className="size-2.5 rounded-full bg-purple-500"
-                              title={t("webCookieProviders")}
-                            />
-                            <ProviderCountBadge {...countConfigured(webCookieProviderEntriesAll)} />
-                          </h2>
-                          <button
-                            onClick={() => handleBatchTest("web-cookie")}
-                            disabled={!!testingMode}
-                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
-                              testingMode === "web-cookie"
-                                ? "bg-primary/20 border-primary/40 text-primary animate-pulse"
-                                : "bg-bg-subtle border-border text-text-muted hover:text-text-primary hover:border-primary/40"
-                            }`}
-                            title={t("testAll")}
-                          >
-                            <span
-                              className={`material-symbols-outlined text-[14px]${testingMode === "web-cookie" ? " animate-spin" : ""}`}
-                            >
-                              play_arrow
-                            </span>
-                            {testingMode === "web-cookie" ? t("testing") : t("testAll")}
-                          </button>
-                        </div>
-                        <p className="text-sm text-text-muted -mt-2">
-                          {t("webCookieProvidersDesc")}
-                        </p>
-                        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 gap-3">
-                          {webCookieProviderEntries.map(
-                            ({ providerId, provider, stats, toggleAuthType }) => (
-                              <HighlightableProviderCard
-                                key={providerId}
-                                providerId={providerId}
-                                provider={provider}
-                                stats={stats}
-                                authType="web-cookie"
-                                onToggle={(active) =>
-                                  handleToggleProvider(providerId, toggleAuthType, active)
-                                }
-                              />
-                            )
-                          )}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Free Tier Providers */}
-                    {showSectionFromTab("free") && freeSectionEntries.length > 0 && (
-                      <div className="flex flex-col gap-4">
-                        <div className="flex flex-wrap items-start gap-2">
-                          <div className="flex-1 min-w-0">
-                            <h2 className="text-xl font-semibold flex items-center gap-2">
-                              {t("freeTierProviders")}
-                              <CategoryDot color="bg-green-500" label={t("freeTierLabel")} />
-                              <ProviderCountBadge {...countConfigured(freeSectionEntriesAll)} />
-                            </h2>
-                            <p className="text-sm text-text-muted mt-1">{t("freeAggregated")}</p>
-                          </div>
-                          <button
-                            onClick={() => handleBatchTest("free")}
-                            disabled={!!testingMode}
-                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
-                              testingMode === "free"
-                                ? "bg-primary/20 border-primary/40 text-primary animate-pulse"
-                                : "bg-bg-subtle border-border text-text-muted hover:text-text-primary hover:border-primary/40"
-                            }`}
-                            title={t("testAll")}
-                          >
-                            <span
-                              className={`material-symbols-outlined text-[14px]${testingMode === "free" ? " animate-spin" : ""}`}
-                            >
-                              play_arrow
-                            </span>
-                            {testingMode === "free" ? t("testing") : t("testAll")}
-                          </button>
-                        </div>
-                        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 gap-3">
-                          {freeSectionEntries.map(
-                            ({ providerId, provider, stats, displayAuthType, toggleAuthType }) => (
-                              <HighlightableProviderCard
-                                key={`free-section-${providerId}`}
-                                providerId={providerId}
-                                provider={provider}
-                                stats={stats}
-                                authType={toggleAuthType === "free" ? "free" : displayAuthType}
-                                onToggle={(active) =>
-                                  handleToggleProvider(providerId, toggleAuthType, active)
-                                }
-                              />
-                            )
-                          )}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* API Key Providers — fixed list */}
-                    {showSectionFromTab("apikey") &&
-                      (activeTab === "all-providers" || llmProviderEntries.length > 0) && (
-                        <div className="flex flex-col gap-4">
-                          <div className="flex flex-wrap items-center gap-2">
-                            <h2 className="text-xl font-semibold flex items-center gap-2 flex-1 min-w-0">
-                              {t("apiKeyProviders")}{" "}
-                              <span
-                                className="size-2.5 rounded-full bg-amber-500"
-                                title={t("apiKeyLabel")}
-                              />
-                              <ProviderCountBadge {...countConfigured(apiKeyProviderEntriesAll)} />
-                            </h2>
-                            <button
-                              onClick={() => handleBatchTest("apikey")}
-                              disabled={!!testingMode}
-                              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
-                                testingMode === "apikey"
-                                  ? "bg-primary/20 border-primary/40 text-primary animate-pulse"
-                                  : "bg-bg-subtle border-border text-text-muted hover:text-text-primary hover:border-primary/40"
-                              }`}
-                              title={t("testAllApiKey")}
-                              aria-label={t("testAllApiKey")}
-                            >
-                              <span
-                                className={`material-symbols-outlined text-[14px]${testingMode === "apikey" ? " animate-spin" : ""}`}
+                          />
+                        </h2>
+                        <div className="flex items-center gap-2">
+                          {oauthEnvRepairStatus?.available &&
+                            oauthEnvRepairStatus.missingCount > 0 && (
+                              <button
+                                onClick={handleRepairEnv}
+                                disabled={repairingEnv}
+                                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
+                                  repairingEnv
+                                    ? "bg-primary/20 border-primary/40 text-primary animate-pulse"
+                                    : "bg-bg-subtle border-border text-text-muted hover:text-text-primary hover:border-primary/40"
+                                }`}
+                                title={t("repairEnvHint")}
+                                aria-label={t("repairEnv")}
                               >
-                                play_arrow
-                              </span>
-                              {testingMode === "apikey" ? t("testing") : t("testAll")}
-                            </button>
-                          </div>
-                          <p className="text-sm text-text-muted -mt-2">
-                            {t("apiKeyProvidersDesc")}
-                          </p>
-                          {llmProviderEntries.length > 0 && (
-                            <div className="flex flex-col gap-3">
-                              <h3 className="text-xs font-semibold uppercase tracking-wider text-text-muted">
-                                {t("llmProviders")}
-                              </h3>
-                              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 gap-3">
-                                {llmProviderEntries.map(
-                                  ({
-                                    providerId,
-                                    provider,
-                                    stats,
-                                    displayAuthType,
-                                    toggleAuthType,
-                                  }) => (
-                                    <HighlightableProviderCard
-                                      key={providerId}
-                                      providerId={providerId}
-                                      provider={provider}
-                                      stats={stats}
-                                      authType={displayAuthType}
-                                      onToggle={(active) =>
-                                        handleToggleProvider(providerId, toggleAuthType, active)
-                                      }
-                                    />
-                                  )
-                                )}
-                              </div>
-                            </div>
+                                <span className="material-symbols-outlined text-[14px]">
+                                  {repairingEnv ? "sync" : "settings_backup_restore"}
+                                </span>
+                                {repairingEnv ? t("repairEnvWorking") : t("repairEnv")}
+                              </button>
+                            )}
+                          <button
+                            onClick={() => handleBatchTest("oauth")}
+                            disabled={!!testingMode}
+                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
+                              testingMode === "oauth"
+                                ? "bg-primary/20 border-primary/40 text-primary animate-pulse"
+                                : "bg-bg-subtle border-border text-text-muted hover:text-text-primary hover:border-primary/40"
+                            }`}
+                            title={t("testAllOAuth")}
+                            aria-label={t("testAllOAuth")}
+                          >
+                            <span
+                              className={`material-symbols-outlined text-[14px]${testingMode === "oauth" ? " animate-spin" : ""}`}
+                            >
+                              play_arrow
+                            </span>
+                            {testingMode === "oauth" ? t("testing") : t("testAll")}
+                          </button>
+                        </div>
+                      </div>
+                      <p className="text-sm text-text-muted -mt-2">{t("oauthProvidersDesc")}</p>
+                      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 gap-3">
+                        {oauthProviderEntries
+                          .filter((e) => !IDE_PROVIDER_IDS.has(e.providerId))
+                          .map(
+                            ({ providerId, provider, stats, displayAuthType, toggleAuthType }) => (
+                              <HighlightableProviderCard
+                                key={providerId}
+                                providerId={providerId}
+                                provider={provider}
+                                stats={stats}
+                                authType={displayAuthType}
+                                onToggle={(active) =>
+                                  handleToggleProvider(providerId, toggleAuthType, active)
+                                }
+                              />
+                            )
+                          )}
+                      </div>
+                    </div>
+                  )}
+
+                {/* IDE Providers (Cursor, Zed, Trae) — editors with built-in AI subscription */}
+                {showSectionFromTab("ide") &&
+                  (activeTab === "all-providers" || ideProviderEntries.length > 0) && (
+                    <div className="flex flex-col gap-4">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <h2 className="text-xl font-semibold flex items-center gap-2 flex-1 min-w-0">
+                          {t("ideProviders") || "IDE Providers"}{" "}
+                          <span
+                            className="size-2.5 rounded-full bg-cyan-500"
+                            title={t("ideProviders") || "IDE Providers"}
+                          />
+                          <ProviderCountBadge {...countConfigured(ideProviderEntriesAll)} />
+                        </h2>
+                        <button
+                          onClick={() => handleBatchTest("ide")}
+                          disabled={!!testingMode}
+                          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
+                            testingMode === "ide"
+                              ? "bg-primary/20 border-primary/40 text-primary animate-pulse"
+                              : "bg-bg-subtle border-border text-text-muted hover:text-text-primary hover:border-primary/40"
+                          }`}
+                          title={t("testAll")}
+                          aria-label={t("testAll")}
+                        >
+                          <span
+                            className={`material-symbols-outlined text-[14px]${testingMode === "ide" ? " animate-spin" : ""}`}
+                          >
+                            play_arrow
+                          </span>
+                          {testingMode === "ide" ? t("testing") : t("testAll")}
+                        </button>
+                      </div>
+                      <p className="text-sm text-text-muted -mt-2">
+                        {t("ideProvidersDesc") ||
+                          "Editors with built-in AI subscription. Use the provider page to import credentials directly from the IDE's keychain."}
+                      </p>
+                      {ideProviderEntries.length === 0 ? (
+                        <div className="rounded-lg border border-dashed border-border bg-bg-subtle p-6 text-center text-sm text-text-muted">
+                          {t("noIdeProviders") || "No IDE providers match the current filters."}
+                        </div>
+                      ) : (
+                        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 gap-3">
+                          {ideProviderEntries.map(
+                            ({ providerId, provider, stats, displayAuthType, toggleAuthType }) => (
+                              <HighlightableProviderCard
+                                key={`ide-${providerId}`}
+                                providerId={providerId}
+                                provider={provider}
+                                stats={stats}
+                                authType={displayAuthType}
+                                onToggle={(active) =>
+                                  handleToggleProvider(providerId, toggleAuthType, active)
+                                }
+                              />
+                            )
                           )}
                         </div>
                       )}
+                    </div>
+                  )}
 
-                    {/* No Auth Providers */}
-                    {showSectionFromTab("noauth") &&
-                      activeTab !== "connected" &&
-                      !showFreeOnly &&
-                      (activeTab === "unconnected"
-                        ? blockedNoAuthEntries.length > 0
-                        : nonCliNoAuthEntries.length > 0 || blockedNoAuthEntries.length > 0) && (
-                        <NoAuthProvidersSection
-                          visibleEntries={activeTab === "unconnected" ? [] : nonCliNoAuthEntries}
-                          count={countConfigured(nonCliNoAuthEntriesAll)}
-                          blockedEntries={blockedNoAuthEntries.filter(
-                            (e) => !CLI_PROVIDER_IDS.has(e.providerId)
+                {/* CLI & Local Tools (OpenCode CLI, Codex CLI, Antseed, Antigravity, Claude Code, Augment, ZCode, etc.) */}
+                {showSectionFromTab("cli") &&
+                  (activeTab === "all-providers" || cliProviderEntries.length > 0) && (
+                    <div className="flex flex-col gap-4">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <h2 className="text-xl font-semibold flex items-center gap-2 flex-1 min-w-0">
+                          {providerText(t, "cliProviders", "CLI & Local Agent Tools")}{" "}
+                          <span
+                            className="size-2.5 rounded-full bg-emerald-600"
+                            title={providerText(t, "cliProviders", "CLI & Local Agent Tools")}
+                          />
+                          <ProviderCountBadge {...countConfigured(cliProviderEntriesAll)} />
+                        </h2>
+                        <button
+                          onClick={() => handleBatchTest("cli")}
+                          disabled={!!testingMode}
+                          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
+                            testingMode === "cli"
+                              ? "bg-primary/20 border-primary/40 text-primary animate-pulse"
+                              : "bg-bg-subtle border-border text-text-muted hover:text-text-primary hover:border-primary/40"
+                          }`}
+                          title={t("testAll")}
+                          aria-label={t("testAll")}
+                        >
+                          <span
+                            className={`material-symbols-outlined text-[14px]${testingMode === "cli" ? " animate-spin" : ""}`}
+                          >
+                            play_arrow
+                          </span>
+                          {testingMode === "cli" ? t("testing") : t("testAll")}
+                        </button>
+                      </div>
+                      <p className="text-sm text-text-muted -mt-2">
+                        {providerText(
+                          t,
+                          "cliProvidersDesc",
+                          "Command-line tools, local daemons, and background agents (OpenCode CLI, Codex CLI, Antseed, Antigravity, Claude Code, Augment, ZCode). CheapRouter coordinates directly with your installed CLIs and local daemon servers."
+                        )}
+                      </p>
+                      {cliProviderEntries.length === 0 ? (
+                        <div className="rounded-lg border border-dashed border-border bg-bg-subtle p-6 text-center text-sm text-text-muted">
+                          {providerText(
+                            t,
+                            "noCliProviders",
+                            "No CLI providers match the current filters."
                           )}
-                          blockedProviders={blockedProviders}
-                          onBlockedChange={setBlockedProviders}
-                          onError={(msg) => notify.error(msg)}
-                          testingMode={testingMode}
-                          onBatchTest={handleBatchTest}
-                          onToggleProvider={handleToggleProvider}
+                        </div>
+                      ) : (
+                        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 gap-3">
+                          {cliProviderEntries.map(
+                            ({ providerId, provider, stats, displayAuthType, toggleAuthType }) => (
+                              <HighlightableProviderCard
+                                key={`cli-${providerId}`}
+                                providerId={providerId}
+                                provider={provider}
+                                stats={stats}
+                                authType={displayAuthType}
+                                onConnectCli={(id, name) => setCliConnectTarget({ id, name })}
+                                onToggle={(active) =>
+                                  handleToggleProvider(providerId, toggleAuthType, active)
+                                }
+                              />
+                            )
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                {/* Web / Cookie Providers */}
+                {showSectionFromTab("web") && webCookieProviderEntries.length > 0 && (
+                  <div className="flex flex-col gap-4">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <h2 className="text-xl font-semibold flex items-center gap-2 flex-1 min-w-0">
+                        {t("webCookieProviders")}{" "}
+                        <span
+                          className="size-2.5 rounded-full bg-purple-500"
+                          title={t("webCookieProviders")}
                         />
+                        <ProviderCountBadge {...countConfigured(webCookieProviderEntriesAll)} />
+                      </h2>
+                      <button
+                        onClick={() => handleBatchTest("web-cookie")}
+                        disabled={!!testingMode}
+                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
+                          testingMode === "web-cookie"
+                            ? "bg-primary/20 border-primary/40 text-primary animate-pulse"
+                            : "bg-bg-subtle border-border text-text-muted hover:text-text-primary hover:border-primary/40"
+                        }`}
+                        title={t("testAll")}
+                      >
+                        <span
+                          className={`material-symbols-outlined text-[14px]${testingMode === "web-cookie" ? " animate-spin" : ""}`}
+                        >
+                          play_arrow
+                        </span>
+                        {testingMode === "web-cookie" ? t("testing") : t("testAll")}
+                      </button>
+                    </div>
+                    <p className="text-sm text-text-muted -mt-2">{t("webCookieProvidersDesc")}</p>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 gap-3">
+                      {webCookieProviderEntries.map(
+                        ({ providerId, provider, stats, toggleAuthType }) => (
+                          <HighlightableProviderCard
+                            key={providerId}
+                            providerId={providerId}
+                            provider={provider}
+                            stats={stats}
+                            authType="web-cookie"
+                            onToggle={(active) =>
+                              handleToggleProvider(providerId, toggleAuthType, active)
+                            }
+                          />
+                        )
                       )}
+                    </div>
+                  </div>
+                )}
 
-                    {/* Upstream Proxy Providers */}
-                    {showSectionFromTab("proxy") && upstreamProxyEntries.length > 0 && (
-                      <div className="flex flex-col gap-4">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <h2 className="text-xl font-semibold flex items-center gap-2 flex-1 min-w-0">
-                            {t("upstreamProxyProviders")}{" "}
-                            <span
-                              className="size-2.5 rounded-full bg-indigo-500"
-                              title={t("upstreamProxyProviders")}
-                            />
-                            <ProviderCountBadge {...countConfigured(upstreamProxyEntriesAll)} />
-                          </h2>
-                          <button
-                            onClick={() => handleBatchTest("upstream-proxy")}
-                            disabled={!!testingMode}
-                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
-                              testingMode === "upstream-proxy"
-                                ? "bg-primary/20 border-primary/40 text-primary animate-pulse"
-                                : "bg-bg-subtle border-border text-text-muted hover:text-text-primary hover:border-primary/40"
-                            }`}
-                            title={t("testAll")}
+                {/* Free Tier Providers */}
+                {showSectionFromTab("free") && freeSectionEntries.length > 0 && (
+                  <div className="flex flex-col gap-4">
+                    <div className="flex flex-wrap items-start gap-2">
+                      <div className="flex-1 min-w-0">
+                        <h2 className="text-xl font-semibold flex items-center gap-2">
+                          {t("freeTierProviders")}
+                          <CategoryDot color="bg-green-500" label={t("freeTierLabel")} />
+                          <ProviderCountBadge {...countConfigured(freeSectionEntriesAll)} />
+                        </h2>
+                        <p className="text-sm text-text-muted mt-1">{t("freeAggregated")}</p>
+                      </div>
+                      <button
+                        onClick={() => handleBatchTest("free")}
+                        disabled={!!testingMode}
+                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
+                          testingMode === "free"
+                            ? "bg-primary/20 border-primary/40 text-primary animate-pulse"
+                            : "bg-bg-subtle border-border text-text-muted hover:text-text-primary hover:border-primary/40"
+                        }`}
+                        title={t("testAll")}
+                      >
+                        <span
+                          className={`material-symbols-outlined text-[14px]${testingMode === "free" ? " animate-spin" : ""}`}
+                        >
+                          play_arrow
+                        </span>
+                        {testingMode === "free" ? t("testing") : t("testAll")}
+                      </button>
+                    </div>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 gap-3">
+                      {freeSectionEntries.map(
+                        ({ providerId, provider, stats, displayAuthType, toggleAuthType }) => (
+                          <HighlightableProviderCard
+                            key={`free-section-${providerId}`}
+                            providerId={providerId}
+                            provider={provider}
+                            stats={stats}
+                            authType={toggleAuthType === "free" ? "free" : displayAuthType}
+                            onToggle={(active) =>
+                              handleToggleProvider(providerId, toggleAuthType, active)
+                            }
+                          />
+                        )
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* API Key Providers — fixed list */}
+                {showSectionFromTab("apikey") &&
+                  (activeTab === "all-providers" || llmProviderEntries.length > 0) && (
+                    <div className="flex flex-col gap-4">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <h2 className="text-xl font-semibold flex items-center gap-2 flex-1 min-w-0">
+                          {t("apiKeyProviders")}{" "}
+                          <span
+                            className="size-2.5 rounded-full bg-amber-500"
+                            title={t("apiKeyLabel")}
+                          />
+                          <ProviderCountBadge {...countConfigured(apiKeyProviderEntriesAll)} />
+                        </h2>
+                        <button
+                          onClick={() => handleBatchTest("apikey")}
+                          disabled={!!testingMode}
+                          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
+                            testingMode === "apikey"
+                              ? "bg-primary/20 border-primary/40 text-primary animate-pulse"
+                              : "bg-bg-subtle border-border text-text-muted hover:text-text-primary hover:border-primary/40"
+                          }`}
+                          title={t("testAllApiKey")}
+                          aria-label={t("testAllApiKey")}
+                        >
+                          <span
+                            className={`material-symbols-outlined text-[14px]${testingMode === "apikey" ? " animate-spin" : ""}`}
                           >
-                            <span
-                              className={`material-symbols-outlined text-[14px]${testingMode === "upstream-proxy" ? " animate-spin" : ""}`}
-                            >
-                              play_arrow
-                            </span>
-                            {testingMode === "upstream-proxy" ? t("testing") : t("testAll")}
-                          </button>
-                        </div>
-                        <p className="text-sm text-text-muted -mt-2">
-                          {t("upstreamProxyProvidersDesc")}
-                        </p>
-                        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 gap-3">
-                          {upstreamProxyEntries.map(
-                            ({ providerId, provider, stats, toggleAuthType }) => (
-                              <HighlightableProviderCard
-                                key={providerId}
-                                providerId={providerId}
-                                provider={provider}
-                                stats={stats}
-                                authType="upstream-proxy"
-                                onToggle={(active) =>
-                                  handleToggleProvider(providerId, toggleAuthType, active)
-                                }
-                              />
-                            )
-                          )}
-                        </div>
+                            play_arrow
+                          </span>
+                          {testingMode === "apikey" ? t("testing") : t("testAll")}
+                        </button>
                       </div>
-                    )}
+                      <p className="text-sm text-text-muted -mt-2">{t("apiKeyProvidersDesc")}</p>
+                      {llmProviderEntries.length > 0 && (
+                        <div className="flex flex-col gap-3">
+                          <h3 className="text-xs font-semibold uppercase tracking-wider text-text-muted">
+                            {t("llmProviders")}
+                          </h3>
+                          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 gap-3">
+                            {llmProviderEntries.map(
+                              ({
+                                providerId,
+                                provider,
+                                stats,
+                                displayAuthType,
+                                toggleAuthType,
+                              }) => (
+                                <HighlightableProviderCard
+                                  key={providerId}
+                                  providerId={providerId}
+                                  provider={provider}
+                                  stats={stats}
+                                  authType={displayAuthType}
+                                  onToggle={(active) =>
+                                    handleToggleProvider(providerId, toggleAuthType, active)
+                                  }
+                                />
+                              )
+                            )}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
 
-                    {/* Web Fetch Providers */}
-                    {showSectionFromTab("webfetch") && visibleWebFetchEntries.length > 0 && (
-                      <div className="flex flex-col gap-4">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <h2 className="text-xl font-semibold flex items-center gap-2 flex-1 min-w-0">
-                            {t("webFetchProvidersHeading")}{" "}
-                            <span
-                              className="size-2.5 rounded-full bg-orange-500"
-                              title={t("webFetchTooltip")}
-                            />
-                            <ProviderCountBadge {...countConfigured(webFetchEntriesAll)} />
-                          </h2>
-                        </div>
-                        <p className="text-sm text-text-muted -mt-2">
-                          {t("webFetchProvidersDesc")}
-                        </p>
-                        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 gap-3">
-                          {visibleWebFetchEntries.map(
-                            ({ providerId, provider, stats, displayAuthType, toggleAuthType }) => (
-                              <HighlightableProviderCard
-                                key={`webfetch-${providerId}`}
-                                providerId={providerId}
-                                provider={provider}
-                                stats={stats}
-                                authType={displayAuthType}
-                                onToggle={(active) =>
-                                  handleToggleProvider(providerId, toggleAuthType, active)
-                                }
-                              />
-                            )
-                          )}
-                        </div>
-                      </div>
-                    )}
+                {/* No Auth Providers */}
+                {showSectionFromTab("noauth") &&
+                  activeTab !== "connected" &&
+                  !showFreeOnly &&
+                  (activeTab === "unconnected"
+                    ? blockedNoAuthEntries.length > 0
+                    : nonCliNoAuthEntries.length > 0 || blockedNoAuthEntries.length > 0) && (
+                    <NoAuthProvidersSection
+                      visibleEntries={activeTab === "unconnected" ? [] : nonCliNoAuthEntries}
+                      count={countConfigured(nonCliNoAuthEntriesAll)}
+                      blockedEntries={blockedNoAuthEntries.filter(
+                        (e) => !CLI_PROVIDER_IDS.has(e.providerId)
+                      )}
+                      blockedProviders={blockedProviders}
+                      onBlockedChange={setBlockedProviders}
+                      onError={(msg) => notify.error(msg)}
+                      testingMode={testingMode}
+                      onBatchTest={handleBatchTest}
+                      onToggleProvider={handleToggleProvider}
+                    />
+                  )}
 
-                    {/* Aggregators Gateways */}
-                    {showSectionFromTab("apikey") && aggregatorProviderEntries.length > 0 && (
-                      <div className="flex flex-col gap-4">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <h2 className="text-xl font-semibold flex items-center gap-2 flex-1 min-w-0">
-                            {t("aggregatorsGateways")}{" "}
-                            <span
-                              className="size-2.5 rounded-full bg-amber-500"
-                              title={t("aggregatorsGateways")}
-                            />
-                            <ProviderCountBadge
-                              {...countConfigured(aggregatorProviderEntriesAll)}
-                            />
-                          </h2>
-                        </div>
-                        <p className="text-sm text-text-muted -mt-2">
-                          {t("aggregatorsGatewaysDesc")}
-                        </p>
-                        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 gap-3">
-                          {aggregatorProviderEntries.map(
-                            ({ providerId, provider, stats, displayAuthType, toggleAuthType }) => (
-                              <HighlightableProviderCard
-                                key={providerId}
-                                providerId={providerId}
-                                provider={provider}
-                                stats={stats}
-                                authType={displayAuthType}
-                                onToggle={(active) =>
-                                  handleToggleProvider(providerId, toggleAuthType, active)
-                                }
-                              />
-                            )
-                          )}
-                        </div>
-                      </div>
-                    )}
+                {/* Upstream Proxy Providers */}
+                {showSectionFromTab("proxy") && upstreamProxyEntries.length > 0 && (
+                  <div className="flex flex-col gap-4">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <h2 className="text-xl font-semibold flex items-center gap-2 flex-1 min-w-0">
+                        {t("upstreamProxyProviders")}{" "}
+                        <span
+                          className="size-2.5 rounded-full bg-indigo-500"
+                          title={t("upstreamProxyProviders")}
+                        />
+                        <ProviderCountBadge {...countConfigured(upstreamProxyEntriesAll)} />
+                      </h2>
+                      <button
+                        onClick={() => handleBatchTest("upstream-proxy")}
+                        disabled={!!testingMode}
+                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
+                          testingMode === "upstream-proxy"
+                            ? "bg-primary/20 border-primary/40 text-primary animate-pulse"
+                            : "bg-bg-subtle border-border text-text-muted hover:text-text-primary hover:border-primary/40"
+                        }`}
+                        title={t("testAll")}
+                      >
+                        <span
+                          className={`material-symbols-outlined text-[14px]${testingMode === "upstream-proxy" ? " animate-spin" : ""}`}
+                        >
+                          play_arrow
+                        </span>
+                        {testingMode === "upstream-proxy" ? t("testing") : t("testAll")}
+                      </button>
+                    </div>
+                    <p className="text-sm text-text-muted -mt-2">
+                      {t("upstreamProxyProvidersDesc")}
+                    </p>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 gap-3">
+                      {upstreamProxyEntries.map(
+                        ({ providerId, provider, stats, toggleAuthType }) => (
+                          <HighlightableProviderCard
+                            key={providerId}
+                            providerId={providerId}
+                            provider={provider}
+                            stats={stats}
+                            authType="upstream-proxy"
+                            onToggle={(active) =>
+                              handleToggleProvider(providerId, toggleAuthType, active)
+                            }
+                          />
+                        )
+                      )}
+                    </div>
+                  </div>
+                )}
 
-                    {/* Enterprise & Cloud */}
-                    {showSectionFromTab("apikey") && enterpriseProviderEntries.length > 0 && (
-                      <div className="flex flex-col gap-4">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <h2 className="text-xl font-semibold flex items-center gap-2 flex-1 min-w-0">
-                            {t("enterpriseCloud")}{" "}
-                            <span
-                              className="size-2.5 rounded-full bg-amber-500"
-                              title={t("enterpriseCloud")}
-                            />
-                            <ProviderCountBadge
-                              {...countConfigured(enterpriseProviderEntriesAll)}
-                            />
-                          </h2>
-                        </div>
-                        <p className="text-sm text-text-muted -mt-2">{t("enterpriseCloudDesc")}</p>
-                        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 gap-3">
-                          {enterpriseProviderEntries.map(
-                            ({ providerId, provider, stats, displayAuthType, toggleAuthType }) => (
-                              <HighlightableProviderCard
-                                key={providerId}
-                                providerId={providerId}
-                                provider={provider}
-                                stats={stats}
-                                authType={displayAuthType}
-                                onToggle={(active) =>
-                                  handleToggleProvider(providerId, toggleAuthType, active)
-                                }
-                              />
-                            )
-                          )}
-                        </div>
-                      </div>
-                    )}
+                {/* Web Fetch Providers */}
+                {showSectionFromTab("webfetch") && visibleWebFetchEntries.length > 0 && (
+                  <div className="flex flex-col gap-4">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <h2 className="text-xl font-semibold flex items-center gap-2 flex-1 min-w-0">
+                        {t("webFetchProvidersHeading")}{" "}
+                        <span
+                          className="size-2.5 rounded-full bg-orange-500"
+                          title={t("webFetchTooltip")}
+                        />
+                        <ProviderCountBadge {...countConfigured(webFetchEntriesAll)} />
+                      </h2>
+                    </div>
+                    <p className="text-sm text-text-muted -mt-2">{t("webFetchProvidersDesc")}</p>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 gap-3">
+                      {visibleWebFetchEntries.map(
+                        ({ providerId, provider, stats, displayAuthType, toggleAuthType }) => (
+                          <HighlightableProviderCard
+                            key={`webfetch-${providerId}`}
+                            providerId={providerId}
+                            provider={provider}
+                            stats={stats}
+                            authType={displayAuthType}
+                            onToggle={(active) =>
+                              handleToggleProvider(providerId, toggleAuthType, active)
+                            }
+                          />
+                        )
+                      )}
+                    </div>
+                  </div>
+                )}
 
-                    {/* Cloud Agent Providers */}
-                    {showSectionFromTab("cloud") && cloudAgentProviderEntries.length > 0 && (
-                      <div className="flex flex-col gap-4">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <h2 className="text-xl font-semibold flex items-center gap-2 flex-1 min-w-0">
-                            {t("cloudAgentProviders")}{" "}
-                            <span
-                              className="size-2.5 rounded-full bg-violet-500"
-                              title={t("cloudAgentProviders")}
-                            />
-                            <ProviderCountBadge
-                              {...countConfigured(cloudAgentProviderEntriesAll)}
-                            />
-                          </h2>
-                          <button
-                            onClick={() => handleBatchTest("cloud-agent")}
-                            disabled={!!testingMode}
-                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
-                              testingMode === "cloud-agent"
-                                ? "bg-primary/20 border-primary/40 text-primary animate-pulse"
-                                : "bg-bg-subtle border-border text-text-muted hover:text-text-primary hover:border-primary/40"
-                            }`}
-                            title={t("testAll")}
-                          >
-                            <span
-                              className={`material-symbols-outlined text-[14px]${testingMode === "cloud-agent" ? " animate-spin" : ""}`}
-                            >
-                              play_arrow
-                            </span>
-                            {testingMode === "cloud-agent" ? t("testing") : t("testAll")}
-                          </button>
-                        </div>
-                        <p className="text-sm text-text-muted -mt-2">
-                          {t("cloudAgentProvidersDesc")}
-                        </p>
-                        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 gap-3">
-                          {cloudAgentProviderEntries.map(
-                            ({ providerId, provider, stats, toggleAuthType }) => (
-                              <HighlightableProviderCard
-                                key={providerId}
-                                providerId={providerId}
-                                provider={provider}
-                                stats={stats}
-                                authType="cloud-agent"
-                                onToggle={(active) =>
-                                  handleToggleProvider(providerId, toggleAuthType, active)
-                                }
-                              />
-                            )
-                          )}
-                        </div>
-                      </div>
-                    )}
+                {/* Aggregators Gateways */}
+                {showSectionFromTab("apikey") && aggregatorProviderEntries.length > 0 && (
+                  <div className="flex flex-col gap-4">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <h2 className="text-xl font-semibold flex items-center gap-2 flex-1 min-w-0">
+                        {t("aggregatorsGateways")}{" "}
+                        <span
+                          className="size-2.5 rounded-full bg-amber-500"
+                          title={t("aggregatorsGateways")}
+                        />
+                        <ProviderCountBadge {...countConfigured(aggregatorProviderEntriesAll)} />
+                      </h2>
+                    </div>
+                    <p className="text-sm text-text-muted -mt-2">{t("aggregatorsGatewaysDesc")}</p>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 gap-3">
+                      {aggregatorProviderEntries.map(
+                        ({ providerId, provider, stats, displayAuthType, toggleAuthType }) => (
+                          <HighlightableProviderCard
+                            key={providerId}
+                            providerId={providerId}
+                            provider={provider}
+                            stats={stats}
+                            authType={displayAuthType}
+                            onToggle={(active) =>
+                              handleToggleProvider(providerId, toggleAuthType, active)
+                            }
+                          />
+                        )
+                      )}
+                    </div>
+                  </div>
+                )}
 
-                    {/* Local / Self-Hosted Providers */}
-                    {showSectionFromTab("local") && nonCliLocalProviderEntries.length > 0 && (
-                      <div className="flex flex-col gap-4">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <h2 className="text-xl font-semibold flex items-center gap-2 flex-1 min-w-0">
-                            {t("localProviders")}{" "}
-                            <span
-                              className="size-2.5 rounded-full bg-emerald-500"
-                              title={t("localProviders")}
-                            />
-                            <ProviderCountBadge
-                              {...countConfigured(nonCliLocalProviderEntriesAll)}
-                            />
-                          </h2>
-                          <button
-                            onClick={() => handleBatchTest("local")}
-                            disabled={!!testingMode}
-                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
-                              testingMode === "local"
-                                ? "bg-primary/20 border-primary/40 text-primary animate-pulse"
-                                : "bg-bg-subtle border-border text-text-muted hover:text-text-primary hover:border-primary/40"
-                            }`}
-                            title={t("testAll")}
-                          >
-                            <span
-                              className={`material-symbols-outlined text-[14px]${testingMode === "local" ? " animate-spin" : ""}`}
-                            >
-                              play_arrow
-                            </span>
-                            {testingMode === "local" ? t("testing") : t("testAll")}
-                          </button>
-                        </div>
-                        <p className="text-sm text-text-muted -mt-2">{t("localProvidersDesc")}</p>
-                        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 gap-3">
-                          {nonCliLocalProviderEntries.map(
-                            ({ providerId, provider, stats, toggleAuthType }) => (
-                              <HighlightableProviderCard
-                                key={providerId}
-                                providerId={providerId}
-                                provider={provider}
-                                stats={stats}
-                                authType="local"
-                                onToggle={(active) =>
-                                  handleToggleProvider(providerId, toggleAuthType, active)
-                                }
-                              />
-                            )
-                          )}
-                        </div>
-                      </div>
-                    )}
+                {/* Enterprise & Cloud */}
+                {showSectionFromTab("apikey") && enterpriseProviderEntries.length > 0 && (
+                  <div className="flex flex-col gap-4">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <h2 className="text-xl font-semibold flex items-center gap-2 flex-1 min-w-0">
+                        {t("enterpriseCloud")}{" "}
+                        <span
+                          className="size-2.5 rounded-full bg-amber-500"
+                          title={t("enterpriseCloud")}
+                        />
+                        <ProviderCountBadge {...countConfigured(enterpriseProviderEntriesAll)} />
+                      </h2>
+                    </div>
+                    <p className="text-sm text-text-muted -mt-2">{t("enterpriseCloudDesc")}</p>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 gap-3">
+                      {enterpriseProviderEntries.map(
+                        ({ providerId, provider, stats, displayAuthType, toggleAuthType }) => (
+                          <HighlightableProviderCard
+                            key={providerId}
+                            providerId={providerId}
+                            provider={provider}
+                            stats={stats}
+                            authType={displayAuthType}
+                            onToggle={(active) =>
+                              handleToggleProvider(providerId, toggleAuthType, active)
+                            }
+                          />
+                        )
+                      )}
+                    </div>
+                  </div>
+                )}
 
-                    {/* Search Providers */}
-                    {showSectionFromTab("search") && searchProviderEntries.length > 0 && (
-                      <div className="flex flex-col gap-4">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <h2 className="text-xl font-semibold flex items-center gap-2 flex-1 min-w-0">
-                            {t("searchProvidersHeading")}{" "}
-                            <span
-                              className="size-2.5 rounded-full bg-teal-500"
-                              title={t("searchProvidersHeading")}
-                            />
-                            <ProviderCountBadge {...countConfigured(searchProviderEntriesAll)} />
-                          </h2>
-                          <button
-                            onClick={() => handleBatchTest("search")}
-                            disabled={!!testingMode}
-                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
-                              testingMode === "search"
-                                ? "bg-primary/20 border-primary/40 text-primary animate-pulse"
-                                : "bg-bg-subtle border-border text-text-muted hover:text-text-primary hover:border-primary/40"
-                            }`}
-                            title={t("testAll")}
-                          >
-                            <span
-                              className={`material-symbols-outlined text-[14px]${testingMode === "search" ? " animate-spin" : ""}`}
-                            >
-                              play_arrow
-                            </span>
-                            {testingMode === "search" ? t("testing") : t("testAll")}
-                          </button>
-                        </div>
-                        <p className="text-sm text-text-muted -mt-2">{t("searchProvidersDesc")}</p>
-                        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 gap-3">
-                          {searchProviderEntries.map(
-                            ({ providerId, provider, stats, toggleAuthType }) => (
-                              <HighlightableProviderCard
-                                key={providerId}
-                                providerId={providerId}
-                                provider={provider}
-                                stats={stats}
-                                authType="search"
-                                onToggle={(active) =>
-                                  handleToggleProvider(providerId, toggleAuthType, active)
-                                }
-                              />
-                            )
-                          )}
-                        </div>
-                      </div>
-                    )}
+                {/* Cloud Agent Providers */}
+                {showSectionFromTab("cloud") && cloudAgentProviderEntries.length > 0 && (
+                  <div className="flex flex-col gap-4">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <h2 className="text-xl font-semibold flex items-center gap-2 flex-1 min-w-0">
+                        {t("cloudAgentProviders")}{" "}
+                        <span
+                          className="size-2.5 rounded-full bg-violet-500"
+                          title={t("cloudAgentProviders")}
+                        />
+                        <ProviderCountBadge {...countConfigured(cloudAgentProviderEntriesAll)} />
+                      </h2>
+                      <button
+                        onClick={() => handleBatchTest("cloud-agent")}
+                        disabled={!!testingMode}
+                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
+                          testingMode === "cloud-agent"
+                            ? "bg-primary/20 border-primary/40 text-primary animate-pulse"
+                            : "bg-bg-subtle border-border text-text-muted hover:text-text-primary hover:border-primary/40"
+                        }`}
+                        title={t("testAll")}
+                      >
+                        <span
+                          className={`material-symbols-outlined text-[14px]${testingMode === "cloud-agent" ? " animate-spin" : ""}`}
+                        >
+                          play_arrow
+                        </span>
+                        {testingMode === "cloud-agent" ? t("testing") : t("testAll")}
+                      </button>
+                    </div>
+                    <p className="text-sm text-text-muted -mt-2">{t("cloudAgentProvidersDesc")}</p>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 gap-3">
+                      {cloudAgentProviderEntries.map(
+                        ({ providerId, provider, stats, toggleAuthType }) => (
+                          <HighlightableProviderCard
+                            key={providerId}
+                            providerId={providerId}
+                            provider={provider}
+                            stats={stats}
+                            authType="cloud-agent"
+                            onToggle={(active) =>
+                              handleToggleProvider(providerId, toggleAuthType, active)
+                            }
+                          />
+                        )
+                      )}
+                    </div>
+                  </div>
+                )}
 
-                    {/* Embeddings & Rerank */}
-                    {showSectionFromTab("apikey") && embeddingRerankProviderEntries.length > 0 && (
-                      <div className="flex flex-col gap-4">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <h2 className="text-xl font-semibold flex items-center gap-2 flex-1 min-w-0">
-                            {t("embeddingRerankProviders")}{" "}
-                            <span
-                              className="size-2.5 rounded-full bg-amber-500"
-                              title={t("embeddingRerankProviders")}
-                            />
-                            <ProviderCountBadge
-                              {...countConfigured(embeddingRerankProviderEntriesAll)}
-                            />
-                          </h2>
-                        </div>
-                        <p className="text-sm text-text-muted -mt-2">
-                          {t("embeddingRerankProvidersDesc")}
-                        </p>
-                        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 gap-3">
-                          {embeddingRerankProviderEntries.map(
-                            ({ providerId, provider, stats, displayAuthType, toggleAuthType }) => (
-                              <HighlightableProviderCard
-                                key={providerId}
-                                providerId={providerId}
-                                provider={provider}
-                                stats={stats}
-                                authType={displayAuthType}
-                                onToggle={(active) =>
-                                  handleToggleProvider(providerId, toggleAuthType, active)
-                                }
-                              />
-                            )
-                          )}
-                        </div>
-                      </div>
-                    )}
+                {/* Local / Self-Hosted Providers */}
+                {showSectionFromTab("local") && nonCliLocalProviderEntries.length > 0 && (
+                  <div className="flex flex-col gap-4">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <h2 className="text-xl font-semibold flex items-center gap-2 flex-1 min-w-0">
+                        {t("localProviders")}{" "}
+                        <span
+                          className="size-2.5 rounded-full bg-emerald-500"
+                          title={t("localProviders")}
+                        />
+                        <ProviderCountBadge {...countConfigured(nonCliLocalProviderEntriesAll)} />
+                      </h2>
+                      <button
+                        onClick={() => handleBatchTest("local")}
+                        disabled={!!testingMode}
+                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
+                          testingMode === "local"
+                            ? "bg-primary/20 border-primary/40 text-primary animate-pulse"
+                            : "bg-bg-subtle border-border text-text-muted hover:text-text-primary hover:border-primary/40"
+                        }`}
+                        title={t("testAll")}
+                      >
+                        <span
+                          className={`material-symbols-outlined text-[14px]${testingMode === "local" ? " animate-spin" : ""}`}
+                        >
+                          play_arrow
+                        </span>
+                        {testingMode === "local" ? t("testing") : t("testAll")}
+                      </button>
+                    </div>
+                    <p className="text-sm text-text-muted -mt-2">{t("localProvidersDesc")}</p>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 gap-3">
+                      {nonCliLocalProviderEntries.map(
+                        ({ providerId, provider, stats, toggleAuthType }) => (
+                          <HighlightableProviderCard
+                            key={providerId}
+                            providerId={providerId}
+                            provider={provider}
+                            stats={stats}
+                            authType="local"
+                            onToggle={(active) =>
+                              handleToggleProvider(providerId, toggleAuthType, active)
+                            }
+                          />
+                        )
+                      )}
+                    </div>
+                  </div>
+                )}
 
-                    {/* Image Providers */}
-                    {showSectionFromTab("apikey") && imageProviderEntries.length > 0 && (
-                      <div className="flex flex-col gap-4">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <h2 className="text-xl font-semibold flex items-center gap-2 flex-1 min-w-0">
-                            {t("imageProviders")}{" "}
-                            <span
-                              className="size-2.5 rounded-full bg-amber-500"
-                              title={t("imageProviders")}
-                            />
-                            <ProviderCountBadge {...countConfigured(imageProviderEntriesAll)} />
-                          </h2>
-                        </div>
-                        <p className="text-sm text-text-muted -mt-2">{t("imageProvidersDesc")}</p>
-                        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 gap-3">
-                          {imageProviderEntries.map(
-                            ({ providerId, provider, stats, displayAuthType, toggleAuthType }) => (
-                              <HighlightableProviderCard
-                                key={providerId}
-                                providerId={providerId}
-                                provider={provider}
-                                stats={stats}
-                                authType={displayAuthType}
-                                onToggle={(active) =>
-                                  handleToggleProvider(providerId, toggleAuthType, active)
-                                }
-                              />
-                            )
-                          )}
-                        </div>
-                      </div>
-                    )}
+                {/* Search Providers */}
+                {showSectionFromTab("search") && searchProviderEntries.length > 0 && (
+                  <div className="flex flex-col gap-4">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <h2 className="text-xl font-semibold flex items-center gap-2 flex-1 min-w-0">
+                        {t("searchProvidersHeading")}{" "}
+                        <span
+                          className="size-2.5 rounded-full bg-teal-500"
+                          title={t("searchProvidersHeading")}
+                        />
+                        <ProviderCountBadge {...countConfigured(searchProviderEntriesAll)} />
+                      </h2>
+                      <button
+                        onClick={() => handleBatchTest("search")}
+                        disabled={!!testingMode}
+                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
+                          testingMode === "search"
+                            ? "bg-primary/20 border-primary/40 text-primary animate-pulse"
+                            : "bg-bg-subtle border-border text-text-muted hover:text-text-primary hover:border-primary/40"
+                        }`}
+                        title={t("testAll")}
+                      >
+                        <span
+                          className={`material-symbols-outlined text-[14px]${testingMode === "search" ? " animate-spin" : ""}`}
+                        >
+                          play_arrow
+                        </span>
+                        {testingMode === "search" ? t("testing") : t("testAll")}
+                      </button>
+                    </div>
+                    <p className="text-sm text-text-muted -mt-2">{t("searchProvidersDesc")}</p>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 gap-3">
+                      {searchProviderEntries.map(
+                        ({ providerId, provider, stats, toggleAuthType }) => (
+                          <HighlightableProviderCard
+                            key={providerId}
+                            providerId={providerId}
+                            provider={provider}
+                            stats={stats}
+                            authType="search"
+                            onToggle={(active) =>
+                              handleToggleProvider(providerId, toggleAuthType, active)
+                            }
+                          />
+                        )
+                      )}
+                    </div>
+                  </div>
+                )}
 
-                    {/* Audio Only Providers */}
-                    {showSectionFromTab("audio") && audioProviderEntries.length > 0 && (
-                      <div className="flex flex-col gap-4">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <h2 className="text-xl font-semibold flex items-center gap-2 flex-1 min-w-0">
-                            {t("audioProvidersHeading")}{" "}
-                            <span
-                              className="size-2.5 rounded-full bg-rose-500"
-                              title={t("audioProvidersHeading")}
-                            />
-                            <ProviderCountBadge {...countConfigured(audioProviderEntriesAll)} />
-                          </h2>
-                          <button
-                            onClick={() => handleBatchTest("audio")}
-                            disabled={!!testingMode}
-                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
-                              testingMode === "audio"
-                                ? "bg-primary/20 border-primary/40 text-primary animate-pulse"
-                                : "bg-bg-subtle border-border text-text-muted hover:text-text-primary hover:border-primary/40"
-                            }`}
-                            title={t("testAll")}
-                          >
-                            <span
-                              className={`material-symbols-outlined text-[14px]${testingMode === "audio" ? " animate-spin" : ""}`}
-                            >
-                              play_arrow
-                            </span>
-                            {testingMode === "audio" ? t("testing") : t("testAll")}
-                          </button>
-                        </div>
-                        <p className="text-sm text-text-muted -mt-2">{t("audioProvidersDesc")}</p>
-                        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 gap-3">
-                          {audioProviderEntries.map(
-                            ({ providerId, provider, stats, toggleAuthType }) => (
-                              <HighlightableProviderCard
-                                key={providerId}
-                                providerId={providerId}
-                                provider={provider}
-                                stats={stats}
-                                authType="audio"
-                                onToggle={(active) =>
-                                  handleToggleProvider(providerId, toggleAuthType, active)
-                                }
-                              />
-                            )
-                          )}
-                        </div>
-                      </div>
-                    )}
+                {/* Embeddings & Rerank */}
+                {showSectionFromTab("apikey") && embeddingRerankProviderEntries.length > 0 && (
+                  <div className="flex flex-col gap-4">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <h2 className="text-xl font-semibold flex items-center gap-2 flex-1 min-w-0">
+                        {t("embeddingRerankProviders")}{" "}
+                        <span
+                          className="size-2.5 rounded-full bg-amber-500"
+                          title={t("embeddingRerankProviders")}
+                        />
+                        <ProviderCountBadge
+                          {...countConfigured(embeddingRerankProviderEntriesAll)}
+                        />
+                      </h2>
+                    </div>
+                    <p className="text-sm text-text-muted -mt-2">
+                      {t("embeddingRerankProvidersDesc")}
+                    </p>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 gap-3">
+                      {embeddingRerankProviderEntries.map(
+                        ({ providerId, provider, stats, displayAuthType, toggleAuthType }) => (
+                          <HighlightableProviderCard
+                            key={providerId}
+                            providerId={providerId}
+                            provider={provider}
+                            stats={stats}
+                            authType={displayAuthType}
+                            onToggle={(active) =>
+                              handleToggleProvider(providerId, toggleAuthType, active)
+                            }
+                          />
+                        )
+                      )}
+                    </div>
+                  </div>
+                )}
 
-                    {/* Video Generation */}
-                    {showSectionFromTab("apikey") && videoProviderEntries.length > 0 && (
-                      <div className="flex flex-col gap-4">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <h2 className="text-xl font-semibold flex items-center gap-2 flex-1 min-w-0">
-                            {t("videoProviders")}{" "}
-                            <span
-                              className="size-2.5 rounded-full bg-amber-500"
-                              title={t("videoProviders")}
-                            />
-                            <ProviderCountBadge {...countConfigured(videoProviderEntriesAll)} />
-                          </h2>
-                        </div>
-                        <p className="text-sm text-text-muted -mt-2">{t("videoProvidersDesc")}</p>
-                        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 gap-3">
-                          {videoProviderEntries.map(
-                            ({ providerId, provider, stats, displayAuthType, toggleAuthType }) => (
-                              <HighlightableProviderCard
-                                key={providerId}
-                                providerId={providerId}
-                                provider={provider}
-                                stats={stats}
-                                authType={displayAuthType}
-                                onToggle={(active) =>
-                                  handleToggleProvider(providerId, toggleAuthType, active)
-                                }
-                              />
-                            )
-                          )}
-                        </div>
-                      </div>
-                    )}
-                  </>
+                {/* Image Providers */}
+                {showSectionFromTab("apikey") && imageProviderEntries.length > 0 && (
+                  <div className="flex flex-col gap-4">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <h2 className="text-xl font-semibold flex items-center gap-2 flex-1 min-w-0">
+                        {t("imageProviders")}{" "}
+                        <span
+                          className="size-2.5 rounded-full bg-amber-500"
+                          title={t("imageProviders")}
+                        />
+                        <ProviderCountBadge {...countConfigured(imageProviderEntriesAll)} />
+                      </h2>
+                    </div>
+                    <p className="text-sm text-text-muted -mt-2">{t("imageProvidersDesc")}</p>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 gap-3">
+                      {imageProviderEntries.map(
+                        ({ providerId, provider, stats, displayAuthType, toggleAuthType }) => (
+                          <HighlightableProviderCard
+                            key={providerId}
+                            providerId={providerId}
+                            provider={provider}
+                            stats={stats}
+                            authType={displayAuthType}
+                            onToggle={(active) =>
+                              handleToggleProvider(providerId, toggleAuthType, active)
+                            }
+                          />
+                        )
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Audio Only Providers */}
+                {showSectionFromTab("audio") && audioProviderEntries.length > 0 && (
+                  <div className="flex flex-col gap-4">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <h2 className="text-xl font-semibold flex items-center gap-2 flex-1 min-w-0">
+                        {t("audioProvidersHeading")}{" "}
+                        <span
+                          className="size-2.5 rounded-full bg-rose-500"
+                          title={t("audioProvidersHeading")}
+                        />
+                        <ProviderCountBadge {...countConfigured(audioProviderEntriesAll)} />
+                      </h2>
+                      <button
+                        onClick={() => handleBatchTest("audio")}
+                        disabled={!!testingMode}
+                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
+                          testingMode === "audio"
+                            ? "bg-primary/20 border-primary/40 text-primary animate-pulse"
+                            : "bg-bg-subtle border-border text-text-muted hover:text-text-primary hover:border-primary/40"
+                        }`}
+                        title={t("testAll")}
+                      >
+                        <span
+                          className={`material-symbols-outlined text-[14px]${testingMode === "audio" ? " animate-spin" : ""}`}
+                        >
+                          play_arrow
+                        </span>
+                        {testingMode === "audio" ? t("testing") : t("testAll")}
+                      </button>
+                    </div>
+                    <p className="text-sm text-text-muted -mt-2">{t("audioProvidersDesc")}</p>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 gap-3">
+                      {audioProviderEntries.map(
+                        ({ providerId, provider, stats, toggleAuthType }) => (
+                          <HighlightableProviderCard
+                            key={providerId}
+                            providerId={providerId}
+                            provider={provider}
+                            stats={stats}
+                            authType="audio"
+                            onToggle={(active) =>
+                              handleToggleProvider(providerId, toggleAuthType, active)
+                            }
+                          />
+                        )
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Video Generation */}
+                {showSectionFromTab("apikey") && videoProviderEntries.length > 0 && (
+                  <div className="flex flex-col gap-4">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <h2 className="text-xl font-semibold flex items-center gap-2 flex-1 min-w-0">
+                        {t("videoProviders")}{" "}
+                        <span
+                          className="size-2.5 rounded-full bg-amber-500"
+                          title={t("videoProviders")}
+                        />
+                        <ProviderCountBadge {...countConfigured(videoProviderEntriesAll)} />
+                      </h2>
+                    </div>
+                    <p className="text-sm text-text-muted -mt-2">{t("videoProvidersDesc")}</p>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 gap-3">
+                      {videoProviderEntries.map(
+                        ({ providerId, provider, stats, displayAuthType, toggleAuthType }) => (
+                          <HighlightableProviderCard
+                            key={providerId}
+                            providerId={providerId}
+                            provider={provider}
+                            stats={stats}
+                            authType={displayAuthType}
+                            onToggle={(active) =>
+                              handleToggleProvider(providerId, toggleAuthType, active)
+                            }
+                          />
+                        )
+                      )}
+                    </div>
+                  </div>
                 )}
               </>
             )}

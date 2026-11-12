@@ -42,15 +42,15 @@ export const PROVIDER_TABS_CONFIG: ProviderTabsConfig = [
   {
     id: "unconnected",
     key: "unconnectedProvidersTab",
-    fallback: "Needs setup",
+    fallback: "Unconnected Providers",
     descriptionKey: "unconnectedProvidersTabDesc",
-    descriptionFallback: "Providers you have not connected yet. Click to connect.",
+    descriptionFallback: "Providers not yet configured. Click to connect.",
     icon: "add_circle",
   },
   {
     id: "reseller-api",
     key: "resellerApiTab",
-    fallback: "Reseller / BYOK",
+    fallback: "Reseller API Manage Providers",
     descriptionKey: "resellerApiTabDesc",
     descriptionFallback: "Control which providers are exposed publicly and manage BYOK.",
     icon: "storefront",
