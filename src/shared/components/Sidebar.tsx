@@ -691,12 +691,23 @@ export default function Sidebar({
     const link = renderNavLink(item, keyPrefix);
     const pinnedSection = keyPrefix === "pinned";
     if (!shouldRenderSitePicker({ collapsed, href: item.href, pinnedSection })) return link;
+    // The website picker hangs under the Providers entry; the Home tab moves
+    // right below it so the active site + the dashboard entry sit together.
+    const homeItem = {
+      id: "home",
+      href: "/home",
+      i18nKey: "home",
+      subtitleKey: "homeSubtitle",
+      icon: "home",
+      exact: true,
+    };
     return (
       <Fragment key={`${keyPrefix ?? "nav"}-site-picker`}>
         {link}
         <div className="px-1 pb-1 pt-0.5" data-testid="sidebar-site-picker">
           <SiteSwitcher variant="nav" />
         </div>
+        {renderNavLink(homeItem, keyPrefix)}
       </Fragment>
     );
   };
@@ -821,6 +832,7 @@ export default function Sidebar({
           )}
           {displaySections.map((section, idx) => {
             const sectionId = section.id as SidebarSectionId;
+            if (section.id === "top" && !collapsed && !isSearching) return null;
             const isExpanded =
               isSearching ||
               (sectionId === "pinned" ? !pinnedSectionCollapsed : expandedSections.has(sectionId));
