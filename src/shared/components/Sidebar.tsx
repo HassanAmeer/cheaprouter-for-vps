@@ -696,10 +696,10 @@ export default function Sidebar({
     const homeItem = {
       id: "home",
       href: "/home",
-      i18nKey: "home",
-      subtitleKey: "homeSubtitle",
       icon: "home",
       exact: true,
+      label: getSidebarLabel("home", "Home"),
+      subtitle: getSidebarLabel("homeSubtitle", "Dashboard overview") || undefined,
     };
     return (
       <Fragment key={`${keyPrefix ?? "nav"}-site-picker`}>
