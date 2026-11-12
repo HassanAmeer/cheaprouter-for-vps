@@ -2,6 +2,7 @@
 "use client";
 
 import {
+  Fragment,
   useState,
   useEffect,
   useRef,
@@ -13,6 +14,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import SiteSwitcher from "./SiteSwitcher";
 import { cn } from "@/shared/utils/cn";
+import { shouldRenderSitePicker } from "@/shared/utils/sidebarSitePicker";
 import { getActiveSidebarHref } from "@/shared/utils/sidebarRouteMatch";
 import { filterSidebarSectionsByQuery } from "@/shared/utils/sidebarSearch";
 import {
@@ -667,6 +669,26 @@ export default function Sidebar({
     );
   };
 
+  /**
+   * Renders a nav item plus, right under the Providers entry, the compact
+   * website picker. Keeping the picker inside the nav (instead of the brand
+   * row) puts "which website am I scoping" exactly where providers live, and
+   * keeps it out of the brand `<Link>` so its buttons never navigate to /home.
+   */
+  const renderNavItem = (item: any, keyPrefix?: string) => {
+    const link = renderNavLink(item, keyPrefix);
+    const pinnedSection = keyPrefix === "pinned";
+    if (!shouldRenderSitePicker({ collapsed, href: item.href, pinnedSection })) return link;
+    return (
+      <Fragment key={`${keyPrefix ?? "nav"}-site-picker`}>
+        {link}
+        <div className="px-1 pb-1 pt-0.5" data-testid="sidebar-site-picker">
+          <SiteSwitcher variant="nav" />
+        </div>
+      </Fragment>
+    );
+  };
+
   return (
     <>
       <aside
@@ -740,8 +762,10 @@ export default function Sidebar({
             )}
 
             {/* Site switcher — which of the operator's websites is active.
-              The whole sidebar scopes to the selected site (?site=<id>). */}
-            {!collapsed && <SiteSwitcher />}
+              The whole sidebar scopes to the selected site (?site=<id>).
+              Rendered inside the nav, directly under the Providers item (see
+              renderNavItem) — NOT inside this <Link>: a <button> nested in an
+              <a> hijacked the click and navigated to /home. */}
           </Link>
           {onClose && (
             <button
@@ -802,7 +826,7 @@ export default function Sidebar({
                     <div className="border-t border-black/5 dark:border-white/5 my-1.5" />
                   )}
                   {sectionItems.map((item: any) =>
-                    renderNavLink(item, section.id === "pinned" ? "pinned" : undefined)
+                    renderNavItem(item, section.id === "pinned" ? "pinned" : undefined)
                   )}
                 </div>
               );
@@ -813,7 +837,7 @@ export default function Sidebar({
               return (
                 <div key={section.id} className={cn("space-y-0.5", !isFirst && "mt-1")}>
                   {sectionItems.map((item: any) =>
-                    renderNavLink(item, section.id === "pinned" ? "pinned" : undefined)
+                    renderNavItem(item, section.id === "pinned" ? "pinned" : undefined)
                   )}
                 </div>
               );
@@ -886,12 +910,12 @@ export default function Sidebar({
                               </div>
                             )}
                             {child.items.map((item: any) =>
-                              renderNavLink(item, section.id === "pinned" ? "pinned" : undefined)
+                              renderNavItem(item, section.id === "pinned" ? "pinned" : undefined)
                             )}
                           </div>
                         );
                       }
-                      return renderNavLink(child, section.id === "pinned" ? "pinned" : undefined);
+                      return renderNavItem(child, section.id === "pinned" ? "pinned" : undefined);
                     })}
                   </div>
                 )}

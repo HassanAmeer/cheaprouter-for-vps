@@ -1,18 +1,23 @@
 "use client";
 
 /**
- * Sidebar site switcher.
+ * Sidebar website switcher.
  *
  * A "site" is one of the operator's frontends: a display name plus one or
  * more subdomains. The list lives in `config/sites.json` (see
  * `src/lib/sites/siteRegistry.ts`) — the dashboard reads it through
- * `/api/sites` and can add a site with the "+" button.
+ * `/api/sites` and can add a site from the picker.
+ *
+ * Placement: the `nav` variant (the default in `Sidebar`) renders a compact
+ * Cupertino-style pill directly under the Providers item, tight against it.
+ * The `header` variant is the older tall card that sat under the brand row.
  *
  * The switcher writes the active site into the URL (`?site=<id>`) so every
  * dashboard page can scope itself to it.
  */
 import { useCallback, useEffect, useRef, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { cn } from "@/shared/utils/cn";
 
 interface SiteItem {
   id: string;
@@ -20,7 +25,18 @@ interface SiteItem {
   subdomains: string[];
 }
 
-export function SiteSwitcher() {
+export interface SiteSwitcherProps {
+  /**
+   * `header` — the full-width card under the brand row.
+   * `nav` — a compact Cupertino-style pill rendered inside the sidebar nav,
+   *         directly under the Providers item (the operator's default).
+   */
+  variant?: "header" | "nav";
+}
+
+export function SiteSwitcher({ variant = "header" }: SiteSwitcherProps = {}) {
+  /** Compact pill (sidebar nav) instead of the tall card (sidebar header). */
+  const compact = variant === "nav";
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -118,7 +134,7 @@ export function SiteSwitcher() {
   const active = sites.find((site) => site.id === activeSiteId) ?? null;
 
   return (
-    <div ref={rootRef} className="relative mb-3">
+    <div ref={rootRef} className={compact ? "relative" : "relative mb-3"}>
       {showAdd ? (
         <div className="rounded-xl border border-border bg-bg-subtle p-3 space-y-2">
           <div className="text-[11px] font-semibold uppercase tracking-wider text-text-muted">
@@ -166,33 +182,69 @@ export function SiteSwitcher() {
           type="button"
           onClick={() => setOpen((prev) => !prev)}
           aria-expanded={open}
-          className="w-full flex items-center gap-2 rounded-xl border border-border bg-bg-subtle/60 px-2.5 py-2 text-left hover:bg-bg-subtle transition-colors"
+          aria-label="Website scope"
+          title={active ? active.name : "All sites (global)"}
+          className={cn(
+            "w-full flex items-center text-left transition-colors",
+            compact
+              ? "gap-1.5 rounded-[10px] bg-black/[0.045] px-2 py-[5px] hover:bg-black/[0.075] dark:bg-white/[0.07] dark:hover:bg-white/[0.12]"
+              : "gap-2 rounded-xl border border-border bg-bg-subtle/60 px-2.5 py-2 hover:bg-bg-subtle"
+          )}
         >
           <span
-            className={`size-2 shrink-0 rounded-full ${active ? "bg-emerald-500" : "bg-text-muted/40"}`}
+            className={cn(
+              "shrink-0 rounded-full",
+              compact ? "size-1.5" : "size-2",
+              active ? "bg-emerald-500" : "bg-text-muted/40"
+            )}
             aria-hidden="true"
           />
-          <span className="min-w-0 flex-1">
-            <span className="block truncate text-xs font-semibold text-text-main">
+          {compact ? (
+            <span className="min-w-0 flex-1 truncate text-[11px] font-medium text-text-main">
               {active ? active.name : "All sites (global)"}
             </span>
-            <span className="block truncate text-[10px] text-text-muted">
-              {active ? active.subdomains[0] || active.id : `${sites.length} site(s) configured`}
+          ) : (
+            <span className="min-w-0 flex-1">
+              <span className="block truncate text-xs font-semibold text-text-main">
+                {active ? active.name : "All sites (global)"}
+              </span>
+              <span className="block truncate text-[10px] text-text-muted">
+                {active ? active.subdomains[0] || active.id : `${sites.length} site(s) configured`}
+              </span>
             </span>
+          )}
+          <span
+            className={cn(
+              "material-symbols-outlined shrink-0 leading-none text-text-muted/70",
+              compact ? "text-[14px]" : "text-[16px] text-text-muted"
+            )}
+          >
+            {compact ? "unfold_more" : "expand_more"}
           </span>
-          <span className="material-symbols-outlined text-[16px] text-text-muted">expand_more</span>
         </button>
       )}
 
       {open && !showAdd && (
-        <div className="absolute left-0 right-0 top-full z-50 mt-1 rounded-xl border border-border bg-bg-primary shadow-xl overflow-hidden">
+        <div
+          className={cn(
+            "absolute left-0 right-0 top-full z-50 overflow-hidden rounded-xl border border-black/10 bg-bg-primary/95 shadow-[0_12px_32px_rgba(0,0,0,0.18)] backdrop-blur-xl dark:border-white/10",
+            compact ? "mt-0.5" : "mt-1"
+          )}
+        >
           <button
             type="button"
             onClick={() => selectSite("")}
-            className="w-full flex items-center gap-2 px-3 py-2 text-left text-xs text-text-muted hover:bg-bg-subtle"
+            className={cn(
+              "w-full flex items-center gap-2 text-left text-text-muted hover:bg-bg-subtle",
+              compact ? "px-2 py-1.5 text-[11px]" : "px-3 py-2 text-xs"
+            )}
           >
             <span
-              className={`size-2 rounded-full ${activeSiteId ? "bg-text-muted/40" : "bg-emerald-500"}`}
+              className={cn(
+                "rounded-full",
+                compact ? "size-1.5" : "size-2",
+                activeSiteId ? "bg-text-muted/40" : "bg-emerald-500"
+              )}
             />
             All sites (global)
           </button>
@@ -201,13 +253,25 @@ export function SiteSwitcher() {
               key={site.id}
               type="button"
               onClick={() => selectSite(site.id)}
-              className="w-full flex items-start gap-2 px-3 py-2 text-left hover:bg-bg-subtle"
+              className={cn(
+                "w-full flex items-start gap-2 text-left hover:bg-bg-subtle",
+                compact ? "px-2 py-1.5" : "px-3 py-2"
+              )}
             >
               <span
-                className={`mt-1 size-2 shrink-0 rounded-full ${site.id === activeSiteId ? "bg-emerald-500" : "bg-text-muted/40"}`}
+                className={cn(
+                  "shrink-0 rounded-full",
+                  compact ? "mt-1 size-1.5" : "mt-1 size-2",
+                  site.id === activeSiteId ? "bg-emerald-500" : "bg-text-muted/40"
+                )}
               />
               <span className="min-w-0">
-                <span className="block truncate text-xs font-medium text-text-main">
+                <span
+                  className={cn(
+                    "block truncate font-medium text-text-main",
+                    compact ? "text-[11px]" : "text-xs"
+                  )}
+                >
                   {site.name}
                 </span>
                 {site.subdomains.length > 0 && (
@@ -218,16 +282,26 @@ export function SiteSwitcher() {
               </span>
             </button>
           ))}
-          <div className="border-t border-border p-2">
+          <div className={cn("border-t border-border", compact ? "p-1.5" : "p-2")}>
             <button
               type="button"
               onClick={() => {
                 setShowAdd(true);
                 setOpen(false);
               }}
-              className="w-full flex items-center gap-2 rounded-lg px-2 py-1.5 text-xs font-medium text-text-main hover:bg-bg-subtle"
+              className={cn(
+                "w-full flex items-center gap-2 rounded-lg font-medium text-text-main hover:bg-bg-subtle",
+                compact ? "px-1.5 py-1 text-[11px]" : "px-2 py-1.5 text-xs"
+              )}
             >
-              <span className="material-symbols-outlined text-[15px] text-primary">add</span>
+              <span
+                className={cn(
+                  "material-symbols-outlined text-primary",
+                  compact ? "text-[14px]" : "text-[15px]"
+                )}
+              >
+                add
+              </span>
               Add site
             </button>
           </div>
