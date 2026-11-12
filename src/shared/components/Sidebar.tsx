@@ -53,7 +53,11 @@ import {
 } from "@/shared/constants/sidebarVisibility";
 
 const isE2EMode = process.env.NEXT_PUBLIC_CHEAPROUTE_E2E_MODE === "1";
-const DEFAULT_EXPANDED: SidebarSectionId = "cheap-proxy";
+// By default every sidebar section starts expanded (uncollapsed) on load/refresh.
+// Persisted user choices still win when a non-empty expanded set was saved.
+const DEFAULT_EXPANDED_SECTIONS: SidebarSectionId[] = SIDEBAR_SECTIONS.map(
+  (section) => section.id as SidebarSectionId
+);
 const EXPANDED_SECTIONS_KEY = "sidebar-expanded-sections";
 const PINNED_SECTIONS_KEY = "sidebar-pinned-sections";
 const PINNED_ITEMS_KEY = "sidebar-pinned-items";
@@ -154,7 +158,7 @@ export default function Sidebar({
   const [customAppName, setCustomAppName] = useState<string | null>(null);
   const [customLogo, setCustomLogo] = useState<string | null>(null);
   const [expandedSections, setExpandedSections] = useState<Set<SidebarSectionId>>(
-    new Set([DEFAULT_EXPANDED])
+    () => new Set(DEFAULT_EXPANDED_SECTIONS)
   );
   const [pinnedSections, setPinnedSections] = useState<Set<SidebarSectionId>>(new Set());
   const [pinnedItems, setPinnedItems] = useState<Set<string>>(new Set());
@@ -190,9 +194,17 @@ export default function Sidebar({
     getServerSnapshotNull
   );
   if (hydrated && !sidebarExpansionLoaded) {
-    const storedExpanded = parseStoredArray<SidebarSectionId[]>(storedExpandedRaw, [
-      DEFAULT_EXPANDED,
-    ]);
+    const storedExpanded =
+      storedExpandedRaw === null
+        ? null
+        : parseStoredArray<SidebarSectionId[]>(storedExpandedRaw, []);
+    // Default (and legacy "all collapsed") => all sections expanded so tabs
+    // are never collapsed on refresh/load unless the user explicitly saved a
+    // non-empty custom expansion set.
+    const baseExpanded =
+      storedExpanded === null || storedExpanded.length === 0
+        ? DEFAULT_EXPANDED_SECTIONS
+        : storedExpanded;
     const storedPinned: SidebarSectionId[] =
       storedPinnedRaw !== null
         ? parseStoredArray<SidebarSectionId[]>(storedPinnedRaw, [])
@@ -200,9 +212,9 @@ export default function Sidebar({
     const storedPinnedItems = parseStoredArray<string[]>(storedPinnedItemsRaw, []);
 
     const initialPinned = new Set<SidebarSectionId>(storedPinned);
-    const initialExpanded = hydrateExpandedSections(storedExpanded, initialPinned);
+    const initialExpanded = hydrateExpandedSections(baseExpanded, initialPinned);
 
-    setSkipInitialActiveExpansion(storedExpanded.length === 0);
+    setSkipInitialActiveExpansion(false);
     setExpandedSections(initialExpanded);
     setPinnedSections(initialPinned);
     setPinnedItems(new Set(storedPinnedItems));
