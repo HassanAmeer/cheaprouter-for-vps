@@ -11,7 +11,7 @@ import {
   type CSSProperties,
 } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import SiteSwitcher from "./SiteSwitcher";
 import { cn } from "@/shared/utils/cn";
 import { shouldRenderSitePicker } from "@/shared/utils/sidebarSitePicker";
@@ -136,6 +136,8 @@ export default function Sidebar({
     };
   };
   const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const activeSiteId = searchParams?.get("site") || "";
   const t = useTranslations("sidebar");
   const tc = useTranslations("common");
   const sidebarRef = useRef<HTMLElement>(null);
@@ -541,6 +543,16 @@ export default function Sidebar({
     const active = !item.external && activeHref === item.href;
     const isItemPinned = pinnedItems.has(item.id);
     const itemKey = keyPrefix ? `${keyPrefix}-${item.href}` : item.href;
+    const navHref = (() => {
+      if (item.external || !activeSiteId) return item.href;
+      try {
+        const url = new URL(item.href, "http://localhost");
+        url.searchParams.set("site", activeSiteId);
+        return `${url.pathname}${url.search}`;
+      } catch {
+        return `${item.href}?site=${encodeURIComponent(activeSiteId)}`;
+      }
+    })();
     const className = cn(
       "flex items-center gap-3 rounded-lg transition-all group",
       collapsed ? "justify-center px-2 py-2.5" : "px-3 py-1.5",
@@ -599,7 +611,7 @@ export default function Sidebar({
       return (
         <Link
           key={itemKey}
-          href={item.href}
+          href={navHref}
           prefetch={false}
           onClick={onClose}
           className={className}
@@ -668,7 +680,7 @@ export default function Sidebar({
     return (
       <div key={itemKey} className={containerClassName}>
         <Link
-          href={item.href}
+          href={navHref}
           prefetch={false}
           onClick={onClose}
           className={innerLinkClassName}

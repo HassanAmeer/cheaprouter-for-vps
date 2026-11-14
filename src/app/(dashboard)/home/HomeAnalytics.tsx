@@ -30,6 +30,8 @@ export type HomeProviderStat = {
 };
 
 type HomeAnalyticsProps = {
+  /** Website id to scope analytics to. Null/empty = all sites / global. */
+  siteId?: string | null;
   /** Per-provider connection rollup (id, total, connected, errors). */
   providerStats: HomeProviderStat[];
   /** Count of self-defined provider nodes (openai-compatible-* style). */
@@ -188,6 +190,7 @@ function computeRpmFromLogs(logs: any[], totalRequests?: number, rangeMinutes?: 
 }
 
 export default function HomeAnalytics({
+  siteId,
   providerStats,
   customProviders,
   providerNodes = [],
@@ -281,6 +284,9 @@ export default function HomeAnalytics({
       } else {
         params.set("range", range);
       }
+      if (siteId) {
+        params.set("site", siteId);
+      }
       const res = await fetch(`/api/usage/analytics?${params.toString()}`, { cache: "no-store" });
       if (res.ok) {
         const payload = await res.json();
@@ -332,7 +338,10 @@ export default function HomeAnalytics({
         }
 
         try {
-          const logsRes = await fetch("/api/usage/call-logs?limit=100&excludeTests=1", {
+          const logsUrl = siteId
+            ? `/api/usage/call-logs?limit=100&excludeTests=1&site=${encodeURIComponent(siteId)}`
+            : "/api/usage/call-logs?limit=100&excludeTests=1";
+          const logsRes = await fetch(logsUrl, {
             cache: "no-store",
           });
           if (logsRes.ok) {
@@ -354,7 +363,7 @@ export default function HomeAnalytics({
     } finally {
       setAnalyticsLoading(false);
     }
-  }, []);
+  }, [siteId]);
 
   // Initial metadata loading (Analytics, Keys, Curation, Combos, Users, Providers)
   useEffect(() => {
@@ -362,6 +371,25 @@ export default function HomeAnalytics({
 
     async function initialLoad() {
       try {
+        const analyticsUrl = siteId
+          ? `/api/usage/analytics?range=30d&site=${encodeURIComponent(siteId)}`
+          : "/api/usage/analytics?range=30d";
+        const keysUrl = siteId
+          ? `/api/keys?site=${encodeURIComponent(siteId)}`
+          : "/api/keys";
+        const curationUrl = siteId
+          ? `/api/v1/models/curation?site=${encodeURIComponent(siteId)}`
+          : "/api/v1/models/curation";
+        const combosUrl = siteId
+          ? `/api/combos?site=${encodeURIComponent(siteId)}`
+          : "/api/combos";
+        const usersUrl = siteId
+          ? `/api/v1/reseller/users?site=${encodeURIComponent(siteId)}`
+          : "/api/v1/reseller/users";
+        const callLogsUrl = siteId
+          ? `/api/usage/call-logs?limit=100&excludeTests=1&site=${encodeURIComponent(siteId)}`
+          : "/api/usage/call-logs?limit=100&excludeTests=1";
+
         const [
           analyticsRes,
           keysRes,
@@ -372,17 +400,17 @@ export default function HomeAnalytics({
           limitsRes,
           callLogsRes,
         ] = await Promise.all([
-          fetch("/api/usage/analytics?range=30d", {
+          fetch(analyticsUrl, {
             signal: controller.signal,
             cache: "no-store",
           }).catch(() => null),
-          fetch("/api/keys", { signal: controller.signal, cache: "no-store" }).catch(() => null),
-          fetch("/api/v1/models/curation", {
+          fetch(keysUrl, { signal: controller.signal, cache: "no-store" }).catch(() => null),
+          fetch(curationUrl, {
             signal: controller.signal,
             cache: "no-store",
           }).catch(() => null),
-          fetch("/api/combos", { signal: controller.signal, cache: "no-store" }).catch(() => null),
-          fetch("/api/v1/reseller/users", {
+          fetch(combosUrl, { signal: controller.signal, cache: "no-store" }).catch(() => null),
+          fetch(usersUrl, {
             signal: controller.signal,
             cache: "no-store",
           }).catch(() => null),
@@ -390,7 +418,7 @@ export default function HomeAnalytics({
             () => null
           ),
           fetch("/api/limits", { signal: controller.signal, cache: "no-store" }).catch(() => null),
-          fetch("/api/usage/call-logs?limit=100&excludeTests=1", {
+          fetch(callLogsUrl, {
             signal: controller.signal,
             cache: "no-store",
           }).catch(() => null),
@@ -522,14 +550,17 @@ export default function HomeAnalytics({
 
     initialLoad();
     return () => controller.abort();
-  }, []);
+  }, [siteId]);
 
   // Periodic live RPM refresh (every 12 seconds when page is visible)
   useEffect(() => {
     const id = setInterval(async () => {
       if (typeof document !== "undefined" && document.hidden) return;
       try {
-        const res = await fetch("/api/usage/call-logs?limit=100&excludeTests=1", {
+        const logsUrl = siteId
+          ? `/api/usage/call-logs?limit=100&excludeTests=1&site=${encodeURIComponent(siteId)}`
+          : "/api/usage/call-logs?limit=100&excludeTests=1";
+        const res = await fetch(logsUrl, {
           cache: "no-store",
         });
         if (res.ok) {
@@ -549,7 +580,7 @@ export default function HomeAnalytics({
       }
     }, 12000);
     return () => clearInterval(id);
-  }, [summary?.totalRequests]);
+  }, [summary?.totalRequests, siteId]);
 
   /** Effective connection list from props or API payload */
   const effectiveConnections = useMemo(() => {
@@ -743,11 +774,19 @@ export default function HomeAnalytics({
       {/* ── Summary Header ────────────────────────────────────────────── */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
         <div>
-          <h2 className="text-base sm:text-lg font-bold text-text-main flex items-center gap-1.5">
+          <h2 className="text-base sm:text-lg font-bold text-text-main flex items-center gap-1.5 flex-wrap">
             <span className="material-symbols-outlined text-[18px] text-primary">insights</span>
             {t("analyticsTitle")}
+            {siteId && (
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full border border-primary/30 bg-primary/10 text-primary text-[11px] font-semibold tracking-normal normal-case">
+                <span className="material-symbols-outlined text-[13px]">language</span>
+                {siteId}
+              </span>
+            )}
           </h2>
-          <p className="text-xs text-text-muted">{t("analyticsSubtitle")}</p>
+          <p className="text-xs text-text-muted">
+            {siteId ? `Analytics scoped to ${siteId}` : t("analyticsSubtitle")}
+          </p>
         </div>
         <div className="flex items-center gap-2 self-end sm:self-auto shrink-0">
           {/* Scroll arrow navigation buttons for KPI cards */}
@@ -797,7 +836,7 @@ export default function HomeAnalytics({
             </span>
           </button>
           <Link
-            href="/dashboard/usage"
+            href={siteId ? `/dashboard/usage?site=${encodeURIComponent(siteId)}` : "/dashboard/usage"}
             className="text-xs text-text-muted hover:text-primary transition-colors shrink-0"
           >
             {t("analyticsViewAll")}

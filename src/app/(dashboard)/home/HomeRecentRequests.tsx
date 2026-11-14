@@ -86,7 +86,13 @@ const STATE_DOT: Record<RequestState, string> = {
   ok: "bg-green-500",
 };
 
-export default function HomeRecentRequests({ enabled = true }: { enabled?: boolean }) {
+export default function HomeRecentRequests({
+  enabled = true,
+  siteId,
+}: {
+  enabled?: boolean;
+  siteId?: string;
+}) {
   const t = useTranslations("home");
   const [rows, setRows] = useState<CallLogRow[]>([]);
   const [loaded, setLoaded] = useState(false);
@@ -101,7 +107,10 @@ export default function HomeRecentRequests({ enabled = true }: { enabled?: boole
 
   const load = useCallback(async (signal: AbortSignal) => {
     try {
-      const res = await fetch(`/api/usage/call-logs?limit=${FETCH_LIMIT}&excludeTests=1`, {
+      const url = siteId
+        ? `/api/usage/call-logs?limit=${FETCH_LIMIT}&excludeTests=1&site=${encodeURIComponent(siteId)}`
+        : `/api/usage/call-logs?limit=${FETCH_LIMIT}&excludeTests=1`;
+      const res = await fetch(url, {
         cache: "no-store",
         signal,
       });
@@ -117,7 +126,7 @@ export default function HomeRecentRequests({ enabled = true }: { enabled?: boole
       const isAbort = error instanceof DOMException && error.name === "AbortError";
       if (!isAbort) console.error("Failed to load recent requests:", error);
     }
-  }, []);
+  }, [siteId]);
 
   useEffect(() => {
     if (!enabled) return;

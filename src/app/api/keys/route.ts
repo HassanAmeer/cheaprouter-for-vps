@@ -36,10 +36,15 @@ export async function GET(request: Request) {
   if (authError) return authError;
 
   try {
+    const url = new URL(request.url);
+    const siteId = url.searchParams.get("site");
     const { limit, offset } = parsePagination(request);
     const dbLimit = limit ?? undefined;
     const total = getApiKeysCount();
-    const keys = await getApiKeys(dbLimit, offset);
+    let keys = await getApiKeys(dbLimit, offset);
+    if (siteId) {
+      keys = keys.filter((k) => k.siteId === siteId);
+    }
 
     const resellerMap = new Map<string, { userId: string; userName: string | null }>();
     try {
@@ -68,7 +73,7 @@ export async function GET(request: Request) {
 
     return NextResponse.json({
       keys: maskedKeys,
-      total,
+      total: siteId ? maskedKeys.length : total,
       allowKeyReveal: isApiKeyRevealEnabled(),
     });
   } catch (error) {
@@ -94,6 +99,8 @@ export async function POST(request) {
       name,
       userId,
       userName,
+      siteId: inputSiteId,
+      site: inputSite,
       modelAccessMode,
       allowedModels,
       allowedCombos,
@@ -113,6 +120,7 @@ export async function POST(request) {
     // Always get machineId from server
     const machineId = await getConsistentMachineId();
     const normalizedScopes = normalizeSelfServiceScopesForCreate(scopes);
+    const keySiteId = inputSiteId || inputSite || null;
     const apiKey = await createApiKey(name, machineId, normalizedScopes, {
       modelAccessMode,
       allowedModels,
@@ -120,6 +128,16 @@ export async function POST(request) {
       allowedConnections,
       expiresAt,
     });
+    if (keySiteId) {
+      try {
+        const { getDbInstance } = await import("@/lib/db/core");
+        const db = getDbInstance();
+        db.prepare("UPDATE api_keys SET site_id = ? WHERE id = ?").run(keySiteId, apiKey.id);
+        (apiKey as any).siteId = keySiteId;
+      } catch (err) {
+        console.warn("Failed to set site_id on api_key:", err);
+      }
+    }
     if (
       noLog === true ||
       allowUsageCommand === true ||

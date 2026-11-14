@@ -93,8 +93,17 @@ export function SiteSwitcher({ variant = "header" }: SiteSwitcherProps = {}) {
 
   const selectSite = (siteId: string) => {
     const params = new URLSearchParams(searchParams.toString());
-    if (siteId) params.set("site", siteId);
-    else params.delete("site");
+    if (siteId) {
+      params.set("site", siteId);
+      try {
+        localStorage.setItem("cheaproute:active-site", siteId);
+      } catch {}
+    } else {
+      params.delete("site");
+      try {
+        localStorage.removeItem("cheaproute:active-site");
+      } catch {}
+    }
     const query = params.toString();
     router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
     setOpen(false);

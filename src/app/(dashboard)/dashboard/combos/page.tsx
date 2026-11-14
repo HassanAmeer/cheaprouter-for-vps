@@ -788,6 +788,7 @@ function CombosPageContent() {
   const t = useTranslations("combos");
   const router = useRouter();
   const searchParams = useSearchParams();
+  const activeSiteId = searchParams.get("site") || "";
   const [combos, setCombos] = useState([]);
   const [loading, setLoading] = useState(true);
   const [editingCombo, setEditingCombo] = useState(null);
@@ -842,10 +843,13 @@ function CombosPageContent() {
     setSelectedIntelligentComboId(null);
   }
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     try {
+      const combosUrl = activeSiteId
+        ? `/api/combos?site=${encodeURIComponent(activeSiteId)}`
+        : "/api/combos";
       const [combosRes, providersRes, metricsRes, nodesRes] = await Promise.all([
-        fetch("/api/combos"),
+        fetch(combosUrl),
         fetch("/api/providers"),
         fetch("/api/combos/metrics"),
         fetch("/api/provider-nodes"),
@@ -875,7 +879,7 @@ function CombosPageContent() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [activeSiteId]);
 
   // Mount load — placed after fetchData so the effect does not read the binding in its
   // TDZ (react-hooks/immutability); the call sits behind an async boundary
@@ -884,6 +888,9 @@ function CombosPageContent() {
     void (async () => {
       await fetchData();
     })();
+  }, [fetchData]);
+
+  useEffect(() => {
     fetch("/api/settings")
       .then((r) => (r.ok ? r.json() : null))
       .then((settings) => {
@@ -900,10 +907,14 @@ function CombosPageContent() {
 
   const handleCreate = async (data) => {
     try {
+      const payload = {
+        ...data,
+        ...(activeSiteId ? { siteId: activeSiteId } : {}),
+      };
       const res = await fetch("/api/combos", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
+        body: JSON.stringify(payload),
       });
       if (res.ok) {
         await fetchData();

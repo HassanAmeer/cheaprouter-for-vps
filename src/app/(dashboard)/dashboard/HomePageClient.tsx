@@ -4,7 +4,7 @@ import { useTranslations } from "next-intl";
 
 import { useState, useEffect, useMemo, useCallback, useRef, useSyncExternalStore } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Card, ShimmerPageLoader, Button, Modal } from "@/shared/components";
 import { AI_PROVIDERS, NOAUTH_PROVIDERS, OAUTH_PROVIDERS } from "@/shared/constants/providers";
 import {
@@ -108,6 +108,8 @@ function emptySubscribe() {
 
 export default function HomePageClient({ machineId: _machineId }: HomePageClientProps) {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const activeSiteId = searchParams.get("site") || "";
   const isElectron = useIsElectron();
   const { openExternal } = useOpenExternal();
   const t = useTranslations("home");
@@ -250,12 +252,19 @@ export default function HomePageClient({ machineId: _machineId }: HomePageClient
 
   const fetchData = useCallback(async () => {
     try {
+      const curationUrl = activeSiteId
+        ? `/api/v1/models/curation?site=${encodeURIComponent(activeSiteId)}`
+        : "/api/v1/models/curation";
+      const combosUrl = activeSiteId
+        ? `/api/combos?site=${encodeURIComponent(activeSiteId)}`
+        : "/api/combos";
+
       const [provRes, modelsRes, versionRes, curationRes, combosRes] = await Promise.all([
         fetch("/api/providers"),
         fetch("/api/models"),
         fetch("/api/system/version"),
-        fetch("/api/v1/models/curation").catch(() => null),
-        fetch("/api/combos").catch(() => null),
+        fetch(curationUrl).catch(() => null),
+        fetch(combosUrl).catch(() => null),
       ]);
       if (provRes.ok) {
         const provData = await provRes.json();
@@ -287,7 +296,7 @@ export default function HomePageClient({ machineId: _machineId }: HomePageClient
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [activeSiteId]);
 
   useEffect(() => {
     void (async () => {
@@ -1713,6 +1722,7 @@ export default function HomePageClient({ machineId: _machineId }: HomePageClient
 
       {/* Usage analytics: provider/token/key roll-up + topology + charts */}
       <HomeAnalytics
+        siteId={activeSiteId}
         providerStats={providerStats}
         customProviders={customProvidersCount}
         providerNodes={providerNodes}
@@ -1773,7 +1783,7 @@ export default function HomePageClient({ machineId: _machineId }: HomePageClient
                     errorProvider={errorProvider}
                     enabled={showProviderTopologyOnHome && isTopologyExpanded}
                   />
-                  <HomeRecentRequests enabled={showProviderTopologyOnHome && isTopologyExpanded} />
+                  <HomeRecentRequests enabled={showProviderTopologyOnHome && isTopologyExpanded} siteId={activeSiteId} />
                 </div>
               </div>
             )

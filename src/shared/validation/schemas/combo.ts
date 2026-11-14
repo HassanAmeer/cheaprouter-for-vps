@@ -375,6 +375,8 @@ export const universalHandoffSchema = z
 export const createComboSchema = z
   .object({
     name: comboNameSchema,
+    siteId: z.string().trim().max(120).optional().nullable(),
+    site: z.string().trim().max(120).optional().nullable(),
     description: z.string().max(2000).optional(),
     // Optional label advertised as `display_name` in /v1/models. Lets a combo
     // carry a machine-oriented name while clients show something readable.

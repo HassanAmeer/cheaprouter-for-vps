@@ -31,14 +31,30 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: validation.error }, { status: 400 });
     }
 
+    const siteId = searchParams.get("site");
     const range = validation.data;
     const total = getCombosCount();
     const rawCombos = await getCombos(range.limit, range.offset);
-    const combos = rawCombos.map((combo) => ({
+    let finalCombos = rawCombos;
+    if (siteId) {
+      try {
+        const { listSiteRoutes } = await import("@/lib/db/sites");
+        const siteRoutes = new Set(listSiteRoutes(siteId).map((row) => row.routeId));
+        finalCombos = rawCombos.filter((c) => {
+          const cSiteId = (c.siteId || c.site_id) as string | undefined;
+          if (cSiteId && cSiteId === siteId) return true;
+          if (siteRoutes.has(String(c.id || "")) || siteRoutes.has(String(c.name || ""))) return true;
+          return false;
+        });
+      } catch (err) {
+        console.warn("Failed to filter combos by site:", err);
+      }
+    }
+    const combos = finalCombos.map((combo) => ({
       ...combo,
       computed_context_length: computeComboContextLength(combo, rawCombos),
     }));
-    return NextResponse.json({ combos, total });
+    return NextResponse.json({ combos, total: siteId ? finalCombos.length : total });
   } catch (error) {
     console.log("Error fetching combos:", error);
     return NextResponse.json({ error: "Failed to fetch combos" }, { status: 500 });
@@ -115,7 +131,22 @@ export async function POST(request) {
       return NextResponse.json({ error: dagError.message }, { status: 400 });
     }
 
+    const requestSiteId = (validation.data.siteId || validation.data.site || new URL(request.url).searchParams.get("site") || "").trim();
+    if (requestSiteId) {
+      (comboInput as any).siteId = requestSiteId;
+    }
     const combo = await createCombo(comboInput);
+    if (requestSiteId && combo?.id) {
+      try {
+        const { listSiteRoutes, setSiteRoutes } = await import("@/lib/db/sites");
+        const existing = listSiteRoutes(requestSiteId).map((r) => r.routeId);
+        if (!existing.includes(String(combo.id))) {
+          setSiteRoutes(requestSiteId, [...existing, String(combo.id)]);
+        }
+      } catch (err) {
+        console.warn("Failed to associate combo with site_routes:", err);
+      }
+    }
 
     // Auto sync to Cloud if enabled
     await syncToCloudIfEnabled();

@@ -17,6 +17,7 @@
  */
 
 import { Fragment, useCallback, useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { Card, ShimmerPageLoader } from "@/shared/components";
 import { isCatalogFreeModel } from "@/shared/utils/freeModels";
 import { getPricingForModel } from "@/shared/constants/pricing";
@@ -197,12 +198,13 @@ function matchesSyncedModelFilter(
   return true;
 }
 
-async function fetchCurationPayload(): Promise<{
+async function fetchCurationPayload(siteId?: string): Promise<{
   providerIds: string[];
   modelsByProvider: Record<string, SyncedModel[]>;
   customizations: Customization[];
 }> {
-  const res = await fetch("/api/v1/models/curation");
+  const url = siteId ? `/api/v1/models/curation?site=${encodeURIComponent(siteId)}` : "/api/v1/models/curation";
+  const res = await fetch(url);
   if (!res.ok) throw new Error(`Curation API returned ${res.status}`);
   const data = await res.json();
   return {
@@ -212,9 +214,10 @@ async function fetchCurationPayload(): Promise<{
   };
 }
 
-async function fetchCombosPayload(): Promise<ManagedCombo[]> {
+async function fetchCombosPayload(siteId?: string): Promise<ManagedCombo[]> {
   try {
-    const res = await fetch("/api/combos");
+    const url = siteId ? `/api/combos?site=${encodeURIComponent(siteId)}` : "/api/combos";
+    const res = await fetch(url);
     if (!res.ok) return [];
     const data = await res.json().catch(() => null);
     return Array.isArray(data?.combos) ? data.combos : [];
@@ -237,6 +240,8 @@ async function postCuration(payload: Record<string, unknown>): Promise<Customiza
 const SELECTED_CAPS_STORAGE_KEY = "cheaproute.modelSelectedCapabilities.v1";
 
 export default function ManageModelsPanel() {
+  const searchParams = useSearchParams();
+  const activeSiteId = searchParams?.get("site") || "";
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [providerIds, setProviderIds] = useState<string[]>([]);
@@ -484,8 +489,8 @@ export default function ManageModelsPanel() {
       }
       try {
         const [payload, loadedCombos] = await Promise.all([
-          fetchCurationPayload(),
-          fetchCombosPayload(),
+          fetchCurationPayload(activeSiteId),
+          fetchCombosPayload(activeSiteId),
         ]);
         applyPayload(payload);
         setCombos(loadedCombos);
@@ -497,7 +502,7 @@ export default function ManageModelsPanel() {
         }
       }
     },
-    [applyPayload]
+    [applyPayload, activeSiteId]
   );
 
   // Initial load: async work runs after the await inside the effect, so no
@@ -507,8 +512,8 @@ export default function ManageModelsPanel() {
     const run = async () => {
       try {
         const [payload, loadedCombos] = await Promise.all([
-          fetchCurationPayload(),
-          fetchCombosPayload(),
+          fetchCurationPayload(activeSiteId),
+          fetchCombosPayload(activeSiteId),
         ]);
         if (cancelled) return;
         applyPayload(payload);
@@ -525,7 +530,7 @@ export default function ManageModelsPanel() {
     return () => {
       cancelled = true;
     };
-  }, [applyPayload]);
+  }, [applyPayload, activeSiteId]);
 
   const customizationByModel = useMemo(() => {
     const map = new Map<string, Customization>();
@@ -1315,8 +1320,14 @@ export default function ManageModelsPanel() {
             <span className="material-symbols-outlined text-[18px]">tune</span>
           </div>
           <div className="min-w-0">
-            <h1 className="text-lg font-bold tracking-tight text-text-main truncate">
+            <h1 className="text-lg font-bold tracking-tight text-text-main truncate flex items-center gap-2">
               Pipe Models
+              {activeSiteId && (
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full border border-primary/30 bg-primary/10 text-primary text-xs font-semibold normal-case">
+                  <span className="material-symbols-outlined text-[14px]">language</span>
+                  {activeSiteId}
+                </span>
+              )}
             </h1>
             <p className="text-xs text-text-muted">
               Rename the alias models name, ID, and context limits for selected models only. Empty

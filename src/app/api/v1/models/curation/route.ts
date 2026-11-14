@@ -69,6 +69,7 @@ export async function GET(request: Request) {
   try {
     const url = new URL(request.url);
     const providerId = url.searchParams.get("providerId");
+    const siteId = url.searchParams.get("site");
 
     let customizations;
     if (providerId) {
@@ -220,6 +221,23 @@ export async function GET(request: Request) {
       })
       .map((c: any) => (typeof c.provider === "string" ? c.provider : ""))
       .filter(Boolean);
+
+    if (siteId) {
+      try {
+        const { getSiteProviderScope } = await import("@/lib/sites/siteScope");
+        const scope = getSiteProviderScope(siteId);
+        if (!scope.inheritsGlobal) {
+          customizations = customizations.filter((c) => {
+            if (!scope.providers.has(c.providerId)) return false;
+            const allowed = scope.modelsByProvider.get(c.providerId);
+            if (!allowed || allowed.size === 0) return true;
+            return allowed.has(c.originalModelId);
+          });
+        }
+      } catch (err) {
+        console.warn("Failed to scope curation by site:", err);
+      }
+    }
 
     return NextResponse.json({
       success: true,
