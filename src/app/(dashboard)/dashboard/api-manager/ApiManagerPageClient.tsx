@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo, useCallback } from "react";
+import { useSearchParams } from "next/navigation";
 import { Button, Input, Modal, ShimmerPageLoader } from "@/shared/components";
 import { useCopyToClipboard } from "@/shared/hooks/useCopyToClipboard";
 import { matchesSearch } from "@/shared/utils/turkishText";
@@ -20,6 +21,9 @@ interface ApiKeyItem {
 type StatusFilter = "all" | "active" | "paused";
 
 export default function ApiManagerPageClient() {
+  const searchParams = useSearchParams();
+  const activeSiteId = searchParams?.get("site") || "";
+
   const [keys, setKeys] = useState<ApiKeyItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
@@ -49,7 +53,10 @@ export default function ApiManagerPageClient() {
 
   // Fetch API keys
   const fetchKeys = useCallback(() => {
-    fetch("/api/keys")
+    const keysUrl = activeSiteId
+      ? `/api/keys?site=${encodeURIComponent(activeSiteId)}`
+      : "/api/keys";
+    fetch(keysUrl)
       .then((res) => {
         if (!res.ok) throw new Error(`Failed to fetch keys: ${res.status}`);
         return res.json();
@@ -63,7 +70,7 @@ export default function ApiManagerPageClient() {
       .finally(() => {
         setLoading(false);
       });
-  }, []);
+  }, [activeSiteId]);
 
   useEffect(() => {
     fetchKeys();
@@ -168,6 +175,7 @@ export default function ApiManagerPageClient() {
           userName: finalUserName,
           userId: finalUserId,
           scopes: ["self:usage"],
+          siteId: activeSiteId || undefined,
         }),
       });
 
@@ -267,6 +275,12 @@ export default function ApiManagerPageClient() {
             <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300 border border-zinc-200/80 dark:border-zinc-700/80">
               {counts.all} {counts.all === 1 ? "key" : "keys"}
             </span>
+            {activeSiteId && (
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                Site: {activeSiteId}
+              </span>
+            )}
           </div>
           <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
             Manage your generated API keys, view owners, monitor status, and toggle pause/resume.
@@ -552,6 +566,13 @@ export default function ApiManagerPageClient() {
           title="Generate New API Key"
         >
           <form onSubmit={handleCreateKey} className="space-y-4">
+            {activeSiteId && (
+              <div className="text-xs text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-3 py-2 rounded-xl flex items-center gap-2">
+                <span className="material-symbols-outlined text-[16px]">domain</span>
+                Key will be scoped to site: <span className="font-semibold">{activeSiteId}</span>
+              </div>
+            )}
+
             <div>
               <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-1">
                 User Name <span className="text-red-500">*</span>

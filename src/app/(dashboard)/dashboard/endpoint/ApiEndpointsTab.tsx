@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo, useCallback } from "react";
+import { useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { Card } from "@/shared/components";
 import { useDisplayBaseUrl } from "@/shared/hooks";
@@ -60,6 +61,8 @@ const METHOD_COLORS: Record<string, string> = {
 export default function ApiEndpointsTab() {
   const t = useTranslations("endpoint");
   const baseUrl = useDisplayBaseUrl();
+  const searchParams = useSearchParams();
+  const activeSiteId = searchParams?.get("site") || "";
 
   function EndpointBadges({ ep }: { ep: Endpoint }) {
     return (
@@ -155,7 +158,8 @@ export default function ApiEndpointsTab() {
   // keys; the selected key is revealed only when sending a Try It request.
   useEffect(() => {
     let cancelled = false;
-    fetch("/api/keys?limit=100", { credentials: "same-origin" })
+    const keysUrl = activeSiteId ? `/api/keys?limit=100&site=${encodeURIComponent(activeSiteId)}` : "/api/keys?limit=100";
+    fetch(keysUrl, { credentials: "same-origin" })
       .then(async (res) => {
         if (!res.ok) throw new Error(t("apiKeysLoadFailed", { status: res.status }));
         return res.json();
@@ -183,7 +187,7 @@ export default function ApiEndpointsTab() {
     return () => {
       cancelled = true;
     };
-  }, [t]);
+  }, [activeSiteId, t]);
 
   // Counts across all 3 primary categories (API, Reseller API, Router Panel)
   const categoryCounts = useMemo(() => {
