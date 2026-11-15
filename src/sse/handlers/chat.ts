@@ -154,6 +154,11 @@ import { RequestTelemetry, recordTelemetry } from "../../shared/utils/requestTel
 import { generateRequestId } from "../../shared/utils/requestId";
 import "../../lib/compliance/index";
 import { enforceApiKeyPolicy } from "../../shared/utils/apiKeyPolicy";
+import {
+  resolveRequestSiteContext,
+  siteModelRejection,
+  siteRouteRejection,
+} from "@/lib/sites/siteRequestContext";
 import { rejectIfMeteredBudgetExceeded } from "@/lib/usage/meteredBudgetPolicy";
 import { hasProviderQuotaBypassScope } from "../../shared/constants/apiKeyPolicyScopes";
 import { isMicrosoftDesignerWebProviderRetiredError } from "../../shared/constants/designerWebRetirement";
@@ -1131,6 +1136,9 @@ async function handleChatImplementation(
   if (virtualCombo instanceof Response) return virtualCombo;
   combo = virtualCombo;
   if (combo) {
+    const context = await resolveRequestSiteContext(request);
+    const siteRejection = siteRouteRejection(context.siteId, combo);
+    if (siteRejection) return siteRejection;
     if (reasoningDecision) {
       const filtered = filterReasoningCombo(combo, reasoningDecision);
       if (filtered instanceof Response) return filtered;
@@ -1705,6 +1713,9 @@ async function handleSingleModelChat(
     model,
     modelStr,
   });
+  const siteContext = await resolveRequestSiteContext(request);
+  const siteRejection = siteModelRejection(siteContext.siteId, provider, model);
+  if (siteRejection) return siteRejection;
   const modelPolicyRejection = await resolvedModelGate([`${provider}/${model}`]);
   if (modelPolicyRejection) return modelPolicyRejection;
   const forceLiveComboTest = runtimeOptions.forceLiveComboTest === true;

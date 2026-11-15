@@ -1,4 +1,6 @@
 import { handleEmbedding } from "@cheaproute/open-sse/handlers/embeddings.ts";
+import { siteModelRejection, siteRouteRejection } from "@/lib/sites/siteRequestContext";
+import { getCallLogSiteId } from "@/lib/usage/callLogApiKeyContext";
 import {
   parseEmbeddingModel,
   getEmbeddingProvider,
@@ -126,6 +128,8 @@ export async function createEmbeddingResponse(
         // every upstream embedding call within this combo receives the same
         // dimensions override. The client's own dimensions value takes precedence
         // if already set. Ported from decolua/9router#1530.
+        const siteRejection = siteRouteRejection(getCallLogSiteId(), combo);
+        if (siteRejection) return siteRejection;
         const comboRecord = combo as Record<string, unknown>;
         const comboDimensions =
           comboRecord.dimensions !== undefined && comboRecord.dimensions !== null
@@ -210,6 +214,8 @@ export async function createEmbeddingResponse(
   }
 
   let credentials: ProviderCredentialsResult | null = null;
+  const siteRejection = siteModelRejection(getCallLogSiteId(), provider, resolvedModel);
+  if (siteRejection) return siteRejection;
   let providerConfig: EmbeddingProvider | null =
     options.resolvedProvider ||
     dynamicProviders.find((dp) => dp.id === provider) ||

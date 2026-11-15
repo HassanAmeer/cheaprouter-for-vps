@@ -147,4 +147,135 @@ describe("site scope", () => {
     assert.equal(filterCatalogEntriesForSite(null, entries).length, 3);
     assert.equal(filterCatalogEntriesForSite("site-b", entries).length, 3);
   });
+
+  it("does not reopen the global pool when every configured provider is disabled", () => {
+    setSiteProviders("site-a", [{ provider: "openai", isEnabled: false }]);
+    invalidateSiteScopeCache();
+    assert.equal(isProviderAllowedForSite("site-a", "groq"), false);
+    assert.equal(isProviderAllowedForSite("site-a", "openai"), false);
+  });
+
+  it("retains combo catalog entries while filtering direct provider models", () => {
+    setSiteProviders("site-a", [{ provider: "openai" }]);
+    invalidateSiteScopeCache();
+    const entries = [
+      { id: "my-combo", owned_by: "combo" },
+      { id: "auto/best", owned_by: "combo" },
+      { id: "groq/model", owned_by: "groq" },
+    ];
+    assert.deepEqual(
+      filterCatalogEntriesForSite("site-a", entries).map((e) => e.id),
+      ["my-combo", "auto/best"]
+    );
+  });
+
+  it("enforces canonical provider model allowlists for aliases and nested model ids", async () => {
+    const { isModelAllowedForSite } = await import("../../../src/lib/sites/siteScope.ts");
+    setSiteProviders("site-a", [{ provider: "openai", models: ["gpt-4o"] }]);
+    invalidateSiteScopeCache();
+    assert.equal(isModelAllowedForSite("site-a", "openai", "gpt-4o"), true);
+    assert.equal(isModelAllowedForSite("site-a", "openai", "gpt-4o-mini"), false);
+    assert.equal(isModelAllowedForSite("site-a", "groq", "gpt-4o"), false);
+  });
+
+  it("filters keys before pagination and reports the full site total", async () => {
+    const { createApiKey, getApiKeys, getApiKeysCount } =
+      await import("../../../src/lib/db/apiKeys.ts");
+    await createApiKey("other", "test-machine", [], { siteId: "site-b" });
+    await createApiKey("first", "test-machine", [], { siteId: "site-a" });
+    await createApiKey("second", "test-machine", [], { siteId: "site-a" });
+    assert.equal(getApiKeysCount("site-a"), 2);
+    const page = await getApiKeys(1, 1, "site-a");
+    assert.equal(page.length, 1);
+    assert.equal(page[0].siteId, "site-a");
+  });
+
+  it("denies disallowed resolved targets with a sanitized 403", async () => {
+    const { siteModelRejection } = await import("../../../src/lib/sites/siteRequestContext.ts");
+    setSiteProviders("site-a", [{ provider: "openai", models: ["gpt-4o"] }]);
+    invalidateSiteScopeCache();
+    assert.equal(siteModelRejection("site-a", "openai", "gpt-4o"), null);
+    const rejection = siteModelRejection("site-a", "groq", "model");
+    assert.equal(rejection?.status, 403);
+    assert.equal((await rejection?.json()).error.message.includes("at /"), false);
+  });
+
+  it("does not let a host or override header escape a key's assigned site", () => {
+    assert.equal(
+      resolveSiteIdForRequest({
+        host: "site-b.myapp.com",
+        headers: headersOf({ "x-cheaproute-site": "site-b" }),
+        apiKeyInfo: { siteId: "site-a" },
+      }),
+      "site-a"
+    );
+  });
+
+  it("binds site attribution through async work for non-chat handlers", async () => {
+    const { withRequestSiteContext } = await import("../../../src/lib/sites/siteRequestContext.ts");
+    const { getCallLogSiteId } = await import("../../../src/lib/usage/callLogApiKeyContext.ts");
+    const handler = withRequestSiteContext(async () => {
+      await Promise.resolve();
+      return Response.json({ site: getCallLogSiteId() });
+    });
+    const response = await handler(
+      new Request("http://site-a.myapp.com/v1/embeddings", {
+        headers: { host: "site-a.myapp.com" },
+      })
+    );
+    assert.equal((await response.json()).site, "site-a");
+    assert.equal(getCallLogSiteId(), null);
+  });
+
+  it("respects combo route assignments without hiding inherited global routes", async () => {
+    const { siteRouteRejection } = await import("../../../src/lib/sites/siteRequestContext.ts");
+    const { setSiteRoutes } = await import("../../../src/lib/db/sites.ts");
+    setSiteRoutes("site-a", ["combo-id"]);
+    assert.equal(siteRouteRejection("site-a", { id: "combo-id", name: "allowed" }), null);
+    assert.equal(siteRouteRejection("site-a", { id: "other", name: "denied" })?.status, 403);
+    setSiteRoutes("site-a", []);
+    assert.equal(siteRouteRejection("site-a", { id: "other", name: "shared" }), null);
+  });
+
+  it("preserves site attribution when a provider helper replaces key identity", async () => {
+    const { runWithCallLogApiKeyContext, getCallLogSiteId } =
+      await import("../../../src/lib/usage/callLogApiKeyContext.ts");
+    const site = runWithCallLogApiKeyContext(
+      { siteId: "site-a", apiKeyId: null, apiKeyName: null },
+      () => runWithCallLogApiKeyContext({ apiKeyId: "key", apiKeyName: "name" }, getCallLogSiteId)
+    );
+    assert.equal(site, "site-a");
+  });
+
+  it("filters combo routes even when the provider pool is inherited", async () => {
+    const { scopeModelsResponseForSite } =
+      await import("../../../src/lib/sites/siteModelFilter.ts");
+    const { setSiteRoutes } = await import("../../../src/lib/db/sites.ts");
+    setSiteProviders("site-b", []);
+    setSiteRoutes("site-b", ["allowed"]);
+    invalidateSiteScopeCache();
+    const response = await scopeModelsResponseForSite(
+      Response.json({
+        data: [
+          { id: "allowed", owned_by: "combo" },
+          { id: "denied", owned_by: "combo" },
+          { id: "openai/gpt-4o", owned_by: "openai" },
+        ],
+      }),
+      async () => "site-b"
+    );
+    assert.deepEqual(
+      (await response.json()).data.map((entry: { id: string }) => entry.id),
+      ["allowed", "openai/gpt-4o"]
+    );
+  });
+
+  it("reuses cached empty scopes across alternating sites", () => {
+    setSiteProviders("site-a", []);
+    setSiteProviders("site-b", []);
+    invalidateSiteScopeCache();
+    const first = getSiteProviderScope("site-a");
+    getSiteProviderScope("site-b");
+    assert.equal(getSiteProviderScope("site-a"), first);
+  });
 });

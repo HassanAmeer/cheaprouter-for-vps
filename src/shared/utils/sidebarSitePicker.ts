@@ -11,6 +11,26 @@
 /** The nav entry the compact website picker hangs under. */
 export const SITE_PICKER_ANCHOR_HREF = "/dashboard/providers";
 
+export function siteAwareHref(href: string, siteId: string): string {
+  if (!siteId || !href.startsWith("/")) return href;
+  const url = new URL(href, "http://localhost");
+  const paths = [
+    "/home",
+    "/dashboard/providers",
+    "/dashboard/combos",
+    "/dashboard/manage-models",
+    "/dashboard/usage",
+    "/dashboard/logs",
+    "/dashboard/api-keys",
+    "/dashboard/api-manager",
+    "/dashboard/endpoint",
+  ];
+  if (!paths.some((path) => url.pathname === path || url.pathname.startsWith(`${path}/`)))
+    return href;
+  url.searchParams.set("site", siteId);
+  return `${url.pathname}${url.search}${url.hash}`;
+}
+
 export interface SitePickerPlacement {
   /** Sidebar is in the icon-only rail. */
   collapsed: boolean;

@@ -1,4 +1,5 @@
 import { errorResponse } from "@cheaproute/open-sse/utils/error.ts";
+import { withRequestSiteContext } from "@/lib/sites/siteRequestContext";
 import { HTTP_STATUS } from "@cheaproute/open-sse/config/constants.ts";
 import * as log from "@/sse/utils/logger";
 import { enforceApiKeyPolicy } from "@/shared/utils/apiKeyPolicy";
@@ -86,4 +87,4 @@ async function postHandler(request, _context) {
   });
 }
 
-export const POST = withInjectionGuard(postHandler);
+export const POST = withRequestSiteContext(withInjectionGuard(postHandler));

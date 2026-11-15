@@ -101,8 +101,10 @@
     "typecheck": "node --max-old-space-size=4096 node_modules/.bin/tsc --noEmit -p tsconfig.json",
     "typecheck:core": "node --max-old-space-size=4096 node_modules/.bin/tsc --noEmit -p tsconfig.json",
     "lint": "eslint . --cache --suppressions-location config/quality/eslint-suppressions.json",
-    "test": "node --import tsx/esm --test tests/unit/*.test.ts",
-    "test:coverage": "node --import tsx/esm --test --experimental-test-coverage tests/unit/*.test.ts"
+    "test": "NODE_ENV=test node --import tsx/esm --test 'tests/unit/**/*.test.ts'",
+    "test:unit": "npm test",
+    "test:vitest": "NODE_ENV=test node node_modules/vitest/vitest.mjs run",
+    "test:coverage": "NODE_ENV=test node --import tsx/esm --test --experimental-test-coverage 'tests/unit/**/*.test.ts'"
   },
   "dependencies": {
     "@agentclientprotocol/sdk": "1.4.0",

@@ -230,6 +230,33 @@ export function SiteScopeBar({ providers }: SiteScopeBarProps) {
           {showAddSite ? "Cancel" : "Add website"}
         </button>
 
+        {activeSiteId && (
+          <button
+            type="button"
+            disabled={saving}
+            className="text-[11px] text-red-400 disabled:opacity-50"
+            onClick={async () => {
+              setSaving(true);
+              setError(null);
+              try {
+                const response = await fetch(`/api/sites/${encodeURIComponent(activeSiteId)}`, {
+                  method: "DELETE",
+                });
+                if (!response.ok) throw new Error("delete failed");
+                setSites((current) => current.filter((site) => site.id !== activeSiteId));
+                localStorage.removeItem("cheaproute:active-site");
+                selectSite("");
+              } catch {
+                setError("Failed to delete website");
+              } finally {
+                setSaving(false);
+              }
+            }}
+          >
+            Delete website
+          </button>
+        )}
+
         <span className="min-w-0 flex-1 truncate text-[11px] text-text-muted">
           {active
             ? active.subdomains.length > 0

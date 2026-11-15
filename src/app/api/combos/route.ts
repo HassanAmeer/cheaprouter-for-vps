@@ -1,5 +1,11 @@
 import { NextResponse } from "next/server";
-import { getCombos, getCombosCount, createCombo, getComboByNameInsensitive } from "@/lib/db/combos";
+import {
+  getCombos,
+  getCombosCount,
+  getSiteCombos,
+  createCombo,
+  getComboByNameInsensitive,
+} from "@/lib/db/combos";
 import { isCloudEnabled } from "@/lib/db/settings";
 import { getConsistentMachineId } from "@/shared/utils/machineId";
 import { syncToCloud } from "@/lib/cloudSync";
@@ -33,28 +39,20 @@ export async function GET(request: Request) {
 
     const siteId = searchParams.get("site");
     const range = validation.data;
-    const total = getCombosCount();
-    const rawCombos = await getCombos(range.limit, range.offset);
-    let finalCombos = rawCombos;
-    if (siteId) {
-      try {
-        const { listSiteRoutes } = await import("@/lib/db/sites");
-        const siteRoutes = new Set(listSiteRoutes(siteId).map((row) => row.routeId));
-        finalCombos = rawCombos.filter((c) => {
-          const cSiteId = (c.siteId || c.site_id) as string | undefined;
-          if (cSiteId && cSiteId === siteId) return true;
-          if (siteRoutes.has(String(c.id || "")) || siteRoutes.has(String(c.name || ""))) return true;
-          return false;
-        });
-      } catch (err) {
-        console.warn("Failed to filter combos by site:", err);
-      }
-    }
+    const page = siteId ? await getSiteCombos(siteId, range.limit, range.offset) : null;
+    const total = page?.total ?? getCombosCount();
+    const rawCombos = page?.all ?? (await getCombos());
+    const finalCombos =
+      page?.combos ??
+      rawCombos.slice(
+        range.offset,
+        range.limit === undefined ? undefined : range.offset + range.limit
+      );
     const combos = finalCombos.map((combo) => ({
       ...combo,
       computed_context_length: computeComboContextLength(combo, rawCombos),
     }));
-    return NextResponse.json({ combos, total: siteId ? finalCombos.length : total });
+    return NextResponse.json({ combos, total });
   } catch (error) {
     console.log("Error fetching combos:", error);
     return NextResponse.json({ error: "Failed to fetch combos" }, { status: 500 });
@@ -131,11 +129,16 @@ export async function POST(request) {
       return NextResponse.json({ error: dagError.message }, { status: 400 });
     }
 
-    const requestSiteId = (validation.data.siteId || validation.data.site || new URL(request.url).searchParams.get("site") || "").trim();
-    if (requestSiteId) {
-      (comboInput as any).siteId = requestSiteId;
-    }
-    const combo = await createCombo(comboInput);
+    const requestSiteId = (
+      validation.data.siteId ||
+      validation.data.site ||
+      new URL(request.url).searchParams.get("site") ||
+      ""
+    ).trim();
+    const combo = await createCombo({
+      ...comboInput,
+      ...(requestSiteId ? { siteId: requestSiteId } : {}),
+    });
     if (requestSiteId && combo?.id) {
       try {
         const { listSiteRoutes, setSiteRoutes } = await import("@/lib/db/sites");

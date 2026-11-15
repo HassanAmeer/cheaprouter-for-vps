@@ -95,9 +95,7 @@ export function useSiteScope(siteId: string | null): SiteScopeState {
         const data = await res.json();
         if (cancelled) return;
         const rows: SiteScopeRow[] = Array.isArray(data?.providers)
-          ? (
-              data.providers as Array<{ provider: string; models?: string[]; isEnabled?: boolean }>
-            )
+          ? (data.providers as Array<{ provider: string; models?: string[]; isEnabled?: boolean }>)
               .filter((row) => row?.provider)
               .map((row) => ({
                 provider: row.provider,
@@ -108,7 +106,7 @@ export function useSiteScope(siteId: string | null): SiteScopeState {
         const enabled = rows.filter((row) => row.isEnabled).map((row) => row.provider);
         setState({
           loadedSiteId: siteId,
-          providers: enabled.length > 0 ? new Set(enabled) : null,
+          providers: rows.length > 0 ? new Set(enabled) : null,
           rows,
           routes: Array.isArray(data?.routes) ? (data.routes as string[]) : [],
           name: typeof data?.site?.name === "string" ? data.site.name : null,
@@ -118,7 +116,7 @@ export function useSiteScope(siteId: string | null): SiteScopeState {
         if (cancelled) return;
         setState({
           loadedSiteId: siteId,
-          providers: null,
+          providers: new Set<string>(),
           rows: [],
           routes: [],
           name: null,
@@ -139,7 +137,7 @@ export function useSiteScope(siteId: string | null): SiteScopeState {
   // Another site's payload is still in state — treat it as "loading" so no
   // stale allowlist leaks into the current website's UI.
   if (state.loadedSiteId !== siteId) {
-    return { ...EMPTY_STATE, loading: true, reload };
+    return { ...EMPTY_STATE, providers: new Set<string>(), loading: true, reload };
   }
 
   return {

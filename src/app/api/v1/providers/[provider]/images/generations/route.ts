@@ -31,7 +31,7 @@ export async function OPTIONS() {
 /**
  * POST /v1/providers/{provider}/images/generations
  */
-export async function POST(request, { params }) {
+async function postHandler(request, { params }) {
   const { provider: rawProvider } = await params;
   const retirementResponse = rejectRetiredCommonChatGptWebProvider(rawProvider);
   if (retirementResponse) return retirementResponse;
@@ -128,3 +128,5 @@ export async function POST(request, { params }) {
       : "Image generation provider error";
   return errorResponse((result as any).status, message);
 }
+import { withRequestSiteContext } from "@/lib/sites/siteRequestContext";
+export const POST = withRequestSiteContext(postHandler);

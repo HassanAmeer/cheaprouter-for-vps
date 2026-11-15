@@ -400,4 +400,5 @@ async function postHandler(request, _context) {
   return errorResponse((result as any).status, message);
 }
 
-export const POST = withInjectionGuard(postHandler);
+export const POST = withRequestSiteContext(withInjectionGuard(postHandler));
+import { withRequestSiteContext } from "@/lib/sites/siteRequestContext";

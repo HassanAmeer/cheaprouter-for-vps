@@ -26,7 +26,7 @@ export async function OPTIONS() {
 /**
  * POST /v1/providers/{provider}/embeddings
  */
-export async function POST(request, { params }) {
+async function postHandler(request, { params }) {
   const { provider: rawProvider } = await params;
 
   const providerEntry = getRegistryEntry(rawProvider);
@@ -55,7 +55,12 @@ export async function POST(request, { params }) {
   }
 
   // Enforce API key policies (model restrictions + budget limits)
-  const policy = await enforceApiKeyPolicy(request, body.model);
+  const policy = await enforceApiKeyPolicy(
+    request,
+    body.model.startsWith(`${providerEntry.id}/`) || body.model.startsWith(`${providerAlias}/`)
+      ? body.model
+      : `${providerEntry.id}/${body.model}`
+  );
   if (policy.rejection) return policy.rejection;
 
   // Validate provider match
@@ -104,3 +109,5 @@ export async function POST(request, { params }) {
     headers: { "Content-Type": "application/json" },
   });
 }
+import { withRequestSiteContext } from "@/lib/sites/siteRequestContext";
+export const POST = withRequestSiteContext(postHandler);

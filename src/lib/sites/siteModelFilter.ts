@@ -13,7 +13,8 @@
  */
 
 import { getProviderAlias, resolveProviderId } from "@/shared/constants/providers";
-import { getSiteProviderScope } from "./siteScope";
+import { getSiteProviderScope, getSiteRouteAllowlist } from "./siteScope";
+import { getComboById } from "@/lib/db/combos";
 
 interface CatalogModelEntry {
   id?: unknown;
@@ -60,9 +61,11 @@ export function filterCatalogEntriesForSite<T extends CatalogModelEntry>(
   if (!siteId || scope.inheritsGlobal) return entries;
 
   return entries.filter((entry) => {
-    const provider = providerCandidates(entry).find((candidate) =>
-      scope.providers.has(candidate)
-    );
+    if (entry.owned_by === "combo") {
+      const routes = getSiteRouteAllowlist(siteId);
+      return !routes || routes.has(String(entry.id));
+    }
+    const provider = providerCandidates(entry).find((candidate) => scope.providers.has(candidate));
     if (!provider) return false;
 
     const allowedModels = scope.modelsByProvider.get(provider);
@@ -89,18 +92,35 @@ export async function scopeModelsResponseForSite(
     if (!response.ok) return response;
     const siteId = await resolveSite();
     if (!siteId) return response;
-    if (getSiteProviderScope(siteId).inheritsGlobal) return response;
+    if (getSiteProviderScope(siteId).inheritsGlobal && !getSiteRouteAllowlist(siteId))
+      return response;
 
     const contentType = response.headers.get("content-type") ?? "";
     if (!contentType.includes("application/json")) return response;
 
-    const payload = (await response.json()) as {
+    const payload = (await response.clone().json()) as {
       data?: CatalogModelEntry[];
       [key: string]: unknown;
     };
     if (!Array.isArray(payload?.data)) return response;
 
-    const filtered = { ...payload, data: filterCatalogEntriesForSite(siteId, payload.data) };
+    const routes = getSiteRouteAllowlist(siteId);
+    if (routes) {
+      for (const route of [...routes]) {
+        const combo = await getComboById(route);
+        if (typeof combo?.name === "string") routes.add(combo.name);
+      }
+    }
+    const direct = payload.data.filter((entry) => entry.owned_by !== "combo");
+    const allowedDirect = new Set(filterCatalogEntriesForSite(siteId, direct));
+    const filtered = {
+      ...payload,
+      data: payload.data.filter((entry) =>
+        entry.owned_by === "combo"
+          ? !routes || routes.has(String(entry.id))
+          : allowedDirect.has(entry)
+      ),
+    };
     const headers = new Headers(response.headers);
     headers.delete("content-length");
     return new Response(JSON.stringify(filtered), {

@@ -123,6 +123,25 @@ describe("SiteScopeBar", () => {
     expect(replace).toHaveBeenCalledWith("/dashboard/providers?site=tokendeal", { scroll: false });
   });
 
+  it("deletes the active website and clears its selection", async () => {
+    searchParams.set("site", "demo");
+    fetchMock.mockResolvedValue(
+      jsonResponse({ sites: [{ id: "demo", name: "Demo", subdomains: [] }] })
+    );
+    const { container } = renderBar();
+    await flushLoad();
+    const remove = buttonByText(container, "Delete website");
+    expect(remove).toBeDefined();
+    await act(async () => {
+      remove!.click();
+    });
+    expect(fetchMock).toHaveBeenCalledWith(
+      "/api/sites/demo",
+      expect.objectContaining({ method: "DELETE" })
+    );
+    expect(replace).toHaveBeenCalledWith("/dashboard/providers", { scroll: false });
+  });
+
   it("adds a website from the domain alone (no name field) through POST /api/sites", async () => {
     const { container } = renderBar();
     await flushLoad();
@@ -141,7 +160,10 @@ describe("SiteScopeBar", () => {
     expect(domainInput).not.toBeNull();
 
     await act(async () => {
-      domainInput.value = "router.tokendeal.cloud";
+      Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")!.set!.call(
+        domainInput,
+        "router.tokendeal.cloud"
+      );
       domainInput.dispatchEvent(new Event("input", { bubbles: true }));
     });
 
@@ -184,7 +206,10 @@ describe("SiteScopeBar", () => {
     )!;
 
     await act(async () => {
-      domainInput.value = "https://example.com";
+      Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")!.set!.call(
+        domainInput,
+        "https://example.com"
+      );
       domainInput.dispatchEvent(new Event("input", { bubbles: true }));
     });
 

@@ -14,7 +14,9 @@
 
 import { extractApiKey } from "@/sse/services/auth";
 import { getApiKeyMetadata } from "@/lib/db/apiKeys";
-import { resolveSiteIdForRequest } from "./siteScope";
+import { resolveSiteIdForRequest, isModelAllowedForSite, getSiteRouteAllowlist } from "./siteScope";
+import { errorResponse } from "@cheaproute/open-sse/utils/error";
+import { runWithCallLogApiKeyContext } from "@/lib/usage/callLogApiKeyContext";
 
 export interface RequestSiteContext {
   /** Resolved site id, or null for the global scope. */
@@ -25,6 +27,36 @@ export interface RequestSiteContext {
 }
 
 const EMPTY_CONTEXT: RequestSiteContext = { siteId: null, apiKeyId: null, apiKeyName: null };
+
+export function siteRouteRejection(
+  siteId: string | null,
+  combo: { id?: unknown; name?: unknown }
+): Response | null {
+  const routes = getSiteRouteAllowlist(siteId);
+  return !routes || routes.has(String(combo.id)) || routes.has(String(combo.name))
+    ? null
+    : errorResponse(403, "Route is not exposed to this site");
+}
+
+export function siteModelRejection(
+  siteId: string | null,
+  provider: string,
+  model: string
+): Response | null {
+  return isModelAllowedForSite(siteId, provider, model)
+    ? null
+    : errorResponse(403, "Model is not exposed to this site");
+}
+
+/** Bind all downstream logging, including non-chat API handlers, to one site. */
+export function withRequestSiteContext<TArgs extends unknown[]>(
+  handler: (request: Request, ...args: TArgs) => Promise<Response> | Response
+): (request: Request, ...args: TArgs) => Promise<Response> {
+  return async (request, ...args) => {
+    const context = await resolveRequestSiteContext(request);
+    return runWithCallLogApiKeyContext(context, () => handler(request, ...args));
+  };
+}
 
 /**
  * Resolve the site + key identity for one request.

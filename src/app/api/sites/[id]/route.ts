@@ -1,7 +1,7 @@
 /**
  * GET    /api/sites/:id   → one site: identity + exposed providers + routes + settings
  * PATCH  /api/sites/:id   → update the operational side (exposed providers, routes, settings)
- * DELETE /api/sites/:id   → drop the DB-side records (the JSON identity stays under the operator's control)
+ * DELETE /api/sites/:id   → remove the registry identity and DB-side records
  *
  * Site IDENTITY (name + subdomains) lives in `config/sites.json` and is edited
  * through `/api/sites`. This route owns the per-site operational config:
@@ -26,7 +26,7 @@ import {
   updateSiteSettings,
   upsertSiteRecord,
 } from "@/lib/db/sites";
-import { getSiteRegistry } from "@/lib/sites/siteRegistry";
+import { getSiteRegistry, removeSite } from "@/lib/sites/siteRegistry";
 import { invalidateSiteScopeCache } from "@/lib/sites/siteScope";
 
 export const dynamic = "force-dynamic";
@@ -138,12 +138,21 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
   if (authError) return authError;
 
   const { id } = await params;
+  if (findRegistrySite(id)) {
+    const result = removeSite(id);
+    if (!result.ok) {
+      return NextResponse.json(
+        { error: { message: "Failed to remove site identity" } },
+        { status: 500 }
+      );
+    }
+  } else if (!getSiteRecord(id)) {
+    return NextResponse.json({ error: { message: "Site not found" } }, { status: 404 });
+  }
   const removed = deleteSiteRecord(id);
   invalidateSiteScopeCache();
   if (!removed) {
     return NextResponse.json({ error: { message: "Site records not found" } }, { status: 404 });
   }
-  // The identity (name + subdomains) stays in config/sites.json — deleting it
-  // from disk is the operator's call, not an API side effect.
   return NextResponse.json({ ok: true });
 }

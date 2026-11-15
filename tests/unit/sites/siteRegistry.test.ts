@@ -96,4 +96,30 @@ describe("site registry", () => {
   it("requires at least one domain", () => {
     assert.equal(addSite({ subdomains: [] }).ok, false);
   });
+
+  it("resolves wildcard subdomains with exact hosts taking priority", () => {
+    const result = addSite({ subdomains: ["*.myapp.com"] });
+    assert.equal(result.ok, true);
+    assert.equal(resolveSiteIdByHost("new.myapp.com"), result.site?.id);
+    assert.equal(resolveSiteIdByHost("deep.new.myapp.com"), result.site?.id);
+    assert.equal(resolveSiteIdByHost("site-a.myapp.com"), "site-a");
+    assert.equal(resolveSiteIdByHost("myapp.com"), null);
+    assert.equal(resolveSiteIdByHost("notmyapp.com"), null);
+  });
+
+  it("removes a site from disk and hostname resolution", async () => {
+    const registry = await import("../../../src/lib/sites/siteRegistry.ts");
+    assert.equal(registry.removeSite("site-a").ok, true);
+    assert.equal(resolveSiteIdByHost("site-a.myapp.com"), "site");
+    assert.equal(
+      listSites().some((site) => site.id === "site-a"),
+      false
+    );
+    assert.equal(
+      JSON.parse(fs.readFileSync(sitesFile, "utf8")).sites.some(
+        (site: { id: string }) => site.id === "site-a"
+      ),
+      false
+    );
+  });
 });

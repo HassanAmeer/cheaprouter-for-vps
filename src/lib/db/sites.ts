@@ -49,9 +49,7 @@ function parseJsonArray(raw: unknown): string[] {
   if (typeof raw !== "string" || !raw.trim()) return [];
   try {
     const parsed = JSON.parse(raw) as unknown;
-    return Array.isArray(parsed)
-      ? parsed.map((entry) => String(entry)).filter(Boolean)
-      : [];
+    return Array.isArray(parsed) ? parsed.map((entry) => String(entry)).filter(Boolean) : [];
   } catch {
     return [];
   }
@@ -98,9 +96,7 @@ function hasTable(tableName: string): boolean {
 
 /** True when the multi-tenant schema is present (migration 212 applied). */
 export function isSiteSchemaReady(): boolean {
-  return (
-    hasTable("sites") && hasTable("site_providers") && hasTable("site_routes")
-  );
+  return hasTable("sites") && hasTable("site_providers") && hasTable("site_routes");
 }
 
 /** List all site records (DB view of the registry). */
@@ -121,8 +117,7 @@ export function getSiteRecord(siteId: string): SiteRecord | null {
   try {
     const db = getDbInstance();
     const row = db.prepare("SELECT * FROM sites WHERE id = ?").get(siteId) as
-      | Record<string, unknown>
-      | undefined;
+      Record<string, unknown> | undefined;
     return row ? mapSiteRow(row) : null;
   } catch {
     return null;
@@ -300,4 +295,21 @@ export function updateSiteSettings(
 export function mapSiteJoinedRow(row: Record<string, unknown>): SiteRecord | null {
   if (!row || !row.id) return null;
   return mapSiteRow(row);
+}
+
+/** Keep name-based and id-based route assignments valid across combo mutations. */
+export function replaceSiteRouteReferences(routeIds: string[], replacement?: string): void {
+  if (!isSiteSchemaReady()) return;
+  const db = getDbInstance();
+  db.transaction(() => {
+    for (const routeId of routeIds.filter(Boolean)) {
+      if (replacement) {
+        db.prepare(
+          `INSERT OR IGNORE INTO site_routes (site_id, route_id, created_at)
+          SELECT site_id, ?, created_at FROM site_routes WHERE route_id = ?`
+        ).run(replacement, routeId);
+      }
+      db.prepare("DELETE FROM site_routes WHERE route_id = ?").run(routeId);
+    }
+  })();
 }

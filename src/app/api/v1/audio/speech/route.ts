@@ -156,4 +156,5 @@ async function postHandler(request, _context) {
   return response;
 }
 
-export const POST = withInjectionGuard(postHandler);
+export const POST = withRequestSiteContext(withInjectionGuard(postHandler));
+import { withRequestSiteContext } from "@/lib/sites/siteRequestContext";
