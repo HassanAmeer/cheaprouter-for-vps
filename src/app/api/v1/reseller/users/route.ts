@@ -3,6 +3,7 @@ import { z } from "zod";
 import { CORS_HEADERS, handleCorsOptions } from "@/shared/utils/cors";
 import { buildErrorBody } from "@cheaproute/open-sse/utils/error.ts";
 import { getSettings } from "@/lib/db/settings";
+import { getApiKeys } from "@/lib/db/apiKeys";
 import {
   getResellerUsers,
   getUserByokKeys,
@@ -66,17 +67,32 @@ export async function GET(request: Request) {
   try {
     const url = new URL(request.url);
     const targetUserId = url.searchParams.get("userId")?.trim();
+    const siteId = url.searchParams.get("site")?.trim();
+    const siteKeys = siteId
+      ? new Set((await getApiKeys(undefined, undefined, siteId)).map((key) => key.id))
+      : null;
+    const visibleKeys = getResellerUserKeys().filter(
+      (key) => !siteKeys || siteKeys.has(key.apiKeyId)
+    );
+    const visibleUserIds = siteKeys
+      ? new Set([
+          ...visibleKeys.map((key) => key.userId),
+          ...getResellerUsers()
+            .filter((user) => user.siteId === siteId)
+            .map((user) => user.id),
+        ])
+      : null;
 
     if (targetUserId) {
       const user = getResellerUser(targetUserId);
-      if (!user) {
+      if (!user || (visibleUserIds && !visibleUserIds.has(targetUserId))) {
         return NextResponse.json(
           { success: false, error: `User with ID '${targetUserId}' not found.` },
           { status: 404, headers: CORS_HEADERS }
         );
       }
       const userByokKeys = getUserByokKeys(targetUserId);
-      const userKeys = getResellerUserKeys().filter((k) => k.userId === targetUserId);
+      const userKeys = visibleKeys.filter((k) => k.userId === targetUserId);
       return NextResponse.json(
         {
           success: true,
@@ -90,10 +106,14 @@ export async function GET(request: Request) {
       );
     }
 
-    const userKeys = getResellerUserKeys();
-    const byokKeys = getAllUserByokKeys();
+    const userKeys = visibleKeys;
+    const byokKeys = getAllUserByokKeys().filter(
+      (key) => !visibleUserIds || visibleUserIds.has(key.userId)
+    );
     const available = await getAvailableModelsAndCombos();
-    const legacyUsers = getResellerUsers();
+    const legacyUsers = getResellerUsers().filter(
+      (user) => !visibleUserIds || visibleUserIds.has(user.id)
+    );
     const users = legacyUsers.map((u) => ({
       ...u,
       byokKeys: getUserByokKeys(u.id),
@@ -129,9 +149,13 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     const body = await request.json();
+    const siteId = new URL(request.url).searchParams.get("site")?.trim() || undefined;
 
     // Check if this is a BYOK key creation / registration request
-    if (body?.action === "addByok" || (body?.providerId && (body?.maskedKey || body?.apiKey || body?.key))) {
+    if (
+      body?.action === "addByok" ||
+      (body?.providerId && (body?.maskedKey || body?.apiKey || body?.key))
+    ) {
       const parsedByok = byokSchema.safeParse(body);
       if (!parsedByok.success) {
         return NextResponse.json(
@@ -143,8 +167,8 @@ export async function POST(request: Request) {
       const maskedKey = raw.includes("...")
         ? raw
         : raw.length > 10
-        ? `${raw.slice(0, 6)}...${raw.slice(-4)}`
-        : raw;
+          ? `${raw.slice(0, 6)}...${raw.slice(-4)}`
+          : raw;
 
       if (!maskedKey) {
         return NextResponse.json(
@@ -183,16 +207,25 @@ export async function POST(request: Request) {
     if (body?.action === "deleteByok") {
       if (body.byokId || body.id) {
         const deleted = deleteUserByokKeyById(Number(body.byokId || body.id));
-        return NextResponse.json({ success: true, deleted }, { status: 200, headers: CORS_HEADERS });
+        return NextResponse.json(
+          { success: true, deleted },
+          { status: 200, headers: CORS_HEADERS }
+        );
       }
       const uid = (body.userId || body.uid)?.trim();
       const provId = (body.providerId || body.provider)?.trim();
       if (uid && provId) {
         const deleted = deleteUserByokKey(uid, provId);
-        return NextResponse.json({ success: true, deleted }, { status: 200, headers: CORS_HEADERS });
+        return NextResponse.json(
+          { success: true, deleted },
+          { status: 200, headers: CORS_HEADERS }
+        );
       }
       return NextResponse.json(
-        { success: false, error: "byokId or (userId and providerId) is required to delete BYOK key." },
+        {
+          success: false,
+          error: "byokId or (userId and providerId) is required to delete BYOK key.",
+        },
         { status: 400, headers: CORS_HEADERS }
       );
     }
@@ -240,7 +273,10 @@ export async function POST(request: Request) {
         modelQuotas: body.modelQuotas,
         resetUsage: body.resetUsage === true,
       });
-      return NextResponse.json({ success: true, user: updated }, { status: 200, headers: CORS_HEADERS });
+      return NextResponse.json(
+        { success: true, user: updated },
+        { status: 200, headers: CORS_HEADERS }
+      );
     }
 
     // Toggle Ban Status
@@ -271,8 +307,8 @@ export async function POST(request: Request) {
         typeof body.rpmLimit === "number"
           ? body.rpmLimit
           : body.rpmLimit
-          ? Number(body.rpmLimit)
-          : 30;
+            ? Number(body.rpmLimit)
+            : 30;
 
       const available = await getAvailableModelsAndCombos();
       const allPipedModelIds = [
@@ -302,6 +338,7 @@ export async function POST(request: Request) {
 
       const user = upsertResellerUser({
         id: uid,
+        siteId,
         email,
         name,
         planTier: plan,
@@ -350,6 +387,7 @@ export async function POST(request: Request) {
       }
       const user = upsertResellerUser({
         id: uid,
+        siteId,
         email,
         name: (body.userName || body.name)?.trim() || uid,
         planTier: body.plan || body.planTier || "free",
@@ -417,7 +455,8 @@ export async function POST(request: Request) {
     }
 
     const planTier = data.plan || data.planTier || existingUser?.planTier || "free";
-    const tokenBudget = data.tokenBudget !== undefined ? data.tokenBudget : (existingUser?.tokenBudget ?? null);
+    const tokenBudget =
+      data.tokenBudget !== undefined ? data.tokenBudget : (existingUser?.tokenBudget ?? null);
     const rpmLimit = data.rpmLimit !== undefined ? data.rpmLimit : (existingUser?.rpmLimit ?? null);
 
     const userKey = await createResellerUserKey({
@@ -483,7 +522,10 @@ export async function PATCH(request: Request) {
         modelQuotas: body.modelQuotas,
         resetUsage: body.resetUsage === true,
       });
-      return NextResponse.json({ success: true, user: updated }, { status: 200, headers: CORS_HEADERS });
+      return NextResponse.json(
+        { success: true, user: updated },
+        { status: 200, headers: CORS_HEADERS }
+      );
     }
 
     if (action === "setBanStatus") {
@@ -513,8 +555,8 @@ export async function PATCH(request: Request) {
       const maskedKey = raw.includes("...")
         ? raw
         : raw.length > 10
-        ? `${raw.slice(0, 6)}...${raw.slice(-4)}`
-        : raw;
+          ? `${raw.slice(0, 6)}...${raw.slice(-4)}`
+          : raw;
       const key = upsertUserByokKey({
         userId: parsed.data.userId,
         providerId: parsed.data.providerId,
@@ -560,19 +602,13 @@ export async function DELETE(request: Request) {
     const providerId = url.searchParams.get("providerId");
     if (userId && providerId) {
       const deleted = deleteUserByokKey(userId, providerId);
-      return NextResponse.json(
-        { success: true, deleted },
-        { status: 200, headers: CORS_HEADERS }
-      );
+      return NextResponse.json({ success: true, deleted }, { status: 200, headers: CORS_HEADERS });
     }
 
     // Delete entire user (all keys and profile) by userId
     if (userId) {
       const deleted = await deleteResellerUser(userId);
-      return NextResponse.json(
-        { success: true, deleted },
-        { status: 200, headers: CORS_HEADERS }
-      );
+      return NextResponse.json({ success: true, deleted }, { status: 200, headers: CORS_HEADERS });
     }
 
     return NextResponse.json(

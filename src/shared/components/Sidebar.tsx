@@ -701,7 +701,7 @@ export default function Sidebar({
       href: "/home",
       icon: "home",
       exact: true,
-      label: getSidebarLabel("home", "Home"),
+      label: getSidebarLabel("home", "Analytics"),
       subtitle: getSidebarLabel("homeSubtitle", "Dashboard overview") || undefined,
     };
     return (

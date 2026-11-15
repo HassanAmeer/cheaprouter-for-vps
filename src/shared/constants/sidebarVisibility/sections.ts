@@ -101,7 +101,6 @@ const API_NAV_ITEMS: readonly SidebarItemDefinition[] = [
   },
 ];
 
-
 // Dev Tools section: Logs, Proxy Logs, Console Logs
 const DEVTOOLS_ITEMS: readonly SidebarItemDefinition[] = [
   {
@@ -154,7 +153,7 @@ export const SIDEBAR_SECTIONS: readonly SidebarSectionDefinition[] = [
   {
     id: "top",
     titleKey: "home",
-    titleFallback: "Home",
+    titleFallback: "Analytics",
     children: TOP_STANDALONE_ITEMS,
     showTitle: false,
   },

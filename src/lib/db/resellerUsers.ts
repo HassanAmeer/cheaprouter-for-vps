@@ -20,6 +20,7 @@ export interface UserModelUsage {
 
 export interface ResellerUser {
   id: string;
+  siteId: string | null;
   email: string;
   name: string | null;
   planTier: string;
@@ -263,22 +264,26 @@ export function associateCreatedResellerKey(params: {
 }): void {
   ensureResellerUserKeysTable();
   const now = new Date().toISOString();
-  getDbInstance().prepare(`INSERT INTO reseller_user_keys (
+  getDbInstance()
+    .prepare(
+      `INSERT INTO reseller_user_keys (
     user_id, user_name, user_email, plan_tier, api_key, api_key_id,
     allowed_models, token_budget, tokens_used, rpm_limit, expires_at,
     is_active, created_at, updated_at
-  ) VALUES (?, ?, ?, 'standard', ?, ?, ?, NULL, 0, ?, ?, 1, ?, ?)`).run(
-    params.userId,
-    params.userName,
-    `${params.userId.toLowerCase().replace(/[^a-z0-9]/g, "") || "user"}@cheaproute.local`,
-    params.apiKey,
-    params.apiKeyId,
-    JSON.stringify(params.allowedModels),
-    params.rpmLimit ?? null,
-    params.expiresAt ?? null,
-    now,
-    now
-  );
+  ) VALUES (?, ?, ?, 'standard', ?, ?, ?, NULL, 0, ?, ?, 1, ?, ?)`
+    )
+    .run(
+      params.userId,
+      params.userName,
+      `${params.userId.toLowerCase().replace(/[^a-z0-9]/g, "") || "user"}@cheaproute.local`,
+      params.apiKey,
+      params.apiKeyId,
+      JSON.stringify(params.allowedModels),
+      params.rpmLimit ?? null,
+      params.expiresAt ?? null,
+      now,
+      now
+    );
 }
 
 export async function createResellerUserKey(params: {
@@ -574,6 +579,7 @@ export function getResellerUser(id: string): ResellerUser | undefined {
  */
 export function upsertResellerUser(params: {
   id: string;
+  siteId?: string | null;
   email: string;
   name?: string | null;
   planTier?: string;
@@ -623,8 +629,8 @@ export function upsertResellerUser(params: {
     );
   } else {
     db.prepare(
-      `INSERT INTO reseller_users (id, email, name, plan_tier, token_budget, tokens_used, rpm_limit, is_banned, model_quotas, created_at, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+      `INSERT INTO reseller_users (id, email, name, plan_tier, token_budget, tokens_used, rpm_limit, is_banned, model_quotas, created_at, updated_at, site_id)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
     ).run(
       params.id,
       params.email,
@@ -636,7 +642,8 @@ export function upsertResellerUser(params: {
       isBanned,
       modelQuotas,
       now,
-      now
+      now,
+      params.siteId ?? null
     );
   }
 
@@ -1123,6 +1130,7 @@ export function incrementUserByokUsage(userId: string, providerId: string, token
 
 type UserRowShape = {
   id: string;
+  site_id?: string | null;
   email: string;
   name: string | null;
   plan_tier: string;
@@ -1157,6 +1165,7 @@ function fromUserRow(row: UserRowShape): ResellerUser {
 
   return {
     id: row.id,
+    siteId: row.site_id ?? null,
     email: row.email,
     name: row.name,
     planTier: row.plan_tier,
