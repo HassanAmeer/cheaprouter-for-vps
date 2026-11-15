@@ -132,7 +132,7 @@ export async function GET(request: Request) {
       (pid) => !isProviderBlockedByIdOrAlias(pid, blockedProviders) && !pausedNodeIds.has(pid)
     );
 
-    const connectedProviderIds = Array.from(
+    let connectedProviderIds = Array.from(
       new Set([
         ...Array.from(activeConnectedProviderSet),
         ...activeNodeIds,
@@ -227,6 +227,17 @@ export async function GET(request: Request) {
         const { getSiteProviderScope } = await import("@/lib/sites/siteScope");
         const scope = getSiteProviderScope(siteId);
         if (!scope.inheritsGlobal) {
+          connectedProviderIds = connectedProviderIds.filter((pid) => scope.providers.has(pid));
+          for (const pid of Object.keys(modelsByProvider)) {
+            if (!scope.providers.has(pid)) {
+              delete modelsByProvider[pid];
+            } else {
+              const allowed = scope.modelsByProvider.get(pid);
+              if (allowed && allowed.size > 0) {
+                modelsByProvider[pid] = modelsByProvider[pid].filter((m: any) => allowed.has(m.id));
+              }
+            }
+          }
           customizations = customizations.filter((c) => {
             if (!scope.providers.has(c.providerId)) return false;
             const allowed = scope.modelsByProvider.get(c.providerId);

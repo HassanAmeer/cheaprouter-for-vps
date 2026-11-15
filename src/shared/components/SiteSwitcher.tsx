@@ -91,23 +91,46 @@ export function SiteSwitcher({ variant = "header" }: SiteSwitcherProps = {}) {
     };
   }, [open, showAdd]);
 
+  const applySiteToUrl = useCallback(
+    (siteId: string) => {
+      const params = new URLSearchParams(searchParams.toString());
+      if (siteId) {
+        params.set("site", siteId);
+        try {
+          localStorage.setItem("cheaproute:active-site", siteId);
+        } catch {}
+      } else {
+        params.delete("site");
+        try {
+          localStorage.removeItem("cheaproute:active-site");
+        } catch {}
+      }
+      const query = params.toString();
+      router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
+    },
+    [pathname, router, searchParams]
+  );
+
   const selectSite = (siteId: string) => {
-    const params = new URLSearchParams(searchParams.toString());
-    if (siteId) {
-      params.set("site", siteId);
-      try {
-        localStorage.setItem("cheaproute:active-site", siteId);
-      } catch {}
-    } else {
-      params.delete("site");
-      try {
-        localStorage.removeItem("cheaproute:active-site");
-      } catch {}
-    }
-    const query = params.toString();
-    router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
+    applySiteToUrl(siteId);
     setOpen(false);
   };
+
+  useEffect(() => {
+    if (activeSiteId) {
+      try {
+        localStorage.setItem("cheaproute:active-site", activeSiteId);
+      } catch {}
+      return;
+    }
+    if (sites.length === 0) return;
+    try {
+      const stored = localStorage.getItem("cheaproute:active-site");
+      if (stored && sites.some((s) => s.id === stored)) {
+        applySiteToUrl(stored);
+      }
+    } catch {}
+  }, [activeSiteId, sites, applySiteToUrl]);
 
   const submitSite = async () => {
     setSaving(true);

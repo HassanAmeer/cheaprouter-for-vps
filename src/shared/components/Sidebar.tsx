@@ -762,7 +762,7 @@ export default function Sidebar({
             </button>
           )}
           <Link
-            href="/home"
+            href={activeSiteId ? `/home?site=${encodeURIComponent(activeSiteId)}` : "/home"}
             prefetch={false}
             className={cn(
               "flex items-center",
