@@ -158,7 +158,16 @@ export function resolveSiteIdByHost(host: string | null | undefined): string | n
   if (!host) return null;
   const normalized = normalizeHost(host);
   if (!normalized) return null;
-  return getSiteRegistry().byHost.get(normalized) ?? null;
+  const registry = getSiteRegistry();
+  const exact = registry.byHost.get(normalized);
+  if (exact) return exact;
+  let suffix = normalized;
+  while (suffix.includes(".")) {
+    suffix = suffix.slice(suffix.indexOf(".") + 1);
+    const wildcard = registry.byHost.get(`*.${suffix}`);
+    if (wildcard) return wildcard;
+  }
+  return null;
 }
 
 function slugify(name: string): string {
@@ -193,10 +202,11 @@ export function addSite(input: { name?: string; subdomains: string[] }): AddSite
   const name = (input.name || "").trim() || deriveSiteName(subdomains);
 
   const registry = getSiteRegistry();
-  const filePath = registry.filePath ?? resolveSitesFilePath();
-  if (!filePath) {
-    return { ok: false, error: "No sites file found (set CHEAPROUTE_SITES_FILE)" };
-  }
+  const filePath =
+    registry.filePath ??
+    resolveSitesFilePath() ??
+    process.env.CHEAPROUTE_SITES_FILE ??
+    path.join(process.cwd(), "config/sites.json");
 
   // Unique id — derived from the FIRST subdomain's first label (so the id
   // matches the hostname people type) and falling back to the name.
@@ -229,4 +239,25 @@ export function addSite(input: { name?: string; subdomains: string[] }): AddSite
 
   reloadSiteRegistry();
   return { ok: true, site: { id, name, subdomains } };
+}
+
+/** Remove the identity atomically so deleted sites disappear after restarts too. */
+export function removeSite(siteId: string): AddSiteResult {
+  const registry = getSiteRegistry();
+  if (!registry.filePath || !registry.sites.some((site) => site.id === siteId)) {
+    return { ok: false, error: "Site not found" };
+  }
+  try {
+    const tmp = `${registry.filePath}.${process.pid}.tmp`;
+    fs.writeFileSync(
+      tmp,
+      `${JSON.stringify({ sites: registry.sites.filter((site) => site.id !== siteId) }, null, 2)}\n`,
+      "utf8"
+    );
+    fs.renameSync(tmp, registry.filePath);
+    reloadSiteRegistry();
+    return { ok: true };
+  } catch {
+    return { ok: false, error: "Failed to remove site" };
+  }
 }

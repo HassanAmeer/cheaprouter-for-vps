@@ -219,7 +219,7 @@ async function transcribeWithModel(
  * POST /v1/audio/transcriptions — transcribe audio files
  * OpenAI Whisper API compatible (multipart/form-data)
  */
-export async function POST(request) {
+async function postHandler(request) {
   let formData;
   try {
     formData = await request.formData();
@@ -291,3 +291,5 @@ export async function POST(request) {
 
   return transcribeWithModel(formData, modelStr, startTime, apiKeyId, apiKeyName);
 }
+import { withRequestSiteContext } from "@/lib/sites/siteRequestContext";
+export const POST = withRequestSiteContext(postHandler);

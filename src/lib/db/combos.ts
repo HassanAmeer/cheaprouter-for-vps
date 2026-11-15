@@ -13,11 +13,28 @@ import { getDbInstance } from "./core";
 import { invalidateDbCache } from "./readCache";
 import { invalidateReasoningRoutingRuleCache } from "./reasoningRoutingRules";
 import { routingConfigRepositories } from "./repositories/routingConfigRepositories";
+import { listSiteRoutes, replaceSiteRouteReferences } from "./sites";
 
 const repository = routingConfigRepositories.combos;
 
 export function getCombos(limit?: number, offset?: number): Promise<ComboRecord[]> {
   return repository.list(limit, offset);
+}
+
+export async function getSiteCombos(siteId: string, limit?: number, offset = 0) {
+  const all = await getCombos();
+  const routes = new Set(listSiteRoutes(siteId).map((row) => row.routeId));
+  const visible = all.filter((combo) => {
+    const owner = combo.siteId || combo.site_id;
+    return (
+      !owner || owner === siteId || routes.has(String(combo.id)) || routes.has(String(combo.name))
+    );
+  });
+  return {
+    combos: visible.slice(offset, limit === undefined ? undefined : offset + limit),
+    total: visible.length,
+    all,
+  };
 }
 
 /** Keep the existing synchronous facade contract while repository APIs become async. */
@@ -47,6 +64,9 @@ export async function createCombo(data: ComboRecord): Promise<ComboRecord> {
 export async function updateCombo(id: string, data: ComboRecord): Promise<ComboRecord | null> {
   const result = await repository.update(id, data);
   if (!result) return null;
+  if (result.previousName !== result.currentName) {
+    replaceSiteRouteReferences([result.previousName], result.currentName);
+  }
 
   if (result.modelsFieldProvided) {
     const cleared = clearSessionModelHistoryForCombo(result.previousName);
@@ -70,8 +90,10 @@ export async function reorderCombos(comboIds: string[]): Promise<ComboRecord[]> 
 }
 
 export async function deleteCombo(id: string): Promise<boolean> {
+  const previous = await repository.findById(id);
   const deleted = await repository.deleteById(id);
   if (!deleted) return false;
+  replaceSiteRouteReferences([id, String(previous?.name ?? "")]);
 
   invalidateDbCache("combos");
   invalidateReasoningRoutingRuleCache();

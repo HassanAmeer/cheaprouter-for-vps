@@ -15,17 +15,9 @@
  * restriction); once it has rows, only those providers are exposed.
  */
 
-import {
-  getSiteRegistry,
-  listSites,
-  resolveSiteIdByHost,
-} from "./siteRegistry";
-import {
-  getSiteRecord,
-  listSiteProviders,
-  listSiteRoutes,
-  listSiteRecords,
-} from "@/lib/db/sites";
+import { getSiteRegistry, listSites, resolveSiteIdByHost } from "./siteRegistry";
+import { getSiteRecord, listSiteProviders, listSiteRoutes, listSiteRecords } from "@/lib/db/sites";
+import { resolveProviderId, getProviderAlias } from "@/shared/constants/providers";
 
 export interface SiteScopeInput {
   /** Raw Host header (may include a port). */
@@ -49,6 +41,10 @@ function isKnownSite(siteId: string | null | undefined): siteId is string {
  */
 export function resolveSiteIdForRequest(input: SiteScopeInput = {}): string | null {
   const { host, headers, apiKeyInfo } = input;
+
+  // A credential's assigned tenant cannot be replaced by caller-controlled routing headers.
+  const assignedSite = apiKeyInfo?.siteId;
+  if (assignedSite) return assignedSite;
 
   // 1. Host header — free Map lookup.
   const byHost = resolveSiteIdByHost(host);
@@ -78,11 +74,7 @@ export interface SiteProviderScope {
   modelsByProvider: Map<string, Set<string>>;
 }
 
-let scopeCache: {
-  siteId: string;
-  at: number;
-  scope: SiteProviderScope;
-} | null = null;
+const scopeCache = new Map<string, { at: number; scope: SiteProviderScope }>();
 
 const SCOPE_CACHE_TTL_MS = 5_000;
 
@@ -100,14 +92,17 @@ export function getSiteProviderScope(siteId: string | null): SiteProviderScope {
   };
   if (!siteId) return inheritsGlobal;
 
-  const cached = scopeCache;
-  if (cached && cached.siteId === siteId && Date.now() - cached.at < SCOPE_CACHE_TTL_MS) {
+  const cached = scopeCache.get(siteId);
+  if (cached && Date.now() - cached.at < SCOPE_CACHE_TTL_MS) {
     return cached.scope;
   }
 
   const rows = listSiteProviders(siteId);
   const enabled = rows.filter((row) => row.isEnabled);
-  if (enabled.length === 0) return inheritsGlobal;
+  if (rows.length === 0) {
+    scopeCache.set(siteId, { at: Date.now(), scope: inheritsGlobal });
+    return inheritsGlobal;
+  }
 
   const providers = new Set<string>();
   const modelsByProvider = new Map<string, Set<string>>();
@@ -116,13 +111,14 @@ export function getSiteProviderScope(siteId: string | null): SiteProviderScope {
     modelsByProvider.set(row.provider, new Set(row.models));
   }
   const scope: SiteProviderScope = { inheritsGlobal: false, providers, modelsByProvider };
-  scopeCache = { siteId, at: Date.now(), scope };
+  if (scopeCache.size >= 1000) scopeCache.clear();
+  scopeCache.set(siteId, { at: Date.now(), scope });
   return scope;
 }
 
 /** Invalidate the scope cache (after a site's allowlist changes). */
 export function invalidateSiteScopeCache(): void {
-  scopeCache = null;
+  scopeCache.clear();
 }
 
 /** True when a provider may be exposed to a site. */
@@ -142,10 +138,15 @@ export function isModelAllowedForSite(
   if (!siteId || !provider || !model) return true;
   const scope = getSiteProviderScope(siteId);
   if (scope.inheritsGlobal) return true;
-  if (!scope.providers.has(provider)) return false;
-  const allowed = scope.modelsByProvider.get(provider);
+  const matched = [provider, resolveProviderId(provider), getProviderAlias(provider)].find(
+    (candidate) => scope.providers.has(candidate)
+  );
+  if (!matched) return false;
+  const allowed = scope.modelsByProvider.get(matched);
   if (!allowed || allowed.size === 0) return true; // whole provider exposed
-  return allowed.has(model);
+  return (
+    allowed.has(model) || allowed.has(`${provider}/${model}`) || allowed.has(`${matched}/${model}`)
+  );
 }
 
 /**

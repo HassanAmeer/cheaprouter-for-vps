@@ -1,4 +1,5 @@
 import { handleChat } from "@/sse/handlers/chat";
+import { withRequestSiteContext } from "@/lib/sites/siteRequestContext";
 import { generateRequestId } from "@/shared/utils/requestId";
 import { resolveIncomingCorrelationId } from "@/shared/utils/correlationPreserve.ts";
 import { initTranslators } from "@cheaproute/open-sse/translator/index.ts";
@@ -97,4 +98,6 @@ async function postHandler(request: any, _context: any, preParsedBody: any = nul
 // The outer admission wrapper still owns the route-level lease. On a stream deadline,
 // the synthetic SSE body closes, so its response lifecycle releases that lease while
 // handleChat receives the explicit streamSignal and tears provider work down directly.
-export const POST = withChatAdmission(withInjectionGuard(postHandler, { logger: null }));
+export const POST = withRequestSiteContext(
+  withChatAdmission(withInjectionGuard(postHandler, { logger: null }))
+);

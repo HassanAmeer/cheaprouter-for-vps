@@ -124,6 +124,8 @@ export async function handleValidatedRerankRequestBody(
           settings = getDatabaseSettings();
         } catch {}
 
+        const siteRejection = siteRouteRejection(getCallLogSiteId(), combo);
+        if (siteRejection) return siteRejection;
         return handleComboChat({
           body: body as any,
           combo: combo as any,
@@ -176,6 +178,12 @@ export async function handleValidatedRerankRequestBody(
   if (provider || derivedProvider) {
     // Cloud provider matched (or a generic Cohere-compatible endpoint was derived)
     const effectiveProviderId = provider || derivedProvider!.id;
+    const siteRejection = siteModelRejection(
+      getCallLogSiteId(),
+      effectiveProviderId,
+      resolvedModelId
+    );
+    if (siteRejection) return siteRejection;
     const credentials = await getProviderCredentialsWithQuotaPreflight(
       effectiveProviderId,
       null,
@@ -396,4 +404,7 @@ export async function handleValidatedRerankRequestBody(
   );
 }
 
-export const POST = withInjectionGuard(postHandler);
+export const POST = withRequestSiteContext(withInjectionGuard(postHandler));
+import { withRequestSiteContext } from "@/lib/sites/siteRequestContext";
+import { siteModelRejection, siteRouteRejection } from "@/lib/sites/siteRequestContext";
+import { getCallLogSiteId } from "@/lib/usage/callLogApiKeyContext";

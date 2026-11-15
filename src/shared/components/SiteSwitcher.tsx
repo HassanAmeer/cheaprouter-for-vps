@@ -19,6 +19,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { cn } from "@/shared/utils/cn";
+import { siteAwareHref } from "@/shared/utils/sidebarSitePicker";
 
 interface SiteItem {
   id: string;
@@ -126,11 +127,15 @@ export function SiteSwitcher({ variant = "header" }: SiteSwitcherProps = {}) {
     if (sites.length === 0) return;
     try {
       const stored = localStorage.getItem("cheaproute:active-site");
-      if (stored && sites.some((s) => s.id === stored)) {
+      if (
+        stored &&
+        sites.some((s) => s.id === stored) &&
+        siteAwareHref(pathname, stored) !== pathname
+      ) {
         applySiteToUrl(stored);
       }
     } catch {}
-  }, [activeSiteId, sites, applySiteToUrl]);
+  }, [activeSiteId, sites, applySiteToUrl, pathname]);
 
   const submitSite = async () => {
     setSaving(true);

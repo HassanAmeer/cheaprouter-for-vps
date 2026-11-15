@@ -1178,4 +1178,6 @@ async function postHandler(request: Request, _context?: unknown) {
   );
 }
 
-export const POST = postHandler;
+import { withRequestSiteContext } from "@/lib/sites/siteRequestContext";
+
+export const POST = withRequestSiteContext(postHandler);

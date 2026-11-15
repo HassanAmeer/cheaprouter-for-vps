@@ -14,7 +14,7 @@ import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import SiteSwitcher from "./SiteSwitcher";
 import { cn } from "@/shared/utils/cn";
-import { shouldRenderSitePicker } from "@/shared/utils/sidebarSitePicker";
+import { shouldRenderSitePicker, siteAwareHref } from "@/shared/utils/sidebarSitePicker";
 import { getActiveSidebarHref } from "@/shared/utils/sidebarRouteMatch";
 import { filterSidebarSectionsByQuery } from "@/shared/utils/sidebarSearch";
 import {
@@ -543,16 +543,7 @@ export default function Sidebar({
     const active = !item.external && activeHref === item.href;
     const isItemPinned = pinnedItems.has(item.id);
     const itemKey = keyPrefix ? `${keyPrefix}-${item.href}` : item.href;
-    const navHref = (() => {
-      if (item.external || !activeSiteId) return item.href;
-      try {
-        const url = new URL(item.href, "http://localhost");
-        url.searchParams.set("site", activeSiteId);
-        return `${url.pathname}${url.search}`;
-      } catch {
-        return `${item.href}?site=${encodeURIComponent(activeSiteId)}`;
-      }
-    })();
+    const navHref = item.external ? item.href : siteAwareHref(item.href, activeSiteId);
     const className = cn(
       "flex items-center gap-3 rounded-lg transition-all group",
       collapsed ? "justify-center px-2 py-2.5" : "px-3 py-1.5",
@@ -710,7 +701,7 @@ export default function Sidebar({
       href: "/home",
       icon: "home",
       exact: true,
-      label: getSidebarLabel("home", "Home"),
+      label: getSidebarLabel("home", "Analytics"),
       subtitle: getSidebarLabel("homeSubtitle", "Dashboard overview") || undefined,
     };
     return (

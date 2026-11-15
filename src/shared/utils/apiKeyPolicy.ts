@@ -9,6 +9,7 @@
  */
 
 import { extractApiKey } from "@/sse/services/auth";
+import { resolveRequestSiteContext, siteModelRejection } from "@/lib/sites/siteRequestContext";
 import { getApiKeyMetadata, isModelAllowedForKey, getApiKeyById } from "@/lib/db/apiKeys";
 import { getResellerUserByApiKeyId, getUserModelUsageTokens } from "@/lib/db/resellerUsers";
 import { getComboByName } from "@/lib/db/combos";
@@ -789,14 +790,17 @@ function validateKeyQuota(context: PolicyContext): Response | null {
       }
 
       // Check per-model quota if configured for the requested model
-      if (context.modelStr && resellerUser.modelQuotas && typeof resellerUser.modelQuotas === "object") {
+      if (
+        context.modelStr &&
+        resellerUser.modelQuotas &&
+        typeof resellerUser.modelQuotas === "object"
+      ) {
         const requestedModel = context.modelStr;
         const bareModel = requestedModel.includes("/")
           ? requestedModel.slice(requestedModel.indexOf("/") + 1)
           : requestedModel;
         const configuredLimit =
-          resellerUser.modelQuotas[requestedModel] ??
-          resellerUser.modelQuotas[bareModel];
+          resellerUser.modelQuotas[requestedModel] ?? resellerUser.modelQuotas[bareModel];
 
         if (typeof configuredLimit === "number" && configuredLimit > 0) {
           const rawModelLimit =
@@ -885,6 +889,24 @@ export async function enforceApiKeyPolicy(
   modelStr: string | null,
   options?: EnforceApiKeyPolicyOptions
 ): Promise<ApiKeyPolicyResult> {
+  if (modelStr) {
+    const siteContext = await resolveRequestSiteContext(request);
+    if (siteContext.siteId) {
+      const { getModelInfo, getComboForModel } = await import("@/sse/services/model");
+      const combo = await getComboForModel(modelStr);
+      if (!combo) {
+        const resolved = await getModelInfo(modelStr);
+        if (resolved?.provider && resolved?.model) {
+          const rejection = siteModelRejection(
+            siteContext.siteId,
+            resolved.provider,
+            resolved.model
+          );
+          if (rejection) return { apiKey: null, apiKeyInfo: null, rejection };
+        }
+      }
+    }
+  }
   // A real bearer key wins; then a bare x-api-key/x-goog-api-key that auth
   // accepted but extractApiKey() gates out; otherwise an authenticated dashboard
   // playground may test a specific key's policy by id (resolved server-side,

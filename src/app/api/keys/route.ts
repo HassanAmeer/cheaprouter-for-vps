@@ -40,11 +40,8 @@ export async function GET(request: Request) {
     const siteId = url.searchParams.get("site");
     const { limit, offset } = parsePagination(request);
     const dbLimit = limit ?? undefined;
-    const total = getApiKeysCount();
-    let keys = await getApiKeys(dbLimit, offset);
-    if (siteId) {
-      keys = keys.filter((k) => k.siteId === siteId);
-    }
+    const total = getApiKeysCount(siteId || undefined);
+    const keys = await getApiKeys(dbLimit, offset, siteId || undefined);
 
     const resellerMap = new Map<string, { userId: string; userName: string | null }>();
     try {
@@ -73,7 +70,7 @@ export async function GET(request: Request) {
 
     return NextResponse.json({
       keys: maskedKeys,
-      total: siteId ? maskedKeys.length : total,
+      total,
       allowKeyReveal: isApiKeyRevealEnabled(),
     });
   } catch (error) {
@@ -127,17 +124,8 @@ export async function POST(request) {
       allowedCombos,
       allowedConnections,
       expiresAt,
+      siteId: keySiteId,
     });
-    if (keySiteId) {
-      try {
-        const { getDbInstance } = await import("@/lib/db/core");
-        const db = getDbInstance();
-        db.prepare("UPDATE api_keys SET site_id = ? WHERE id = ?").run(keySiteId, apiKey.id);
-        (apiKey as any).siteId = keySiteId;
-      } catch (err) {
-        console.warn("Failed to set site_id on api_key:", err);
-      }
-    }
     if (
       noLog === true ||
       allowUsageCommand === true ||
@@ -182,31 +170,16 @@ export async function POST(request) {
     const effectiveUserId = userId?.trim() || name;
     const effectiveUserName = userName?.trim() || name;
     try {
-      const { getDbInstance } = await import("@/lib/db/core");
-      const { ensureResellerUserKeysTable } = await import("@/lib/db/resellerUsers");
-      ensureResellerUserKeysTable();
-      const db = getDbInstance();
-      const now = new Date().toISOString();
-      db.prepare(`
-        INSERT INTO reseller_user_keys (
-          user_id, user_name, user_email, plan_tier, api_key, api_key_id,
-          allowed_models, token_budget, tokens_used, rpm_limit, expires_at,
-          is_active, created_at, updated_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, 1, ?, ?)
-      `).run(
-        effectiveUserId,
-        effectiveUserName,
-        `${effectiveUserId.toLowerCase().replace(/[^a-z0-9]/g, "") || "user"}@cheaproute.local`,
-        "standard",
-        apiKey.key,
-        apiKey.id,
-        JSON.stringify(allowedModels || []),
-        null,
-        rateLimits?.requestsPerMinute ?? null,
-        expiresAt ?? null,
-        now,
-        now
-      );
+      const { associateCreatedResellerKey } = await import("@/lib/db/resellerUsers");
+      associateCreatedResellerKey({
+        userId: effectiveUserId,
+        userName: effectiveUserName,
+        apiKey: apiKey.key,
+        apiKeyId: apiKey.id,
+        allowedModels: allowedModels || [],
+        rpmLimit: rateLimits?.requestsPerMinute,
+        expiresAt,
+      });
     } catch (e) {
       log.warn("keys", "Failed to sync created key to reseller_user_keys", e);
     }

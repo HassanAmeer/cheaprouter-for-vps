@@ -91,6 +91,7 @@ interface CacheEntry<TValue> {
 }
 
 interface CreateApiKeyOptions {
+  siteId?: string | null;
   modelAccessMode?: ModelAccessMode;
   allowedModels?: string[];
   allowedCombos?: string[];
@@ -507,10 +508,14 @@ function getPreparedStatements(db: ApiKeysDbLike): ApiKeysStatements {
   };
 }
 
-export async function getApiKeys(limit?: number, offset?: number) {
+export async function getApiKeys(limit?: number, offset?: number, siteId?: string) {
   const db = getDbInstance() as ApiKeysDbLike;
   let rows: ApiKeyRow[];
-  if (limit !== undefined) {
+  if (siteId) {
+    rows = db
+      .prepare("SELECT * FROM api_keys WHERE site_id = ? ORDER BY created_at LIMIT ? OFFSET ?")
+      .all(siteId, limit ?? -1, offset ?? 0) as ApiKeyRow[];
+  } else if (limit !== undefined) {
     const sql = "SELECT * FROM api_keys ORDER BY created_at LIMIT ? OFFSET ?";
     rows = db.prepare(sql).all(limit, offset ?? 0) as ApiKeyRow[];
   } else {
@@ -559,9 +564,13 @@ export async function getApiKeys(limit?: number, offset?: number) {
   });
 }
 
-export function getApiKeysCount(): number {
+export function getApiKeysCount(siteId?: string): number {
   const db = getDbInstance() as ApiKeysDbLike;
-  const row = db.prepare("SELECT count(*) as cnt FROM api_keys").get() as { cnt: number };
+  const row = (
+    siteId
+      ? db.prepare("SELECT count(*) as cnt FROM api_keys WHERE site_id = ?").get(siteId)
+      : db.prepare("SELECT count(*) as cnt FROM api_keys").get()
+  ) as { cnt: number };
   return row.cnt;
 }
 
@@ -736,6 +745,7 @@ export async function createApiKey(
   const result = generateApiKeyWithMachine(machineId);
 
   const apiKey = {
+    siteId: options.siteId ?? null,
     id: uuidv4(),
     name: name,
     key: result.key,
@@ -769,6 +779,9 @@ export async function createApiKey(
     apiKey.expiresAt
   );
   setNoLog(apiKey.id, false);
+  if (apiKey.siteId) {
+    db.prepare("UPDATE api_keys SET site_id = ? WHERE id = ?").run(apiKey.siteId, apiKey.id);
+  }
 
   backupDbFile("pre-write");
   return apiKey;

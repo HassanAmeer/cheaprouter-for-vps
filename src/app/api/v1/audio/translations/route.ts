@@ -157,7 +157,7 @@ async function translateWithModel(
  * /v1/audio/transcriptions, output is always English regardless of the
  * source audio language.
  */
-export async function POST(request) {
+async function postHandler(request) {
   let formData;
   try {
     formData = await request.formData();
@@ -226,3 +226,5 @@ export async function POST(request) {
 
   return translateWithModel(formData, modelStr, startTime, apiKeyId, apiKeyName);
 }
+import { withRequestSiteContext } from "@/lib/sites/siteRequestContext";
+export const POST = withRequestSiteContext(postHandler);

@@ -20,6 +20,7 @@ export interface UserModelUsage {
 
 export interface ResellerUser {
   id: string;
+  siteId: string | null;
   email: string;
   name: string | null;
   planTier: string;
@@ -154,25 +155,23 @@ export function ensureResellerUserKeysTable(): void {
 export function getResellerUserKeys(): ResellerUserKey[] {
   ensureResellerUserKeysTable();
   const db = getDbInstance();
-  const rows = db
-    .prepare("SELECT * FROM reseller_user_keys ORDER BY id ASC")
-    .all() as Array<{
-      id: number;
-      user_id: string;
-      user_name: string | null;
-      user_email: string;
-      plan_tier: string;
-      api_key: string;
-      api_key_id: string | null;
-      allowed_models: string;
-      token_budget: number | null;
-      tokens_used: number;
-      rpm_limit: number | null;
-      expires_at: string | null;
-      is_active: number;
-      created_at: string;
-      updated_at: string;
-    }>;
+  const rows = db.prepare("SELECT * FROM reseller_user_keys ORDER BY id ASC").all() as Array<{
+    id: number;
+    user_id: string;
+    user_name: string | null;
+    user_email: string;
+    plan_tier: string;
+    api_key: string;
+    api_key_id: string | null;
+    allowed_models: string;
+    token_budget: number | null;
+    tokens_used: number;
+    rpm_limit: number | null;
+    expires_at: string | null;
+    is_active: number;
+    created_at: string;
+    updated_at: string;
+  }>;
 
   return rows.map((r) => {
     let allowedModels: string[] = [];
@@ -207,23 +206,25 @@ export function getLatestActiveUserKey(): ResellerUserKey | null {
   const db = getDbInstance();
   const r = db
     .prepare("SELECT * FROM reseller_user_keys WHERE is_active = 1 ORDER BY id DESC LIMIT 1")
-    .get() as {
-      id: number;
-      user_id: string;
-      user_name: string | null;
-      user_email: string;
-      plan_tier: string;
-      api_key: string;
-      api_key_id: string | null;
-      allowed_models: string;
-      token_budget: number | null;
-      tokens_used: number;
-      rpm_limit: number | null;
-      expires_at: string | null;
-      is_active: number;
-      created_at: string;
-      updated_at: string;
-    } | undefined;
+    .get() as
+    | {
+        id: number;
+        user_id: string;
+        user_name: string | null;
+        user_email: string;
+        plan_tier: string;
+        api_key: string;
+        api_key_id: string | null;
+        allowed_models: string;
+        token_budget: number | null;
+        tokens_used: number;
+        rpm_limit: number | null;
+        expires_at: string | null;
+        is_active: number;
+        created_at: string;
+        updated_at: string;
+      }
+    | undefined;
 
   if (!r) return null;
   let allowedModels: string[] = [];
@@ -252,6 +253,39 @@ export function getLatestActiveUserKey(): ResellerUserKey | null {
 /**
  * Issue a new API key for a user with specific models and limits.
  */
+export function associateCreatedResellerKey(params: {
+  userId: string;
+  userName: string;
+  apiKey: string;
+  apiKeyId: string;
+  allowedModels: string[];
+  rpmLimit?: number | null;
+  expiresAt?: string | null;
+}): void {
+  ensureResellerUserKeysTable();
+  const now = new Date().toISOString();
+  getDbInstance()
+    .prepare(
+      `INSERT INTO reseller_user_keys (
+    user_id, user_name, user_email, plan_tier, api_key, api_key_id,
+    allowed_models, token_budget, tokens_used, rpm_limit, expires_at,
+    is_active, created_at, updated_at
+  ) VALUES (?, ?, ?, 'standard', ?, ?, ?, NULL, 0, ?, ?, 1, ?, ?)`
+    )
+    .run(
+      params.userId,
+      params.userName,
+      `${params.userId.toLowerCase().replace(/[^a-z0-9]/g, "") || "user"}@cheaproute.local`,
+      params.apiKey,
+      params.apiKeyId,
+      JSON.stringify(params.allowedModels),
+      params.rpmLimit ?? null,
+      params.expiresAt ?? null,
+      now,
+      now
+    );
+}
+
 export async function createResellerUserKey(params: {
   userId: string;
   userName?: string | null;
@@ -366,9 +400,8 @@ export async function deleteResellerUserKey(id: number): Promise<boolean> {
   const db = getDbInstance();
   backupDbFile("pre-write");
 
-  const row = db
-    .prepare("SELECT * FROM reseller_user_keys WHERE id = ?")
-    .get(id) as { api_key_id?: string } | undefined;
+  const row = db.prepare("SELECT * FROM reseller_user_keys WHERE id = ?").get(id) as
+    { api_key_id?: string } | undefined;
 
   if (row?.api_key_id) {
     try {
@@ -426,7 +459,11 @@ export async function getAvailableModelsAndCombos() {
     try {
       const conns = db
         .prepare("SELECT provider_id, is_paused, test_status FROM provider_connections")
-        .all() as Array<{ provider_id: string; is_paused: number | null; test_status: string | null }>;
+        .all() as Array<{
+        provider_id: string;
+        is_paused: number | null;
+        test_status: string | null;
+      }>;
       activeProviderIds = new Set(
         conns
           .filter((c) => c.is_paused !== 1 && c.test_status !== "paused")
@@ -517,7 +554,9 @@ export function getResellerUser(id: string): ResellerUser | undefined {
 
   if (!row) return undefined;
 
-  const usageRows = db.prepare(`SELECT * FROM user_model_usage WHERE user_id = ?`).all(id) as Array<{
+  const usageRows = db
+    .prepare(`SELECT * FROM user_model_usage WHERE user_id = ?`)
+    .all(id) as Array<{
     user_id: string;
     model: string;
     tokens_used: number;
@@ -540,6 +579,7 @@ export function getResellerUser(id: string): ResellerUser | undefined {
  */
 export function upsertResellerUser(params: {
   id: string;
+  siteId?: string | null;
   email: string;
   name?: string | null;
   planTier?: string;
@@ -557,28 +597,54 @@ export function upsertResellerUser(params: {
 
   const existing = getResellerUser(params.id);
   const planTier = params.planTier ?? existing?.planTier ?? "free";
-  const tokenBudget = params.tokenBudget !== undefined ? params.tokenBudget : (existing?.tokenBudget ?? null);
+  const tokenBudget =
+    params.tokenBudget !== undefined ? params.tokenBudget : (existing?.tokenBudget ?? null);
   const tokensUsed = params.tokensUsed ?? existing?.tokensUsed ?? 0;
   const rpmLimit = params.rpmLimit !== undefined ? params.rpmLimit : (existing?.rpmLimit ?? null);
-  const isBanned = params.isBanned !== undefined ? (params.isBanned ? 1 : 0) : (existing?.isBanned ? 1 : 0);
+  const isBanned =
+    params.isBanned !== undefined ? (params.isBanned ? 1 : 0) : existing?.isBanned ? 1 : 0;
   const name = params.name ?? existing?.name ?? null;
   const modelQuotas = params.modelQuotas
     ? JSON.stringify(params.modelQuotas)
     : existing?.modelQuotas
-    ? JSON.stringify(existing.modelQuotas)
-    : "{}";
+      ? JSON.stringify(existing.modelQuotas)
+      : "{}";
 
   if (existing) {
     db.prepare(
       `UPDATE reseller_users SET email = ?, name = ?, plan_tier = ?, token_budget = ?,
          tokens_used = ?, rpm_limit = ?, is_banned = ?, model_quotas = ?, updated_at = ?
        WHERE id = ?`
-    ).run(params.email, name, planTier, tokenBudget, tokensUsed, rpmLimit, isBanned, modelQuotas, now, params.id);
+    ).run(
+      params.email,
+      name,
+      planTier,
+      tokenBudget,
+      tokensUsed,
+      rpmLimit,
+      isBanned,
+      modelQuotas,
+      now,
+      params.id
+    );
   } else {
     db.prepare(
-      `INSERT INTO reseller_users (id, email, name, plan_tier, token_budget, tokens_used, rpm_limit, is_banned, model_quotas, created_at, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
-    ).run(params.id, params.email, name, planTier, tokenBudget, tokensUsed, rpmLimit, isBanned, modelQuotas, now, now);
+      `INSERT INTO reseller_users (id, email, name, plan_tier, token_budget, tokens_used, rpm_limit, is_banned, model_quotas, created_at, updated_at, site_id)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+    ).run(
+      params.id,
+      params.email,
+      name,
+      planTier,
+      tokenBudget,
+      tokensUsed,
+      rpmLimit,
+      isBanned,
+      modelQuotas,
+      now,
+      now,
+      params.siteId ?? null
+    );
   }
 
   return getResellerUser(params.id)!;
@@ -588,13 +654,13 @@ export function upsertResellerUser(params: {
  * Ensure a default test user exists with 100M tokens per model and 30 RPM limit,
  * along with an active API key.
  */
-export async function ensureDefaultTestUserAndKey(): Promise<{ user: ResellerUser; apiKey: string }> {
+export async function ensureDefaultTestUserAndKey(): Promise<{
+  user: ResellerUser;
+  apiKey: string;
+}> {
   ensureResellerUserKeysTable();
   const available = await getAvailableModelsAndCombos();
-  const allModelIds = [
-    ...available.combos.map((c) => c.id),
-    ...available.models.map((m) => m.id),
-  ];
+  const allModelIds = [...available.combos.map((c) => c.id), ...available.models.map((m) => m.id)];
 
   const modelQuotas: Record<string, number> = {};
   for (const mid of allModelIds) {
@@ -666,8 +732,8 @@ export function updateUserQuota(params: {
   const modelQuotas = params.modelQuotas
     ? JSON.stringify(params.modelQuotas)
     : user.modelQuotas
-    ? JSON.stringify(user.modelQuotas)
-    : "{}";
+      ? JSON.stringify(user.modelQuotas)
+      : "{}";
 
   db.prepare(
     `UPDATE reseller_users 
@@ -684,11 +750,13 @@ export function updateUserQuota(params: {
 
   if (rpmLimit !== undefined) {
     try {
-      db.prepare(`
+      db.prepare(
+        `
         UPDATE api_keys
         SET max_requests_per_minute = ?
         WHERE id IN (SELECT api_key_id FROM reseller_user_keys WHERE user_id = ? AND api_key_id IS NOT NULL)
-      `).run(rpmLimit, params.userId);
+      `
+      ).run(rpmLimit, params.userId);
       invalidateApiKeyCaches();
     } catch {}
   }
@@ -709,15 +777,21 @@ export function setUserBanStatus(userId: string, isBanned: boolean): void {
   const db = getDbInstance();
   backupDbFile("pre-write");
   const val = isBanned ? 1 : 0;
-  db.prepare("UPDATE reseller_users SET is_banned = ?, updated_at = datetime('now') WHERE id = ?").run(val, userId);
-  db.prepare("UPDATE reseller_user_keys SET is_active = ?, updated_at = datetime('now') WHERE user_id = ?").run(isBanned ? 0 : 1, userId);
+  db.prepare(
+    "UPDATE reseller_users SET is_banned = ?, updated_at = datetime('now') WHERE id = ?"
+  ).run(val, userId);
+  db.prepare(
+    "UPDATE reseller_user_keys SET is_active = ?, updated_at = datetime('now') WHERE user_id = ?"
+  ).run(isBanned ? 0 : 1, userId);
 
   try {
-    db.prepare(`
+    db.prepare(
+      `
       UPDATE api_keys
       SET is_banned = ?, is_active = ?
       WHERE id IN (SELECT api_key_id FROM reseller_user_keys WHERE user_id = ? AND api_key_id IS NOT NULL)
-    `).run(val, isBanned ? 0 : 1, userId);
+    `
+    ).run(val, isBanned ? 0 : 1, userId);
 
     invalidateApiKeyCaches();
   } catch (err) {
@@ -964,19 +1038,19 @@ export function getAllUserByokKeys(): EnrichedUserByokKey[] {
       ORDER BY b.created_at DESC`
     )
     .all() as Array<{
-      id: number;
-      user_id: string;
-      user_name: string | null;
-      user_email: string | null;
-      provider_id: string;
-      masked_key: string;
-      is_paused: number;
-      last_used_at: string | null;
-      requests: number;
-      tokens: number;
-      created_at: string;
-      updated_at: string;
-    }>;
+    id: number;
+    user_id: string;
+    user_name: string | null;
+    user_email: string | null;
+    provider_id: string;
+    masked_key: string;
+    is_paused: number;
+    last_used_at: string | null;
+    requests: number;
+    tokens: number;
+    created_at: string;
+    updated_at: string;
+  }>;
 
   return rows.map((r) => ({
     id: r.id,
@@ -1056,6 +1130,7 @@ export function incrementUserByokUsage(userId: string, providerId: string, token
 
 type UserRowShape = {
   id: string;
+  site_id?: string | null;
   email: string;
   name: string | null;
   plan_tier: string;
@@ -1090,6 +1165,7 @@ function fromUserRow(row: UserRowShape): ResellerUser {
 
   return {
     id: row.id,
+    siteId: row.site_id ?? null,
     email: row.email,
     name: row.name,
     planTier: row.plan_tier,

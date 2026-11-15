@@ -26,7 +26,8 @@ export function runWithCallLogApiKeyContext<TResult>(
   context: CallLogApiKeyContext,
   callback: () => TResult
 ): TResult {
-  return callLogApiKeyContext.run(context, callback);
+  const parent = callLogApiKeyContext.getStore();
+  return callLogApiKeyContext.run({ ...parent, ...context }, callback);
 }
 
 export function getCallLogApiKeyContext(): CallLogApiKeyContext | null {

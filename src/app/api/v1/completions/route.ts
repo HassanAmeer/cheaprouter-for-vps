@@ -126,4 +126,5 @@ async function postHandler(request: Request) {
   );
 }
 
-export const POST = withChatAdmission(postHandler);
+export const POST = withRequestSiteContext(withChatAdmission(postHandler));
+import { withRequestSiteContext } from "@/lib/sites/siteRequestContext";

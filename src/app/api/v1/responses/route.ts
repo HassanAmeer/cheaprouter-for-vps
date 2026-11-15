@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { withRequestSiteContext } from "@/lib/sites/siteRequestContext";
 import { handleChat } from "@/sse/handlers/chat";
 import { logAdmissionRejection } from "@/sse/handlers/admissionRejectionLog";
 import { CORS_HEADERS } from "@/shared/utils/cors";
@@ -237,4 +238,4 @@ async function postHandler(request: any) {
   }
 }
 
-export const POST = postHandler;
+export const POST = withRequestSiteContext(postHandler);

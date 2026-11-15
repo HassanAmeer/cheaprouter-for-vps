@@ -8,6 +8,7 @@ import test from "node:test";
 import {
   SITE_PICKER_ANCHOR_HREF,
   shouldRenderSitePicker,
+  siteAwareHref,
 } from "../../src/shared/utils/sidebarSitePicker";
 
 test("the picker anchors under the Providers entry", () => {
@@ -36,4 +37,14 @@ test("no duplicate picker when Providers is pinned", () => {
     shouldRenderSitePicker({ collapsed: false, href: "/dashboard/providers", pinnedSection: true }),
     false
   );
+});
+
+test("site parameters only travel to pages that consume site scope", () => {
+  assert.equal(siteAwareHref("/dashboard/providers", "a"), "/dashboard/providers?site=a");
+  assert.equal(
+    siteAwareHref("/dashboard/combos?tab=list", "a"),
+    "/dashboard/combos?tab=list&site=a"
+  );
+  assert.equal(siteAwareHref("/dashboard/settings", "a"), "/dashboard/settings");
+  assert.equal(siteAwareHref("https://example.com", "a"), "https://example.com");
 });
